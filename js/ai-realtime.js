@@ -115,10 +115,12 @@ const _AI = (() => {
             _ws.send(JSON.stringify({
                 setup: {
                     model: 'models/gemini-3.1-flash-live-preview',
-                    responseModalities: ['AUDIO'],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: 'Aoede' }
+                    generationConfig: {
+                        responseModalities: ['AUDIO'],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: 'Aoede' }
+                            }
                         }
                     },
                     systemInstruction: {
