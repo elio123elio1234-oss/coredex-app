@@ -1,0 +1,75 @@
+/* ==================================================
+   DESIGN TOKENS
+   All colour, size, and shadow values live here.
+   To add a new theme: duplicate the [data-theme="dark"]
+   block and change the attribute selector.
+   ================================================== */
+:root {
+    /* Typography */
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Backgrounds */
+    --bg:        #F3F4F6;
+    --bg-soft:   #FAFAFA;
+    --surface:   #FFFFFF;
+    --surface-hover: #F1F5F9;
+
+    /* Borders */
+    --border: #E5E7EB;
+
+    /* Text */
+    --text-primary:   #0A2540;
+    --text-secondary: #64748B;
+    --text-tertiary:  #94A3B8;
+
+    /* Brand */
+    --accent:      #0052FF;
+    --accent-dark: #0A2540;
+    --accent-soft: rgba(0, 82, 255, 0.10);
+
+    /* Semantic */
+    --success:      #22A45D;
+    --success-soft: rgba(34, 164, 93, 0.12);
+    --danger:       #E5342A;
+    --danger-hover: #C92A21;
+    --danger-soft:  rgba(229, 52, 42, 0.10);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(10, 37, 64, 0.06);
+    --shadow-md: 0 8px 24px rgba(10, 37, 64, 0.08);
+    --shadow-lg: 0 24px 48px rgba(10, 37, 64, 0.14), 0 8px 16px rgba(10, 37, 64, 0.06);
+
+    /* Radii */
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+
+    /* Layout */
+    --sidebar-w: 272px;
+    --topbar-h:  64px;
+
+    color-scheme: light;
+}
+
+[data-theme="dark"] {
+    --bg:        #0A0F1A;
+    --bg-soft:   #0D1424;
+    --surface:   #131B2C;
+    --surface-hover: #1B2540;
+    --border:    rgba(255, 255, 255, 0.08);
+    --text-primary:   #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-tertiary:  #5B6B85;
+    --accent:      #4C8DFF;
+    --accent-dark: #8FB8FF;
+    --accent-soft: rgba(76, 141, 255, 0.16);
+    --success:      #34D399;
+    --success-soft: rgba(52, 211, 153, 0.14);
+    --danger:       #F87171;
+    --danger-hover: #EF4444;
+    --danger-soft:  rgba(248, 113, 113, 0.14);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+}

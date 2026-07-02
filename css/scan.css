@@ -1,0 +1,94 @@
+/* ==================================================
+   SCAN VIEW
+   Fullscreen immersive scan overlay, video card,
+   and bottom control bar.
+   ================================================== */
+
+/* ---- Overlay (full screen) ---- */
+.scan-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--bg-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 3vh 20px;
+    transition: background .25s ease;
+}
+.scan-overlay[hidden] { display: none; }
+
+/* ---- Live status indicator ---- */
+.scan-status {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.scan-status .pill-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulseDot 1.6s ease-in-out infinite;
+}
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+}
+
+/* ---- Video card ---- */
+.video-card {
+    position: relative;
+    height: 72vh;
+    width: auto;
+    background: #000;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+.video-card video,
+.video-card canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+}
+.video-card video { display: none; }
+
+/* ---- Control bar (outside the video, never overlapping) ---- */
+.scan-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ctrl-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s ease, transform .15s ease, color .15s ease;
+}
+.ctrl-btn svg { width: 17px; height: 17px; }
+.ctrl-btn:hover { background: var(--surface-hover); transform: translateY(-1px); }
+.ctrl-btn.mode-electrodes { background: var(--success-soft); color: var(--success); border-color: transparent; }
+.ctrl-btn.exit { background: var(--danger); color: #fff; border-color: transparent; }
+.ctrl-btn.exit:hover { background: var(--danger-hover); }
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+    .video-card { height: 58vh; }
+    .scan-controls { flex-wrap: wrap; justify-content: center; }
+}

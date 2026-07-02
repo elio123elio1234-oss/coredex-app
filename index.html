@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,905 +7,173 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-    /* ==================================================
-       DESIGN TOKENS - Light / Dark
-       ================================================== */
-    :root {
-        --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        --bg: #F3F4F6;
-        --bg-soft: #FAFAFA;
-        --surface: #FFFFFF;
-        --surface-hover: #F1F5F9;
-        --border: #E5E7EB;
-        --text-primary: #0A2540;
-        --text-secondary: #64748B;
-        --text-tertiary: #94A3B8;
-        --accent: #0052FF;
-        --accent-dark: #0A2540;
-        --accent-soft: rgba(0,82,255,0.10);
-        --success: #22A45D;
-        --success-soft: rgba(34,164,93,0.12);
-        --danger: #E5342A;
-        --danger-hover: #C92A21;
-        --danger-soft: rgba(229,52,42,0.10);
-        --shadow-sm: 0 1px 2px rgba(10,37,64,0.06);
-        --shadow-md: 0 8px 24px rgba(10,37,64,0.08);
-        --shadow-lg: 0 24px 48px rgba(10,37,64,0.14), 0 8px 16px rgba(10,37,64,0.06);
-        --radius-lg: 20px;
-        --radius-md: 12px;
-        --radius-sm: 8px;
-        --sidebar-w: 272px;
-        --scan-bg: #000000;
-        color-scheme: light;
-    }
-    [data-theme="dark"] {
-        --bg: #0A0F1A;
-        --bg-soft: #0D1424;
-        --surface: #131B2C;
-        --surface-hover: #1B2540;
-        --border: rgba(255,255,255,0.08);
-        --text-primary: #F1F5F9;
-        --text-secondary: #94A3B8;
-        --text-tertiary: #5B6B85;
-        --accent: #4C8DFF;
-        --accent-dark: #8FB8FF;
-        --accent-soft: rgba(76,141,255,0.16);
-        --success: #34D399;
-        --success-soft: rgba(52,211,153,0.14);
-        --danger: #F87171;
-        --danger-hover: #EF4444;
-        --danger-soft: rgba(248,113,113,0.14);
-        --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
-        --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
-        --shadow-lg: 0 24px 48px rgba(0,0,0,0.6), 0 8px 16px rgba(0,0,0,0.3);
-        color-scheme: dark;
-    }
-
-    * { box-sizing: border-box; }
-    html, body {
-        margin: 0; padding: 0; height: 100%;
-        overscroll-behavior: none;
-    }
-    body {
-        font-family: var(--font);
-        background: var(--bg);
-        color: var(--text-primary);
-        transition: background .25s ease, color .25s ease;
-        overflow: hidden;
-    }
-    button, select { font-family: inherit; }
-    button { cursor: pointer; }
-
-    /* ==================================================
-       APP SHELL
-       ================================================== */
-    .app-shell { display: flex; height: 100vh; width: 100vw; position: relative; }
-
-    /* ---- Sidebar ---- */
-    .sidebar {
-        width: var(--sidebar-w);
-        flex-shrink: 0;
-        background: var(--surface);
-        border-inline-end: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        z-index: 30;
-        transition: background .25s ease, border-color .25s ease, transform .25s ease;
-    }
-    .brand {
-        height: 68px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding-inline: 22px;
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
-    }
-    .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
-    .brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: var(--text-primary); }
-    .brand-sub { font-size: 10px; font-weight: 700; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-top: 3px; }
-
-    /* Blob logo (Syphix-inspired, animated) */
-    .logo-mark {
-        width: 34px; height: 34px; flex-shrink: 0;
-        display: inline-block; position: relative;
-        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-        border-radius: 43% 57% 41% 59% / 54% 43% 57% 46%;
-        box-shadow: inset -3px -3px 8px rgba(0,0,0,0.35), inset 3px 3px 8px rgba(255,255,255,0.25);
-        animation: morphBlob 8s ease-in-out infinite;
-    }
-    .logo-mark::after {
-        content: ''; position: absolute; top: 26%; left: 26%; width: 48%; height: 48%;
-        background: #fff; border-radius: 50%;
-        filter: drop-shadow(0 0 4px rgba(255,255,255,0.9));
-        animation: morphCore 8s ease-in-out infinite alternate;
-    }
-    @keyframes morphBlob {
-        0%   { border-radius: 43% 57% 41% 59% / 54% 43% 57% 46%; }
-        25%  { border-radius: 55% 45% 55% 45% / 48% 55% 45% 52%; }
-        50%  { border-radius: 45% 55% 35% 65% / 58% 38% 62% 42%; }
-        75%  { border-radius: 35% 65% 50% 50% / 42% 60% 40% 58%; }
-        100% { border-radius: 43% 57% 41% 59% / 54% 43% 57% 46%; }
-    }
-    @keyframes morphCore {
-        0%   { transform: translate(0,0) scale(1); border-radius: 50%; }
-        40%  { transform: translate(6%,8%) scale(1.08); border-radius: 42% 58% 60% 40% / 55% 45% 55% 45%; }
-        50%  { transform: translate(6%,8%) scale(1.2); }
-        80%  { transform: translate(-3%,4%) scale(0.94); border-radius: 58% 42% 40% 60% / 45% 60% 40% 55%; }
-        100% { transform: translate(0,0) scale(1); border-radius: 50%; }
-    }
-
-    /* Session status card */
-    .session-card {
-        margin: 16px; padding: 14px 16px;
-        background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-md);
-    }
-    .session-label { font-size: 10.5px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px; }
-    .session-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .session-name { font-weight: 600; font-size: 13.5px; color: var(--text-primary); }
-    .pill {
-        font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-        display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-    }
-    .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .pill-success { background: var(--success-soft); color: var(--success); }
-    .pill-success .pill-dot { background: var(--success); }
-    .pill-neutral { background: var(--surface-hover); color: var(--text-secondary); }
-    .pill-neutral .pill-dot { background: var(--text-tertiary); }
-    .session-sub { font-size: 11.5px; color: var(--text-tertiary); margin-top: 6px; }
-
-    /* Navigation */
-    .nav-wrap { flex: 1; padding: 6px 0 0; overflow-y: auto; }
-    .nav-label { padding-inline: 22px; font-size: 10.5px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 1.5px; margin: 10px 0 8px; }
-    .nav-list { list-style: none; margin: 0; padding: 0 12px; display: flex; flex-direction: column; gap: 2px; }
-    .nav-item {
-        width: 100%; display: flex; align-items: center; gap: 11px;
-        padding: 10px 12px; border-radius: var(--radius-sm);
-        font-size: 13.5px; font-weight: 600; color: var(--text-secondary);
-        background: transparent; border: none; text-align: start; text-decoration: none;
-        transition: background .15s ease, color .15s ease; position: relative;
-    }
-    .nav-item svg { flex-shrink: 0; width: 18px; height: 18px; }
-    .nav-item:hover:not(.disabled) { background: var(--surface-hover); color: var(--text-primary); }
-    .nav-item.active { background: var(--accent-dark); color: #fff; box-shadow: var(--shadow-sm); }
-    [data-theme="dark"] .nav-item.active { background: var(--accent); }
-    .nav-item.disabled { color: var(--text-tertiary); cursor: default; opacity: 0.7; }
-    .nav-soon { margin-inline-start: auto; font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--surface-hover); color: var(--text-tertiary); letter-spacing: 0.4px; }
-
-    /* Sidebar footer controls */
-    .sidebar-footer { border-top: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
-    .footer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .footer-label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
-    .footer-label svg { width: 16px; height: 16px; }
-
-    .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .switch-track {
-        position: absolute; inset: 0; background: var(--surface-hover); border: 1px solid var(--border);
-        border-radius: 999px; transition: background .2s ease; cursor: pointer;
-    }
-    .switch-track::before {
-        content: ''; position: absolute; height: 16px; width: 16px; left: 2px; top: 2px;
-        background: #fff; border-radius: 50%; transition: transform .2s ease; box-shadow: var(--shadow-sm);
-    }
-    html[dir="rtl"] .switch-track::before { left: auto; right: 2px; }
-    .switch input:checked + .switch-track { background: var(--accent); }
-    .switch input:checked + .switch-track::before { transform: translateX(18px); }
-    html[dir="rtl"] .switch input:checked + .switch-track::before { transform: translateX(-18px); }
-
-    select.lang-select {
-        background: var(--surface-hover); color: var(--text-primary); border: 1px solid var(--border);
-        border-radius: var(--radius-sm); padding: 5px 10px; font-size: 12.5px; font-weight: 600; outline: none;
-    }
-
-    /* ---- Main content ---- */
-    .main {
-        flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-soft);
-        transition: background .25s ease;
-    }
-    .topbar {
-        height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-        padding-inline: 28px; border-bottom: 1px solid var(--border); background: var(--surface);
-        transition: background .25s ease, border-color .25s ease;
-    }
-    .topbar h1 { font-size: 17px; font-weight: 700; margin: 0; }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .hamburger {
-        display: none; background: transparent; border: none; padding: 8px; margin-inline-end: 4px;
-        border-radius: var(--radius-sm); color: var(--text-primary);
-    }
-    .hamburger:hover { background: var(--surface-hover); }
-    .badge-pill {
-        display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
-        color: var(--text-secondary); background: var(--surface-hover); padding: 6px 12px; border-radius: 999px;
-    }
-    .badge-pill svg { width: 14px; height: 14px; }
-
-    .content { flex: 1; overflow: auto; padding: 32px; position: relative; }
-
-    /* ---- Dashboard view ---- */
-    .dashboard { max-width: 780px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-    .dash-heading { font-size: 26px; font-weight: 300; margin: 0 0 6px; color: var(--text-primary); }
-    .dash-sub { color: var(--text-secondary); margin: 0 0 26px; font-size: 14.5px; }
-    .dash-card {
-        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
-        padding: 30px; display: flex; align-items: center; justify-content: space-between; gap: 24px;
-        box-shadow: var(--shadow-sm); flex-wrap: wrap; transition: background .25s ease, border-color .25s ease;
-    }
-    .dash-card-title { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
-    .dash-card-desc { font-size: 13.5px; color: var(--text-secondary); max-width: 420px; line-height: 1.6; margin: 0; }
-    .btn-primary {
-        flex-shrink: 0; background: var(--accent-dark); color: #fff; border: none;
-        padding: 14px 30px; border-radius: var(--radius-md); font-size: 14.5px; font-weight: 700;
-        box-shadow: var(--shadow-sm); transition: transform .15s ease, background .15s ease;
-    }
-    .btn-primary:hover { background: var(--accent); transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(0); }
-
-    .model-status-row { display: flex; align-items: center; gap: 8px; margin-top: 22px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
-    .model-status-row .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-tertiary); }
-    .model-status-row.ready .pill-dot { background: var(--success); }
-    .model-status-row.ready { color: var(--success); }
-    .model-status-row.error .pill-dot { background: var(--danger); }
-    .model-status-row.error { color: var(--danger); }
-
-    /* ==================================================
-       CLEAN SCAN OVERLAY (fullscreen, minimal)
-       ================================================== */
-    .scan-overlay {
-        position: fixed; inset: 0; z-index: 100; background: var(--bg-soft);
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 18px; padding: 3vh 20px;
-    }
-    .scan-overlay[hidden] { display: none; }
-    .scan-status {
-        font-size: 13.5px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;
-    }
-    .scan-status .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulseDot 1.6s ease-in-out infinite; }
-    @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-    .video-card {
-        position: relative; height: 72vh; width: auto; background: var(--scan-bg);
-        border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden;
-    }
-    .video-card video, .video-card canvas {
-        width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block;
-    }
-    .video-card video { display: none; }
-
-    /* Control bar lives OUTSIDE the video, never overlapping it */
-    .scan-controls { display: flex; align-items: center; gap: 12px; }
-    .ctrl-btn {
-        display: flex; align-items: center; gap: 8px; background: var(--surface); color: var(--text-primary);
-        border: 1px solid var(--border); padding: 12px 22px; border-radius: 999px; font-size: 13.5px; font-weight: 700;
-        box-shadow: var(--shadow-sm); transition: background .15s ease, transform .15s ease, color .15s ease;
-    }
-    .ctrl-btn svg { width: 17px; height: 17px; }
-    .ctrl-btn:hover { background: var(--surface-hover); transform: translateY(-1px); }
-    .ctrl-btn.mode-electrodes { background: var(--success-soft); color: var(--success); border-color: transparent; }
-    .ctrl-btn.exit { background: var(--danger); color: #fff; border-color: transparent; }
-    .ctrl-btn.exit:hover { background: var(--danger-hover); }
-
-    /* ==================================================
-       RESPONSIVE / MOBILE
-       ================================================== */
-    @media (max-width: 900px) {
-        .hamburger { display: inline-flex; align-items: center; justify-content: center; }
-        .sidebar {
-            position: fixed; inset-block: 0; inset-inline-start: 0; transform: translateX(-100%);
-            box-shadow: var(--shadow-lg);
-        }
-        html[dir="rtl"] .sidebar { transform: translateX(100%); }
-        .sidebar.open { transform: translateX(0); }
-        .content { padding: 18px; }
-        .dash-card { flex-direction: column; align-items: stretch; text-align: center; }
-        .btn-primary { width: 100%; }
-        .video-card { height: 58vh; }
-        .scan-controls { flex-wrap: wrap; justify-content: center; }
-    }
-    .scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 25; display: none; }
-    .scrim.show { display: block; }
-</style>
+<!-- CSS Modules -->
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/scan.css">
 </head>
 <body>
 
 <div class="app-shell">
 
-    <!-- ============ SIDEBAR ============ -->
-    <aside class="sidebar" id="sidebar">
-        <div class="brand">
-            <span class="logo-mark"></span>
-            <div class="brand-text">
-                <span class="brand-name">Coredex</span>
-                <span class="brand-sub" data-i18n="brandSub">Medical AI</span>
-            </div>
-        </div>
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
 
-        <div class="session-card">
-            <p class="session-label" data-i18n="sessionLabel">מצב מערכת</p>
-            <div class="session-row">
-                <span class="session-name" data-i18n="sessionName">סריקה מקומית</span>
-                <span class="pill pill-neutral"><span class="pill-dot"></span><span data-i18n="backendOffline">שרת: לא מחובר</span></span>
-            </div>
-            <p class="session-sub" data-i18n="sessionSub">כל העיבוד מתבצע במכשיר שלך</p>
-        </div>
-
-        <nav class="nav-wrap">
-            <p class="nav-label" data-i18n="navModules">מודולים</p>
-            <ul class="nav-list">
-                <li>
-                    <button class="nav-item active" id="navLiveScan">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        <span data-i18n="navLiveScan">סריקה חיה</span>
-                    </button>
-                </li>
-                <li>
-                    <button class="nav-item disabled" title="בקרוב">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-                        <span data-i18n="navHistory">היסטוריית סריקות</span>
-                        <span class="nav-soon" data-i18n="soon">בקרוב</span>
-                    </button>
-                </li>
-                <li>
-                    <button class="nav-item disabled" title="בקרוב">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
-                        <span data-i18n="navProfile">פרופיל מטופל</span>
-                        <span class="nav-soon" data-i18n="soon">בקרוב</span>
-                    </button>
-                </li>
-                <li>
-                    <button class="nav-item disabled" title="בקרוב">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        <span data-i18n="navSettings">הגדרות מערכת</span>
-                        <span class="nav-soon" data-i18n="soon">בקרוב</span>
-                    </button>
-                </li>
-            </ul>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="footer-row">
-                <span class="footer-label">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                    <span data-i18n="darkMode">מצב כהה</span>
-                </span>
-                <label class="switch">
-                    <input type="checkbox" id="themeSwitch">
-                    <span class="switch-track"></span>
-                </label>
-            </div>
-            <div class="footer-row">
-                <span class="footer-label">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    <span data-i18n="language">שפה</span>
-                </span>
-                <select class="lang-select" id="langSelect">
-                    <option value="he">עברית</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
-        </div>
-    </aside>
-
-    <div class="scrim" id="scrim"></div>
-
-    <!-- ============ MAIN ============ -->
-    <main class="main">
-        <header class="topbar">
-            <div style="display:flex; align-items:center;">
-                <button class="hamburger" id="hamburgerBtn" aria-label="menu">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-                </button>
-                <h1 data-i18n="topbarTitle">סריקה חיה</h1>
-            </div>
-            <div class="topbar-right">
-                <span class="badge-pill">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                    <span data-i18n="encryptionBadge">עיבוד מקומי מאובטח</span>
-                </span>
-            </div>
-        </header>
-
-        <div class="content">
-            <!-- DASHBOARD VIEW -->
-            <div class="dashboard" id="dashboardView">
-                <h2 class="dash-heading" data-i18n="dashHeading">התחלת פרוטוקול סריקה</h2>
-                <p class="dash-sub" data-i18n="dashSub">בחר פרוצדורה כדי להתחבר למודול ההנחיה החכם</p>
-
-                <div class="dash-card">
-                    <div>
-                        <h3 class="dash-card-title" data-i18n="cardTitle">מיפוי אלקטרודות אק"ג</h3>
-                        <p class="dash-card-desc" data-i18n="cardDesc">הנחיה חזותית אוטומטית למיקום דיוק של חיישני החזה, בזמן אמת דרך המצלמה.</p>
-                    </div>
-                    <button class="btn-primary" id="startBtn" data-i18n="startButton">התחל סריקה</button>
-                </div>
-
-                <div class="model-status-row" id="modelStatusRow">
-                    <span class="pill-dot"></span>
-                    <span id="modelStatusText" data-i18n="statusInitializing">מאתחל חיישנים חכמים...</span>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-
-<!-- ============ CLEAN IMMERSIVE SCAN OVERLAY ============ -->
-<div class="scan-overlay" id="scanOverlay" hidden>
-    <div class="scan-status">
-        <span class="pill-dot"></span>
-        <span id="scanStatusText" data-i18n="scanStatusReady">המערכת פעילה</span>
+    <!-- Brand bar (always dark navy) -->
+    <div class="brand">
+      <div class="logo-mark-static-dark"></div>
+      <div class="brand-text">
+        <span class="brand-name">COREDEX</span>
+        <span class="brand-sub" data-i18n="brandSub">Medical AI</span>
+      </div>
     </div>
 
-    <div class="video-card" id="videoContainer">
-        <video id="webcam" autoplay playsinline muted></video>
-        <canvas id="outputCanvas"></canvas>
+    <!-- Session status -->
+    <div class="session-card">
+      <p class="session-label" data-i18n="sessionLabel">System Status</p>
+      <div class="session-row">
+        <span class="session-name" data-i18n="sessionName">Local Scan</span>
+        <span class="pill pill-neutral">
+          <span class="pill-dot"></span>
+          <span data-i18n="backendOffline">Backend: Offline</span>
+        </span>
+      </div>
+      <p class="session-sub" data-i18n="sessionSub">All processing happens on your device</p>
     </div>
 
-    <div class="scan-controls">
-        <button class="ctrl-btn" id="toggleBtn">
+    <!-- Navigation -->
+    <nav class="nav-wrap">
+      <p class="nav-label" data-i18n="navModules">Modules</p>
+      <ul class="nav-list">
+        <li>
+          <button class="nav-item active" id="navLiveScan">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            <span id="toggleBtnLabel" data-i18n="modeSkeleton">שלד אנטומי</span>
-        </button>
-        <button class="ctrl-btn exit" id="exitBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-            <span data-i18n="exitButton">יציאה</span>
-        </button>
+            <span data-i18n="navLiveScan">Live Scan</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item disabled">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8"/></svg>
+            <span data-i18n="navHistory">Scan History</span>
+            <span class="nav-soon" data-i18n="soon">Soon</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item disabled">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+            <span data-i18n="navProfile">Patient Profile</span>
+            <span class="nav-soon" data-i18n="soon">Soon</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item disabled">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>
+            <span data-i18n="navSettings">System Settings</span>
+            <span class="nav-soon" data-i18n="soon">Soon</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Footer controls -->
+    <div class="sidebar-footer">
+      <div class="footer-row">
+        <span class="footer-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <span data-i18n="darkMode">Dark Mode</span>
+        </span>
+        <label class="switch">
+          <input type="checkbox" id="themeSwitch">
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="footer-row">
+        <span class="footer-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span data-i18n="language">Language</span>
+        </span>
+        <!-- Add <option> for each new language in i18n.js LANG_META -->
+        <select class="lang-select" id="langSelect">
+          <option value="en">English</option>
+          <option value="he">עברית</option>
+        </select>
+      </div>
     </div>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;">
+        <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <h1 data-i18n="topbarTitle">Live Scan</h1>
+      </div>
+      <div class="topbar-right">
+        <span class="badge-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span data-i18n="encryptionBadge">Secure On-Device Processing</span>
+        </span>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="dashboard" id="dashboardView">
+        <h2 class="dash-heading" data-i18n="dashHeading">Initiate Scan Protocol</h2>
+        <p class="dash-sub"    data-i18n="dashSub">Select a procedure to connect with the AI guidance module</p>
+
+        <div class="dash-card">
+          <div>
+            <h3 class="dash-card-title" data-i18n="cardTitle">ECG Electrode Mapping</h3>
+            <p class="dash-card-desc"  data-i18n="cardDesc">Automated visual guidance for precise chest sensor placement, in real time through the camera.</p>
+          </div>
+          <button class="btn-primary" id="startBtn" data-i18n="startButton">Start Scan</button>
+        </div>
+
+        <div class="model-status-row" id="modelStatusRow">
+          <span class="pill-dot"></span>
+          <span id="modelStatusText" data-i18n="statusInit">Initializing smart sensors…</span>
+        </div>
+      </div>
+    </div>
+  </main>
 </div>
 
-<script>
-/* ==================================================
-   i18n — extensible translation system
-   Add a new language: push its code into LANG_META
-   and add a matching object to TRANSLATIONS.
-   ================================================== */
-const LANG_META = {
-    he: { dir: 'rtl', name: 'עברית' },
-    en: { dir: 'ltr', name: 'English' }
-};
+<!-- ============ CLEAN SCAN OVERLAY (fullscreen, minimal) ============ -->
+<div class="scan-overlay" id="scanOverlay" hidden>
+  <div class="scan-status">
+    <span class="pill-dot"></span>
+    <span id="scanStatusText" data-i18n="scanStatusReady">System Active</span>
+  </div>
 
-const TRANSLATIONS = {
-    he: {
-        brandSub: 'רפואה חכמה',
-        sessionLabel: 'מצב מערכת',
-        sessionName: 'סריקה מקומית',
-        backendOffline: 'שרת: לא מחובר',
-        sessionSub: 'כל העיבוד מתבצע במכשיר שלך',
-        navModules: 'מודולים',
-        navLiveScan: 'סריקה חיה',
-        navHistory: 'היסטוריית סריקות',
-        navProfile: 'פרופיל מטופל',
-        navSettings: 'הגדרות מערכת',
-        soon: 'בקרוב',
-        darkMode: 'מצב כהה',
-        language: 'שפה',
-        topbarTitle: 'סריקה חיה',
-        encryptionBadge: 'עיבוד מקומי מאובטח',
-        dashHeading: 'התחלת פרוטוקול סריקה',
-        dashSub: 'בחר פרוצדורה כדי להתחבר למודול ההנחיה החכם',
-        cardTitle: 'מיפוי אלקטרודות אק"ג',
-        cardDesc: 'הנחיה חזותית אוטומטית למיקום דיוק של חיישני החזה, בזמן אמת דרך המצלמה.',
-        startButton: 'התחל סריקה',
-        statusInitializing: 'מאתחל חיישנים חכמים...',
-        statusReady: 'המערכת מוכנה לסריקה בזמן אמת',
-        statusError: 'שגיאה: ',
-        scanStatusReady: 'המערכת פעילה',
-        modeSkeleton: 'שלד אנטומי',
-        modeElectrodes: 'חישוב אלקטרודות',
-        exitButton: 'יציאה'
-    },
-    en: {
-        brandSub: 'Medical AI',
-        sessionLabel: 'System Status',
-        sessionName: 'Local Scan',
-        backendOffline: 'Backend: Offline',
-        sessionSub: 'All processing happens on your device',
-        navModules: 'Modules',
-        navLiveScan: 'Live Scan',
-        navHistory: 'Scan History',
-        navProfile: 'Patient Profile',
-        navSettings: 'System Settings',
-        soon: 'Soon',
-        darkMode: 'Dark Mode',
-        language: 'Language',
-        topbarTitle: 'Live Scan',
-        encryptionBadge: 'Secure On-Device Processing',
-        dashHeading: 'Initiate Scan Protocol',
-        dashSub: 'Select a procedure to connect with the AI guidance module',
-        cardTitle: 'ECG Electrode Mapping',
-        cardDesc: 'Automated visual guidance for precise chest sensor placement, in real time through the camera.',
-        startButton: 'Start Scan',
-        statusInitializing: 'Initializing smart sensors...',
-        statusReady: 'System ready for real-time scanning',
-        statusError: 'Error: ',
-        scanStatusReady: 'System Active',
-        modeSkeleton: 'Anatomical Skeleton',
-        modeElectrodes: 'Electrode Mapping',
-        exitButton: 'Exit'
-    }
-};
+  <div class="video-card" id="videoContainer">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="outputCanvas"></canvas>
+  </div>
 
-let currentLang = localStorage.getItem('coredex-lang') || 'he';
+  <div class="scan-controls">
+    <button class="ctrl-btn" id="toggleBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span id="toggleBtnLabel" data-i18n="modeSkeleton">Anatomical Skeleton</span>
+    </button>
+    <button class="ctrl-btn exit" id="exitBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      <span data-i18n="exitButton">Exit</span>
+    </button>
+  </div>
+</div>
 
-function t(key) {
-    return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || TRANSLATIONS.he[key] || key;
-}
+<!-- JS Modules (order matters: dependencies before app.js) -->
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/scan.js"></script>
+<script src="js/app.js"></script>
 
-function applyLang(lang) {
-    if (!LANG_META[lang]) lang = 'he';
-    currentLang = lang;
-    localStorage.setItem('coredex-lang', lang);
-    document.documentElement.lang = lang;
-    document.documentElement.dir = LANG_META[lang].dir;
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        el.textContent = t(el.getAttribute('data-i18n'));
-    });
-    document.getElementById('langSelect').value = lang;
-    renderModelStatus();
-    renderModeButton();
-}
-
-/* ==================================================
-   THEME — light / dark, persisted
-   ================================================== */
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('coredex-theme', theme);
-    document.getElementById('themeSwitch').checked = (theme === 'dark');
-}
-
-function initTheme() {
-    const saved = localStorage.getItem('coredex-theme');
-    const preferred = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    applyTheme(preferred);
-}
-
-document.getElementById('themeSwitch').addEventListener('change', (e) => {
-    applyTheme(e.target.checked ? 'dark' : 'light');
-});
-document.getElementById('langSelect').addEventListener('change', (e) => applyLang(e.target.value));
-
-/* ==================================================
-   MOBILE SIDEBAR DRAWER
-   ================================================== */
-const sidebar = document.getElementById('sidebar');
-const scrim = document.getElementById('scrim');
-function toggleSidebar(open) {
-    sidebar.classList.toggle('open', open);
-    scrim.classList.toggle('show', open);
-}
-document.getElementById('hamburgerBtn').addEventListener('click', () => toggleSidebar(!sidebar.classList.contains('open')));
-scrim.addEventListener('click', () => toggleSidebar(false));
-
-/* ==================================================
-   BACKEND READINESS SCAFFOLD
-   No backend is connected yet — everything runs
-   100% on-device. When a backend becomes available,
-   set CONFIG.backendUrl and implement the calls below.
-   ================================================== */
-const CONFIG = {
-    backendUrl: null // e.g. 'https://api.coredex.example.com'
-};
-async function syncSessionToBackend(payload) {
-    if (!CONFIG.backendUrl) return; // no-op until a backend is configured
-    // await fetch(CONFIG.backendUrl + '/sessions', { method: 'POST', body: JSON.stringify(payload) });
-}
-
-/* ==================================================
-   MODEL / WORKER SETUP
-   ================================================== */
-const video = document.getElementById('webcam');
-const canvas = document.getElementById('outputCanvas');
-const container = document.getElementById('videoContainer');
-const ctx = canvas.getContext('2d');
-const modelStatusRow = document.getElementById('modelStatusRow');
-const modelStatusText = document.getElementById('modelStatusText');
-const scanStatusText = document.getElementById('scanStatusText');
-const toggleBtn = document.getElementById('toggleBtn');
-const toggleBtnLabel = document.getElementById('toggleBtnLabel');
-const exitBtn = document.getElementById('exitBtn');
-const startBtn = document.getElementById('startBtn');
-const scanOverlay = document.getElementById('scanOverlay');
-
-const worker = new Worker('worker.js');
-let isWorkerBusy = false;
-let isModelReady = false;
-let modelState = 'initializing'; // 'initializing' | 'ready' | 'error'
-let modelErrorMsg = '';
-
-function renderModelStatus() {
-    modelStatusRow.classList.remove('ready', 'error');
-    if (modelState === 'ready') {
-        modelStatusRow.classList.add('ready');
-        modelStatusText.textContent = t('statusReady');
-    } else if (modelState === 'error') {
-        modelStatusRow.classList.add('error');
-        modelStatusText.textContent = t('statusError') + modelErrorMsg;
-    } else {
-        modelStatusText.textContent = t('statusInitializing');
-    }
-}
-
-let electrodeMode = false;
-function renderModeButton() {
-    toggleBtnLabel.textContent = electrodeMode ? t('modeElectrodes') : t('modeSkeleton');
-    toggleBtn.classList.toggle('mode-electrodes', electrodeMode);
-}
-function toggleMode() {
-    electrodeMode = !electrodeMode;
-    renderModeButton();
-}
-toggleBtn.addEventListener('click', toggleMode);
-
-const tempCanvas = document.createElement('canvas');
-tempCanvas.width = 416;
-tempCanvas.height = 416;
-const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-
-let smoothedKpts = new Array(23).fill(null);
-let targetKpts = new Array(16).fill(null);
-const smoothingFactor = 0.35;
-
-const connections = {
-    turquoise: { pairs: [[0, 1]], color: 'rgb(0, 200, 200)' },
-    pink: { pairs: [[2, 13], [2, 10], [2, 12], [12, 10], [10, 13], [14, 3], [3, 15], [11, 15], [14, 11], [11, 3]], color: 'rgb(255, 50, 130)' },
-    orange: { pairs: [[8, 9], [6, 7]], color: 'rgb(255, 120, 0)' },
-    purple: { pairs: [
-        [20, 21], [20, 22], [21, 13], [20, 10], [20, 11], [22, 14], [12, 7], [15, 9],
-        [12, 21], [12, 4], [15, 22], [15, 5], [0, 4], [0, 5], [21, 4], [22, 5],
-        [21, 0], [20, 4], [20, 5], [22, 0]
-    ], color: 'rgb(120, 80, 255)' }
-};
-
-worker.onmessage = function(e) {
-    if (e.data.status === 'loaded') {
-        isModelReady = true;
-        modelState = 'ready';
-        renderModelStatus();
-    } else if (e.data.type === 'results') {
-        targetKpts = e.data.kpts.map(pt => {
-            if (!pt) return null;
-            return {
-                x: (pt.x / 640) * canvas.width,
-                y: (pt.y / 480) * canvas.height
-            };
-        });
-        setTimeout(() => { isWorkerBusy = false; }, 20);
-    } else if (e.data.type === 'error') {
-        modelState = 'error';
-        modelErrorMsg = e.data.message;
-        renderModelStatus();
-        console.error("Worker Error:", e.data.message);
-        setTimeout(() => { isWorkerBusy = false; }, 1000);
-    }
-};
-
-let currentStream = null;
-
-async function setupCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }
-    });
-    currentStream = stream;
-    video.srcObject = stream;
-
-    return new Promise(resolve => {
-        video.onloadedmetadata = () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            container.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-            resolve(video);
-        };
-    });
-}
-
-function stopCamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-        currentStream = null;
-    }
-    video.srcObject = null;
-}
-
-function sendFrameToWorker() {
-    if (isWorkerBusy || !isModelReady) return;
-    tempCtx.drawImage(video, 0, 0, 416, 416);
-    const imgData = tempCtx.getImageData(0, 0, 416, 416);
-    isWorkerBusy = true;
-    worker.postMessage({ type: 'frame', imgData: imgData }, [imgData.data.buffer]);
-}
-
-const norm = v => Math.sqrt(v.x * v.x + v.y * v.y);
-const dist = (p1, p2) => norm({x: p1.x - p2.x, y: p1.y - p2.y});
-const sub = (p1, p2) => ({x: p1.x - p2.x, y: p1.y - p2.y});
-const add = (p1, p2) => ({x: p1.x + p2.x, y: p1.y + p2.y});
-const mul = (v, s) => ({x: v.x * s, y: v.y * s});
-const dot = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
-
-function computeVirtualPoints() {
-    let k = smoothedKpts;
-    if (k[0] && k[1]) k[20] = {x: (k[0].x + k[1].x)/2, y: (k[0].y + k[1].y)/2}; else k[20] = null;
-    if (k[4] && k[10]) k[21] = {x: k[10].x, y: (k[4].y + k[10].y)/2}; else k[21] = null;
-    if (k[5] && k[11]) k[22] = {x: k[11].x, y: (k[5].y + k[11].y)/2}; else k[22] = null;
-}
-
-function computeElectrodes() {
-    let k = smoothedKpts;
-    const valid = p => p !== null && p !== undefined;
-
-    let p_JN = k[0], p_XP = k[1], p_IMF = k[2];
-
-    const getLeftPhysical = (i, j) => {
-        if (k[i] && k[j]) return k[i].x > k[j].x ? k[i] : k[j];
-        return k[i] || k[j];
-    };
-    const getRightPhysical = (i, j) => {
-        if (k[i] && k[j]) return k[i].x < k[j].x ? k[i] : k[j];
-        return k[i] || k[j];
-    };
-
-    let p_MCP_Anchor = getLeftPhysical(4, 5);
-    let p_MCP_Opposite = getRightPhysical(4, 5);
-    let p_AAL = getLeftPhysical(6, 8);
-    let p_MAL = getLeftPhysical(7, 9);
-
-    if (!valid(p_JN) || !valid(p_XP) || !valid(p_MCP_Anchor)) return null;
-
-    let vec_S = sub(p_XP, p_JN);
-    let len_S = norm(vec_S);
-    if (len_S < 1e-6) return null;
-
-    let u_S = {x: vec_S.x / len_S, y: vec_S.y / len_S};
-
-    let dir_vec = sub(p_MCP_Anchor, p_JN);
-    let proj_y = dot(dir_vec, u_S);
-    let chest_vec = sub(dir_vec, mul(u_S, proj_y));
-    let chest_len = norm(chest_vec);
-    if (chest_len < 1e-6) return null;
-
-    let u_Chest = { x: chest_vec.x / chest_len, y: chest_vec.y / chest_len };
-    let u_Opposite = { x: -u_Chest.x, y: -u_Chest.y };
-
-    const localOut = p => dot(sub(p, p_JN), u_Chest);
-    const localDown = p => dot(sub(p, p_JN), u_S);
-    const glob = (outward, downward) => add(add(p_JN, mul(u_Chest, outward)), mul(u_S, downward));
-
-    let p_c4 = add(p_JN, mul(vec_S, 0.72));
-    let dist_R = valid(p_MCP_Opposite) ? norm(sub(p_JN, p_MCP_Opposite)) : norm(sub(p_JN, p_MCP_Anchor));
-    let dist_L = norm(sub(p_JN, p_MCP_Anchor));
-    let avg_d = (dist_R + dist_L) / 2;
-    let offset = 0.35 * avg_d;
-
-    let V2 = add(p_c4, mul(u_Chest, offset));
-    let V1 = add(p_c4, mul(u_Opposite, offset));
-
-    let mcp_out = localOut(p_MCP_Anchor);
-    let v4_y_theo = 0.85 * len_S + Math.abs(mcp_out) * 0.22;
-    let v4_down = valid(p_IMF) ? localDown(p_IMF) : v4_y_theo;
-    let V4 = glob(mcp_out, v4_down);
-
-    let V3 = {x: (V2.x + V4.x)/2, y: (V2.y + V4.y)/2};
-
-    let v5_out = valid(p_AAL) ? localOut(p_AAL) : mcp_out + avg_d * 0.3;
-    let V5 = glob(v5_out, v4_down);
-
-    let d_aal = valid(p_AAL) ? (v5_out - mcp_out) : avg_d * 0.3;
-    let v6_out = valid(p_MAL) ? localOut(p_MAL) : mcp_out + d_aal * 1.6;
-    let V6 = glob(v6_out, v4_down);
-
-    return { V1, V2, V3, V4, V5, V6 };
-}
-
-function drawElectrodes(elec, scale) {
-    const colors = {
-        V1: 'rgb(255, 59, 48)',   V2: 'rgb(255, 204, 0)',   V3: 'rgb(90, 200, 250)',
-        V4: 'rgb(52, 199, 89)',   V5: 'rgb(175, 82, 222)',  V6: 'rgb(0, 122, 255)'
-    };
-    const textDark = ["V2"];
-
-    for (let [name, pos] of Object.entries(elec)) {
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 11 * scale, 0, 2 * Math.PI);
-        ctx.fillStyle = colors[name];
-        ctx.fill();
-        ctx.lineWidth = 2.5 * scale;
-        ctx.strokeStyle = 'white';
-        ctx.stroke();
-
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.scale(-1, 1);
-
-        ctx.font = `bold ${11 * scale}px -apple-system, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = textDark.includes(name) ? "#1d1d1f" : "white";
-        ctx.fillText(name, 0, 1 * scale);
-        ctx.restore();
-    }
-}
-
-let rafId = null;
-function renderLoop() {
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const scale = canvas.height / 480;
-
-    for (let i = 0; i < 16; i++) {
-        if (targetKpts[i]) {
-            if (!smoothedKpts[i]) smoothedKpts[i] = { x: targetKpts[i].x, y: targetKpts[i].y };
-            else {
-                smoothedKpts[i].x += smoothingFactor * (targetKpts[i].x - smoothedKpts[i].x);
-                smoothedKpts[i].y += smoothingFactor * (targetKpts[i].y - smoothedKpts[i].y);
-            }
-        } else {
-            smoothedKpts[i] = null;
-        }
-    }
-
-    computeVirtualPoints();
-
-    if (electrodeMode) {
-        let electrodes = computeElectrodes();
-        if (electrodes) drawElectrodes(electrodes, scale);
-    } else {
-        Object.values(connections).forEach(group => {
-            ctx.strokeStyle = group.color;
-            ctx.lineWidth = 3.5 * scale;
-            ctx.lineCap = "round";
-            group.pairs.forEach(([p1, p2]) => {
-                if (p1 < 23 && p2 < 23 && smoothedKpts[p1] && smoothedKpts[p2]) {
-                    ctx.beginPath();
-                    ctx.moveTo(smoothedKpts[p1].x, smoothedKpts[p1].y);
-                    ctx.lineTo(smoothedKpts[p2].x, smoothedKpts[p2].y);
-                    ctx.stroke();
-                }
-            });
-        });
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        smoothedKpts.forEach(pt => {
-            if (pt) {
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, 4.5 * scale, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-        });
-    }
-
-    sendFrameToWorker();
-    rafId = requestAnimationFrame(renderLoop);
-}
-
-/* ==================================================
-   VIEW SWITCHING — dashboard <-> clean scan overlay
-   ================================================== */
-async function startScan() {
-    scanStatusText.textContent = t('scanStatusReady');
-    scanOverlay.hidden = false;
-    document.body.style.overflow = 'hidden';
-    await setupCamera();
-    await video.play();
-    if (!rafId) renderLoop();
-}
-
-function exitScan() {
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    stopCamera();
-    scanOverlay.hidden = true;
-    smoothedKpts = new Array(23).fill(null);
-    targetKpts = new Array(16).fill(null);
-}
-
-startBtn.addEventListener('click', startScan);
-exitBtn.addEventListener('click', exitScan);
-
-/* ==================================================
-   INIT
-   ================================================== */
-initTheme();
-applyLang(currentLang);
-</script>
 </body>
 </html>
