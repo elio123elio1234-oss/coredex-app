@@ -42,14 +42,14 @@
 }
 
 /* ---- AI Glow wrapper ----
-   IMPORTANT: Do NOT use isolation:isolate here — it breaks canvas
-   compositing and hides the ONNX electrode circles drawn on #outputCanvas.
-   Instead, z-index:0 on a positioned element creates the needed stacking
-   context without interfering with canvas GPU layers.
+   Do NOT add z-index, isolation, or will-change here —
+   any stacking context on this wrapper puts #outputCanvas
+   in a separate GPU compositing layer and delays ONNX circle rendering.
+   The ::before / .video-card z-index pair works fine within
+   the parent .scan-overlay stacking context.
 ---- */
 .ai-video-wrap {
     position: relative;
-    z-index: 0;       /* stacking context — keeps ::before z-index:-1 contained */
     border-radius: var(--radius-lg);
 }
 
