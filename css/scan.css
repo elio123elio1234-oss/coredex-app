@@ -45,53 +45,55 @@
 .ai-video-wrap {
     position: relative;
     border-radius: var(--radius-lg);
+    isolation: isolate;       /* creates stacking context */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-@property --glow-angle {
-    syntax: '<angle>';
-    initial-value: 0deg;
-    inherits: false;
-}
-
 .ai-video-wrap::before {
     content: '';
     position: absolute;
-    inset: -5px;
-    border-radius: calc(var(--radius-lg) + 5px);
+    inset: -14px;              /* must be larger than blur radius */
+    border-radius: calc(var(--radius-lg) + 14px);
     background: conic-gradient(
-        from var(--glow-angle),
-        #ff4d4d, #ff8800, #ffe600,
-        #44dd66, #00aaff, #8844ff,
-        #ff44cc, #ff4d4d
+        #ff4d4d 0%,
+        #ff8800 16%,
+        #ffe600 30%,
+        #44dd66 45%,
+        #00aaff 60%,
+        #8844ff 74%,
+        #ff44cc 88%,
+        #ff4d4d 100%
     );
-    filter: blur(14px);
+    filter: blur(18px) hue-rotate(0deg);
     opacity: 0;
-    z-index: 0;
-    transition: opacity 0.6s ease;
+    z-index: -1;               /* behind video-card (isolation: isolate keeps it contained) */
+    transition: opacity 0.55s ease;
     pointer-events: none;
 }
 
 .ai-video-wrap.ai-glow::before {
-    opacity: 0.85;
-    animation: aiGlowSpin 4s linear infinite,
-               aiGlowBreath 2.4s ease-in-out infinite;
+    opacity: 0.82;
+    animation:
+        aiGlowHue    4s linear        infinite,
+        aiGlowBreath 2.4s ease-in-out infinite;
 }
 
-@keyframes aiGlowSpin {
-    from { --glow-angle: 0deg;   }
-    to   { --glow-angle: 360deg; }
+/* Cycle all hues — works in every modern browser, no @property needed */
+@keyframes aiGlowHue {
+    from { filter: blur(18px) hue-rotate(0deg);   }
+    to   { filter: blur(18px) hue-rotate(360deg); }
 }
+
 @keyframes aiGlowBreath {
-    0%,100% { filter: blur(12px); opacity: 0.75; }
-    50%     { filter: blur(20px); opacity: 1;    }
+    0%,100% { opacity: 0.72; filter: blur(16px) hue-rotate(var(--_h,0deg)); }
+    50%     { opacity: 1;    filter: blur(26px) hue-rotate(var(--_h,0deg)); }
 }
 
 .ai-video-wrap .video-card {
     position: relative;
-    z-index: 1;
+    z-index: 0;
 }
 
 /* ---- Video card ---- */
