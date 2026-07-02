@@ -22,11 +22,7 @@
 
     <!-- Brand bar (always dark navy) -->
     <div class="brand">
-      <div class="logo-mark-static-dark"></div>
-      <div class="brand-text">
-        <span class="brand-name">CYPHIX</span>
-        <span class="brand-sub" data-i18n="brandSub">Medical AI</span>
-      </div>
+      <canvas id="logoCanvas" width="200" height="64"></canvas>
     </div>
 
     <!-- Session status -->
@@ -166,6 +162,53 @@
     </button>
   </div>
 </div>
+
+<!-- Logo Canvas -->
+<script>
+document.fonts.ready.then(() => {
+    const canvas = document.getElementById('logoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const x = 8, y = 16, size = 32;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.45, y);
+    ctx.bezierCurveTo(x + size * 0.85, y,             x + size,        y + size * 0.15, x + size,        y + size * 0.54);
+    ctx.bezierCurveTo(x + size,        y + size * 0.85, x + size * 0.59, y + size,       x + size * 0.41, y + size);
+    ctx.bezierCurveTo(x + size * 0.15, y + size,       x,               y + size * 0.85, x,               y + size * 0.43);
+    ctx.bezierCurveTo(x,               y + size * 0.15, x + size * 0.15, y,              x + size * 0.45, y);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.clip();
+    ctx.shadowColor = 'rgba(0,0,0,0.15)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = -2;
+    ctx.shadowOffsetY = -2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Inner dark dot
+    ctx.beginPath();
+    ctx.arc(x + 8 + 4.5, y + 8 + 4.5, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#0A2540';
+    ctx.fill();
+
+    // "CYPHIX" bold white
+    ctx.font = "700 18px 'Inter', sans-serif";
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('CYPHIX', x + size + 10, 32);
+
+    // "Medical" regular grey
+    const w = ctx.measureText('CYPHIX').width;
+    ctx.font = "400 18px 'Inter', sans-serif";
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('Medical', x + size + 10 + w, 32);
+});
+</script>
 
 <!-- JS Modules (order matters: dependencies before app.js) -->
 <script src="js/config.js"></script>
