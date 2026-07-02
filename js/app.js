@@ -26,8 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* 5. Scan start / exit */
     document.getElementById('startBtn').addEventListener('click', startScan);
-    document.getElementById('exitBtn').addEventListener('click', exitScan);
+    document.getElementById('exitBtn').addEventListener('click', () => {
+        _AI.disconnect(); // stop AI guide when exiting scan
+        exitScan();
+    });
 
     /* 6. Mode toggle inside scan view */
     document.getElementById('toggleBtn').addEventListener('click', toggleScanMode);
+
+    /* 7. AI Realtime Guide feature */
+    _AI.init();
 });

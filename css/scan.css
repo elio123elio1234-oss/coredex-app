@@ -87,6 +87,204 @@
 .ctrl-btn.exit { background: var(--danger); color: #fff; border-color: transparent; }
 .ctrl-btn.exit:hover { background: var(--danger-hover); }
 
+/* ================================================================
+   AI GUIDE BUTTON STATES
+================================================================ */
+.ctrl-btn.ai-btn { position: relative; overflow: hidden; }
+
+/* idle – default look, already handled by .ctrl-btn */
+.ctrl-btn.ai-idle  { }
+
+/* connecting – amber pulse */
+.ctrl-btn.ai-connecting {
+    background: rgba(255, 180, 0, 0.15);
+    color: #d97706;
+    border-color: rgba(255, 180, 0, 0.4);
+    animation: aiConnectPulse 1s ease-in-out infinite;
+}
+@keyframes aiConnectPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.65; }
+}
+
+/* active – green, mic listening */
+.ctrl-btn.ai-active {
+    background: rgba(52, 199, 89, 0.18);
+    color: #22c55e;
+    border-color: rgba(52, 199, 89, 0.45);
+    box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.5);
+    animation: aiActivePulse 2s ease-in-out infinite;
+}
+@keyframes aiActivePulse {
+    0%   { box-shadow: 0 0 0 0   rgba(52, 199, 89, 0.45); }
+    60%  { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
+    100% { box-shadow: 0 0 0 0   rgba(52, 199, 89, 0); }
+}
+
+/* speaking – blue wave */
+.ctrl-btn.ai-speaking {
+    background: rgba(0, 122, 255, 0.18);
+    color: #3b82f6;
+    border-color: rgba(0, 122, 255, 0.45);
+    animation: aiSpeakPulse 0.7s ease-in-out infinite;
+}
+@keyframes aiSpeakPulse {
+    0%, 100% { transform: translateY(-1px) scale(1);    }
+    50%      { transform: translateY(-1px) scale(1.03); }
+}
+
+/* error – red */
+.ctrl-btn.ai-error {
+    background: rgba(255, 59, 48, 0.18);
+    color: var(--danger);
+    border-color: rgba(255, 59, 48, 0.4);
+}
+
+/* ================================================================
+   AI STATUS CHIP  (shown next to the scan live-dot)
+================================================================ */
+.ai-status-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin-left: 6px;
+    transition: background .2s, color .2s;
+}
+.ai-status-chip[hidden] { display: none; }
+
+.ai-status-chip.ai-status-connecting { background: rgba(255,180,0,.15); color: #d97706; }
+.ai-status-chip.ai-status-active     { background: rgba(52,199,89,.15); color: #22c55e; }
+.ai-status-chip.ai-status-speaking   { background: rgba(0,122,255,.15); color: #3b82f6; }
+.ai-status-chip.ai-status-error      { background: rgba(255,59,48,.15); color: var(--danger); }
+
+/* ================================================================
+   AI GUIDE – API KEY MODAL
+================================================================ */
+.ai-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: aiModalFadeIn .18s ease;
+}
+.ai-modal-backdrop[hidden] { display: none; }
+@keyframes aiModalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.ai-modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+    padding: 36px 32px 28px;
+    max-width: 420px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: aiModalSlideUp .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes aiModalSlideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.ai-modal-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: rgba(0,122,255,.12);
+    border: 1px solid rgba(0,122,255,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+}
+
+.ai-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.ai-modal-desc {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.ai-key-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg-soft);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: 'Inter', monospace;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color .15s;
+}
+.ai-key-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+
+.ai-modal-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: -4px 0 0;
+}
+
+.ai-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.ai-modal-cancel {
+    padding: 9px 20px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+}
+.ai-modal-cancel:hover { background: var(--surface-hover); }
+
+.ai-modal-confirm {
+    padding: 9px 22px;
+    border-radius: 999px;
+    border: none;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+}
+.ai-modal-confirm:hover   { background: #2563eb; transform: translateY(-1px); }
+.ai-modal-confirm:active  { transform: translateY(0); }
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
     .video-card { height: 58vh; }
