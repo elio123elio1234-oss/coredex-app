@@ -133,15 +133,32 @@ const _AI = (() => {
 
         _ws.onerror = (err) => {
             console.error('[AI Realtime] WebSocket error:', err);
-            _setStatus('error');
+            /* onclose will always fire after onerror — let it handle the state reset */
         };
 
-        _ws.onclose = () => {
-            if (_active) {
-                _active = false;
-                _stopMic();
-                _stopFrameSending();
+        _ws.onclose = (evt) => {
+            const wasActive = _active;
+            _active = false;
+            _stopMic();
+            _stopFrameSending();
+            _ws = null;
+            _nextPlayTime = 0;
+
+            if (wasActive) {
+                /* Normal session end */
                 _setStatus('idle');
+            } else {
+                /* Connection failed before setup completed */
+                const reason = evt.reason
+                    ? evt.reason
+                    : (evt.code === 1006 ? 'Connection refused — check your API key.' : `Code ${evt.code}`);
+                console.error('[AI Realtime] Connection closed before setup. Code:', evt.code, 'Reason:', reason);
+                _setStatus('error');
+                if (_aiGuideBtnLabel) _aiGuideBtnLabel.textContent = 'Connection Failed';
+                /* Auto-reset button label after 3 seconds */
+                setTimeout(() => {
+                    if (!_active) _setStatus('idle');
+                }, 3000);
             }
         };
     }
@@ -386,12 +403,17 @@ const _AI = (() => {
     }
 
     function _disconnect() {
-        _active = false;
+        _active = false;      // mark as intended close BEFORE ws.close()
         _stopMic();
         _stopFrameSending();
-        try { _ws?.close(); } catch {}
-        _ws           = null;
         _nextPlayTime = 0;
+        if (_ws) {
+            /* Remove onclose so it doesn't fire the error path */
+            _ws.onclose = null;
+            _ws.onerror = null;
+            try { _ws.close(1000, 'User disconnected'); } catch {}
+            _ws = null;
+        }
         _setStatus('idle');
     }
 
