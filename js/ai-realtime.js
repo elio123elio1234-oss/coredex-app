@@ -114,7 +114,7 @@ const _AI = (() => {
             console.log('[AI Realtime] WebSocket open — sending setup…');
             _ws.send(JSON.stringify({
                 setup: {
-                    model: 'models/gemini-2.5-flash-preview-native-audio-dialog',
+                    model: 'models/gemini-live-2.5-flash-preview',
                     generationConfig: {
                         responseModalities: ['AUDIO'],
                         speechConfig: {
