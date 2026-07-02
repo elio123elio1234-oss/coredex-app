@@ -86,15 +86,32 @@ const _AI = (() => {
     /* ================================================================
        WEBSOCKET CONNECTION  (Gemini Multimodal Live)
     ================================================================ */
+    let _connectTimeout = null;
+
     function _connect(apiKey) {
         _setStatus('connecting');
+
+        /* v1beta endpoint — v1alpha is deprecated */
         const url = 'wss://generativelanguage.googleapis.com/ws/' +
-            'google.ai.generativelanguage.v1alpha.GenerativeService' +
+            'google.ai.generativelanguage.v1beta.GenerativeService' +
             '.BidiGenerateContent?key=' + encodeURIComponent(apiKey);
 
+        console.log('[AI Realtime] Connecting to Gemini Live API…');
         _ws = new WebSocket(url);
 
+        /* Safety timeout — if setup not confirmed within 12 s, abort */
+        _connectTimeout = setTimeout(() => {
+            if (!_active) {
+                console.error('[AI Realtime] Setup timeout — no response from server.');
+                _disconnect();
+                _setStatus('error');
+                if (_aiGuideBtnLabel) _aiGuideBtnLabel.textContent = 'Timeout — retry';
+                setTimeout(() => { if (!_active) _setStatus('idle'); }, 3000);
+            }
+        }, 12000);
+
         _ws.onopen = () => {
+            console.log('[AI Realtime] WebSocket open — sending setup…');
             _ws.send(JSON.stringify({
                 setup: {
                     model: 'models/gemini-2.0-flash-live-001',
@@ -133,10 +150,12 @@ const _AI = (() => {
 
         _ws.onerror = (err) => {
             console.error('[AI Realtime] WebSocket error:', err);
-            /* onclose will always fire after onerror — let it handle the state reset */
+            /* onclose always fires after onerror — let it handle state reset */
         };
 
         _ws.onclose = (evt) => {
+            clearTimeout(_connectTimeout);
+            _connectTimeout = null;
             const wasActive = _active;
             _active = false;
             _stopMic();
@@ -145,20 +164,15 @@ const _AI = (() => {
             _nextPlayTime = 0;
 
             if (wasActive) {
-                /* Normal session end */
                 _setStatus('idle');
             } else {
-                /* Connection failed before setup completed */
                 const reason = evt.reason
                     ? evt.reason
-                    : (evt.code === 1006 ? 'Connection refused — check your API key.' : `Code ${evt.code}`);
-                console.error('[AI Realtime] Connection closed before setup. Code:', evt.code, 'Reason:', reason);
+                    : (evt.code === 1006 ? 'Check your API key & network.' : `Code ${evt.code}`);
+                console.error('[AI Realtime] Closed before setup. Code:', evt.code, '|', reason);
                 _setStatus('error');
                 if (_aiGuideBtnLabel) _aiGuideBtnLabel.textContent = 'Connection Failed';
-                /* Auto-reset button label after 3 seconds */
-                setTimeout(() => {
-                    if (!_active) _setStatus('idle');
-                }, 3000);
+                setTimeout(() => { if (!_active) _setStatus('idle'); }, 3000);
             }
         };
     }
@@ -403,6 +417,8 @@ const _AI = (() => {
     }
 
     function _disconnect() {
+        clearTimeout(_connectTimeout);
+        _connectTimeout = null;
         _active = false;      // mark as intended close BEFORE ws.close()
         _stopMic();
         _stopFrameSending();
