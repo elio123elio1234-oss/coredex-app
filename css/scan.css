@@ -42,18 +42,24 @@
 }
 
 /* ---- AI Glow wrapper ----
-   Do NOT add z-index, isolation, or will-change here —
-   any stacking context on this wrapper puts #outputCanvas
-   in a separate GPU compositing layer and delays ONNX circle rendering.
-   The ::before / .video-card z-index pair works fine within
-   the parent .scan-overlay stacking context.
+   RULES:
+   - No z-index on wrapper → no stacking context → canvas stays on its own fast layer
+   - content:none by default → pseudo-element does NOT exist → zero GPU cost
+   - content:'' only when ai-glow active → DOM paint order handles depth naturally
+     (::before paints first = behind .video-card which paints second)
 ---- */
 .ai-video-wrap {
     position: relative;
     border-radius: var(--radius-lg);
 }
 
+/* Default: element does NOT exist — no GPU layer, no repaint overhead */
 .ai-video-wrap::before {
+    content: none;
+}
+
+/* Only created when AI is speaking */
+.ai-video-wrap.ai-glow::before {
     content: '';
     position: absolute;
     inset: -14px;
@@ -63,35 +69,23 @@
         #44dd66 45%, #00aaff 60%, #8844ff 74%,
         #ff44cc 88%, #ff4d4d 100%
     );
-    /* NO filter here — blur on inactive element costs GPU even at opacity:0 */
-    opacity: 0;
-    z-index: -1;
-    transition: opacity 0.55s ease;
     pointer-events: none;
+    animation: aiGlowHue    4s linear        infinite,
+               aiGlowBreath 2.5s ease-in-out infinite;
 }
 
-/* Only show when AI is SPEAKING — subtle, not blinding */
-.ai-video-wrap.ai-glow::before {
-    opacity: 0.55;
-    animation:
-        aiGlowHue    4s linear        infinite,
-        aiGlowBreath 2.5s ease-in-out infinite;
-}
-
-/* aiGlowHue  → animates filter only */
 @keyframes aiGlowHue {
     from { filter: blur(16px) hue-rotate(0deg);   }
     to   { filter: blur(16px) hue-rotate(360deg); }
 }
-/* aiGlowBreath → animates opacity only (no filter conflict) */
 @keyframes aiGlowBreath {
     0%, 100% { opacity: 0.45; }
-    50%      { opacity: 0.62; }
+    50%      { opacity: 0.65; }
 }
 
+/* No z-index on video-card — DOM order keeps it above ::before automatically */
 .ai-video-wrap .video-card {
     position: relative;
-    z-index: 1;
 }
 
 /* ---- Video card ---- */
