@@ -150,9 +150,11 @@
     <span id="aiStatusChip" class="ai-status-chip" hidden></span>
   </div>
 
-  <div class="video-card" id="videoContainer">
-    <video id="webcam" autoplay playsinline muted></video>
-    <canvas id="outputCanvas"></canvas>
+  <div class="ai-video-wrap" id="aiVideoWrap">
+    <div class="video-card" id="videoContainer">
+      <video id="webcam" autoplay playsinline muted></video>
+      <canvas id="outputCanvas"></canvas>
+    </div>
   </div>
 
   <div class="scan-controls">
@@ -259,8 +261,8 @@ document.fonts.ready.then(() => {
 <script src="js/theme.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/scan.js"></script>
-<script src="js/ai-realtime.js?v=10"></script>
-<script src="js/app.js?v=10"></script>
+<script src="js/ai-realtime.js?v=11"></script>
+<script src="js/app.js?v=11"></script>
 
 </body>
 </html>

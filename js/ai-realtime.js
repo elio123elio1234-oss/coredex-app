@@ -34,7 +34,7 @@ const _AI = (() => {
     /* ---- DOM references (resolved lazily after init) ---- */
     let _aiBtn, _aiGuideBtnLabel, _aiModal,
         _aiKeyInput, _aiKeyConfirm, _aiKeyCancel,
-        _aiStatusChip;
+        _aiStatusChip, _aiVideoWrap;
 
     /* ================================================================
        KEY STORAGE  (localStorage only, never leaves device)
@@ -80,6 +80,12 @@ const _AI = (() => {
             _aiStatusChip.textContent = label;
             _aiStatusChip.className = 'ai-status-chip ai-status-' + state;
             _aiStatusChip.hidden = (state === 'idle');
+        }
+
+        /* Rainbow glow — on when AI is alive, off when idle/error */
+        if (_aiVideoWrap) {
+            const glowOn = (state === 'connecting' || state === 'active' || state === 'speaking');
+            _aiVideoWrap.classList.toggle('ai-glow', glowOn);
         }
     }
 
@@ -482,6 +488,7 @@ const _AI = (() => {
         _aiKeyConfirm     = document.getElementById('aiKeyConfirm');
         _aiKeyCancel      = document.getElementById('aiKeyCancel');
         _aiStatusChip     = document.getElementById('aiStatusChip');
+        _aiVideoWrap      = document.getElementById('aiVideoWrap');
 
         if (!_aiBtn) return; // scan not in DOM yet — safe to skip
 

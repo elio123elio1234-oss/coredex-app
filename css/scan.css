@@ -41,6 +41,59 @@
     50%       { opacity: 0.3; }
 }
 
+/* ---- AI Glow wrapper ---- */
+.ai-video-wrap {
+    position: relative;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@property --glow-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+.ai-video-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: calc(var(--radius-lg) + 5px);
+    background: conic-gradient(
+        from var(--glow-angle),
+        #ff4d4d, #ff8800, #ffe600,
+        #44dd66, #00aaff, #8844ff,
+        #ff44cc, #ff4d4d
+    );
+    filter: blur(14px);
+    opacity: 0;
+    z-index: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
+
+.ai-video-wrap.ai-glow::before {
+    opacity: 0.85;
+    animation: aiGlowSpin 4s linear infinite,
+               aiGlowBreath 2.4s ease-in-out infinite;
+}
+
+@keyframes aiGlowSpin {
+    from { --glow-angle: 0deg;   }
+    to   { --glow-angle: 360deg; }
+}
+@keyframes aiGlowBreath {
+    0%,100% { filter: blur(12px); opacity: 0.75; }
+    50%     { filter: blur(20px); opacity: 1;    }
+}
+
+.ai-video-wrap .video-card {
+    position: relative;
+    z-index: 1;
+}
+
 /* ---- Video card ---- */
 .video-card {
     position: relative;
