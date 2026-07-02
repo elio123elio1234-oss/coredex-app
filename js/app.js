@@ -34,6 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     /* 6. Mode toggle inside scan view */
     document.getElementById('toggleBtn').addEventListener('click', toggleScanMode);
 
+    /* 6b. Hide/show skeleton+dots overlay */
+    document.getElementById('hideOverlayBtn').addEventListener('click', toggleOverlay);
+
     /* 7. AI Realtime Guide feature */
     _AI.init();
 });

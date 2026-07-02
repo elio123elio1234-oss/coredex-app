@@ -86,6 +86,20 @@ const CONNECTIONS = {
 /* ---- Electrode mode ---- */
 let _electrodeMode = false;
 
+/* ---- Overlay visibility ---- */
+let _overlayHidden = false;
+
+function toggleOverlay() {
+    _overlayHidden = !_overlayHidden;
+    const btn = document.getElementById('hideOverlayBtn');
+    if (!btn) return;
+    btn.classList.toggle('active', _overlayHidden);
+    btn.title = _overlayHidden ? 'Show overlays' : 'Hide overlays';
+    // swap icon: eye ↔ eye-off
+    btn.querySelector('.icon-eye').style.display     = _overlayHidden ? 'none'   : 'block';
+    btn.querySelector('.icon-eye-off').style.display = _overlayHidden ? 'block'  : 'none';
+}
+
 function toggleScanMode() {
     _electrodeMode = !_electrodeMode;
     _renderModeButton();
@@ -283,11 +297,13 @@ function _renderLoop() {
 
     _computeVirtualPoints();
 
-    if (_electrodeMode) {
-        const elec = _computeElectrodes();
-        if (elec) _drawElectrodes(elec, scale);
-    } else {
-        _drawSkeleton(scale);
+    if (!_overlayHidden) {
+        if (_electrodeMode) {
+            const elec = _computeElectrodes();
+            if (elec) _drawElectrodes(elec, scale);
+        } else {
+            _drawSkeleton(scale);
+        }
     }
 
     _sendFrame();
