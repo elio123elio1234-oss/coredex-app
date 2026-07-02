@@ -114,13 +114,11 @@ const _AI = (() => {
             console.log('[AI Realtime] WebSocket open — sending setup…');
             _ws.send(JSON.stringify({
                 setup: {
-                    model: 'models/gemini-live-2.5-flash-preview',
-                    generationConfig: {
-                        responseModalities: ['AUDIO'],
-                        speechConfig: {
-                            voiceConfig: {
-                                prebuiltVoiceConfig: { voiceName: 'Aoede' }
-                            }
+                    model: 'models/gemini-3.1-flash-live-preview',
+                    responseModalities: ['AUDIO'],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: 'Aoede' }
                         }
                     },
                     systemInstruction: {
@@ -317,10 +315,10 @@ const _AI = (() => {
 
                 _ws.send(JSON.stringify({
                     realtimeInput: {
-                        mediaChunks: [{
-                            mimeType: 'audio/pcm;rate=16000',
-                            data: _bufToBase64(pcm16.buffer)
-                        }]
+                        audio: {
+                            data: _bufToBase64(pcm16.buffer),
+                            mimeType: 'audio/pcm;rate=16000'
+                        }
                     }
                 }));
             };
@@ -379,7 +377,10 @@ const _AI = (() => {
 
         _ws.send(JSON.stringify({
             realtimeInput: {
-                mediaChunks: [{ mimeType: 'image/jpeg', data: base64 }]
+                video: {
+                    data: base64,
+                    mimeType: 'image/jpeg'
+                }
             }
         }));
     }
