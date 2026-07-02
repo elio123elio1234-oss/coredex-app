@@ -41,59 +41,57 @@
     50%       { opacity: 0.3; }
 }
 
-/* ---- AI Glow wrapper ---- */
+/* ---- AI Glow wrapper ----
+   IMPORTANT: Do NOT use isolation:isolate here — it breaks canvas
+   compositing and hides the ONNX electrode circles drawn on #outputCanvas.
+   Instead, z-index:0 on a positioned element creates the needed stacking
+   context without interfering with canvas GPU layers.
+---- */
 .ai-video-wrap {
     position: relative;
+    z-index: 0;       /* stacking context — keeps ::before z-index:-1 contained */
     border-radius: var(--radius-lg);
-    isolation: isolate;       /* creates stacking context */
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .ai-video-wrap::before {
     content: '';
     position: absolute;
-    inset: -14px;              /* must be larger than blur radius */
+    inset: -14px;
     border-radius: calc(var(--radius-lg) + 14px);
     background: conic-gradient(
-        #ff4d4d 0%,
-        #ff8800 16%,
-        #ffe600 30%,
-        #44dd66 45%,
-        #00aaff 60%,
-        #8844ff 74%,
-        #ff44cc 88%,
-        #ff4d4d 100%
+        #ff4d4d 0%, #ff8800 16%, #ffe600 30%,
+        #44dd66 45%, #00aaff 60%, #8844ff 74%,
+        #ff44cc 88%, #ff4d4d 100%
     );
-    filter: blur(18px) hue-rotate(0deg);
+    /* NO filter here — blur on inactive element costs GPU even at opacity:0 */
     opacity: 0;
-    z-index: -1;               /* behind video-card (isolation: isolate keeps it contained) */
+    z-index: -1;
     transition: opacity 0.55s ease;
     pointer-events: none;
 }
 
+/* Only show when AI is SPEAKING — subtle, not blinding */
 .ai-video-wrap.ai-glow::before {
-    opacity: 0.82;
+    opacity: 0.55;
     animation:
         aiGlowHue    4s linear        infinite,
-        aiGlowBreath 2.4s ease-in-out infinite;
+        aiGlowBreath 2.5s ease-in-out infinite;
 }
 
-/* Cycle all hues — works in every modern browser, no @property needed */
+/* aiGlowHue  → animates filter only */
 @keyframes aiGlowHue {
-    from { filter: blur(18px) hue-rotate(0deg);   }
-    to   { filter: blur(18px) hue-rotate(360deg); }
+    from { filter: blur(16px) hue-rotate(0deg);   }
+    to   { filter: blur(16px) hue-rotate(360deg); }
 }
-
+/* aiGlowBreath → animates opacity only (no filter conflict) */
 @keyframes aiGlowBreath {
-    0%,100% { opacity: 0.72; filter: blur(16px) hue-rotate(var(--_h,0deg)); }
-    50%     { opacity: 1;    filter: blur(26px) hue-rotate(var(--_h,0deg)); }
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 0.62; }
 }
 
 .ai-video-wrap .video-card {
     position: relative;
-    z-index: 0;
+    z-index: 1;
 }
 
 /* ---- Video card ---- */

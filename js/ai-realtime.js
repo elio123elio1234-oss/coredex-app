@@ -82,10 +82,9 @@ const _AI = (() => {
             _aiStatusChip.hidden = (state === 'idle');
         }
 
-        /* Rainbow glow — on when AI is alive, off when idle/error */
+        /* Rainbow glow — ONLY when AI is audibly speaking */
         if (_aiVideoWrap) {
-            const glowOn = (state === 'connecting' || state === 'active' || state === 'speaking');
-            _aiVideoWrap.classList.toggle('ai-glow', glowOn);
+            _aiVideoWrap.classList.toggle('ai-glow', state === 'speaking');
         }
     }
 
