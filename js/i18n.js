@@ -100,7 +100,7 @@ function t(key) {
 function applyLang(lang) {
     if (!LANG_META[lang]) lang = DEFAULT_LANG;
     _currentLang = lang;
-    localStorage.setItem('coredex-lang', lang);
+    localStorage.setItem('cyphix-lang', lang);
     document.documentElement.lang = lang;
     document.documentElement.dir  = LANG_META[lang].dir;
 
@@ -114,6 +114,6 @@ function applyLang(lang) {
 
 /** Read saved preference (or system default) and apply on page load. */
 function initLang() {
-    const saved = localStorage.getItem('coredex-lang');
+    const saved = localStorage.getItem('cyphix-lang');
     applyLang(saved && LANG_META[saved] ? saved : DEFAULT_LANG);
 }

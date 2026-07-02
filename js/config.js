@@ -6,7 +6,7 @@
    BACKEND INTEGRATION
    -------------------
    When a backend is ready, set backendUrl to the
-   API root (e.g. 'https://api.coredex.example.com').
+   API root (e.g. 'https://api.cyphix.example.com').
    Then implement syncSessionToBackend() below.
    ================================================== */
 
