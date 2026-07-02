@@ -94,10 +94,10 @@ function toggleOverlay() {
     const btn = document.getElementById('hideOverlayBtn');
     if (!btn) return;
     btn.classList.toggle('active', _overlayHidden);
-    btn.title = _overlayHidden ? 'Show overlays' : 'Hide overlays';
-    // swap icon: eye ↔ eye-off
-    btn.querySelector('.icon-eye').style.display     = _overlayHidden ? 'none'   : 'block';
-    btn.querySelector('.icon-eye-off').style.display = _overlayHidden ? 'block'  : 'none';
+    const lbl = btn.querySelector('span');
+    if (lbl) lbl.textContent = _overlayHidden ? 'Show' : 'Hide';
+    btn.querySelector('.icon-eye').style.display     = _overlayHidden ? 'none'  : '';
+    btn.querySelector('.icon-eye-off').style.display = _overlayHidden ? ''      : 'none';
 }
 
 function toggleScanMode() {
