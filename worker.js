@@ -2,12 +2,12 @@ importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js');
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
 
 let session;
-const inputSize = 416;
+const inputSize = 640;
 
 async function initModel() {
     try {
-        // --- התיקון: החזרת 'webgpu' למקום הראשון כדי להאיץ את הביצועים חזרה ---
-        session = await ort.InferenceSession.create('best.onnx', { executionProviders: ['webgpu', 'webgl', 'wasm'] });
+        // --- v21: מודל חדש עם imgsz=640 ---
+        session = await ort.InferenceSession.create('best_v21.onnx', { executionProviders: ['webgpu', 'webgl', 'wasm'] });
         postMessage({ status: 'loaded' });
     } catch (e) {
         console.error("שגיאה בטעינת המודל: ", e);

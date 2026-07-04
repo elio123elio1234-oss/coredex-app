@@ -14,7 +14,7 @@ const _ctx       = _canvas.getContext('2d');
 const _overlay   = document.getElementById('scanOverlay');
 
 /* ---- Worker & model state ---- */
-const _worker = new Worker('worker.js');
+const _worker = new Worker('worker.js?v=21');
 let _workerBusy  = false;
 let _modelReady  = false;
 let _modelState  = 'initializing'; // 'initializing' | 'ready' | 'error'
@@ -58,8 +58,8 @@ _worker.onmessage = (e) => {
 
 /* ---- Offscreen canvas for frame extraction ---- */
 const _tmpCanvas = document.createElement('canvas');
-_tmpCanvas.width  = 416;
-_tmpCanvas.height = 416;
+_tmpCanvas.width  = 640;
+_tmpCanvas.height = 640;
 const _tmpCtx = _tmpCanvas.getContext('2d', { willReadFrequently: true });
 
 /* ---- Keypoint state ---- */
@@ -148,8 +148,8 @@ function _stopCamera() {
 /* ---- Frame dispatch ---- */
 function _sendFrame() {
     if (_workerBusy || !_modelReady) return;
-    _tmpCtx.drawImage(_video, 0, 0, 416, 416);
-    const img = _tmpCtx.getImageData(0, 0, 416, 416);
+    _tmpCtx.drawImage(_video, 0, 0, 640, 640);
+    const img = _tmpCtx.getImageData(0, 0, 640, 640);
     _workerBusy = true;
     _worker.postMessage({ type: 'frame', imgData: img }, [img.data.buffer]);
 }
