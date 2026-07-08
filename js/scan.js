@@ -14,7 +14,7 @@ const _ctx       = _canvas.getContext('2d');
 const _overlay   = document.getElementById('scanOverlay');
 
 /* ---- Worker & model state ---- */
-const _worker = new Worker('worker.js?v=24');
+const _worker = new Worker('worker.js?v=23');
 let _workerBusy  = false;
 let _modelReady  = false;
 let _modelState  = 'initializing'; // 'initializing' | 'ready' | 'error'
@@ -42,21 +42,10 @@ _worker.onmessage = (e) => {
         _modelState = 'ready';
         _updateModelStatus();
     } else if (e.data.type === 'results') {
-        for (let i = 0; i < 16; i++) {
-            const pt = e.data.kpts[i];
-            if (pt) {
-                const cx = (pt.x / 640) * _canvas.width;
-                const cy = (pt.y / 480) * _canvas.height;
-                _targetKpts[i] = {
-                    x: _kfFilters[i].x.update(cx),
-                    y: _kfFilters[i].y.update(cy)
-                };
-            } else {
-                _targetKpts[i] = null;
-                _kfFilters[i].x.reset();
-                _kfFilters[i].y.reset();
-            }
-        }
+        _targetKpts = e.data.kpts.map(pt => pt
+            ? { x: (pt.x / 640) * _canvas.width, y: (pt.y / 480) * _canvas.height }
+            : null
+        );
         setTimeout(() => { _workerBusy = false; }, 20);
     } else if (e.data.type === 'error') {
         _modelState = 'error';
@@ -67,34 +56,7 @@ _worker.onmessage = (e) => {
     }
 };
 
-/* ---- Kalman Filter 1D ---- */
-// Reduces keypoint jitter without killing real motion.
-// Q = process noise (how fast the true position can change)
-// R = measurement noise (how noisy the model output is)
-class KalmanFilter1D {
-    constructor(Q = 1, R = 20) {
-        this.Q = Q; this.R = R;
-        this.x = 0; this.P = 1;
-        this.ready = false;
-    }
-    update(z) {
-        if (!this.ready) { this.x = z; this.ready = true; return z; }
-        const P_pred = this.P + this.Q;
-        const K      = P_pred / (P_pred + this.R);
-        this.x = this.x + K * (z - this.x);
-        this.P = (1 - K) * P_pred;
-        return this.x;
-    }
-    reset() { this.ready = false; this.P = 1; }
-}
-
-// 16 keypoints × {x, y}
-const _kfFilters = Array.from({ length: 16 }, () => ({
-    x: new KalmanFilter1D(),
-    y: new KalmanFilter1D()
-}));
-
-
+/* ---- Offscreen canvas for frame extraction ---- */
 const _tmpCanvas = document.createElement('canvas');
 _tmpCanvas.width  = 640;
 _tmpCanvas.height = 640;
