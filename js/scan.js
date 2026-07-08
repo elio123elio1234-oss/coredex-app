@@ -14,7 +14,7 @@ const _ctx       = _canvas.getContext('2d');
 const _overlay   = document.getElementById('scanOverlay');
 
 /* ---- Worker & model state ---- */
-const _worker = new Worker('worker.js?v=21');
+const _worker = new Worker('worker.js?v=22');
 let _workerBusy  = false;
 let _modelReady  = false;
 let _modelState  = 'initializing'; // 'initializing' | 'ready' | 'error'

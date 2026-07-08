@@ -6,8 +6,8 @@ const inputSize = 640;
 
 async function initModel() {
     try {
-        // --- v21: מודל חדש עם imgsz=640 ---
-        session = await ort.InferenceSession.create('best_v21.onnx', { executionProviders: ['webgpu', 'webgl', 'wasm'] });
+        // --- v22: מודל חדש עם imgsz=640 ---
+        session = await ort.InferenceSession.create('best_v22.onnx', { executionProviders: ['webgpu', 'webgl', 'wasm'] });
         postMessage({ status: 'loaded' });
     } catch (e) {
         console.error("שגיאה בטעינת המודל: ", e);
