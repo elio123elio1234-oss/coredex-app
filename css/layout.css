@@ -37,21 +37,22 @@ button { cursor: pointer; }
     transition: background .25s ease, border-color .25s ease, transform .25s ease;
 }
 
-/* Brand bar — always dark navy so the canvas logo pops */
+/* Brand bar — white background for the logo */
 .brand {
-    background: #0A2540;
+    background: #ffffff;
     height: 68px;
     display: flex;
     align-items: center;
     padding-inline: 16px;
     flex-shrink: 0;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .brand-logo {
     display: block;
-    width: 184px;
     height: 38px;
-    max-width: 100%;
+    width: auto;
+    max-width: 220px;
     object-fit: contain;
 }
 
