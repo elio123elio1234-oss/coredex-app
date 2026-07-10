@@ -65,35 +65,7 @@ const _tmpCtx = _tmpCanvas.getContext('2d', { willReadFrequently: true });
 /* ---- Keypoint state ---- */
 let _smoothedKpts = new Array(23).fill(null);
 let _targetKpts   = new Array(16).fill(null);
-
-/* ---- 1D Kalman filter per keypoint per axis ----
-   Q  = process noise  (raise if tracking feels laggy)
-   R  = measurement noise (raise for less jitter, lower for faster lock-on)
-   P0 = initial covariance
-   Absence > 12 frames → full reset so the filter snaps to the new position
-   instead of slowly drifting from a stale estimate.
-------------------------------------------------- */
-const KF_Q  = 0.8;
-const KF_R  = 22;
-const KF_P0 = 15;
-
-const _kfX = Array.from({ length: 16 }, () => ({ hat: null, P: KF_P0, absent: 0 }));
-const _kfY = Array.from({ length: 16 }, () => ({ hat: null, P: KF_P0, absent: 0 }));
-
-function _kalman1(state, z) {
-    if (state.hat === null) { state.hat = z; state.P = KF_P0; state.absent = 0; return z; }
-    state.absent = 0;
-    const P_pred  = state.P + KF_Q;
-    const K       = P_pred / (P_pred + KF_R);
-    state.hat    += K * (z - state.hat);
-    state.P       = (1 - K) * P_pred;
-    return state.hat;
-}
-
-function _resetFilters() {
-    _kfX.forEach(s => { s.hat = null; s.P = KF_P0; s.absent = 0; });
-    _kfY.forEach(s => { s.hat = null; s.P = KF_P0; s.absent = 0; });
-}
+const SMOOTHING   = 0.35;
 
 /* ---- Skeleton connection groups ---- */
 const CONNECTIONS = {
@@ -312,18 +284,14 @@ function _renderLoop() {
 
     for (let i = 0; i < 16; i++) {
         if (_targetKpts[i]) {
-            _smoothedKpts[i] = {
-                x: _kalman1(_kfX[i], _targetKpts[i].x),
-                y: _kalman1(_kfY[i], _targetKpts[i].y)
-            };
+            if (!_smoothedKpts[i]) {
+                _smoothedKpts[i] = { ..._targetKpts[i] };
+            } else {
+                _smoothedKpts[i].x += SMOOTHING * (_targetKpts[i].x - _smoothedKpts[i].x);
+                _smoothedKpts[i].y += SMOOTHING * (_targetKpts[i].y - _smoothedKpts[i].y);
+            }
         } else {
             _smoothedKpts[i] = null;
-            // Grow uncertainty while absent; reset fully after 12 missed frames
-            _kfX[i].absent++;
-            _kfY[i].absent++;
-            _kfX[i].P = Math.min(_kfX[i].P + KF_Q, KF_P0 * 4);
-            _kfY[i].P = Math.min(_kfY[i].P + KF_Q, KF_P0 * 4);
-            if (_kfX[i].absent > 12) { _kfX[i].hat = null; _kfY[i].hat = null; }
         }
     }
 
@@ -358,5 +326,4 @@ function exitScan() {
     _overlay.hidden = true;
     _smoothedKpts = new Array(23).fill(null);
     _targetKpts   = new Array(16).fill(null);
-    _resetFilters();
 }
