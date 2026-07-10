@@ -47,6 +47,14 @@ button { cursor: pointer; }
     flex-shrink: 0;
 }
 
+.brand-logo {
+    display: block;
+    width: 184px;
+    height: 38px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 /* Session status card */
 .session-card {
     margin: 16px;
