@@ -54,7 +54,7 @@ button { cursor: pointer; }
     border-bottom-color: rgba(255,255,255,0.06);
 }
 [data-theme="dark"] .brand-logo #logo-blob    { fill: #ffffff; filter: none; }
-[data-theme="dark"] .brand-logo #logo-dot     { fill: var(--accent); }
+[data-theme="dark"] .brand-logo #logo-dot     { fill: #0A2540; }
 [data-theme="dark"] .brand-logo #logo-cyphix  { fill: #ffffff; }
 [data-theme="dark"] .brand-logo #logo-medical { fill: rgba(255,255,255,0.5); }
 
