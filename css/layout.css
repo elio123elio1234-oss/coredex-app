@@ -53,17 +53,20 @@ button { cursor: pointer; }
     background: #0A2540;
     border-bottom-color: rgba(255,255,255,0.06);
 }
-[data-theme="dark"] .brand-logo {
-    filter: brightness(0) invert(1);
-}
+[data-theme="dark"] .brand-logo #logo-blob    { fill: #ffffff; filter: none; }
+[data-theme="dark"] .brand-logo #logo-dot     { fill: #4C8DFF; }
+[data-theme="dark"] .brand-logo #logo-cyphix  { fill: #ffffff; }
+[data-theme="dark"] .brand-logo #logo-medical { fill: rgba(255,255,255,0.5); }
 
 .brand-logo {
     display: block;
     height: 42px;
     width: auto;
     max-width: 240px;
-    object-fit: contain;
-    object-position: left center;
+}
+.brand-logo path,
+.brand-logo circle {
+    transition: fill .25s ease;
 }
 
 /* Session status card */
