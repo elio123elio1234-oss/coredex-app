@@ -14,8 +14,7 @@ const float32Data = new Float32Array(3 * inputSize * inputSize);
 async function initModel() {
     try {
         // v22: WebGPU high-perf → WebGL → WASM multi-thread
-        const modelUrl = new URL('models/onnx/best_v22.onnx', self.location.href).href;
-        session = await ort.InferenceSession.create(modelUrl, {
+        session = await ort.InferenceSession.create('best_v26.onnx', {
             executionProviders: [
                 { name: 'webgpu', powerPreference: 'high-performance' },
                 'webgl',
