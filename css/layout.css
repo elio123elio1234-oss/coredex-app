@@ -50,10 +50,11 @@ button { cursor: pointer; }
 
 .brand-logo {
     display: block;
-    height: 38px;
+    height: 42px;
     width: auto;
-    max-width: 220px;
+    max-width: 240px;
     object-fit: contain;
+    object-position: left center;
 }
 
 /* Session status card */
