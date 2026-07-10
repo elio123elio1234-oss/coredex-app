@@ -65,7 +65,41 @@ const _tmpCtx = _tmpCanvas.getContext('2d', { willReadFrequently: true });
 /* ---- Keypoint state ---- */
 let _smoothedKpts = new Array(23).fill(null);
 let _targetKpts   = new Array(16).fill(null);
-const SMOOTHING   = 0.35;
+
+/* ---- 1€ Filter (Casiez et al. 2012) ---- */
+// minCutoff: Hz — lower = less jitter when still, more lag when moving
+// beta:      speed coefficient — higher = faster response to real movement
+// dCutoff:   derivative cutoff (usually 1.0 Hz)
+const EURO_MIN_CUTOFF = 1.5;
+const EURO_BETA       = 0.01;
+const EURO_D_CUTOFF   = 1.0;
+
+function _euroAlpha(te, cutoff) {
+    const tau = 1 / (2 * Math.PI * cutoff);
+    return 1 / (1 + tau / te);
+}
+
+const _kfX = Array.from({ length: 16 }, () => ({ hat: null, dHat: 0, t: null }));
+const _kfY = Array.from({ length: 16 }, () => ({ hat: null, dHat: 0, t: null }));
+
+function _euro1(state, raw, now) {
+    if (state.hat === null) { state.hat = raw; state.t = now; return raw; }
+    const te = (now - state.t) / 1000;
+    if (te <= 0) return state.hat;
+    state.t = now;
+    const dRaw   = (raw - state.hat) / te;
+    const aDeriv = _euroAlpha(te, EURO_D_CUTOFF);
+    state.dHat   = aDeriv * dRaw + (1 - aDeriv) * state.dHat;
+    const cutoff = EURO_MIN_CUTOFF + EURO_BETA * Math.abs(state.dHat);
+    const alpha  = _euroAlpha(te, cutoff);
+    state.hat    = alpha * raw + (1 - alpha) * state.hat;
+    return state.hat;
+}
+
+function _resetFilters() {
+    _kfX.forEach(s => { s.hat = null; s.dHat = 0; s.t = null; });
+    _kfY.forEach(s => { s.hat = null; s.dHat = 0; s.t = null; });
+}
 
 /* ---- Skeleton connection groups ---- */
 const CONNECTIONS = {
@@ -282,16 +316,17 @@ function _renderLoop() {
     _ctx.drawImage(_video, 0, 0, _canvas.width, _canvas.height);
     const scale = _canvas.height / 480;
 
+    const _now = performance.now();
     for (let i = 0; i < 16; i++) {
         if (_targetKpts[i]) {
-            if (!_smoothedKpts[i]) {
-                _smoothedKpts[i] = { ..._targetKpts[i] };
-            } else {
-                _smoothedKpts[i].x += SMOOTHING * (_targetKpts[i].x - _smoothedKpts[i].x);
-                _smoothedKpts[i].y += SMOOTHING * (_targetKpts[i].y - _smoothedKpts[i].y);
-            }
+            _smoothedKpts[i] = {
+                x: _euro1(_kfX[i], _targetKpts[i].x, _now),
+                y: _euro1(_kfY[i], _targetKpts[i].y, _now)
+            };
         } else {
             _smoothedKpts[i] = null;
+            _kfX[i].hat = null;
+            _kfY[i].hat = null;
         }
     }
 
@@ -326,4 +361,5 @@ function exitScan() {
     _overlay.hidden = true;
     _smoothedKpts = new Array(23).fill(null);
     _targetKpts   = new Array(16).fill(null);
+    _resetFilters();
 }
