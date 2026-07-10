@@ -48,6 +48,15 @@ button { cursor: pointer; }
     border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
+/* Dark mode: flip brand bar to navy, invert logo to white */
+[data-theme="dark"] .brand {
+    background: #0A2540;
+    border-bottom-color: rgba(255,255,255,0.06);
+}
+[data-theme="dark"] .brand-logo {
+    filter: brightness(0) invert(1);
+}
+
 .brand-logo {
     display: block;
     height: 42px;
