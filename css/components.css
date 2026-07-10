@@ -147,3 +147,86 @@ select.lang-select {
     border-radius: 999px;
 }
 .badge-pill svg { width: 14px; height: 14px; }
+
+/* ---- Loading Screen ---- */
+#loadingScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: opacity .7s ease;
+}
+#loadingScreen.loading-fade-out { opacity: 0; pointer-events: none; }
+.loading-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(80px);
+}
+.loading-blob-1 {
+    top: -20%; left: -10%;
+    width: 50vw; height: 50vw;
+    background: rgba(219,234,254,.5);
+}
+.loading-blob-2 {
+    top: 60%; right: -10%;
+    width: 40vw; height: 40vw;
+    background: rgba(122,130,158,.2);
+}
+.loading-body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+}
+.loading-logo-wrap {
+    width: 88vw;
+    max-width: 960px;
+    filter: drop-shadow(0 16px 48px rgba(13,32,65,.13));
+}
+.loading-logo-svg { width: 100%; height: auto; display: block; }
+
+/* ---- Orbit Spinner ---- */
+.orbit-spinner {
+    position: relative;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    perspective: 800px;
+}
+.orbit-spinner .orbit {
+    position: absolute;
+    box-sizing: border-box;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+}
+.orbit-spinner .orbit:nth-child(1) {
+    animation: orbit-spin-1 2s linear infinite;
+    border-bottom: 3px solid #0d2041;
+}
+.orbit-spinner .orbit:nth-child(2) {
+    animation: orbit-spin-2 2s linear infinite;
+    border-right: 3px solid #7a829e;
+}
+.orbit-spinner .orbit:nth-child(3) {
+    animation: orbit-spin-3 2s linear infinite;
+    border-top: 3px solid #0d2041;
+}
+@keyframes orbit-spin-1 {
+    0%   { transform: rotateX(35deg) rotateY(-45deg) rotateZ(0deg); }
+    100% { transform: rotateX(35deg) rotateY(-45deg) rotateZ(360deg); }
+}
+@keyframes orbit-spin-2 {
+    0%   { transform: rotateX(50deg) rotateY(10deg) rotateZ(0deg); }
+    100% { transform: rotateX(50deg) rotateY(10deg) rotateZ(360deg); }
+}
+@keyframes orbit-spin-3 {
+    0%   { transform: rotateX(35deg) rotateY(55deg) rotateZ(0deg); }
+    100% { transform: rotateX(35deg) rotateY(55deg) rotateZ(360deg); }
+}
