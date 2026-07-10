@@ -66,39 +66,33 @@ const _tmpCtx = _tmpCanvas.getContext('2d', { willReadFrequently: true });
 let _smoothedKpts = new Array(23).fill(null);
 let _targetKpts   = new Array(16).fill(null);
 
-/* ---- 1€ Filter (Casiez et al. 2012) ---- */
-// minCutoff: Hz — lower = less jitter when still, more lag when moving
-// beta:      speed coefficient — higher = faster response to real movement
-// dCutoff:   derivative cutoff (usually 1.0 Hz)
-const EURO_MIN_CUTOFF = 1.5;
-const EURO_BETA       = 0.01;
-const EURO_D_CUTOFF   = 1.0;
+/* ---- 1D Kalman filter per keypoint per axis ----
+   Q  = process noise  (raise if tracking feels laggy)
+   R  = measurement noise (raise for less jitter, lower for faster lock-on)
+   P0 = initial covariance
+   Absence > 12 frames → full reset so the filter snaps to the new position
+   instead of slowly drifting from a stale estimate.
+------------------------------------------------- */
+const KF_Q  = 0.8;
+const KF_R  = 22;
+const KF_P0 = 15;
 
-function _euroAlpha(te, cutoff) {
-    const tau = 1 / (2 * Math.PI * cutoff);
-    return 1 / (1 + tau / te);
-}
+const _kfX = Array.from({ length: 16 }, () => ({ hat: null, P: KF_P0, absent: 0 }));
+const _kfY = Array.from({ length: 16 }, () => ({ hat: null, P: KF_P0, absent: 0 }));
 
-const _kfX = Array.from({ length: 16 }, () => ({ hat: null, dHat: 0, t: null }));
-const _kfY = Array.from({ length: 16 }, () => ({ hat: null, dHat: 0, t: null }));
-
-function _euro1(state, raw, now) {
-    if (state.hat === null) { state.hat = raw; state.t = now; return raw; }
-    const te = (now - state.t) / 1000;
-    if (te <= 0) return state.hat;
-    state.t = now;
-    const dRaw   = (raw - state.hat) / te;
-    const aDeriv = _euroAlpha(te, EURO_D_CUTOFF);
-    state.dHat   = aDeriv * dRaw + (1 - aDeriv) * state.dHat;
-    const cutoff = EURO_MIN_CUTOFF + EURO_BETA * Math.abs(state.dHat);
-    const alpha  = _euroAlpha(te, cutoff);
-    state.hat    = alpha * raw + (1 - alpha) * state.hat;
+function _kalman1(state, z) {
+    if (state.hat === null) { state.hat = z; state.P = KF_P0; state.absent = 0; return z; }
+    state.absent = 0;
+    const P_pred  = state.P + KF_Q;
+    const K       = P_pred / (P_pred + KF_R);
+    state.hat    += K * (z - state.hat);
+    state.P       = (1 - K) * P_pred;
     return state.hat;
 }
 
 function _resetFilters() {
-    _kfX.forEach(s => { s.hat = null; s.dHat = 0; s.t = null; });
-    _kfY.forEach(s => { s.hat = null; s.dHat = 0; s.t = null; });
+    _kfX.forEach(s => { s.hat = null; s.P = KF_P0; s.absent = 0; });
+    _kfY.forEach(s => { s.hat = null; s.P = KF_P0; s.absent = 0; });
 }
 
 /* ---- Skeleton connection groups ---- */
@@ -316,17 +310,20 @@ function _renderLoop() {
     _ctx.drawImage(_video, 0, 0, _canvas.width, _canvas.height);
     const scale = _canvas.height / 480;
 
-    const _now = performance.now();
     for (let i = 0; i < 16; i++) {
         if (_targetKpts[i]) {
             _smoothedKpts[i] = {
-                x: _euro1(_kfX[i], _targetKpts[i].x, _now),
-                y: _euro1(_kfY[i], _targetKpts[i].y, _now)
+                x: _kalman1(_kfX[i], _targetKpts[i].x),
+                y: _kalman1(_kfY[i], _targetKpts[i].y)
             };
         } else {
             _smoothedKpts[i] = null;
-            _kfX[i].hat = null;
-            _kfY[i].hat = null;
+            // Grow uncertainty while absent; reset fully after 12 missed frames
+            _kfX[i].absent++;
+            _kfY[i].absent++;
+            _kfX[i].P = Math.min(_kfX[i].P + KF_Q, KF_P0 * 4);
+            _kfY[i].P = Math.min(_kfY[i].P + KF_Q, KF_P0 * 4);
+            if (_kfX[i].absent > 12) { _kfX[i].hat = null; _kfY[i].hat = null; }
         }
     }
 
