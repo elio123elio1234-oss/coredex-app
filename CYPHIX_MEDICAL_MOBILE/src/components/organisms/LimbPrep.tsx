@@ -6,25 +6,41 @@
    Then the live screen takes over, where touching the watch with the
    other hand arms the recording on its own (step 3, no confirmation).
 
-   ── THE PICTURES ARE THE WEB'S OWN PHOTOGRAPHS ──
-   These are patient instructions: someone shown a photograph on the web
-   and a line drawing on the phone is being told two different things
-   about how to hold a medical device. `assets/guides/` carries the same
-   JPEGs (1100 × ~615, so ≈ 1.79 — near 16:9).
+   ══ THE LAYOUT IS THE WEB'S, COLUMN FOR COLUMN ══
+   `.prep-stage` in tests.css is one vertical stack, and this is that
+   stack:
 
-   ── THE FRAME IS SIZED TO THE PHOTOGRAPH, NOT THE OTHER WAY ROUND ──
-   Every earlier version picked a frame from the layout (a viewport
-   fraction, then a flex remainder) and let `contain` letterbox the photo
-   inside it. In landscape that frame came out about 1.12 wide-to-tall
-   against a 1.79 photo, so the picture shrank into the middle with wide
-   empty bands — "the image doesn't fit its box".
+        ┌──────────────────────────────────────────┐
+        │ Exit                          Step 1 of 2│  .prep-top
+        ├──────────────────────────────────────────┤
+        │                                          │
+        │            ┌──────────────┐              │  .prep-body
+        │            │   16:9 photo │              │   (flex 1,
+        │            └──────────────┘              │    centred)
+        │        Wear the watch on your …          │
+        │                 ●  ○                     │
+        │                                          │
+        ├──────────────────────────────────────────┤
+        │        ✓  The watch is on my left wrist  │  .prep-confirm
+        └──────────────────────────────────────────┘
 
-   Now the available box is MEASURED (`onLayout`, so no duplicated padding
-   maths), the photo's true aspect comes from the asset itself
-   (`Image.resolveAssetSource`, so it stays correct if the artwork is
-   replaced), and the frame is the largest rectangle of THAT aspect which
-   fits. The photo fills the frame edge to edge: nothing letterboxed,
-   nothing cropped.
+   An earlier version put the picture in a left column with the button
+   in a right rail whenever the stage was landscape. The exam is ALWAYS
+   landscape, so that rail was the layout the patient always got: a
+   picture off to one side, a button floating beside it and the Exit
+   link stranded in the middle of the screen. It is gone. One stack, one
+   instruction, one big button — the same thing an elderly patient sees
+   on the web.
+
+   ══ WHY THE PICTURE FITS NOW ══
+   The frame is a plain 16:9 rectangle, exactly like `.prep-image`
+   (`width: min(94vw, 600px); aspect-ratio: 16/9`), fitted into the slot
+   that is actually left over after the fixed rows. Nothing is derived
+   from `Image.resolveAssetSource` any more: when that returned nothing
+   useful the frame's shape came out wrong and `overflow: hidden` then
+   clipped the photo to a corner. The frame's shape is now a constant, so
+   it cannot be wrong, and `contain` guarantees the whole photograph is
+   inside it.
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
@@ -37,28 +53,28 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import PatientShell from '@/components/templates/PatientShell';
 import { LIMB_PREP_IMAGES } from '@/config/measurementGuides';
 import { useTheme } from '@/theme/useTheme';
-import { fitBox } from '@/utils/fitBox';
 
 interface Props {
   onDone: () => void;
   onExit: () => void;
 }
 
-/**
- * Room the text column needs beside the picture before it starts to crowd.
- * Kept tight on purpose: the photograph is width-limited in this layout, so
- * every pixel taken here comes straight out of the instruction picture.
- */
-const SIDE_MIN_W = 260;
-const GAP = 16;
-/** Portrait: the picture may not eat more than this much of the column. */
-const PORTRAIT_MAX_H = 0.52;
+/** `.prep-image { width: min(94vw, 600px); aspect-ratio: 16/9 }` */
+const IMAGE_MAX_W = 600;
+const IMAGE_W_FRACTION = 0.94;
+const IMAGE_ASPECT = 16 / 9;
+/** `.prep-image { max-height: 54vh }` */
+const IMAGE_MAX_H_FRACTION = 0.54;
+/** `.prep-confirm { width: min(92vw, 520px) }` */
+const CONFIRM_MAX_W = 520;
+const CONFIRM_W_FRACTION = 0.92;
 
-/** The web's CheckIcon, at the size `.prep-confirm` uses. */
+/** The web's CheckIcon at the size `.prep-confirm` uses. */
 function CheckIcon({ size = 22, color = '#FFFFFF' }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -89,185 +105,211 @@ const STEPS = [
 
 export default function LimbPrep({ onDone, onExit }: Props) {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
-  const [box, setBox] = useState({ width: 0, height: 0 });
+  /** The whole stage, for the viewport-relative sizes the web uses. */
+  const [stage, setStage] = useState({ width: 0, height: 0 });
+  /** What the picture actually has left after the title, dots and button. */
+  const [slot, setSlot] = useState({ width: 0, height: 0 });
   const s = STEPS[step];
 
-  const onLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    setBox((b) => (b.width === width && b.height === height ? b : { width, height }));
-  };
+  const measure =
+    (set: (v: { width: number; height: number }) => void) => (e: LayoutChangeEvent) => {
+      const { width, height } = e.nativeEvent.layout;
+      set({ width, height });
+    };
 
-  /* The photograph's own proportions, read off the bundled asset. */
-  const asset = Image.resolveAssetSource(s.img);
-  const aspect = asset?.height ? asset.width / asset.height : 16 / 9;
+  /* ── The picture's frame: the web's 16:9 box, shrunk to what fits ──
+     `.prep-image` is `min(94vw, 600px)` wide at 16:9 with a 54vh ceiling.
+     The slot measured above is the flex remainder, which is the same job
+     `.prep-body { flex: 1 }` does when the viewport is too short — so the
+     ceiling is whichever of the two is tighter. */
+  const frameW0 = Math.min(slot.width * IMAGE_W_FRACTION, IMAGE_MAX_W);
+  const frameH0 = Math.min(slot.height, stage.height * IMAGE_MAX_H_FRACTION);
+  const frameW = Math.min(frameW0, frameH0 * IMAGE_ASPECT);
+  const frameH = frameW / IMAGE_ASPECT;
 
-  const landscape = box.width > box.height;
-  const measured = box.width > 0 && box.height > 0;
+  /* `.prep-title { font-size: clamp(23px, 5vw, 34px) }`.
+     ★ One deliberate departure, recorded in PARITY.md: the web's `5vw`
+     assumes the viewport's WIDTH is its short edge. The exam is landscape,
+     where width is the LONG edge, so 5vw pins the headline at its 34px
+     ceiling on a phone and a three-line title then eats the photograph it
+     is captioning. The ceiling is therefore also tied to the stage height,
+     which is the short edge here — the same proportion the web produces on
+     the viewport it was designed for. */
+  const titleSize = Math.max(
+    23,
+    Math.min(34, stage.width * 0.05, Math.max(23, stage.height * 0.075)),
+  );
 
-  const frame = !measured
-    ? { width: 0, height: 0 }
-    : landscape
-      ? fitBox(box.width - SIDE_MIN_W - GAP, box.height, aspect)
-      : fitBox(box.width, box.height * PORTRAIT_MAX_H, aspect);
+  const confirmW = Math.min(stage.width * CONFIRM_W_FRACTION, CONFIRM_MAX_W);
 
   const next = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (step < STEPS.length - 1) setStep(step + 1);
     else onDone();
   };
-  const back = () => (step > 0 ? setStep(step - 1) : onExit());
-
-  /* ── The three pieces, arranged differently per orientation ── */
-
-  const topBar = (
-    <View style={styles.top}>
-      <Pressable accessibilityRole="button" onPress={back} hitSlop={12}>
-        <Text style={[styles.back, { color: t.textSecondary }]}>
-          {step === 0 ? 'Exit' : 'Back'}
-        </Text>
-      </Pressable>
-      <Text style={[styles.progress, { color: t.textTertiary }]}>
-        Step {step + 1} of {STEPS.length}
-      </Text>
-    </View>
-  );
-
-  const picture = (
-    <View
-      style={[
-        styles.imageWrap,
-        frame,
-        /* WHITE, not `surface`. The artwork itself is drawn on white, so any
-           residual letterbox band disappears into it instead of reading as
-           "the picture doesn't fill its box". */
-        { backgroundColor: '#FFFFFF', borderColor: t.border },
-      ]}
-    >
-      {/* ★ `contain`, never `cover`. The frame is computed to be the photo's
-          own shape, so the two are equivalent when everything is right — but
-          if the frame is ever off (a transient layout during rotation, an
-          asset whose dimensions could not be read), `contain` letterboxes
-          while `cover` CROPS. Cropping a patient instruction can hide the
-          very thing being pointed at, so the failure mode must be an ugly
-          border, never a missing hand. */}
-      <Image
-        source={s.img}
-        style={StyleSheet.absoluteFill}
-        resizeMode="contain"
-        accessibilityIgnoresInvertColors
-      />
-    </View>
-  );
-
-  const caption = (
-    <View style={[styles.caption, landscape && styles.captionLandscape]}>
-      <Text
-        style={[styles.title, landscape && styles.titleLandscape, { color: t.textPrimary }]}
-      >
-        {s.title}
-      </Text>
-      <View style={styles.dots}>
-        {STEPS.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, { backgroundColor: i === step ? t.accent : t.border }]}
-          />
-        ))}
-      </View>
-    </View>
-  );
-
-  const confirm = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={s.confirm}
-      onPress={next}
-      style={({ pressed }) => [
-        styles.confirm,
-        { backgroundColor: t.accent, opacity: pressed ? 0.85 : 1 },
-      ]}
-    >
-      <CheckIcon size={landscape ? 20 : 22} />
-      <Text style={[styles.confirmText, landscape && styles.confirmTextLandscape]}>
-        {s.confirm}
-      </Text>
-    </Pressable>
-  );
+  const back = () => {
+    void Haptics.selectionAsync();
+    if (step > 0) setStep(step - 1);
+    else onExit();
+  };
 
   return (
-    <PatientShell chrome={false}>
-      <View style={styles.measure} onLayout={onLayout}>
-        {!measured ? null : landscape ? (
-          <View style={styles.stageRow}>
-            {picture}
-            <View style={styles.side}>
-              {topBar}
-              {caption}
-              {confirm}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.stage}>
-            {topBar}
-            <View style={styles.body}>
-              {picture}
-              {caption}
-            </View>
-            {confirm}
-          </View>
-        )}
+    <View
+      style={[
+        styles.stage,
+        {
+          backgroundColor: t.bg,
+          /* `.prep-stage` padding, plus whatever the notch needs. Landscape
+             puts the notch on a SIDE, so left/right carry the inset. */
+          paddingTop: Math.max(insets.top, 14),
+          paddingBottom: Math.max(insets.bottom, 20),
+          paddingLeft: Math.max(insets.left, 32),
+          paddingRight: Math.max(insets.right, 32),
+        },
+      ]}
+      onLayout={measure(setStage)}
+    >
+      {/* ── .prep-top ── */}
+      <View style={styles.top}>
+        <Pressable accessibilityRole="button" onPress={back} hitSlop={12} style={styles.backHit}>
+          <Text style={[styles.back, { color: t.textSecondary }]}>
+            {step === 0 ? 'Exit' : 'Back'}
+          </Text>
+        </Pressable>
+        <Text style={[styles.progress, { color: t.textTertiary }]}>
+          Step {step + 1} of {STEPS.length}
+        </Text>
       </View>
-    </PatientShell>
+
+      {/* ── .prep-body ── */}
+      <View style={styles.body}>
+        {/* The picture absorbs the leftover height; the title and dots below
+            keep their natural size, so nothing ever pushes the button off. */}
+        <View style={styles.imageSlot} onLayout={measure(setSlot)}>
+          {frameW > 0 && (
+            <View
+              style={[
+                styles.imageFrame,
+                { width: frameW, height: frameH, borderColor: t.border },
+              ]}
+            >
+              {/* ★ `contain`, never `cover`. Cropping a patient instruction can
+                  hide the very thing being pointed at, so the failure mode has
+                  to be a border, never a missing hand. The artwork is drawn on
+                  white, so any residual band disappears into the frame. */}
+              <Image
+                source={s.img}
+                style={styles.image}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+            </View>
+          )}
+        </View>
+
+        <Text
+          style={[
+            styles.title,
+            { color: t.textPrimary, fontSize: titleSize, lineHeight: titleSize * 1.25 },
+          ]}
+        >
+          {s.title}
+        </Text>
+
+        <View style={styles.dots}>
+          {STEPS.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i === step
+                  ? { width: 26, borderRadius: 999, backgroundColor: t.brandNavy }
+                  : { backgroundColor: t.border },
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* ── .prep-confirm ── */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={s.confirm}
+        onPress={next}
+        style={({ pressed }) => [
+          styles.confirmWrap,
+          { width: confirmW, transform: [{ scale: pressed ? 0.99 : 1 }] },
+        ]}
+      >
+        {/* `linear-gradient(150deg, #59bf6a, #2f9a44)` — 150° in CSS runs from
+            the top-left down, hence the start/end points below. */}
+        <LinearGradient
+          colors={['#59BF6A', '#2F9A44']}
+          start={{ x: 0.25, y: 0 }}
+          end={{ x: 0.75, y: 1 }}
+          style={styles.confirm}
+        >
+          <CheckIcon size={22} />
+          <Text style={styles.confirmText} numberOfLines={2}>
+            {s.confirm}
+          </Text>
+        </LinearGradient>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  measure: { flex: 1 },
-  stage: { flex: 1, justifyContent: 'space-between', alignItems: 'center' },
-  stageRow: { flex: 1, flexDirection: 'row', gap: GAP, alignItems: 'center' },
-  side: { flex: 1, justifyContent: 'space-between', minWidth: 0, alignSelf: 'stretch' },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  back: { fontSize: 16, fontWeight: '600' },
-  progress: { fontSize: 13, fontWeight: '600' },
-  body: { alignItems: 'center', gap: 22 },
-  imageWrap: {
+  stage: { flex: 1 },
+  /* .prep-top */
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  backHit: { paddingVertical: 8, paddingHorizontal: 4 },
+  back: { fontSize: 15, fontWeight: '800' },
+  progress: { fontSize: 13, fontWeight: '800' },
+  /* .prep-body { flex: 1; align-items: center; justify-content: center; gap: … } */
+  body: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  imageSlot: { alignSelf: 'stretch', flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center' },
+  /* .prep-image — radius 28, --shadow-lg, on the artwork's own white ground. */
+  imageFrame: {
     borderRadius: 28,
     borderWidth: 1,
     overflow: 'hidden',
-    // --shadow-lg
+    backgroundColor: '#FFFFFF',
     shadowColor: '#0A2540',
     shadowOpacity: 0.18,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
     elevation: 10,
   },
-  caption: { alignItems: 'center', gap: 18 },
-  captionLandscape: { alignItems: 'flex-start', gap: 12, flexShrink: 1 },
-  /* .prep-title { font-size: clamp(23px, 5vw, 34px); line-height: 1.25 } */
-  title: {
-    fontSize: 25,
-    lineHeight: 31,
-    fontWeight: '800',
-    textAlign: 'center',
-    paddingHorizontal: 8,
-  },
-  titleLandscape: { fontSize: 20, lineHeight: 25, textAlign: 'left', paddingHorizontal: 0 },
-  dots: { flexDirection: 'row', gap: 8 },
+  image: { width: '100%', height: '100%' },
+  /* .prep-title { max-width: 640px; text-align: center } */
+  title: { fontWeight: '800', textAlign: 'center', maxWidth: 640 },
+  /* .prep-dots */
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 9, height: 9, borderRadius: 5 },
+  /* .prep-confirm */
+  confirmWrap: {
+    alignSelf: 'center',
+    borderRadius: 18,
+    shadowColor: '#2F9A44',
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
   confirm: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'stretch',
-    gap: 10,
-    borderRadius: 16,
+    gap: 12,
     paddingVertical: 18,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
+    borderRadius: 18,
   },
-  confirmText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', flexShrink: 1 },
-  confirmTextLandscape: { fontSize: 15 },
+  confirmText: { color: '#FFFFFF', fontSize: 19, fontWeight: '800', flexShrink: 1 },
 });
 
-// v4.0.0 — Frame sized to the photograph's measured aspect inside a measured box,
-//          so the picture fills it exactly instead of floating in empty bands.
+// v5.0.0 — One column, exactly like the web `.prep-stage`: the landscape
+//          side-rail variant is gone and the 16:9 frame is a constant shape.

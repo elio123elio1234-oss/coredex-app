@@ -12,12 +12,14 @@
    ================================================================== */
 
 import type { ReactNode } from 'react';
-import { StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandLogo from '@/components/atoms/BrandLogo';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
+import { usePreferences } from '@/features/preferences/usePreferences';
 import { dockFootprint } from '@/navigation/dockMetrics';
-import { DEFAULT_BG, shellPalette } from '@/theme/shellTheme';
+import { shellPalette } from '@/theme/shellTheme';
+import { useIsDark } from '@/theme/useTheme';
 
 interface Props {
   children: ReactNode;
@@ -37,7 +39,8 @@ interface Props {
 export default function PatientShell({ children, chrome = true, dock = chrome }: Props) {
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
-  const palette = shellPalette(DEFAULT_BG, useColorScheme() === 'dark');
+  const { prefs } = usePreferences();
+  const palette = shellPalette(prefs.background, useIsDark());
 
   return (
     <View style={styles.root}>
@@ -78,4 +81,4 @@ const styles = StyleSheet.create({
   content: { flex: 1, justifyContent: 'center' },
 });
 
-// v2.0.0 — Uses the gray default field; optional chrome for immersive screens.
+// v2.1.0 — The background field follows the patient's Settings choice.

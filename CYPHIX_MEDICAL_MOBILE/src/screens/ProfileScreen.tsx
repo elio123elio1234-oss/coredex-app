@@ -11,12 +11,16 @@
    document, and the web's profile scrolls too.
    ================================================================== */
 
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View, useColorScheme } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import BrandLogo from '@/components/atoms/BrandLogo';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import {
   AllergiesIllustration,
+  AppearanceIllustration,
   CareTeamIllustration,
   ConditionsIllustration,
   DetailsIllustration,
@@ -27,10 +31,11 @@ import {
   type IllustrationProps,
 } from '@/components/atoms/Illustration';
 import { dockFootprint } from '@/navigation/dockMetrics';
+import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD, type CodedItem } from '@/features/profile/demoCard';
-import { DEFAULT_BG, shellPalette } from '@/theme/shellTheme';
+import { shellPalette } from '@/theme/shellTheme';
 import { RADIUS } from '@/theme/tokens';
-import { useTheme } from '@/theme/useTheme';
+import { useIsDark, useTheme } from '@/theme/useTheme';
 
 /* Mirrors the web SettingsSection in its `illustrated` variant: the pastel
    art sits DIRECTLY on the card at 48×48 with no tinted tile behind it
@@ -131,11 +136,29 @@ const SEX_LABEL: Record<string, string> = {
   unknown: 'Unknown',
 };
 
+/** Chevron pointing to the next screen — the platform's own "there is more
+    behind this row" cue, on iOS and Android alike. */
+function ForwardChevron({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 18l6-6-6-6"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export default function ProfileScreen() {
   const t = useTheme();
+  const nav = useNavigation<{ navigate: (screen: string) => void }>();
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
-  const palette = shellPalette(DEFAULT_BG, useColorScheme() === 'dark');
+  const { prefs } = usePreferences();
+  const palette = shellPalette(prefs.background, useIsDark());
   const card = DEMO_CARD;
 
   const initials = card.displayName
@@ -258,6 +281,40 @@ export default function ProfileScreen() {
             No recordings yet
           </Text>
         </Section>
+
+        {/* ── Settings ──
+            The web reaches Settings from the avatar popover in the top bar.
+            There is no top bar on mobile (the dock is the whole navigation),
+            so it lives at the END of the profile — the conventional place on
+            both platforms, and the one screen a patient already thinks of as
+            "about me". A full-width card rather than a text link: it is the
+            single tap target here, and it is aimed at unsteady hands. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          accessibilityHint="Appearance, notifications, device and privacy"
+          onPress={() => {
+            void Haptics.selectionAsync();
+            nav.navigate('Settings');
+          }}
+          style={({ pressed }) => [
+            styles.settingsCard,
+            {
+              backgroundColor: t.surface,
+              borderColor: t.border,
+              opacity: pressed ? 0.75 : 1,
+            },
+          ]}
+        >
+          <AppearanceIllustration size={44} />
+          <View style={styles.settingsText}>
+            <Text style={[styles.settingsTitle, { color: t.textPrimary }]}>Settings</Text>
+            <Text style={[styles.settingsDesc, { color: t.textSecondary }]}>
+              Appearance, notifications, device and privacy
+            </Text>
+          </View>
+          <ForwardChevron color={t.textTertiary} />
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -315,6 +372,20 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13.5, fontWeight: '700' },
   chipCode: { fontSize: 10.5, fontVariant: ['tabular-nums'] },
   emptyText: { fontSize: 13.5, paddingVertical: 14 },
+  settingsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+  settingsText: { flex: 1, gap: 3 },
+  settingsTitle: { fontSize: 16.5, fontWeight: '800' },
+  settingsDesc: { fontSize: 12.5, lineHeight: 18 },
 });
 
-// v1.0.0 — Medical card ported from the web profile: same sections, coded chips.
+// v1.1.0 — Adds the Settings entry point at the end of the card (mobile's
+//          equivalent of the web's avatar-popover route) + preference-aware field.

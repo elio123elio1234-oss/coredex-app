@@ -21,7 +21,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -42,7 +41,7 @@ import {
   MAX_BAR_W,
   MIN_ITEM_W,
 } from '@/navigation/dockMetrics';
-import { useTheme } from '@/theme/useTheme';
+import { useIsDark, useTheme } from '@/theme/useTheme';
 
 /** The web's pill easing: cubic-bezier(.34, 1.28, .5, 1) — a gentle overshoot. */
 const SPRING = { damping: 15, stiffness: 180, mass: 0.85 } as const;
@@ -51,7 +50,7 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { width: screenW, height: screenH } = useWindowDimensions();
-  const dark = useColorScheme() === 'dark';
+  const dark = useIsDark();
 
   const itemH = DOCK_ITEM_HEIGHT;
   const gap = dockGap(screenW);
@@ -164,5 +163,5 @@ const styles = StyleSheet.create({
   label: { fontSize: LABEL_SIZE, lineHeight: LABEL_LINE },
 });
 
-// v3.0.0 — Sizes/offset moved to dockMetrics; bar 67px (was 77) and it no longer
-//          double-counts the safe area, so it sits ~20px up like the web, not 46px.
+// v3.1.0 — Reads the resolved theme (Settings choice, then OS) instead of the raw
+//          OS appearance, so the dock cannot stay light while the app goes dark.

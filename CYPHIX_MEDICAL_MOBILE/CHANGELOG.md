@@ -1,5 +1,113 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.8.0 — 2026-08-01 — The exam is a port of the web again, and the flicker
+##                        had a cause, not a symptom
+
+### The rotation flicker: two writers, one iOS API
+
+v0.7.0 said the "flicker and photo-shape were one bug" and held the first
+paint back until `width > height`. That was wrong — it hid a symptom. The
+device still physically rotated **landscape → portrait → landscape**, and the
+holder-count in `useExamOrientation` could never fix it because the race was
+never between two React effects.
+
+`expo-screen-orientation`'s `lockAsync()` sets a **global** orientation mask
+from an effect, one tick after mount. `react-native-screens` already answers
+`supportedInterfaceOrientations` **per pushed view controller**. Both drive
+the same iOS mechanism, so a single navigation went: push (VC says the app
+default — portrait allowed) → effect sets the landscape mask (rotate) → the
+push animation completes and the VC is re-queried (portrait again) → the
+global mask wins once more (rotate). Three rotations.
+
+The fix is to have exactly one writer, and to make it the declarative one:
+
+- `LimbMeasure` declares `orientation: 'landscape'` on its `Stack.Screen`;
+  the stack declares `portrait_up` for everything else.
+- `useExamOrientation.ts` is **deleted**, `App.tsx` no longer calls
+  `lockPortrait()`, and `expo-screen-orientation` has been uninstalled and
+  removed from `app.json` — leaving it available is leaving the bug loaded.
+
+Because the rotation is now part of the push, the exam's **first** layout pass
+already measures the landscape box, which is the other half of what v0.7.0 was
+working around.
+
+### The set-up steps are the web's layout again
+
+`LimbPrep` had grown a landscape branch that put the photograph in a left
+column, the confirm button in a right rail and the Exit link adrift between
+them. The exam is *always* landscape, so that was the layout every patient
+got. It is gone. The screen is `.prep-stage` column for column: top bar
+(Exit/Back · "Step n of 2"), a centred body of picture → title → dots, and one
+full-width green confirm button at the bottom.
+
+**Why the picture only showed its top-left corner:** the frame's shape was
+derived at runtime from `Image.resolveAssetSource`, and when that gave nothing
+useful the frame came out the wrong shape while `overflow: hidden` cropped the
+photo to a corner. The frame is now a plain 16:9 rectangle — the constant
+`.prep-image` uses — fitted into the space actually left over, with `contain`
+so the worst case is a border, never a missing hand.
+
+One deliberate departure, because a phone held sideways is wide and short:
+`.prep-title`'s `clamp(23px, 5vw, 34px)` assumes the viewport's width is its
+*short* edge. Here it is the long one, so 5vw pins the headline at 34px and a
+three-line title eats the photograph it is captioning. The ceiling is now tied
+to the stage height as well.
+
+### Six leads, 2 × 3
+
+The traces were stacked 6 × 1, which is the web's `max-width: 720px` fallback,
+not its layout — and it gave each trace ~26px of height on a phone. They are
+now the web's `repeat(2, 1fr) / repeat(3, 1fr)` grid, filled row-major
+(I·II / III·aVR / aVL·aVF), with the web's own drawing ported rather than the
+BeatAlign-Native reference's: 3-second window, 12/60px paper, 1 mV = 38 % of
+the card, and the per-frame window-mean centring that stops the trace drifting
+off the card while the 0.5 Hz high-pass settles.
+
+The live screen around it is the web `.limb-stage` too — compact bar (title ·
+BPM · red Exit pill), the trace grid, and a status foot carrying either the
+heartbeat gate or the countdown ring. The circular "touch the watch" guide
+overlays the traces while the gate searches, as on the web. Copy is verbatim
+from `en.ts`.
+
+Two things are scaled for the phone, both applying rules the web already
+wrote for small screens: the stage padding/gap/BPM digits follow the web's own
+`@media (max-width: 720px)` block (triggered on a short viewport rather than a
+narrow one), and a lead card shorter than 90px halves its inner padding — the
+web never meets that case, since its cards are a 110px canvas plus padding.
+
+### Settings
+
+Built under Profile, since there is no top-bar avatar popover on mobile to
+hang it from: a full-width card at the end of the medical card opens a new
+`Settings` route. Same sections, same order and the same pastel illustrations
+as the web page — Appearance · Notifications · Care connection · ECG Device ·
+Privacy & Security · Account · About.
+
+New `preferencesSlice` (theme, background, notification toggles, care mode)
+persisted through `@react-native-async-storage/async-storage` — **the one new
+dependency**, justified because a preference that resets every launch is a
+broken preference, and because tokens must stay in SecureStore rather than
+being joined by non-secret settings. `PreferencesGate` hydrates before the
+first paint so the app never opens light and repaints dark.
+
+`useTheme` now resolves the stored choice first and the OS second, and every
+screen that was asking `useColorScheme()` directly (dock, navigator, ECG
+paper) asks `useIsDark()` instead — otherwise the toggle would leave the app
+half dark.
+
+Rows the web has and this does not, each with a reason, are recorded in
+`PARITY.md`. Text size is present but deliberately different: iOS and Android
+already own text size system-wide, and a second app-only scale would fight the
+phone's own setting.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for **both** iOS and Android ·
+`expo-doctor` 18/18. That means the code is well-formed, **not** that it
+works: every screen here stays `🔬` in `PARITY.md` until it has been touched
+on a device.
+
+
 ## v0.6.0 — 2026-08-01 — The core ran at double speed, and the connection
 ##                        animation was never ported at all
 

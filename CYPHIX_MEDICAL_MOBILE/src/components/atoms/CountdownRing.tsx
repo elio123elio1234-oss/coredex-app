@@ -1,71 +1,94 @@
-/* CountdownRing (atom) — the capture progress ring with the seconds left
-   in its centre, ported from the web atom of the same name. */
+/* ==================================================================
+   CountdownRing (atom) — a ring that drains as a timed capture runs.
+   Ported from the web atom of the same name.
+
+   WHY A RING, NOT A BAR: during a limb recording the patient's hands are
+   occupied and their attention is on holding still, not on reading. A
+   draining circle with the seconds in the middle is legible at a glance
+   and from across a room, which a 10 px progress bar is not.
+
+   The number AND its caption sit INSIDE the ring (`.countdown-ring-label`
+   is `position: absolute; inset: 0`) — the caption is what the number
+   means, so putting it outside turns one readout into two things to look
+   at.
+
+   Purely presentational: it is told how much is left and draws it.
+   ================================================================== */
 
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
-  /** 0–100. */
+  /** 0–100, how much of the capture is DONE. */
   progress: number;
+  /** Whole seconds remaining, shown in the centre. */
   secondsLeft: number;
+  /** Small caption under the number (e.g. "seconds left"). */
   caption?: string;
+  /** Outer diameter. */
   size?: number;
 }
 
-export default function CountdownRing({ progress, secondsLeft, caption, size = 104 }: Props) {
+export default function CountdownRing({ progress, secondsLeft, caption, size = 132 }: Props) {
   const t = useTheme();
-  const stroke = 7;
-  const r = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * r;
-  const dash = circumference * (1 - Math.min(1, Math.max(0, progress / 100)));
+  const stroke = Math.max(6, Math.round(size * 0.075));
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const remaining = Math.max(0, Math.min(100, 100 - progress));
+  const dashOffset = circumference * (1 - remaining / 100);
 
   return (
-    <View style={styles.wrap}>
-      <View style={{ width: size, height: size }}>
-        <Svg width={size} height={size}>
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            stroke={t.border}
-            strokeWidth={stroke}
-            fill="none"
-          />
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            stroke={t.accentLive}
-            strokeWidth={stroke}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={dash}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
-        </Svg>
-        <View style={[StyleSheet.absoluteFill, styles.center]}>
-          <Text
-            allowFontScaling={false}
-            style={[styles.value, { color: t.textPrimary }]}
-          >
-            {secondsLeft}
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size}>
+        {/* Track */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={t.border}
+          strokeWidth={stroke}
+          fill="none"
+        />
+        {/* Remaining time — starts full at 12 o'clock and drains clockwise */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={t.success}
+          strokeWidth={stroke}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={dashOffset}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+
+      <View style={[StyleSheet.absoluteFill, styles.label]} pointerEvents="none">
+        <Text
+          allowFontScaling={false}
+          style={[styles.value, { color: t.textPrimary, fontSize: size * 0.29 }]}
+        >
+          {secondsLeft}
+        </Text>
+        {caption != null && (
+          <Text allowFontScaling={false} style={[styles.caption, { color: t.textTertiary }]}>
+            {caption}
           </Text>
-        </View>
+        )}
       </View>
-      {caption != null && (
-        <Text style={[styles.caption, { color: t.textSecondary }]}>{caption}</Text>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: 8 },
-  center: { alignItems: 'center', justifyContent: 'center' },
-  value: { fontSize: 32, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  caption: { fontSize: 13, fontWeight: '600' },
+  /* .countdown-ring-label { inset: 0; column; centred; gap: 2px } */
+  label: { alignItems: 'center', justifyContent: 'center', gap: 2 },
+  /* .countdown-ring-value { font-size: 38px on a 132px ring } */
+  value: { fontWeight: '800', fontVariant: ['tabular-nums'] },
+  /* .countdown-ring-caption */
+  caption: { fontSize: 11, fontWeight: '600', letterSpacing: 0.44 },
 });
 
-// v1.0.0 — SVG progress ring with the seconds-left readout.
+// v2.0.0 — Web parity: green drain, caption inside the ring, 132px default.

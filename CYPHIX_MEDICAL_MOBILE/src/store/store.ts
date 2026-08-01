@@ -6,11 +6,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { baseApi } from '@/services/api/baseApi';
 import bleReducer from '@/features/ble/bleSlice';
+import preferencesReducer from '@/features/preferences/preferencesSlice';
 
 export const store = configureStore({
   reducer: {
     [baseApi.reducerPath]: baseApi.reducer,
     ble: bleReducer,
+    preferences: preferencesReducer,
   },
   middleware: (getDefault) => getDefault().concat(baseApi.middleware),
 });
@@ -18,4 +20,4 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-// v0.1.0 — Store composing RTK Query API + ble slice.
+// v0.2.0 — Adds the preferences slice (appearance + notification settings).

@@ -34,8 +34,7 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font",
-      "expo-screen-orientation"
+      "expo-font"
     ],
     "experiments": {
       "tsconfigPaths": true
