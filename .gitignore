@@ -1,0 +1,28 @@
+# Root ignore for the CYPHIX platform repo.
+# Sub-projects keep their own .gitignore; those still apply and are more
+# specific. This file only covers what every project shares.
+#
+# NOTE: the legacy Coredex_App root files (index.html, js/, css/, models/,
+# worker.js) are tracked history and are NOT affected by anything here —
+# .gitignore never untracks a file that is already committed.
+
+# dependencies
+node_modules/
+
+# secrets — never committed (root CLAUDE.md §2.2 / web §7.5)
+.env
+.env.local
+.env*.local
+
+# build output
+dist/
+build/
+.expo/
+*.tsbuildinfo
+
+# machine-local Claude Code state (settings.json IS shared; .local is not)
+.claude/settings.local.json
+
+# OS noise
+.DS_Store
+Thumbs.db

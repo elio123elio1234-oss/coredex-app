@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "CYPHIX Medical",
+    "slug": "cyphix-medical",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "scheme": "cyphix",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cyphix.medical",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "CYPHIX connects to your ECG device over Bluetooth to record heart signals."
+      }
+    },
+    "android": {
+      "package": "com.cyphix.medical",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D2041",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      "expo-screen-orientation"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    }
+  }
+}

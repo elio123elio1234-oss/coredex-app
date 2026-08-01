@@ -1,0 +1,9 @@
+{
+  "name": "@cyphix/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CYPHIX platform-neutral core: BLE protocol, ECG domain types, API contract. Zero UI, zero platform imports. Consumed as TypeScript source by Web (Vite) and Mobile (Metro).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "sideEffects": false
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@cyphix/shared": ["../CYPHIX_SHARED/src/index.ts"],
+      "@cyphix/shared/*": ["../CYPHIX_SHARED/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../CYPHIX_SHARED/src/**/*.ts"]
+}
