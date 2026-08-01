@@ -11,6 +11,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { IllustrationProps } from '@/components/atoms/Illustration';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -25,14 +26,21 @@ interface Props {
 
 export default function SettingsSection({ art: Art, title, description, aside, children }: Props) {
   const t = useTheme();
+  const { rtl } = useTranslation();
+  const align = rtl ? ('right' as const) : ('left' as const);
   return (
     <View style={[styles.section, { backgroundColor: t.surface, borderColor: t.border }]}>
-      <View style={styles.head}>
+      {/* The illustration leads the heading, so in Hebrew it moves to the
+          right with it — an icon stranded on the far side of its own title
+          reads as belonging to the row above. */}
+      <View style={[styles.head, rtl && styles.headRtl]}>
         <Art size={48} />
         <View style={styles.heading}>
-          <Text style={[styles.title, { color: t.textPrimary }]}>{title}</Text>
+          <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>{title}</Text>
           {description != null && (
-            <Text style={[styles.desc, { color: t.textSecondary }]}>{description}</Text>
+            <Text style={[styles.desc, { color: t.textSecondary, textAlign: align }]}>
+              {description}
+            </Text>
           )}
         </View>
         {aside != null && <View style={styles.aside}>{aside}</View>}
@@ -51,6 +59,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 6 },
+  headRtl: { flexDirection: 'row-reverse' },
   heading: { flex: 1, minWidth: 0 },
   title: { fontSize: 16.5, fontWeight: '800', marginTop: 2 },
   desc: { fontSize: 12.5, lineHeight: 18.75, marginTop: 3 },
@@ -58,4 +67,4 @@ const styles = StyleSheet.create({
   body: { marginTop: 6 },
 });
 
-// v1.0.0 — Settings card with the full-colour illustration header (web parity).
+// v1.1.0 — Header reverses and re-aligns under an RTL language.

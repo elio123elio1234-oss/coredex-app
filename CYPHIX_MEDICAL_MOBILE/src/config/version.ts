@@ -1,11 +1,12 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.12.0';
+export const APP_VERSION = '0.13.0';
 export const APP_BUILD_LABEL =
-  'report: full-width sliding tabs, one continuous ECG sheet, glass action bar, big axis dial';
+  'i18n: the whole app speaks English + Hebrew, language picker in Settings';
 
-// v0.12.0 — Report polish pass: the tab switcher spans the width and slides,
-//           the six leads are one continuous sheet on a surface panel instead
-//           of strips floating on grey, the action bar is real glass with the
-//           document scrolling under it, the axis dial fills the width, and
-//           word-valued metrics no longer print through their tile borders.
+// v0.13.0 — The app gets an i18n layer mirroring the web's: a language
+//           registry, en/he locale tables typed against each other, a provider
+//           backed by the pre-hydrated preferences slice (so the first paint is
+//           already in the right language), and a Language picker at the top of
+//           Settings → Appearance. Every user-facing string now comes from the
+//           locale; adding a third language is one new file plus three lines.

@@ -9,11 +9,18 @@
    Rows are separated by a top divider, and the FIRST row in a section
    never draws one — the section header already ends there
    (`.settings-section-body > .settings-row:first-child`).
+
+   ── RTL ──
+   "Start" and "end" are language-dependent, so the row reverses and its
+   text re-aligns in Hebrew. React Native has no per-subtree `dir`, so
+   this is done explicitly here rather than inherited from a container
+   (see i18n/I18nProvider for why `forceRTL` is not used).
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -40,20 +47,28 @@ export default function SettingsRow({
   first = false,
 }: Props) {
   const t = useTheme();
+  const { rtl } = useTranslation();
+  const align = rtl ? ('right' as const) : ('left' as const);
 
   const body = (
     <>
       <View style={styles.main}>
-        <Text style={[styles.label, { color: t.textPrimary }]}>{label}</Text>
+        <Text style={[styles.label, { color: t.textPrimary, textAlign: align }]}>{label}</Text>
         {description != null && (
-          <Text style={[styles.desc, { color: t.textSecondary }]}>{description}</Text>
+          <Text style={[styles.desc, { color: t.textSecondary, textAlign: align }]}>
+            {description}
+          </Text>
         )}
       </View>
       {control != null ? (
         <View style={styles.control}>{control}</View>
       ) : value != null ? (
         typeof value === 'string' ? (
-          <Text style={[styles.value, { color: t.textSecondary }]}>{value}</Text>
+          <Text
+            style={[styles.value, { color: t.textSecondary, textAlign: rtl ? 'left' : 'right' }]}
+          >
+            {value}
+          </Text>
         ) : (
           <View style={styles.control}>{value}</View>
         )
@@ -63,6 +78,7 @@ export default function SettingsRow({
 
   const frame = [
     styles.row,
+    rtl && styles.rowRtl,
     !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border },
   ];
 
@@ -96,6 +112,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     minHeight: 44,
   },
+  rowRtl: { flexDirection: 'row-reverse' },
   main: { flex: 1, minWidth: 0, gap: 3 },
   label: { fontSize: 14, fontWeight: '700' },
   desc: { fontSize: 12.5, lineHeight: 18 },
@@ -103,4 +120,4 @@ const styles = StyleSheet.create({
   value: { flexShrink: 0, fontSize: 13, fontWeight: '600', textAlign: 'right', maxWidth: '55%' },
 });
 
-// v1.0.0 — Settings row (label/desc + control or value; optional button).
+// v1.1.0 — Reverses and re-aligns under an RTL language.

@@ -27,6 +27,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlassSurface from '@/components/atoms/GlassSurface';
+import { useTranslation } from '@/i18n/useTranslation';
 import { DOCK_ITEMS } from '@/navigation/dockConfig';
 import {
   BAR_PADDING,
@@ -48,6 +49,7 @@ const SPRING = { damping: 15, stiffness: 180, mass: 0.85 } as const;
 
 export default function BottomDock({ state, navigation }: BottomTabBarProps) {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const insets = useSafeAreaInsets();
   const { width: screenW, height: screenH } = useWindowDimensions();
   const dark = useIsDark();
@@ -100,8 +102,15 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
           ]}
         />
 
+        {/* ★ The dock is NOT reversed under an RTL language. Home is the
+            centre anchor and the other four sit symmetrically around it, so
+            mirroring would move nothing meaningful — while the sliding pill's
+            offset is `state.index * step`, which is indexed off
+            `state.routes`. Reversing one and not the other lights the wrong
+            tab. Recorded in PARITY.md. */}
         {DOCK_ITEMS.map((item, i) => {
           const active = state.index === i;
+          const label = tr(item.labelKey);
           /* .dock-item--home:not(.is-active) { color: var(--brand-navy) } */
           const color = active ? t.textPrimary : item.emphasized ? t.brandNavy : t.textSecondary;
           return (
@@ -109,7 +118,7 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
               key={item.name}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={item.label}
+              accessibilityLabel={label}
               style={{
                 width: itemW,
                 height: itemH,
@@ -135,7 +144,7 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
                 allowFontScaling={false}
                 style={[styles.label, { color, fontWeight: item.emphasized ? '800' : '700' }]}
               >
-                {item.label}
+                {label}
               </Text>
             </Pressable>
           );
@@ -163,5 +172,5 @@ const styles = StyleSheet.create({
   label: { fontSize: LABEL_SIZE, lineHeight: LABEL_LINE },
 });
 
-// v3.1.0 — Reads the resolved theme (Settings choice, then OS) instead of the raw
-//          OS appearance, so the dock cannot stay light while the app goes dark.
+// v3.2.0 — Tab labels come from the locale (resolved per render); the item
+//          ORDER stays fixed under RTL so the sliding pill stays in step.

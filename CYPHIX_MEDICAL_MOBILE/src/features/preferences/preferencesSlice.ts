@@ -14,6 +14,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { DEFAULT_LANG, type LangCode } from '@/i18n/config';
 import type { BgStyle } from '@/theme/shellTheme';
 import { DEFAULT_BG } from '@/theme/shellTheme';
 
@@ -33,6 +34,13 @@ export interface PreferencesState {
   background: BgStyle;
   notifications: NotificationPrefs;
   careMode: CareMode;
+  /**
+   * The app's language. It lives HERE rather than in its own store because
+   * this slice is the one thing `PreferencesGate` reads back before the
+   * first paint — a language on a separate async key would open the app in
+   * English and repaint in Hebrew a frame later. See i18n/I18nProvider.
+   */
+  language: LangCode;
   /** False until the stored values have been read back — see `hydrate`. */
   loaded: boolean;
 }
@@ -42,6 +50,7 @@ const initialState: PreferencesState = {
   background: DEFAULT_BG,
   notifications: { testReminders: true, resultsReady: true, doctorMessages: true },
   careMode: 'clinician',
+  language: DEFAULT_LANG,
   loaded: false,
 };
 
@@ -70,10 +79,14 @@ const slice = createSlice({
     setCareMode(state, action: PayloadAction<CareMode>) {
       state.careMode = action.payload;
     },
+    setLanguage(state, action: PayloadAction<LangCode>) {
+      state.language = action.payload;
+    },
   },
 });
 
-export const { hydrate, setTheme, setBackground, setNotification, setCareMode } = slice.actions;
+export const { hydrate, setTheme, setBackground, setNotification, setCareMode, setLanguage } =
+  slice.actions;
 export default slice.reducer;
 
 /* ── Storage, kept next to the slice that owns the shape ── */
@@ -102,4 +115,5 @@ export async function writePreferences(state: PreferencesState): Promise<void> {
   }
 }
 
-// v1.0.0 — On-device appearance + notification preferences (web parity).
+// v1.1.0 — Adds `language`: it rides in the same pre-hydrated blob as the
+//          theme so the app never opens in the wrong language for a frame.

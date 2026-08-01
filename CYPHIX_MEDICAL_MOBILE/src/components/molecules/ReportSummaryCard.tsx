@@ -20,6 +20,7 @@
    ================================================================== */
 
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -38,14 +39,19 @@ interface Props {
 
 export default function ReportSummaryCard({ bpm, rhythm, stats }: Props) {
   const t = useTheme();
+  const { t: tr, rtl } = useTranslation();
+  const align = rtl ? ('right' as const) : ('left' as const);
   const missing = bpm === null || bpm <= 0;
 
   return (
     <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-      <View style={styles.top}>
+      <View style={[styles.top, rtl && styles.rowReverse]}>
         <View style={styles.rateBlock}>
-          <Text style={[styles.label, { color: t.textTertiary }]}>HEART RATE</Text>
-          <View style={styles.valueRow}>
+          <Text style={[styles.label, { color: t.textTertiary, textAlign: align }]}>
+            {tr('mBpm').toUpperCase()}
+          </Text>
+          {/* "BPM" is the international unit, not copy — see the locale. */}
+          <View style={[styles.valueRow, rtl && styles.rowReverse]}>
             {/* An unmeasurable rate shows as "—", never as 0 (see MetricTile). */}
             <Text
               style={[styles.value, { color: missing ? t.textTertiary : t.accentLive }]}
@@ -68,13 +74,19 @@ export default function ReportSummaryCard({ bpm, rhythm, stats }: Props) {
 
       <View style={[styles.rule, { backgroundColor: t.border }]} />
 
-      <View style={styles.stats}>
+      <View style={[styles.stats, rtl && styles.rowReverse]}>
         {stats.map((s) => (
           <View key={s.label} style={styles.stat}>
-            <Text style={[styles.statLabel, { color: t.textTertiary }]} numberOfLines={1}>
+            <Text
+              style={[styles.statLabel, { color: t.textTertiary, textAlign: align }]}
+              numberOfLines={1}
+            >
               {s.label.toUpperCase()}
             </Text>
-            <Text style={[styles.statValue, { color: t.textPrimary }]} numberOfLines={1}>
+            <Text
+              style={[styles.statValue, { color: t.textPrimary, textAlign: align }]}
+              numberOfLines={1}
+            >
               {s.value}
             </Text>
           </View>
@@ -87,6 +99,7 @@ export default function ReportSummaryCard({ bpm, rhythm, stats }: Props) {
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: RADIUS.lg, padding: 16, gap: 14 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  rowReverse: { flexDirection: 'row-reverse' },
   rateBlock: { flexShrink: 1 },
   /* `.report-headline-label` */
   label: { fontSize: 10.5, fontWeight: '700', letterSpacing: 0.9 },
@@ -104,5 +117,5 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
-// v1.0.0 — Headline card: rate, neutral rhythm chip, and the provenance the
-//          web keeps in its letterhead meta grid.
+// v1.1.0 — The "heart rate" label comes from the locale and the card's rows
+//          follow the reading direction. "BPM" stays as the unit it is.

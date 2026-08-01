@@ -9,9 +9,16 @@
    verdict: this component never renders "normal" or "abnormal", never
    colours a value red for being outside, and never draws a conclusion.
    The reader decides; the sheet only measures. Keep it that way.
+
+   ══ THE TRACK IS NEVER MIRRORED ══
+   Under an RTL language the label row and the caption re-align, but the
+   axis does NOT flip: it runs scaleMin → scaleMax left to right the way a
+   number line does in Hebrew too, and mirroring it would put a short PR
+   interval where a long one belongs. Only the words follow the language.
    ================================================================== */
 
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -40,6 +47,7 @@ export default function IntervalBar({
   refCaption,
 }: Props) {
   const t = useTheme();
+  const { rtl } = useTranslation();
   const span = Math.max(1, scaleMax - scaleMin);
   const pct = (v: number): number => Math.max(0, Math.min(100, ((v - scaleMin) / span) * 100));
 
@@ -49,9 +57,9 @@ export default function IntervalBar({
 
   return (
     <View style={styles.row}>
-      <View style={styles.head}>
+      <View style={[styles.head, rtl && styles.rowReverse]}>
         <Text style={[styles.label, { color: t.textPrimary }]}>{label}</Text>
-        <View style={styles.valueRow}>
+        <View style={[styles.valueRow, rtl && styles.rowReverse]}>
           <Text
             style={[styles.value, { color: value === null ? t.textTertiary : t.textPrimary }]}
           >
@@ -73,7 +81,7 @@ export default function IntervalBar({
         )}
       </View>
 
-      <Text style={[styles.foot, { color: t.textTertiary }]}>
+      <Text style={[styles.foot, { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' }]}>
         {refCaption} {refLow}–{refHigh} {unit}
       </Text>
     </View>
@@ -83,6 +91,7 @@ export default function IntervalBar({
 const styles = StyleSheet.create({
   row: { gap: 5 },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  rowReverse: { flexDirection: 'row-reverse' },
   label: { fontSize: 13.5, fontWeight: '700' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   value: { fontSize: 16, fontWeight: '800', fontVariant: ['tabular-nums'] },
@@ -95,4 +104,5 @@ const styles = StyleSheet.create({
   foot: { fontSize: 10.5 },
 });
 
-// v1.0.0 — Interval against a reference band (context only, never a verdict).
+// v1.1.0 — Label row and caption follow the reading direction; the numeric
+//          axis deliberately does not.

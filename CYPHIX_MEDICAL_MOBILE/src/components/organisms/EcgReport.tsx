@@ -55,8 +55,10 @@ import EcgStripSvg, {
 import ReportHeader from '@/components/molecules/ReportHeader';
 import ReportSummaryCard from '@/components/molecules/ReportSummaryCard';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
-import EcgAnalysisSheet, { REGULARITY } from '@/components/organisms/EcgAnalysisSheet';
+import EcgAnalysisSheet, { REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
 import type { LimbReport } from '@/features/measurement/hooks/useLimbRecorder';
+import type { TranslationKey } from '@/i18n/config';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
@@ -66,19 +68,13 @@ interface Props {
   onFinish: () => void;
 }
 
-/* Copy verbatim from the web locale (en.ts). */
-const TITLE = 'Limb Leads Report';
-const LEAD_SET = '6 limb';
-const SIMULATED = 'SIMULATED SIGNAL — NOT A PATIENT RECORDING';
-const DISCLAIMER =
-  'For wellness and training only. Not a diagnostic device. Consult a clinician for medical interpretation.';
-
 type Tab = 'waveform' | 'measurements';
 
+/* Keys, resolved at render — this table is module scope. */
 const TABS = [
-  { value: 'waveform', label: 'Waveform' },
-  { value: 'measurements', label: 'Measurements' },
-] as const satisfies readonly { value: Tab; label: string }[];
+  { value: 'waveform', labelKey: 'reportTabWaveform' },
+  { value: 'measurements', labelKey: 'reportTabMeasurements' },
+] as const satisfies readonly { value: Tab; labelKey: TranslationKey }[];
 
 /**
  * How much paper the window shows, in millimetres.
@@ -127,6 +123,7 @@ const MAX_STRIP_PX = 3600;
 
 export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
   const t = useTheme();
+  const { t: tr, lang } = useTranslation();
   const dark = useIsDark();
   const paper = dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
   const insets = useSafeAreaInsets();
@@ -155,17 +152,22 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
   const stripH = ptPerMm * STRIP_HEIGHT_MM;
   const scrollable = paperMm > VIEWPORT_MM + 1;
 
+  /* ★ The stamp follows the CHOSEN language, not the phone's locale. A
+     patient who set CYPHIX to Hebrew on an English phone was getting a
+     Hebrew report with an English date on the letterhead. `undefined` (the
+     old value) means "whatever the device is set to", which is exactly the
+     thing the language picker exists to override. */
   const stamp = report.recordedAt;
-  const timestamp = `${stamp.toLocaleDateString(undefined, {
+  const timestamp = `${stamp.toLocaleDateString(lang, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  })} · ${stamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+  })} · ${stamp.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}`;
 
   const stats = [
-    { label: 'Duration', value: `${durationSec.toFixed(1)} s` },
-    { label: 'Leads', value: LEAD_SET },
-    { label: 'Sample rate', value: `${report.sampleRate} Hz` },
+    { label: tr('reportDuration'), value: `${durationSec.toFixed(1)} s` },
+    { label: tr('reportLeads'), value: tr('reportLeadSetShort') },
+    { label: tr('reportSampleRate'), value: `${report.sampleRate} Hz` },
   ];
 
   const press = (fn: () => void) => () => {
@@ -198,22 +200,22 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <ReportHeader
-          title={TITLE}
+          title={tr('reportLimbTitle')}
           timestamp={timestamp}
-          simulatedNotice={report.isSimulated ? SIMULATED : undefined}
+          simulatedNotice={report.isSimulated ? tr('reportSimulated') : undefined}
         />
 
         <ReportSummaryCard
           bpm={report.heartRate > 0 ? report.heartRate : null}
-          rhythm={REGULARITY[report.analysis.rate.regularity]}
+          rhythm={tr(REGULARITY_KEY[report.analysis.rate.regularity])}
           stats={stats}
         />
 
         <SegmentedTabs
-          options={TABS}
+          options={TABS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
           value={tab}
           onChange={setTab}
-          accessibilityLabel="Report section"
+          accessibilityLabel={tr('reportSectionA11y')}
         />
 
         {tab === 'waveform' ? (
@@ -273,7 +275,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
               </Text>
               {scrollable && (
                 <Text style={[styles.captionText, { color: t.textTertiary }]}>
-                  Swipe to scan all {durationSec.toFixed(1)} s →
+                  {tr('reportSwipeHint', { sec: durationSec.toFixed(1) })}
                 </Text>
               )}
             </View>
@@ -286,7 +288,9 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
             and page 2 carries the analysis sheet's own disclaimer. Printing
             both here would stack two grey paragraphs on one screen. */}
         {tab === 'waveform' && (
-          <Text style={[styles.disclaimer, { color: t.textTertiary }]}>{DISCLAIMER}</Text>
+          <Text style={[styles.disclaimer, { color: t.textTertiary }]}>
+            {tr('reportDisclaimer')}
+          </Text>
         )}
       </ScrollView>
 
@@ -321,7 +325,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
             { borderColor: t.border, opacity: pressed ? 0.6 : 1 },
           ]}
         >
-          <Text style={[styles.btnText, { color: t.textPrimary }]}>Record again</Text>
+          <Text style={[styles.btnText, { color: t.textPrimary }]}>{tr('reportRecordAgain')}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -331,7 +335,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
             { backgroundColor: t.brandNavy, opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={[styles.btnText, { color: '#FFFFFF' }]}>Done</Text>
+          <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{tr('reportDone')}</Text>
         </Pressable>
       </GlassSurface>
     </View>
@@ -384,6 +388,7 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 16, fontWeight: '700' },
 });
 
-// v3.0.0 — Rebuilt as a native document: one letterhead, a summary card, a
-//          segmented control instead of two A4 pages, and a synchronised
-//          horizontal window showing 3.6 s of paper at 2× the old scale.
+// v3.1.0 — All report copy comes from the locale, and the letterhead's date
+//          is formatted in the CHOSEN language rather than the phone's.
+//          Lead names and the mm/s · mm/mV scale stay as printed — they are
+//          international ECG notation, not copy.

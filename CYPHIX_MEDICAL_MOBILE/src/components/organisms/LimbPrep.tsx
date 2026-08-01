@@ -58,6 +58,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { LIMB_PREP_IMAGES } from '@/config/measurementGuides';
+import type { TranslationKey } from '@/i18n/config';
+import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -146,8 +148,11 @@ function CheckIcon({ size = 22, color = '#FFFFFF' }: { size?: number; color?: st
   );
 }
 
-/* Confirmations are verbatim from the web locale (en.ts limbPrep*).
-   ★ The step-2 TITLE is shortened. The web's line —
+/* Locale KEYS, not sentences — this table is module scope and would
+   otherwise freeze in whichever language the app started in.
+
+   ★ The step-2 TITLE is shortened relative to the web's `limbPrep2Title`.
+   The web's line —
        "Rest that hand on your left thigh — the back of the watch touching
         your leg"
    is 74 characters against step 1's 33, so it wrapped to a second line and
@@ -155,22 +160,23 @@ function CheckIcon({ size = 22, color = '#FFFFFF' }: { size?: number; color?: st
    of the same procedure at two different sizes reads as a glitch, and the
    detail it was spending that line on — which way round the watch sits — is
    the one thing the photograph itself shows unambiguously. Both titles are
-   now one short line. Recorded in PARITY.md. */
-const STEPS = [
+   now one short line, in both languages. Recorded in PARITY.md. */
+const STEPS: { img: number; titleKey: TranslationKey; confirmKey: TranslationKey }[] = [
   {
     img: LIMB_PREP_IMAGES.wear,
-    title: 'Wear the watch on your left wrist',
-    confirm: 'The watch is on my left wrist',
+    titleKey: 'limbPrep1Title',
+    confirmKey: 'limbPrep1Confirm',
   },
   {
     img: LIMB_PREP_IMAGES.rest,
-    title: 'Rest that hand on your left thigh',
-    confirm: 'My hand is resting on my left leg',
+    titleKey: 'limbPrep2Title',
+    confirmKey: 'limbPrep2Confirm',
   },
 ];
 
 export default function LimbPrep({ onDone, onExit }: Props) {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
 
@@ -196,6 +202,8 @@ export default function LimbPrep({ onDone, onExit }: Props) {
   /** What the picture actually has left after the title, dots and button. */
   const [slot, setSlot] = useState({ width: 0, height: 0 });
   const s = STEPS[step];
+  const stepTitle = tr(s.titleKey);
+  const stepConfirm = tr(s.confirmKey);
 
   const measure =
     (set: (v: { width: number; height: number }) => void) => (e: LayoutChangeEvent) => {
@@ -271,11 +279,11 @@ export default function LimbPrep({ onDone, onExit }: Props) {
           style={{ paddingVertical: M.topPadV, paddingHorizontal: 4 }}
         >
           <Text style={[styles.back, { color: t.textSecondary, fontSize: M.backSize }]}>
-            {step === 0 ? 'Exit' : 'Back'}
+            {step === 0 ? tr('exit') : tr('limbPrepBack')}
           </Text>
         </Pressable>
         <Text style={[styles.progress, { color: t.textTertiary }]}>
-          Step {step + 1} of {STEPS.length}
+          {tr('limbPrepProgress', { n: step + 1, total: STEPS.length })}
         </Text>
       </View>
 
@@ -360,7 +368,7 @@ export default function LimbPrep({ onDone, onExit }: Props) {
               },
             ]}
           >
-            {s.title}
+            {stepTitle}
           </Text>
         </View>
 
@@ -382,7 +390,7 @@ export default function LimbPrep({ onDone, onExit }: Props) {
       {/* ── .prep-confirm ── */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={s.confirm}
+        accessibilityLabel={stepConfirm}
         onPress={next}
         style={({ pressed }) => [
           styles.confirmWrap,
@@ -399,7 +407,7 @@ export default function LimbPrep({ onDone, onExit }: Props) {
         >
           <CheckIcon size={M.confirmIcon} />
           <Text style={[styles.confirmText, { fontSize: M.confirmFont }]} numberOfLines={2}>
-            {s.confirm}
+            {stepConfirm}
           </Text>
         </LinearGradient>
       </Pressable>
@@ -454,6 +462,6 @@ const styles = StyleSheet.create({
   confirmText: { color: '#FFFFFF', fontWeight: '800', flexShrink: 1 },
 });
 
-// v5.2.0 — Both photographs mount at once and crossfade (no decode on tap),
-//          and the title's height is fixed so every step's picture is the
-//          SAME size; step-2 copy shortened to one line.
+// v5.3.0 — Step copy comes from the locale. The fixed title height and
+//          `adjustsFontSizeToFit` were already the safety net for a longer
+//          translation, which is exactly what they now carry.

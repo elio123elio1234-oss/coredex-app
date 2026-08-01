@@ -17,6 +17,8 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import type { ValidatorResult } from '@cyphix/shared';
+import type { TranslationKey } from '@/i18n/config';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -34,38 +36,36 @@ interface Props {
   compact?: boolean;
 }
 
-/* One honest line explaining exactly what the gate is waiting for —
-   verbatim from the web locale (en.ts gate*). */
-const GATE_SETTLING = 'Warming up the sensors…';
-const GATE_SEARCHING = 'Looking for your heartbeat…';
-const GATE_DETECTING = 'Picking up beats…';
-const GATE_VALID = 'Got a steady heartbeat';
-const GATE_LEAD_OFF = 'Not making contact — press a little firmer';
-const GATE_IRREGULAR = 'Signal is unsteady — hold still a moment';
-const GATE_NO_SIGNAL = 'No signal yet — check the watch is on your wrist';
-
-function statusText(
+/**
+ * One honest line explaining exactly what the gate is waiting for.
+ *
+ * Returns the locale KEY rather than the sentence: the mapping from a
+ * validator verdict to what the patient is told is the interesting part and
+ * belongs here, while the wording belongs in the locale (and matches the web
+ * app's `gate*` keys word for word).
+ */
+function statusKey(
   status: ValidatorResult['status'],
   failReason: ValidatorResult['failReason'] | undefined,
-): string {
+): TranslationKey {
   switch (status) {
     case 'settling':
-      return GATE_SETTLING;
+      return 'gateSettling';
     case 'lead_off':
-      return GATE_LEAD_OFF;
+      return 'gateLeadOff';
     case 'detecting':
-      return GATE_DETECTING;
+      return 'gateDetecting';
     case 'valid':
-      return GATE_VALID;
+      return 'gateValid';
     case 'failed':
       return failReason === 'lead_off'
-        ? GATE_LEAD_OFF
+        ? 'gateLeadOff'
         : failReason === 'irregular'
-          ? GATE_IRREGULAR
-          : GATE_NO_SIGNAL;
+          ? 'gateIrregular'
+          : 'gateNoSignal';
     case 'searching':
     default:
-      return GATE_SEARCHING;
+      return 'gateSearching';
   }
 }
 
@@ -114,6 +114,7 @@ export default function HeartbeatSearch({
   compact = false,
 }: Props) {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const live = peaksFound > 0;
 
   /* `.hb-search.ok` / `.hb-search.bad` */
@@ -139,7 +140,7 @@ export default function HeartbeatSearch({
       <View style={styles.main}>
         <PulseDot live={live} color={live ? t.danger : t.textTertiary} />
         <Text style={[styles.msg, { color: t.textPrimary, fontSize: compact ? 15 : 18 }]}>
-          {statusText(status, failReason)}
+          {tr(statusKey(status, failReason))}
         </Text>
       </View>
 
@@ -147,7 +148,10 @@ export default function HeartbeatSearch({
       <View
         style={styles.beats}
         accessibilityRole="image"
-        accessibilityLabel={`Beats detected: ${Math.min(peaksFound, peaksNeeded)} of ${peaksNeeded}`}
+        accessibilityLabel={tr('gateBeatsA11y', {
+          found: Math.min(peaksFound, peaksNeeded),
+          needed: peaksNeeded,
+        })}
       >
         {Array.from({ length: peaksNeeded }, (_, i) => (
           <View
@@ -169,11 +173,11 @@ export default function HeartbeatSearch({
       {/* The raw numbers, for the operator */}
       <View style={styles.metrics}>
         <Text style={[styles.metric, { color: t.textSecondary }]}>
-          BPM{' '}
+          {tr('gateBpm')}{' '}
           <Text style={[styles.metricValue, { color: t.textPrimary }]}>{hr > 0 ? hr : '--'}</Text>
         </Text>
         <Text style={[styles.metric, { color: t.textSecondary }]}>
-          Steadiness{' '}
+          {tr('gateSteadiness')}{' '}
           <Text style={[styles.metricValue, { color: t.textPrimary }]}>
             {sqi > 0 ? `${Math.round(sqi)}%` : '--'}
           </Text>
@@ -203,5 +207,5 @@ const styles = StyleSheet.create({
   metricValue: { fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
-// v2.1.0 — Adds the `compact` variant so a landscape phone spends its height
-//          on the six traces instead of on this card.
+// v2.2.0 — The verdict→message map now returns a locale key, so the gate
+//          explains itself in the patient's language.

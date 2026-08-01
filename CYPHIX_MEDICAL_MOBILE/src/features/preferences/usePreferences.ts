@@ -6,11 +6,13 @@
    ================================================================== */
 
 import { useCallback } from 'react';
+import type { LangCode } from '@/i18n/config';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import type { BgStyle } from '@/theme/shellTheme';
 import {
   setBackground,
   setCareMode,
+  setLanguage,
   setNotification,
   setTheme,
   type CareMode,
@@ -25,6 +27,9 @@ export interface UsePreferences {
   setBackground: (v: BgStyle) => void;
   setNotification: (key: keyof NotificationPrefs, value: boolean) => void;
   setCareMode: (v: CareMode) => void;
+  /** Screens do NOT call this — `I18nProvider` owns the language, and
+      components change it through `useTranslation().setLang`. */
+  setLanguage: (v: LangCode) => void;
 }
 
 export function usePreferences(): UsePreferences {
@@ -41,7 +46,8 @@ export function usePreferences(): UsePreferences {
       [dispatch],
     ),
     setCareMode: useCallback((v: CareMode) => void dispatch(setCareMode(v)), [dispatch]),
+    setLanguage: useCallback((v: LangCode) => void dispatch(setLanguage(v)), [dispatch]),
   };
 }
 
-// v1.0.0 — Preference read/write hook (the only door into the slice).
+// v1.1.0 — Adds setLanguage (consumed by I18nProvider, not by screens).

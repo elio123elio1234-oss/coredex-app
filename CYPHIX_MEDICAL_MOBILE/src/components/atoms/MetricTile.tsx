@@ -13,6 +13,7 @@
    ================================================================== */
 
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -29,6 +30,8 @@ interface Props {
 
 export default function MetricTile({ label, value, unit, hint, variant, accent }: Props) {
   const t = useTheme();
+  const { rtl } = useTranslation();
+  const align = rtl ? ('right' as const) : ('left' as const);
   const missing = value === null || value === undefined || value === '';
   const hero = variant === 'hero';
 
@@ -41,9 +44,15 @@ export default function MetricTile({ label, value, unit, hint, variant, accent }
           : { backgroundColor: t.bgSoft, borderColor: t.border },
       ]}
     >
-      {/* `.metric-label` — uppercase, letter-spaced, tertiary. */}
-      <Text style={[styles.label, { color: t.textTertiary }]}>{label.toUpperCase()}</Text>
-      <View style={styles.valueRow}>
+      {/* `.metric-label` — uppercase, letter-spaced, tertiary. `toUpperCase()`
+          is a no-op on Hebrew, which has no letter case. */}
+      <Text style={[styles.label, { color: t.textTertiary, textAlign: align }]}>
+        {label.toUpperCase()}
+      </Text>
+      {/* The NUMBER itself is never mirrored — digits read left-to-right in
+          Hebrew too. Only which edge of the tile the pair starts from
+          changes, and the unit follows the number rather than leading it. */}
+      <View style={[styles.valueRow, rtl && styles.valueRowRtl]}>
         {/* ★ `flexShrink` is what keeps the value INSIDE the tile.
             A Text in a `flexDirection: 'row'` does not wrap by default — it
             overflows its parent and prints straight through the border. It
@@ -63,10 +72,20 @@ export default function MetricTile({ label, value, unit, hint, variant, accent }
         {/* The unit never shrinks: "ms" broken across two lines is worse than
             a slightly narrower number. */}
         {!missing && unit != null && (
-          <Text style={[styles.unit, { color: t.textTertiary }]}>{unit}</Text>
+          <Text
+            style={[
+              styles.unit,
+              { color: t.textTertiary },
+              rtl && { marginLeft: 0, marginRight: 4 },
+            ]}
+          >
+            {unit}
+          </Text>
         )}
       </View>
-      {hint != null && <Text style={[styles.hint, { color: t.textTertiary }]}>{hint}</Text>}
+      {hint != null && (
+        <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>{hint}</Text>
+      )}
     </View>
   );
 }
@@ -87,6 +106,7 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: 10, fontWeight: '700', letterSpacing: 0.7, marginBottom: 4 },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
+  valueRowRtl: { flexDirection: 'row-reverse', justifyContent: 'flex-start' },
   value: {
     flexShrink: 1,
     fontSize: 22,
@@ -99,5 +119,5 @@ const styles = StyleSheet.create({
   hint: { fontSize: 10.5, lineHeight: 14.7, marginTop: 4 },
 });
 
-// v1.2.0 — `flexShrink` on the value so word-valued measurements wrap inside
-//          the tile instead of printing through its border.
+// v1.3.0 — Label, hint and the value/unit pair follow the reading direction;
+//          the number itself is never mirrored.

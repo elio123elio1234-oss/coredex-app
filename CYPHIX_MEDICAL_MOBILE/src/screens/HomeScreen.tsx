@@ -22,6 +22,7 @@ import HeroBlobButton from '@/components/organisms/HeroBlobButton';
 import PatientShell from '@/components/templates/PatientShell';
 import { useBle } from '@/features/ble/useBle';
 import { DEMO_CARD } from '@/features/profile/demoCard';
+import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/theme/useTheme';
 
 /**
@@ -40,6 +41,7 @@ function firstName(displayName: string | undefined): string {
 
 export default function HomeScreen() {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const nav = useNavigation<{ navigate: (screen: string) => void }>();
   const ble = useBle();
   /* Until auth lands this is the demo patient — the same fictitious
@@ -53,13 +55,15 @@ export default function HomeScreen() {
      not sit under the start button. Removed at the user's instruction;
      the divergence from web is deliberate and recorded in PARITY.md. */
   let statusLabel: string;
-  if (ble.isSimulated) statusLabel = 'Simulation — not a patient signal';
-  else if (ble.status === 'streaming') statusLabel = 'Streaming';
-  else if (ble.isConnected) statusLabel = 'Device connected';
-  else if (ble.status === 'connecting') statusLabel = 'Connecting…';
-  else if (ble.status === 'error') statusLabel = ble.error ?? 'Connection error';
-  else if (!ble.isSupported) statusLabel = 'No Bluetooth in this build';
-  else statusLabel = 'No device connected';
+  if (ble.isSimulated) statusLabel = tr('devSimulated');
+  else if (ble.status === 'streaming') statusLabel = tr('devStreaming');
+  else if (ble.isConnected) statusLabel = tr('devConnected');
+  else if (ble.status === 'connecting') statusLabel = tr('devConnecting');
+  /* The platform's own error text is not translatable; a specific cause
+     untranslated beats a generic sentence that says nothing. */
+  else if (ble.status === 'error') statusLabel = ble.error ?? tr('devError');
+  else if (!ble.isSupported) statusLabel = tr('devNoBluetooth');
+  else statusLabel = tr('devNone');
 
   /* ── The single big round button: its meaning follows the device state ── */
   let title: string;
@@ -68,20 +72,20 @@ export default function HomeScreen() {
   let showDemoLink = false;
 
   if (ble.isConnected) {
-    title = 'Start Test';
+    title = tr('homeStart');
     onPress = () => nav.navigate('LimbMeasure');
   } else if (ble.status === 'connecting') {
-    title = 'Connecting…';
+    title = tr('devConnecting');
     onPress = () => {};
     disabled = true;
     showDemoLink = true;
   } else if (!ble.isSupported) {
     // Expo Go has no native BLE module: demo IS the only path, so it becomes
     // the primary button rather than a dead end.
-    title = 'Start Demo';
+    title = tr('homeStartDemo');
     onPress = ble.connectSimulator;
   } else {
-    title = 'Connect';
+    title = tr('homeConnect');
     onPress = () => void ble.connect();
     showDemoLink = true;
   }
@@ -93,11 +97,9 @@ export default function HomeScreen() {
             GreetingHeader, with the same first-name resolution. */}
         <View style={styles.greet}>
           <Text style={[styles.greetTitle, { color: t.textPrimary }]}>
-            {greetName ? `Hello ${greetName}` : 'Hello'}
+            {greetName ? tr('homeGreeting', { name: greetName }) : tr('homeGreetingNoName')}
           </Text>
-          <Text style={[styles.greetSub, { color: t.textSecondary }]}>
-            Performing a Home ECG Test
-          </Text>
+          <Text style={[styles.greetSub, { color: t.textSecondary }]}>{tr('homeSubPatient')}</Text>
         </View>
 
         <HeroBlobButton
@@ -114,9 +116,7 @@ export default function HomeScreen() {
             onPress={ble.connectSimulator}
             style={styles.demoRow}
           >
-            <Text style={[styles.demoLink, { color: t.textTertiary }]}>
-              Demo mode (no device)
-            </Text>
+            <Text style={[styles.demoLink, { color: t.textTertiary }]}>{tr('homeDemoLink')}</Text>
           </Pressable>
         )}
       </View>
@@ -133,4 +133,5 @@ const styles = StyleSheet.create({
   demoLink: { fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
 });
 
-// v2.0.0 — Wired to the real pipeline: connect/demo/start-test, navigates to the limb exam.
+// v2.1.0 — All copy comes from the locale; the greeting uses the shared
+//          `homeGreeting: 'Hello {name}'` placeholder the web app uses.

@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { BleProvider } from '@/features/ble/BleProvider';
 import { PreferencesGate } from '@/features/preferences/PreferencesGate';
+import { I18nProvider } from '@/i18n/I18nProvider';
 import { store } from '@/store/store';
 import RootNavigator from '@/navigation/RootNavigator';
 
@@ -22,13 +23,19 @@ export default function App() {
           {/* Saved preferences are read BEFORE the first paint, so the app
               never opens light and repaints dark a frame later. */}
           <PreferencesGate>
-            {/* One BleClient above the navigator: a connection must survive
-                navigating from Home into the exam, and the ring buffer must
-                not reset mid-recording. */}
-            <BleProvider>
-              <StatusBar style="auto" />
-              <RootNavigator />
-            </BleProvider>
+            {/* INSIDE the gate on purpose: the language is one of the
+                preferences it hydrates, so by the time this mounts the
+                stored choice is already in the store and the first paint
+                is in the right language. */}
+            <I18nProvider>
+              {/* One BleClient above the navigator: a connection must survive
+                  navigating from Home into the exam, and the ring buffer must
+                  not reset mid-recording. */}
+              <BleProvider>
+                <StatusBar style="auto" />
+                <RootNavigator />
+              </BleProvider>
+            </I18nProvider>
           </PreferencesGate>
         </Provider>
       </SafeAreaProvider>
@@ -40,4 +47,5 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
-// v2.2.0 — Per-route orientation (no imperative lock) + preference hydration gate.
+// v2.3.0 — Adds I18nProvider inside the preference gate, so the first paint is
+//          already in the patient's stored language.

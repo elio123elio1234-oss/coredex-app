@@ -24,6 +24,7 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -39,6 +40,7 @@ interface Props {
 
 export default function CountdownRing({ progress, secondsLeft, caption, size = 132 }: Props) {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const stroke = Math.max(6, Math.round(size * 0.075));
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -49,7 +51,7 @@ export default function CountdownRing({ progress, secondsLeft, caption, size = 1
     <View
       style={{ width: size, height: size }}
       accessibilityRole="progressbar"
-      accessibilityLabel={`${secondsLeft} seconds left`}
+      accessibilityLabel={tr('countdownA11y', { n: secondsLeft })}
     >
       <Svg width={size} height={size}>
         {/* Track */}
@@ -105,5 +107,5 @@ const styles = StyleSheet.create({
   caption: { fontSize: 11, fontWeight: '600', letterSpacing: 0.44 },
 });
 
-// v2.1.0 — A captionless ring gives its whole middle to the number, so the
-//          40pt bar-sized variant stays legible.
+// v2.2.0 — The screen-reader label is translated (the visible caption is
+//          still supplied by the caller, already translated).

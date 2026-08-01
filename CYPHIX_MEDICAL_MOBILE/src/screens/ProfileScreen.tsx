@@ -33,6 +33,8 @@ import {
 import { dockFootprint } from '@/navigation/dockMetrics';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD, type CodedItem } from '@/features/profile/demoCard';
+import type { TranslationKey } from '@/i18n/config';
+import { useTranslation } from '@/i18n/useTranslation';
 import { shellPalette } from '@/theme/shellTheme';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
@@ -51,11 +53,16 @@ function Section({
   children: React.ReactNode;
 }) {
   const t = useTheme();
+  const { rtl } = useTranslation();
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHead}>
+      <View style={[styles.sectionHead, rtl && styles.rowReverse]}>
         <Art size={48} />
-        <Text style={[styles.sectionTitle, { color: t.textPrimary }]}>{title}</Text>
+        <Text
+          style={[styles.sectionTitle, { color: t.textPrimary, textAlign: rtl ? 'right' : 'left' }]}
+        >
+          {title}
+        </Text>
       </View>
       <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
         {children}
@@ -76,21 +83,28 @@ function Row({
   last?: boolean;
 }) {
   const t = useTheme();
+  const { rtl } = useTranslation();
+  const align = rtl ? ('right' as const) : ('left' as const);
   return (
     <View
       style={[
         styles.row,
+        rtl && styles.rowReverse,
         !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.border },
       ]}
     >
       <View style={styles.rowLead}>
-        <Text style={[styles.rowLabel, { color: t.textPrimary }]}>{label}</Text>
+        <Text style={[styles.rowLabel, { color: t.textPrimary, textAlign: align }]}>{label}</Text>
         {description != null && (
-          <Text style={[styles.rowDesc, { color: t.textTertiary }]}>{description}</Text>
+          <Text style={[styles.rowDesc, { color: t.textTertiary, textAlign: align }]}>
+            {description}
+          </Text>
         )}
       </View>
       {value != null && (
-        <Text style={[styles.rowValue, { color: t.textSecondary }]}>{value}</Text>
+        <Text style={[styles.rowValue, { color: t.textSecondary, textAlign: rtl ? 'left' : 'right' }]}>
+          {value}
+        </Text>
       )}
     </View>
   );
@@ -98,11 +112,16 @@ function Row({
 
 function Chips({ items, empty, tone }: { items: CodedItem[]; empty: string; tone?: 'warn' }) {
   const t = useTheme();
+  const { rtl } = useTranslation();
   if (items.length === 0) {
-    return <Text style={[styles.emptyText, { color: t.textTertiary }]}>{empty}</Text>;
+    return (
+      <Text style={[styles.emptyText, { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' }]}>
+        {empty}
+      </Text>
+    );
   }
   return (
-    <View style={styles.chips}>
+    <View style={[styles.chips, rtl && styles.rowReverse]}>
       {items.map((c) => (
         <View
           key={c.display}
@@ -129,18 +148,27 @@ function Chips({ items, empty, tone }: { items: CodedItem[]; empty: string; tone
   );
 }
 
-const SEX_LABEL: Record<string, string> = {
-  male: 'Male',
-  female: 'Female',
-  other: 'Other',
-  unknown: 'Unknown',
+/* Administrative gender is a CODE (`male` | `female` | …); the word shown for
+   it is presentation, so it is a locale key rather than a stored string. */
+const SEX_KEY: Record<string, TranslationKey> = {
+  male: 'sexMale',
+  female: 'sexFemale',
+  other: 'sexOther',
+  unknown: 'sexUnknown',
 };
 
 /** Chevron pointing to the next screen — the platform's own "there is more
-    behind this row" cue, on iOS and Android alike. */
-function ForwardChevron({ color }: { color: string }) {
+    behind this row" cue, on iOS and Android alike. `flip` turns it around
+    for a right-to-left language, where "forward" is the other way. */
+function ForwardChevron({ color, flip = false }: { color: string; flip?: boolean }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={flip ? { transform: [{ scaleX: -1 }] } : undefined}
+    >
       <Path
         d="M9 18l6-6-6-6"
         stroke={color}
@@ -154,12 +182,14 @@ function ForwardChevron({ color }: { color: string }) {
 
 export default function ProfileScreen() {
   const t = useTheme();
+  const { t: tr, rtl } = useTranslation();
   const nav = useNavigation<{ navigate: (screen: string) => void }>();
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
   const { prefs } = usePreferences();
   const palette = shellPalette(prefs.background, useIsDark());
   const card = DEMO_CARD;
+  const sexLabel = tr(SEX_KEY[card.gender ?? 'unknown'] ?? 'sexUnknown');
 
   const initials = card.displayName
     .split(/\s+/)
@@ -183,50 +213,65 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Header: portrait + identity + care team ── */}
-        <View style={styles.header}>
+        <View style={[styles.header, rtl && styles.rowReverse]}>
           <View
             style={[styles.avatar, { backgroundColor: t.accentSoft, borderColor: t.surface }]}
           >
             <Text style={[styles.avatarText, { color: t.brandNavy }]}>{initials}</Text>
           </View>
           <View style={styles.identity}>
-            <Text style={[styles.name, { color: t.textPrimary }]}>{card.displayName}</Text>
-            <Text style={[styles.meta, { color: t.textSecondary }]}>
-              {card.ageYears} · {SEX_LABEL[card.gender ?? 'unknown']}
+            <Text
+              style={[styles.name, { color: t.textPrimary, textAlign: rtl ? 'right' : 'left' }]}
+            >
+              {card.displayName}
+            </Text>
+            <Text style={[styles.meta, { color: t.textSecondary, textAlign: rtl ? 'right' : 'left' }]}>
+              {card.ageYears} · {sexLabel}
               {card.mrn ? ` · ${card.mrn}` : ''}
             </Text>
             {card.careTeam && (
-              <Text style={[styles.care, { color: t.textTertiary }]}>
+              <Text
+                style={[styles.care, { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' }]}
+              >
                 {card.careTeam.role} · {card.careTeam.name}
               </Text>
             )}
           </View>
         </View>
 
-        <Section title="Details" art={DetailsIllustration}>
-          <Row label="Age" value={String(card.ageYears ?? '—')} />
-          <Row label="Sex" value={SEX_LABEL[card.gender ?? 'unknown']} />
-          <Row label="Blood type" value={card.bloodType ?? '—'} />
-          <Row label="Height" value={card.heightCm != null ? `${card.heightCm} cm` : '—'} />
-          <Row label="Weight" value={card.weightKg != null ? `${card.weightKg} kg` : '—'} />
+        <Section title={tr('profileDetails')} art={DetailsIllustration}>
+          <Row label={tr('profileAge')} value={String(card.ageYears ?? '—')} />
+          <Row label={tr('profileSex')} value={sexLabel} />
+          <Row label={tr('profileBlood')} value={card.bloodType ?? '—'} />
           <Row
-            label="BMI"
-            description="Derived from height and weight"
+            label={tr('profileHeight')}
+            value={card.heightCm != null ? `${card.heightCm} cm` : '—'}
+          />
+          <Row
+            label={tr('profileWeight')}
+            value={card.weightKg != null ? `${card.weightKg} kg` : '—'}
+          />
+          <Row
+            label={tr('profileBmi')}
+            description={tr('profileBmiNote')}
             value={card.bmi != null ? String(card.bmi) : '—'}
           />
-          <Row label="MRN" value={card.mrn ?? '—'} />
-          <Row label="Phone" value={card.phone ?? '—'} last />
+          <Row label={tr('profileMrn')} value={card.mrn ?? '—'} />
+          <Row label={tr('profilePhone')} value={card.phone ?? '—'} last />
         </Section>
 
-        <Section title="Conditions" art={ConditionsIllustration}>
-          <Chips items={card.conditions} empty="None recorded" />
+        {/* The chips' TEXT is the clinical `display` of a coded concept (ICD-10 /
+            SNOMED), not UI copy — it is data that arrives with the record and is
+            not translated here. Only the empty-state sentence is. */}
+        <Section title={tr('profileConditions')} art={ConditionsIllustration}>
+          <Chips items={card.conditions} empty={tr('profileNoneRecorded')} />
         </Section>
 
-        <Section title="Allergies" art={AllergiesIllustration}>
-          <Chips items={card.allergies} empty="No known allergies" tone="warn" />
+        <Section title={tr('profileAllergies')} art={AllergiesIllustration}>
+          <Chips items={card.allergies} empty={tr('profileNoAllergies')} tone="warn" />
         </Section>
 
-        <Section title="Medications" art={MedicationIllustration}>
+        <Section title={tr('profileMedications')} art={MedicationIllustration}>
           {card.medications.length > 0 ? (
             card.medications.map((m, i) => (
               <Row
@@ -237,24 +282,36 @@ export default function ProfileScreen() {
               />
             ))
           ) : (
-            <Text style={[styles.emptyText, { color: t.textTertiary }]}>
-              No medications recorded
+            <Text
+              style={[
+                styles.emptyText,
+                { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('profileNoMeds')}
             </Text>
           )}
         </Section>
 
-        <Section title="Family history" art={FamilyHistoryIllustration}>
+        <Section title={tr('profileFamily')} art={FamilyHistoryIllustration}>
           {card.familyHistory.length > 0 ? (
             card.familyHistory.map((f, i) => (
               <Row key={f} label={f} last={i === card.familyHistory.length - 1} />
             ))
           ) : (
-            <Text style={[styles.emptyText, { color: t.textTertiary }]}>None recorded</Text>
+            <Text
+              style={[
+                styles.emptyText,
+                { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('profileNoneRecorded')}
+            </Text>
           )}
         </Section>
 
         {card.emergencyContact && (
-          <Section title="Emergency contact" art={EmergencyIllustration}>
+          <Section title={tr('profileEmergency')} art={EmergencyIllustration}>
             <Row
               label={card.emergencyContact.name}
               description={card.emergencyContact.relation}
@@ -265,7 +322,7 @@ export default function ProfileScreen() {
         )}
 
         {card.careTeam && (
-          <Section title="Care team" art={CareTeamIllustration}>
+          <Section title={tr('profileCareTeam')} art={CareTeamIllustration}>
             <Row
               label={card.careTeam.name}
               description={[card.careTeam.role, card.careTeam.clinic]
@@ -276,9 +333,11 @@ export default function ProfileScreen() {
           </Section>
         )}
 
-        <Section title="Recent activity" art={EcgIllustration}>
-          <Text style={[styles.emptyText, { color: t.textTertiary }]}>
-            No recordings yet
+        <Section title={tr('profileRecent')} art={EcgIllustration}>
+          <Text
+            style={[styles.emptyText, { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' }]}
+          >
+            {tr('profileNoRecent')}
           </Text>
         </Section>
 
@@ -291,14 +350,15 @@ export default function ProfileScreen() {
             single tap target here, and it is aimed at unsteady hands. */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Settings"
-          accessibilityHint="Appearance, notifications, device and privacy"
+          accessibilityLabel={tr('settingsTitle')}
+          accessibilityHint={tr('profileSettingsDesc')}
           onPress={() => {
             void Haptics.selectionAsync();
             nav.navigate('Settings');
           }}
           style={({ pressed }) => [
             styles.settingsCard,
+            rtl && styles.rowReverse,
             {
               backgroundColor: t.surface,
               borderColor: t.border,
@@ -308,12 +368,26 @@ export default function ProfileScreen() {
         >
           <AppearanceIllustration size={44} />
           <View style={styles.settingsText}>
-            <Text style={[styles.settingsTitle, { color: t.textPrimary }]}>Settings</Text>
-            <Text style={[styles.settingsDesc, { color: t.textSecondary }]}>
-              Appearance, notifications, device and privacy
+            <Text
+              style={[
+                styles.settingsTitle,
+                { color: t.textPrimary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('settingsTitle')}
+            </Text>
+            <Text
+              style={[
+                styles.settingsDesc,
+                { color: t.textSecondary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('profileSettingsDesc')}
             </Text>
           </View>
-          <ForwardChevron color={t.textTertiary} />
+          {/* The chevron points AT the next screen, so it turns around with
+              the reading direction. */}
+          <ForwardChevron color={t.textTertiary} flip={rtl} />
         </Pressable>
       </ScrollView>
     </View>
@@ -322,6 +396,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  /** Applied wherever a row's reading order has to follow the language. */
+  rowReverse: { flexDirection: 'row-reverse' },
   brand: { position: 'absolute', left: 20, zIndex: 20 },
   page: { paddingHorizontal: 20, gap: 18 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -387,5 +463,6 @@ const styles = StyleSheet.create({
   settingsDesc: { fontSize: 12.5, lineHeight: 18 },
 });
 
-// v1.1.0 — Adds the Settings entry point at the end of the card (mobile's
-//          equivalent of the web's avatar-popover route) + preference-aware field.
+// v1.2.0 — Section titles, field labels and empty states come from the locale;
+//          rows, the identity header and the chevron follow the reading
+//          direction. Coded clinical `display` values stay as recorded.

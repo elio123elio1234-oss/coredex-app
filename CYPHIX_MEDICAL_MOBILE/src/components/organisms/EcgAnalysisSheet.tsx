@@ -22,6 +22,8 @@ import MetricTile from '@/components/atoms/MetricTile';
 import AmplitudeTable from '@/components/molecules/AmplitudeTable';
 import AxisDial from '@/components/molecules/AxisDial';
 import IntervalBar from '@/components/molecules/IntervalBar';
+import type { TranslationKey } from '@/i18n/config';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -46,22 +48,22 @@ const REF = {
   qtc: { low: 350, high: 450, min: 280, max: 600 },
 } as const;
 
-/* Copy verbatim from the web locale (en.ts). Exported because the report's
-   summary card shows the same rhythm word in its chip, and two copies of a
-   label table drift apart the first time one of them is edited. */
-export const REGULARITY: Record<RegularityClass, string> = {
-  regular: 'Regular',
-  slightlyIrregular: 'Slightly variable',
-  irregular: 'Variable',
-  indeterminate: 'Not determined',
+/* Classification → locale KEY. Exported because the report's summary card
+   shows the same rhythm word in its chip, and two copies of a label table
+   drift apart the first time one of them is edited. */
+export const REGULARITY_KEY: Record<RegularityClass, TranslationKey> = {
+  regular: 'regRegular',
+  slightlyIrregular: 'regSlightlyIrregular',
+  irregular: 'regIrregular',
+  indeterminate: 'regIndeterminate',
 };
 
-export const AXIS: Record<AxisClass, string> = {
-  normal: 'Normal axis',
-  left: 'Left axis',
-  right: 'Right axis',
-  extreme: 'Extreme axis',
-  indeterminate: 'Not determined',
+export const AXIS_KEY: Record<AxisClass, TranslationKey> = {
+  normal: 'axisNormal',
+  left: 'axisLeft',
+  right: 'axisRight',
+  extreme: 'axisExtreme',
+  indeterminate: 'axisIndeterminate',
 };
 
 /**
@@ -76,12 +78,20 @@ export const AXIS: Record<AxisClass, string> = {
  */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const t = useTheme();
+  const { rtl } = useTranslation();
   return (
     <View style={[styles.block, { backgroundColor: t.surface, borderColor: t.border }]}>
       {/* `.analysis-section` — uppercase, letter-spaced, in the ACCENT colour
           with a hairline under it. It is the only thing separating five dense
-          blocks, so it has to read as a rule, not as another line of text. */}
-      <Text style={[styles.sectionTitle, { color: t.accent, borderBottomColor: t.border }]}>
+          blocks, so it has to read as a rule, not as another line of text.
+          `toUpperCase()` is a no-op on Hebrew, which has no letter case —
+          the letter-spacing and the rule still do the separating. */}
+      <Text
+        style={[
+          styles.sectionTitle,
+          { color: t.accent, borderBottomColor: t.border, textAlign: rtl ? 'right' : 'left' },
+        ]}
+      >
         {title.toUpperCase()}
       </Text>
       {children}
@@ -91,6 +101,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function EcgAnalysisSheet({ analysis, showTitle = true }: Props) {
   const t = useTheme();
+  const { t: tr, rtl } = useTranslation();
+  const align = rtl ? ('right' as const) : ('left' as const);
   const { rate, intervals, axis, amplitudes, quality } = analysis;
 
   const rrRange =
@@ -100,23 +112,22 @@ export default function EcgAnalysisSheet({ analysis, showTitle = true }: Props) 
     <View style={styles.sheet}>
       <View>
         {showTitle && (
-          <Text style={[styles.title, { color: t.textPrimary }]}>Automated Measurements</Text>
+          <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
+            {tr('analysisTitle')}
+          </Text>
         )}
-        <Text style={[styles.sub, { color: t.textSecondary }]}>
-          Computed from the recorded waveform. Measurements only — no interpretation is made or
-          implied.
+        <Text style={[styles.sub, { color: t.textSecondary, textAlign: align }]}>
+          {tr('analysisSubtitle')}
         </Text>
       </View>
 
       {/* Too few clean beats must never read as a confident measurement sheet. */}
       {quality.insufficient && (
-        <Text style={styles.warn}>
-          Too few clean beats were detected for reliable measurement. Repeat the recording.
-        </Text>
+        <Text style={[styles.warn, { textAlign: align }]}>{tr('qInsufficient')}</Text>
       )}
 
       {/* ── Rate & rhythm ── */}
-      <Section title="Rate & Rhythm">
+      <Section title={tr('secRate')}>
         <View style={styles.grid}>
           {/* Not `variant="hero"` here as on web: the report's summary card
               already carries the rate at 46 px directly above this sheet, and
@@ -124,132 +135,142 @@ export default function EcgAnalysisSheet({ analysis, showTitle = true }: Props) 
               look. It stays in the table because a measurement sheet must be
               complete on its own. */}
           <MetricTile
-            label="Heart rate"
+            label={tr('mBpm')}
             value={rate.bpm}
             unit="BPM"
-            hint="From the mean R-to-R interval"
+            hint={tr('mBpmHint')}
             accent={t.accentLive}
           />
-          <MetricTile label="Mean R-R" value={rate.rrMeanMs} unit="ms" />
-          <MetricTile label="R-R range" value={rrRange} unit="ms" />
-          <MetricTile label="Rhythm" value={REGULARITY[rate.regularity]} />
-          <MetricTile label="SDNN" value={rate.sdnnMs} unit="ms" hint="Spread of beat intervals" />
-          <MetricTile label="RMSSD" value={rate.rmssdMs} unit="ms" hint="Beat-to-beat variation" />
+          <MetricTile label={tr('mRrMean')} value={rate.rrMeanMs} unit="ms" />
+          <MetricTile label={tr('mRrRange')} value={rrRange} unit="ms" />
+          <MetricTile label={tr('mRegularity')} value={tr(REGULARITY_KEY[rate.regularity])} />
           <MetricTile
-            label="P before QRS"
+            label={tr('mSdnn')}
+            value={rate.sdnnMs}
+            unit="ms"
+            hint={tr('mSdnnHint')}
+          />
+          <MetricTile
+            label={tr('mRmssd')}
+            value={rate.rmssdMs}
+            unit="ms"
+            hint={tr('mRmssdHint')}
+          />
+          <MetricTile
+            label={tr('mPBefore')}
             value={rate.pBeforeQrsPct}
             unit="%"
-            hint="Beats with a detectable P wave"
+            hint={tr('mPBeforeHint')}
           />
-          <MetricTile label="Beats analysed" value={rate.beatsAnalyzed} />
+          <MetricTile label={tr('mBeats')} value={rate.beatsAnalyzed} />
         </View>
       </Section>
 
       {/* ── Frontal axis ── */}
-      <Section title="Frontal Plane Axis">
+      <Section title={tr('secAxis')}>
         <View style={styles.axisLayout}>
           <AxisDial
             degrees={axis.degrees}
-            classLabel={AXIS[axis.classification]}
-            normalRangeLabel="Shaded sector: −30° to +90°"
+            classLabel={tr(AXIS_KEY[axis.classification])}
+            normalRangeLabel={tr('axisNormalRange')}
           />
           <View style={styles.grid}>
-            <MetricTile label="Net QRS, lead I" value={axis.netI} unit="mV·s" />
-            <MetricTile label="Net QRS, lead aVF" value={axis.netAvf} unit="mV·s" />
+            <MetricTile label={tr('axisNetI')} value={axis.netI} unit="mV·s" />
+            <MetricTile label={tr('axisNetAvf')} value={axis.netAvf} unit="mV·s" />
           </View>
         </View>
       </Section>
 
       {/* ── Intervals ── */}
-      <Section title="Intervals & Durations">
+      <Section title={tr('secIntervals')}>
         <View style={styles.intervals}>
           <IntervalBar
-            label="PR interval"
+            label={tr('iPR')}
             value={intervals.prMs}
             unit="ms"
             refLow={REF.pr.low}
             refHigh={REF.pr.high}
             scaleMin={REF.pr.min}
             scaleMax={REF.pr.max}
-            refCaption="Typical adult range"
+            refCaption={tr('refRange')}
           />
           <IntervalBar
-            label="QRS duration"
+            label={tr('iQRS')}
             value={intervals.qrsMs}
             unit="ms"
             refLow={REF.qrs.low}
             refHigh={REF.qrs.high}
             scaleMin={REF.qrs.min}
             scaleMax={REF.qrs.max}
-            refCaption="Typical adult range"
+            refCaption={tr('refRange')}
           />
           <IntervalBar
-            label="QT interval"
+            label={tr('iQT')}
             value={intervals.qtMs}
             unit="ms"
             refLow={REF.qt.low}
             refHigh={REF.qt.high}
             scaleMin={REF.qt.min}
             scaleMax={REF.qt.max}
-            refCaption="Typical adult range"
+            refCaption={tr('refRange')}
           />
           <IntervalBar
-            label="QTc (Bazett)"
+            label={tr('iQTcB')}
             value={intervals.qtcBazettMs}
             unit="ms"
             refLow={REF.qtc.low}
             refHigh={REF.qtc.high}
             scaleMin={REF.qtc.min}
             scaleMax={REF.qtc.max}
-            refCaption="Typical adult range"
+            refCaption={tr('refRange')}
           />
           <IntervalBar
-            label="QTc (Fridericia)"
+            label={tr('iQTcF')}
             value={intervals.qtcFridericiaMs}
             unit="ms"
             refLow={REF.qtc.low}
             refHigh={REF.qtc.high}
             scaleMin={REF.qtc.min}
             scaleMax={REF.qtc.max}
-            refCaption="Typical adult range"
+            refCaption={tr('refRange')}
           />
         </View>
-        <Text style={[styles.note, { color: t.textTertiary }]}>
-          Shaded bands are typical adult reference ranges shown for context. They are not a
-          finding.
+        <Text style={[styles.note, { color: t.textTertiary, textAlign: align }]}>
+          {tr('intervalsNote')}
         </Text>
       </Section>
 
-      {/* ── Amplitudes ── */}
-      <Section title="Wave Amplitudes">
+      {/* ── Amplitudes ──
+          The wave NAMES (P, Q, R, S, T) are the international ECG symbols and
+          are the same in every language — they go through the locale only so
+          the table has one source for its headers, not because they change. */}
+      <Section title={tr('secAmplitudes')}>
         <AmplitudeTable
           amplitudes={amplitudes}
           labels={{
-            lead: 'Lead',
-            p: 'P',
-            q: 'Q',
-            r: 'R',
-            s: 'S',
-            t: 'T',
-            qrs: 'QRS p-p',
-            unit: 'All values in millivolts (mV), median across analysed beats.',
+            lead: tr('ampLead'),
+            p: tr('ampP'),
+            q: tr('ampQ'),
+            r: tr('ampR'),
+            s: tr('ampS'),
+            t: tr('ampT'),
+            qrs: tr('ampQRSpp'),
+            unit: tr('ampUnit'),
           }}
         />
       </Section>
 
       {/* ── Signal quality ── */}
-      <Section title="Signal Quality">
+      <Section title={tr('secQuality')}>
         <View style={styles.grid}>
-          <MetricTile label="Rhythm steadiness" value={quality.sqi} unit="%" />
-          <MetricTile label="Signal analysed" value={quality.analysedSeconds} unit="s" />
-          <MetricTile label="Sample rate" value={analysis.sampleRate} unit="Hz" />
+          <MetricTile label={tr('qSqi')} value={quality.sqi} unit="%" />
+          <MetricTile label={tr('qAnalysed')} value={quality.analysedSeconds} unit="s" />
+          <MetricTile label={tr('qSampleRate')} value={analysis.sampleRate} unit="Hz" />
         </View>
       </Section>
 
-      <Text style={[styles.disclaimer, { color: t.textTertiary }]}>
-        Automated measurements produced by CYPHIX from a 6-lead limb recording. This report is not
-        a diagnosis and does not replace clinical assessment. All values require review by a
-        qualified clinician.
+      <Text style={[styles.disclaimer, { color: t.textTertiary, textAlign: align }]}>
+        {tr('analysisDisclaimer')}
       </Text>
     </View>
   );
@@ -289,6 +310,6 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
 });
 
-// v1.3.0 — Each block on its own surface (inset-grouped, the platform's answer
-//          to five dense blocks with no page under them); optional title; label
-//          maps exported for the summary chip; rate tile is no longer a hero.
+// v1.4.0 — Every label comes from the locale; the classification tables now
+//          export locale KEYS (REGULARITY_KEY / AXIS_KEY) so one map serves
+//          the sheet and the report's summary chip in any language.

@@ -9,7 +9,6 @@
    §3.2). Same sections, same order, same illustrations as the web.
 
    ── Rows the web has and this does not (all recorded in PARITY.md) ──
-   • Language — the mobile app has no i18n layer yet.
    • AI voice-guide key — Gemini Live is web-only today, so a key field
      here would configure nothing.
    • "Preview as role" / Sign out — mobile auth is still the demo card;
@@ -37,6 +36,7 @@ import {
   PrivacyIllustration,
 } from '@/components/atoms/Illustration';
 import BackgroundSelectRow from '@/components/molecules/BackgroundSelectRow';
+import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
@@ -45,18 +45,22 @@ import { useBle } from '@/features/ble/useBle';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD } from '@/features/profile/demoCard';
 import type { CareMode, ThemeChoice } from '@/features/preferences/preferencesSlice';
+import { useTranslation } from '@/i18n/useTranslation';
+import type { TranslationKey } from '@/i18n/config';
 import { shellPalette } from '@/theme/shellTheme';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
-const THEME_OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+/* Option tables hold KEYS, not sentences: the labels are resolved at render
+   so switching the language re-labels the controls with everything else. */
+const THEME_OPTIONS: readonly { value: ThemeChoice; labelKey: TranslationKey }[] = [
+  { value: 'system', labelKey: 'setThemeSystem' },
+  { value: 'light', labelKey: 'setThemeLight' },
+  { value: 'dark', labelKey: 'setThemeDark' },
 ];
 
-const CARE_OPTIONS: readonly { value: CareMode; label: string }[] = [
-  { value: 'clinician', label: 'My doctor' },
-  { value: 'clinic', label: 'Clinic' },
+const CARE_OPTIONS: readonly { value: CareMode; labelKey: TranslationKey }[] = [
+  { value: 'clinician', labelKey: 'careClinician' },
+  { value: 'clinic', labelKey: 'careClinic' },
 ];
 
 function BackChevron({ color }: { color: string }) {
@@ -79,19 +83,23 @@ export default function SettingsScreen() {
   const nav = useNavigation<{ goBack: () => void }>();
   const insets = useSafeAreaInsets();
   const { prefs, setTheme, setBackground, setNotification, setCareMode } = usePreferences();
+  const { t: tr, lang, setLang } = useTranslation();
   const ble = useBle();
   const palette = shellPalette(prefs.background, dark);
 
   /* Device connection in WORDS, never colour alone — the same wording the
      patient's home screen uses, so one device reads as one state. */
   let deviceStatus: string;
-  if (ble.isSimulated) deviceStatus = 'Simulation — not a patient signal';
-  else if (ble.status === 'streaming') deviceStatus = 'Streaming';
-  else if (ble.isConnected) deviceStatus = 'Device connected';
-  else if (ble.status === 'connecting') deviceStatus = 'Connecting…';
-  else if (ble.status === 'error') deviceStatus = ble.error ?? 'Connection error';
-  else if (!ble.isSupported) deviceStatus = 'No Bluetooth in this build';
-  else deviceStatus = 'No device connected';
+  if (ble.isSimulated) deviceStatus = tr('devSimulated');
+  else if (ble.status === 'streaming') deviceStatus = tr('devStreaming');
+  else if (ble.isConnected) deviceStatus = tr('devConnected');
+  else if (ble.status === 'connecting') deviceStatus = tr('devConnecting');
+  /* `ble.error` is the platform's own message and is not translatable —
+     showing it untranslated beats replacing a specific cause with a
+     generic sentence. */
+  else if (ble.status === 'error') deviceStatus = ble.error ?? tr('devError');
+  else if (!ble.isSupported) deviceStatus = tr('devNoBluetooth');
+  else deviceStatus = tr('devNone');
 
   return (
     <View style={styles.root}>
@@ -102,7 +110,7 @@ export default function SettingsScreen() {
       <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={tr('back')}
           hitSlop={12}
           onPress={() => {
             void Haptics.selectionAsync();
@@ -111,7 +119,7 @@ export default function SettingsScreen() {
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
           <BackChevron color={t.textPrimary} />
-          <Text style={[styles.backLabel, { color: t.textPrimary }]}>Profile</Text>
+          <Text style={[styles.backLabel, { color: t.textPrimary }]}>{tr('dockProfile')}</Text>
         </Pressable>
       </View>
 
@@ -123,28 +131,37 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: t.textPrimary }]}>Settings</Text>
+          <Text style={[styles.title, { color: t.textPrimary }]}>{tr('settingsTitle')}</Text>
           <Text style={[styles.subtitle, { color: t.textSecondary }]}>
-            Manage your preferences and account
+            {tr('settingsSubtitle')}
           </Text>
         </View>
 
         {/* ── Appearance ── */}
         <SettingsSection
           art={AppearanceIllustration}
-          title="Appearance"
-          description="How CYPHIX looks on this device"
+          title={tr('setSecAppearance')}
+          description={tr('setSecAppearanceDesc')}
         >
+          {/* ★ Language FIRST in the section, ahead of theme.
+              Everything below it is a preference about how the app looks;
+              this one decides whether the patient can read any of them. A
+              patient who opened the app in the wrong language has to find
+              this row while unable to read its label — so it is the first
+              thing under the first heading, and its options are written in
+              their own scripts rather than translated. */}
+          <SettingsRow first label={tr('language')} description={tr('languageDesc')} />
+          <LanguageSelectRow value={lang} onChange={setLang} accessibilityLabel={tr('language')} />
+
           <SettingsRow
-            first
-            label="Theme"
-            description="Follow the phone, or pick one"
+            label={tr('setTheme')}
+            description={tr('setThemeDesc')}
             control={
               <SegmentedControl
-                options={THEME_OPTIONS}
+                options={THEME_OPTIONS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
                 value={prefs.theme}
                 onChange={setTheme}
-                accessibilityLabel="Theme"
+                accessibilityLabel={tr('setTheme')}
               />
             }
           />
@@ -155,54 +172,54 @@ export default function SettingsScreen() {
               fight the phone's own setting and confuse exactly the patients it
               is meant to help. Recorded in PARITY.md. */}
           <SettingsRow
-            label="Text size"
-            description="CYPHIX follows the text size set in your phone's own display settings"
-            value={<SettingsChip label="Phone setting" />}
+            label={tr('setTextSize')}
+            description={tr('setTextSizeDescMobile')}
+            value={<SettingsChip label={tr('setTextSizePhone')} />}
           />
           {/* The swatches are too wide to sit at the end of a row, so the label
               and the control stack — the same thing `.bg-select` does on the
               web, where the picker gets its own full-width block. */}
-          <SettingsRow label="Background" description="The colour behind your screens" />
+          <SettingsRow label={tr('bgLabel')} description={tr('bgLabelDesc')} />
           <BackgroundSelectRow value={prefs.background} onChange={setBackground} />
         </SettingsSection>
 
         {/* ── Notifications ── */}
         <SettingsSection
           art={NotificationsIllustration}
-          title="Notifications"
-          description="Choose what you want to be reminded about"
+          title={tr('setSecNotifications')}
+          description={tr('setSecNotificationsDesc')}
         >
           <SettingsRow
             first
-            label="Test reminders"
-            description="Remind me when a test is due"
+            label={tr('setNotifReminders')}
+            description={tr('setNotifRemindersDesc')}
             control={
               <Switch
                 value={prefs.notifications.testReminders}
                 onValueChange={(v) => setNotification('testReminders', v)}
-                accessibilityLabel="Test reminders"
+                accessibilityLabel={tr('setNotifReminders')}
               />
             }
           />
           <SettingsRow
-            label="Results ready"
-            description="Tell me when a recording has been reviewed"
+            label={tr('setNotifResults')}
+            description={tr('setNotifResultsDesc')}
             control={
               <Switch
                 value={prefs.notifications.resultsReady}
                 onValueChange={(v) => setNotification('resultsReady', v)}
-                accessibilityLabel="Results ready"
+                accessibilityLabel={tr('setNotifResults')}
               />
             }
           />
           <SettingsRow
-            label="Doctor messages"
-            description="Notify me about new messages"
+            label={tr('setNotifMessages')}
+            description={tr('setNotifMessagesDesc')}
             control={
               <Switch
                 value={prefs.notifications.doctorMessages}
                 onValueChange={(v) => setNotification('doctorMessages', v)}
-                accessibilityLabel="Doctor messages"
+                accessibilityLabel={tr('setNotifMessages')}
               />
             }
           />
@@ -211,23 +228,21 @@ export default function SettingsScreen() {
         {/* ── Care connection (who your messages go to) ── */}
         <SettingsSection
           art={CareConnectionIllustration}
-          title="Care connection"
-          description="Who your messages go to"
+          title={tr('setSecCare')}
+          description={tr('setSecCareDesc')}
         >
           <SettingsRow
             first
-            label="Connection"
+            label={tr('setCareConnection')}
             description={
-              prefs.careMode === 'clinic'
-                ? 'Requests are triaged by the clinic to an available clinician'
-                : 'Direct chat with your private doctor'
+              prefs.careMode === 'clinic' ? tr('setCareClinicDesc') : tr('setCareClinicianDesc')
             }
             control={
               <SegmentedControl
-                options={CARE_OPTIONS}
+                options={CARE_OPTIONS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
                 value={prefs.careMode}
                 onChange={setCareMode}
-                accessibilityLabel="Care connection"
+                accessibilityLabel={tr('setSecCare')}
               />
             }
           />
@@ -236,26 +251,27 @@ export default function SettingsScreen() {
         {/* ── ECG Device ── */}
         <SettingsSection
           art={EcgDeviceIllustration}
-          title="ECG Device"
-          description="Your Bluetooth ECG connection"
+          title={tr('setSecDevice')}
+          description={tr('setSecDeviceDesc')}
         >
-          <SettingsRow first label="Status" value={deviceStatus} />
-          <SettingsRow label="Device" value={ble.deviceName || 'No device paired'} />
+          <SettingsRow first label={tr('setDeviceStatus')} value={deviceStatus} />
+          <SettingsRow
+            label={tr('setDeviceName')}
+            value={ble.deviceName || tr('setDeviceNonePaired')}
+          />
           {ble.isConnected ? (
             <SettingsRow
-              label="Disconnect"
-              value={<SettingsChip label="Tap" />}
+              label={tr('setDeviceDisconnect')}
+              value={<SettingsChip label={tr('setDeviceTap')} />}
               onPress={ble.disconnect}
             />
           ) : (
             <SettingsRow
-              label="Connect a device"
-              description={
-                ble.isSupported
-                  ? undefined
-                  : 'This build has no Bluetooth — the simulator is the path'
+              label={tr('setDeviceConnect')}
+              description={ble.isSupported ? undefined : tr('setDeviceNoBleDesc')}
+              value={
+                <SettingsChip label={ble.isSupported ? tr('setDeviceScan') : tr('setDeviceDemo')} />
               }
-              value={<SettingsChip label={ble.isSupported ? 'Scan' : 'Demo'} />}
               onPress={ble.isSupported ? () => void ble.connect() : ble.connectSimulator}
             />
           )}
@@ -264,36 +280,39 @@ export default function SettingsScreen() {
         {/* ── Privacy & Security ── */}
         <SettingsSection
           art={PrivacyIllustration}
-          title="Privacy & Security"
-          description="Your data and how it is protected"
+          title={tr('setSecPrivacy')}
+          description={tr('setSecPrivacyDesc')}
         >
           <SettingsRow
             first
-            label="On-device processing"
-            description="Your ECG never leaves this device. There is no server today."
-            value={<SettingsChip label="Secure On-Device Processing" tone="ok" />}
+            label={tr('setPrivacyOnDevice')}
+            description={tr('setPrivacyOnDeviceDesc')}
+            value={<SettingsChip label={tr('encryptionBadge')} tone="ok" />}
           />
           <SettingsRow
-            label="Export my data"
-            description="Download everything stored on this device"
-            value={<SettingsChip label="Coming soon" />}
+            label={tr('setPrivacyExport')}
+            description={tr('setPrivacyExportDesc')}
+            value={<SettingsChip label={tr('setComingSoon')} />}
           />
         </SettingsSection>
 
         {/* ── Account ── */}
         <SettingsSection
           art={AccountIllustration}
-          title="Account"
-          description="Who you are signed in as"
+          title={tr('setSecAccount')}
+          description={tr('setSecAccountDesc')}
         >
-          <SettingsRow first label="Name" value={DEMO_CARD.displayName} />
-          <SettingsRow label="Role" value={<SettingsChip label="Patient" />} />
+          <SettingsRow first label={tr('setAccountName')} value={DEMO_CARD.displayName} />
+          <SettingsRow
+            label={tr('setAccountRole')}
+            value={<SettingsChip label={tr('roleLabelPatient')} />}
+          />
           {/* No sign-out until there is something to sign out OF — mobile auth
               is still the fictitious demo card (web CLAUDE.md §7.4). */}
           <SettingsRow
-            label="Sign out"
-            description="Available once accounts are connected to the server"
-            value={<SettingsChip label="Coming soon" />}
+            label={tr('setAccountSignOut')}
+            description={tr('setAccountSignOutDesc')}
+            value={<SettingsChip label={tr('setComingSoon')} />}
             disabled
           />
         </SettingsSection>
@@ -301,12 +320,15 @@ export default function SettingsScreen() {
         {/* ── About ── */}
         <SettingsSection
           art={AboutIllustration}
-          title="About"
-          description="Version and compliance"
+          title={tr('setSecAbout')}
+          description={tr('setSecAboutDesc')}
         >
-          <SettingsRow first label="App version" value={APP_VERSION} />
-          <SettingsRow label="This build" value={APP_BUILD_LABEL} />
-          <SettingsRow label="Compliance" value="HIPAA · GDPR · Israeli Privacy Law" />
+          <SettingsRow first label={tr('setAboutVersion')} value={APP_VERSION} />
+          {/* The build label is a developer identifier, not patient copy —
+              it stays in English on purpose so a bug report quotes the same
+              string the changelog does. */}
+          <SettingsRow label={tr('setAboutBuild')} value={APP_BUILD_LABEL} />
+          <SettingsRow label={tr('setAboutCompliance')} value={tr('setAboutComplianceValue')} />
         </SettingsSection>
       </ScrollView>
     </View>
@@ -325,5 +347,6 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
-// v1.0.0 — Settings ported from the web page: same sections, same order, the
-//          same pastel illustrations, wired to the preferences slice + BLE.
+// v2.0.0 — Fully translated, and gains the Language picker at the top of
+//          Appearance (the one setting a patient must be able to find while
+//          unable to read the rest of the screen).

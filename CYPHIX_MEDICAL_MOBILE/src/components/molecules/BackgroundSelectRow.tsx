@@ -15,15 +15,17 @@ import * as Haptics from 'expo-haptics';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable } from 'react-native';
+import type { TranslationKey } from '@/i18n/config';
+import { useTranslation } from '@/i18n/useTranslation';
 import type { BgStyle } from '@/theme/shellTheme';
 import { useTheme } from '@/theme/useTheme';
 
 /** Order and labels follow the web's BG_STYLES / bg* locale keys. */
-const SWATCHES: { id: BgStyle; label: string; colors: [string, string] }[] = [
-  { id: 'waves', label: 'Waves', colors: ['#E7F6FB', '#8FD2E6'] },
-  { id: 'white', label: 'White', colors: ['#FBFBFD', '#FBFBFD'] },
-  { id: 'gray', label: 'Gray', colors: ['#E4E7EC', '#E4E7EC'] },
-  { id: 'calm', label: 'Calm', colors: ['#F2FAFC', '#C9EEF2'] },
+const SWATCHES: { id: BgStyle; labelKey: TranslationKey; colors: [string, string] }[] = [
+  { id: 'waves', labelKey: 'bgWaves', colors: ['#E7F6FB', '#8FD2E6'] },
+  { id: 'white', labelKey: 'bgWhite', colors: ['#FBFBFD', '#FBFBFD'] },
+  { id: 'gray', labelKey: 'bgGray', colors: ['#E4E7EC', '#E4E7EC'] },
+  { id: 'calm', labelKey: 'bgCalm', colors: ['#F2FAFC', '#C9EEF2'] },
 ];
 
 interface Props {
@@ -33,16 +35,22 @@ interface Props {
 
 export default function BackgroundSelectRow({ value, onChange }: Props) {
   const t = useTheme();
+  const { t: tr, rtl } = useTranslation();
   return (
-    <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Background">
+    <View
+      style={[styles.row, rtl && styles.rowRtl]}
+      accessibilityRole="radiogroup"
+      accessibilityLabel={tr('bgLabel')}
+    >
       {SWATCHES.map((s) => {
         const active = s.id === value;
+        const label = tr(s.labelKey);
         return (
           <Pressable
             key={s.id}
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={s.label}
+            accessibilityLabel={label}
             onPress={() => {
               void Haptics.selectionAsync();
               onChange(s.id);
@@ -64,7 +72,7 @@ export default function BackgroundSelectRow({ value, onChange }: Props) {
                 { color: active ? t.textPrimary : t.textSecondary, fontWeight: active ? '800' : '600' },
               ]}
             >
-              {s.label}
+              {label}
             </Text>
           </Pressable>
         );
@@ -75,9 +83,11 @@ export default function BackgroundSelectRow({ value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 14, paddingVertical: 4 },
+  rowRtl: { flexDirection: 'row-reverse', justifyContent: 'flex-start' },
   swatch: { alignItems: 'center', gap: 6 },
   chip: { width: 46, height: 34, borderRadius: 10 },
   label: { fontSize: 11.5 },
 });
 
-// v1.0.0 — Shell background picker (named swatches, not colour alone).
+// v1.1.0 — Swatch names come from the locale; the row follows the reading
+//          direction, so the first swatch is where the eye starts.

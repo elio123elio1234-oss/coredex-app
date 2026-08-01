@@ -1,5 +1,111 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.13.0 — 2026-08-01 — The app learns to speak: i18n, and a language picker in Settings
+
+The user asked three questions: is the native app modular, does it support
+multiple languages, and can the language picker be added to Settings. The
+first was already yes. The second was **no** — every string in the app was a
+literal, and `SettingsScreen`'s own header comment said so ("Language — the
+mobile app has no i18n layer yet"). The third is what this release is.
+
+### The shape is the web's, on purpose
+
+`src/i18n/` is the same four files the web app has, with the same names and
+the same public surface:
+
+```
+i18n/
+├── config.ts          ← THE REGISTRY. Adding a language is an edit HERE.
+├── I18nContext.ts     ← context + { lang, dir, rtl, setLang, t }
+├── I18nProvider.tsx   ← owns the active language
+├── useTranslation.ts  ← the hook every component calls
+└── locales/
+    ├── en.ts          ← the canonical key set
+    └── he.ts          ← Record<TranslationKey, string>
+```
+
+**Adding a third language is one new file plus three lines**, exactly as on
+the web: copy `locales/en.ts`, translate the values, then add the code to
+`LangCode`, a row to `LANG_META` and a line to `TRANSLATIONS`. Nothing else
+changes anywhere — the Settings picker is driven by `LANG_META`, so the new
+language appears in it on its own.
+
+`he.ts` is typed `Record<TranslationKey, string>` where `TranslationKey` is
+`keyof typeof en`. A key that exists in English and not in the new language is
+a **compile error**, not a blank label discovered by a patient.
+
+Wherever the web already says a sentence in Hebrew, the wording is copied
+verbatim from `CYPHIX_MEDICAL_WEB/src/i18n/locales/he.ts` — the gate messages,
+the prep steps, the whole measurements sheet. Two platforms giving the same
+clinical instruction two different ways is a clinical problem, not a copy one.
+
+### Where the choice is stored, and why not in its own key
+
+The web provider reads and writes `localStorage` synchronously. Every phone
+equivalent is **async**, so reading the language during the first render is
+impossible — the app would open in English and repaint in Hebrew a frame
+later. That is the same bug `PreferencesGate` already exists to prevent for
+the theme.
+
+So `language` lives in the **preferences slice**, inside the blob the gate
+already hydrates before the first paint. One gate, one write path, no flash.
+`I18nProvider` mounts inside `PreferencesGate` and reads from it.
+
+### RTL: what works, and what is honestly not done
+
+Hebrew is right-to-left. On the web that is one line (`document.documentElement
+.dir`) and the browser mirrors the layout. React Native has **no per-subtree
+`dir`** — real mirroring is `I18nManager.forceRTL()`, which is process-wide and
+only takes effect **after the app is relaunched**.
+
+So this release does the part that works today: rows, section headers, metric
+tiles, chips, the profile identity block and the forward chevron all reverse
+and re-align off `useTranslation().rtl`. Native mirroring is marked `🟡` in
+`PARITY.md`; when it lands it needs a deliberate "restart to apply" flow, not
+a silent flip under a patient mid-session.
+
+Two things are **never** mirrored, in any language:
+
+* the interval bar's axis — `scaleMin → scaleMax` is a number line, and
+  flipping it would put a short PR interval where a long one belongs;
+* the ECG paper — time runs left to right on every ECG on earth.
+
+### What is deliberately not translated
+
+Each of these has a comment at the site explaining why:
+
+* clinical `display` values on coded chips — ICD-10 / SNOMED **data**, not copy;
+* lead names (I, II, III, aVR, aVL, aVF) and unit symbols (BPM, ms, Hz, mV, %);
+* the 25 mm/s · 10 mm/mV scale caption;
+* `APP_BUILD_LABEL` — a developer identifier a bug report should quote verbatim;
+* the platform's own BLE error text, shown untranslated rather than replaced by
+  a generic sentence that says less about what actually went wrong.
+
+### One bug fixed on the way
+
+The report's letterhead formatted its date with `toLocaleDateString(undefined)`
+— "whatever the device is set to". A patient who set CYPHIX to Hebrew on an
+English phone got a Hebrew report with an English date on it. It now formats in
+the **chosen** language, which is the whole point of having a picker.
+
+### The picker itself
+
+Settings → Appearance, **first row**, above Theme. Everything else in that
+section is about how the app looks; this one decides whether the patient can
+read any of it — so it is the first thing under the first heading, and its
+options are written in their own scripts (`English`, `עברית`), never
+translated. A row of 44 pt pills rather than the web's dropdown: RN has no
+non-modal `<select>`, and a menu whose label is in the language you are trying
+to leave is not an escape route.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for **iOS and Android** ·
+`expo-doctor` 18/18. That means the code is well-formed, **not** that it looks
+right in Hebrew on a real screen — line breaks, pill wrapping and the reversed
+rows all pass every one of those checks. Stays `🔬` until someone switches the
+language on a device.
+
 ## v0.12.0 — 2026-08-01 — Report polish: the five things that still read as "not native"
 
 v0.11.0 fixed the report's *structure*. This fixes how it looks, against five

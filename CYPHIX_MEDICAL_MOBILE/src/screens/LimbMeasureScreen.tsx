@@ -76,6 +76,7 @@ import { LIMB_MEASURE_GUIDE_IMAGE } from '@/config/measurementGuides';
 import { useBle } from '@/features/ble/useBle';
 import { useHeartbeatGate } from '@/features/measurement/hooks/useHeartbeatGate';
 import { useLimbRecorder } from '@/features/measurement/hooks/useLimbRecorder';
+import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -92,23 +93,9 @@ const COMPACT_H = 500;
  */
 const BAR_RING_SIZE = 40;
 
-/* Copy is verbatim from the web locale (en.ts). */
-const LIMB_TITLE = 'Limb Leads';
-const LIMB_HOW_TO =
-  'Watch on your left wrist · rest that hand on your left leg · touch the crown with your right hand';
-const LIMB_RECORDING_NOW = 'Recording — stay still and breathe normally';
-const LIMB_AUTO_HINT = 'Recording starts on its own as soon as we feel a steady heartbeat.';
-const LIMB_COUNTDOWN_CAPTION = 'seconds left';
-const LIMB_WAITING = 'Waiting for the device to send data…';
-const LIMB_GUIDE_CAPTION =
-  'Touch the watch with your right hand — recording starts on its own';
-const SIMULATION_BANNER = 'SIMULATION — not a real signal';
-const RAIL_WARNING =
-  'Lead {leads}: the signal is beyond what the Bluetooth link can carry, so it is drawn flat. ' +
-  'Re-wet or re-seat that electrode. The electrode is not disconnected — this is a transport limit.';
-
 export default function LimbMeasureScreen() {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const nav = useNavigation<{
     goBack: () => void;
     setOptions: (o: { orientation: 'landscape' | 'portrait_up' }) => void;
@@ -209,7 +196,7 @@ export default function LimbMeasureScreen() {
      is running, and a line of prose telling a patient to hold still is
      read once and then just occupies the traces' height for ten seconds.
      The desktop layout keeps the web's copy. */
-  const barSub = compact ? null : isRecording ? LIMB_RECORDING_NOW : LIMB_HOW_TO;
+  const barSub = compact ? null : isRecording ? tr('limbRecordingNow') : tr('limbHowTo');
 
   /* ── What the foot still has to say ──
      On a short stage a capture puts the clock in the bar, so the foot is
@@ -265,7 +252,7 @@ export default function LimbMeasureScreen() {
             style={[styles.barTitle, { color: t.textPrimary, fontSize: compact ? 17 : 19 }]}
             numberOfLines={1}
           >
-            {LIMB_TITLE}
+            {tr('limbTitle')}
           </Text>
           {/* On a short stage the long idle instruction is dropped rather than
               truncated — the guide circle over the traces is showing it, in
@@ -292,7 +279,7 @@ export default function LimbMeasureScreen() {
             >
               {liveBpm > 0 ? liveBpm : '--'}
             </Text>
-            <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>BPM</Text>
+            <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>{tr('limbBpmUnit')}</Text>
           </View>
 
           {/* The capture clock. ★ The ring is BAR_RING_SIZE precisely so it
@@ -308,21 +295,24 @@ export default function LimbMeasureScreen() {
                 secondsLeft={secondsLeft}
                 size={BAR_RING_SIZE}
               />
-              <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>SEC LEFT</Text>
+              <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>
+                {tr('limbSecLeftUnit')}
+              </Text>
             </View>
           )}
 
           {ble.isSimulated && (
             /* Shortened only where the full sentence would push the Exit
                button off the bar. It still says the one thing that matters:
-               this is not a patient signal. */
-            <Text style={styles.simTag} accessibilityLabel={SIMULATION_BANNER}>
-              {compact ? 'SIMULATION' : SIMULATION_BANNER}
+               this is not a patient signal — and the screen reader always
+               gets the full sentence regardless. */
+            <Text style={styles.simTag} accessibilityLabel={tr('limbSimulationBanner')}>
+              {compact ? tr('limbSimulationShort') : tr('limbSimulationBanner')}
             </Text>
           )}
         </View>
 
-        <ExitScanButton label="Exit" onPress={() => nav.goBack()} />
+        <ExitScanButton label={tr('exit')} onPress={() => nav.goBack()} />
       </View>
 
       {/* ── .limb-monitor — the ONLY row that grows and shrinks ── */}
@@ -340,8 +330,8 @@ export default function LimbMeasureScreen() {
           >
             <MeasurementGuideImage
               source={LIMB_MEASURE_GUIDE_IMAGE}
-              accessibilityLabel={LIMB_HOW_TO}
-              caption={LIMB_GUIDE_CAPTION}
+              accessibilityLabel={tr('limbHowTo')}
+              caption={tr('limbGuideCaption')}
               size={guideSize}
               captionSize={guideSize >= 190 ? 19 : 15}
             />
@@ -357,16 +347,16 @@ export default function LimbMeasureScreen() {
               <CountdownRing
                 progress={recorder.progress}
                 secondsLeft={secondsLeft}
-                caption={LIMB_COUNTDOWN_CAPTION}
+                caption={tr('limbCountdownCaption')}
                 size={ringSize}
               />
               <Text style={[styles.countdownMsg, { color: t.success }]}>
-                {LIMB_RECORDING_NOW}
+                {tr('limbRecordingNow')}
               </Text>
             </View>
           )}
 
-          {showWaiting && <Text style={styles.noticeWarn}>{LIMB_WAITING}</Text>}
+          {showWaiting && <Text style={styles.noticeWarn}>{tr('limbWaiting')}</Text>}
 
           {showGate && (
             <HeartbeatSearch
@@ -380,7 +370,7 @@ export default function LimbMeasureScreen() {
             />
           )}
           {showAutoHint && (
-            <Text style={[styles.autoHint, { color: t.textTertiary }]}>{LIMB_AUTO_HINT}</Text>
+            <Text style={[styles.autoHint, { color: t.textTertiary }]}>{tr('limbAutoHint')}</Text>
           )}
 
           {/* Saturated leads read as a clean flat line, which is indistinguishable
@@ -391,7 +381,7 @@ export default function LimbMeasureScreen() {
               style={[styles.railNote, { color: t.textSecondary }]}
               numberOfLines={compact ? 2 : undefined}
             >
-              {RAIL_WARNING.replace('{leads}', railedLeads.join(', '))}
+              {tr('limbRailWarning', { leads: railedLeads.join(', ') })}
             </Text>
           )}
         </View>
@@ -482,6 +472,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// v3.1.0 — On a phone the capture clock moves into the bar beside the BPM and
-//          the foot is dropped, so the six traces get the rest of the screen
-//          (~52pt per trace → ~90 while recording).
+// v3.2.0 — All exam copy comes from the locale, including the rail warning's
+//          `{leads}` placeholder (now the i18n substitution, not a manual
+//          String.replace).
