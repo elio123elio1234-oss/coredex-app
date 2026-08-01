@@ -32,6 +32,18 @@ export interface ActionSheetItem {
   /** Renders in the destructive style and sits below a divider. */
   danger?: boolean;
   disabled?: boolean;
+  /**
+   * Set (true/false) to render the row as a TOGGLE with a trailing check.
+   *
+   * This is what lets the filter stages and the alignment modes live in a
+   * sheet instead of on the toolbar: they need words ("50 Hz", "Align
+   * P-QRS-T") to be honest, and an icon for "Savitzky-Golay smoothing" would
+   * be a guess. Toggling one does NOT close the sheet — a reader comparing
+   * the notch on against off would otherwise reopen it every time.
+   */
+  checked?: boolean;
+  /** Sub-heading printed above this row. Groups a sheet without nesting it. */
+  section?: string;
 }
 
 interface Props {
@@ -49,44 +61,60 @@ export default function ActionSheet({ visible, title, items, cancelLabel, onClos
   const normal = items.filter((i) => !i.danger);
   const danger = items.filter((i) => i.danger);
 
-  const row = (item: ActionSheetItem) => (
-    <Pressable
-      key={item.id}
-      accessibilityRole="button"
-      accessibilityLabel={item.label}
-      accessibilityHint={item.hint}
-      disabled={item.disabled}
-      onPress={() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        /* Close FIRST. A share sheet or a file picker opened from inside a
-           still-mounted Modal is presented behind it on iOS — the user sees
-           nothing happen and taps again. */
-        onClose();
-        item.onSelect();
-      }}
-      style={({ pressed }) => [
-        styles.row,
-        {
-          backgroundColor: pressed ? t.surfaceHover : 'transparent',
-          opacity: item.disabled ? 0.4 : 1,
-        },
-      ]}
-    >
-      {item.icon && (
-        <Ionicons name={item.icon} size={20} color={item.danger ? t.danger : t.textSecondary} />
-      )}
-      <View style={styles.rowText}>
-        <Text style={[styles.label, { color: item.danger ? t.danger : t.textPrimary }]}>
-          {item.label}
-        </Text>
-        {item.hint && (
-          <Text style={[styles.hint, { color: t.textTertiary }]} numberOfLines={2}>
-            {item.hint}
-          </Text>
+  const row = (item: ActionSheetItem) => {
+    const isToggle = item.checked !== undefined;
+    return (
+      <View key={item.id}>
+        {item.section && (
+          <Text style={[styles.section, { color: t.textTertiary }]}>{item.section}</Text>
         )}
+        <Pressable
+          accessibilityRole={isToggle ? 'switch' : 'button'}
+          accessibilityState={isToggle ? { checked: item.checked } : undefined}
+          accessibilityLabel={item.label}
+          accessibilityHint={item.hint}
+          disabled={item.disabled}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            /* A toggle stays open — see `checked`. Everything else closes
+               FIRST: a share sheet or file picker opened from inside a
+               still-mounted Modal is presented behind it on iOS, so the user
+               sees nothing happen and taps again. */
+            if (!isToggle) onClose();
+            item.onSelect();
+          }}
+          style={({ pressed }) => [
+            styles.row,
+            {
+              backgroundColor: pressed ? t.surfaceHover : 'transparent',
+              opacity: item.disabled ? 0.4 : 1,
+            },
+          ]}
+        >
+          {item.icon && (
+            <Ionicons name={item.icon} size={20} color={item.danger ? t.danger : t.textSecondary} />
+          )}
+          <View style={styles.rowText}>
+            <Text style={[styles.label, { color: item.danger ? t.danger : t.textPrimary }]}>
+              {item.label}
+            </Text>
+            {item.hint && (
+              <Text style={[styles.hint, { color: t.textTertiary }]} numberOfLines={2}>
+                {item.hint}
+              </Text>
+            )}
+          </View>
+          {isToggle && (
+            <Ionicons
+              name={item.checked ? 'checkmark-circle' : 'ellipse-outline'}
+              size={22}
+              color={item.checked ? t.accentLive : t.textTertiary}
+            />
+          )}
+        </Pressable>
       </View>
-    </Pressable>
-  );
+    );
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -156,7 +184,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: RADIUS.md,
   },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, flexShrink: 1, gap: 2 },
+  section: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 2,
+  },
   label: { fontSize: 16.5, fontWeight: '600' },
   hint: { fontSize: 12.5, lineHeight: 17 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 6, marginHorizontal: 12 },
@@ -171,5 +208,6 @@ const styles = StyleSheet.create({
   cancelText: { fontSize: 16, fontWeight: '700' },
 });
 
-// v1.0.0 — Bottom action sheet replacing the web's corner dropdown; destructive
-//          items below a divider, closes before running so a share sheet can present.
+// v1.1.0 — Rows can be TOGGLES (`checked`) that keep the sheet open, and can
+//          carry a `section` heading — so the filter stages and the alignment
+//          modes can leave the toolbar without losing their words.

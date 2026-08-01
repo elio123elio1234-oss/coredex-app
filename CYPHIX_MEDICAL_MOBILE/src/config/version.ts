@@ -1,8 +1,19 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.15.0';
+export const APP_VERSION = '0.16.0';
 export const APP_BUILD_LABEL =
-  'Scan History: list → study viewer, touch calipers, marks, cursors, compare, CSV/EDF/PDF export';
+  'History viewer: nothing was draggable — every handle now freezes the scroll; landscape full screen';
+
+// v0.16.0 — Six things the device found that no compiler could. The big one:
+//           NOTHING on the sheet was actually draggable, because a handle that
+//           claims the gesture on MOVE loses to a ScrollView that has already
+//           started panning — so grabbing a caliper scrolled the paper under
+//           it. Every handle now claims on touch-down and freezes both scrolls
+//           while held. Plus: the trace gets the screen back (icon toolbar,
+//           one-line headline, words moved into a ⋯ sheet), a LANDSCAPE full
+//           screen fitted to all six leads, the caliper readout out of the
+//           trace's way, reference lines grabbable along their length, and R
+//           peaks on every lead instead of only II.
 
 // v0.15.0 — The History tab becomes the module it is on the web. Captures file
 //           themselves into an on-device store the moment an exam ends; the tab

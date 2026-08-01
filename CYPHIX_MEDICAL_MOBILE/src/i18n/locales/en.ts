@@ -361,6 +361,15 @@ export const en = {
   vtZoomOut: 'Zoom out (show more time)',
   vtFit: 'Fit',
   vtLayoutStack: 'All 6',
+  /* The toolbar is icons; these are what a screen reader announces, and what
+     the ⋯ sheet is titled. Anything that needs WORDS to be honest — the
+     filter stages, the comparison, the alignment modes — lives in that sheet
+     rather than behind a pictogram somebody would have to guess at. */
+  vtMoreTools: 'Filters & comparison',
+  vtFullscreen: 'Full screen',
+  vtExitFullscreen: 'Exit full screen',
+  ovAlignSection: 'Line the two up by',
+  setDone: 'Done',
 
   /* ── Gesture hints. One line each, never wrapped. ── */
   calHintTouch: 'Drag either marker · zoom in to place it precisely',

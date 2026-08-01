@@ -1,5 +1,82 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.16.0 — 2026-08-01 — The viewer meets a real finger
+
+v0.15.0 typechecked, bundled and passed `expo-doctor`, and the CHANGELOG said
+plainly that none of that proves the gestures work. It was right to. Six
+findings from the device, and the first is not a polish item — it is the whole
+feature not working.
+
+### ★ Nothing was draggable, and the reason is one line
+
+> "in CALIPERS when you grab the circles the waves move too, so you can't
+> really move it" · "in MARK and CURSOR you can't grab the line and drag it
+> after you place it"
+
+Every handle used `onMoveShouldSetPanResponder`, i.e. it asked for the gesture
+after the finger had already moved. **A `ScrollView` that has begun panning
+owns the responder, and a child asking afterwards is ignored.** So the
+crosshair moved *and* the paper moved, and a marker could not be moved at all.
+
+Every handle now claims on **touch-down** (`onStartShouldSetPanResponder` +
+capture) and sets a `dragging` flag in `onPanResponderGrant`, which flips
+`scrollEnabled` to `false` in the same commit — the ScrollView never starts.
+Release turns it back on.
+
+That created a second problem and its fix: a handle that owns touch-down
+swallows any `Pressable` inside it, so a marker would have become draggable
+and un-openable. Tap and drag are now told apart **on release, by travel** —
+under 6 pt it was a tap. That is also what made reference lines usable: the
+grab strip covers the whole line, a drag moves it, a tap removes it.
+
+### The trace gets the screen back
+
+> "why are all the MARK CURSOR buttons so long, there's barely room for the
+> ECG waves which should take about 90% of the screen"
+
+Correct, and the ratio was indefensible on the one module whose entire subject
+is a waveform. Two different answers:
+
+**Portrait is compacted.** The toolbar is icons (38 pt row, was ~120 pt of
+wrapped 44 pt chips); the metadata line folded into the headline; the status
+line is a **fixed 26 pt slot** that the caliper readout *shares* rather than
+adds to — so the trace's height no longer depends on which tool is on.
+Everything that needs words to be honest — the filter stages, the comparison,
+the alignment modes — moved into a labelled ⋯ sheet. An icon for
+"Savitzky-Golay smoothing" would have been a guess.
+
+**Full screen is landscape, and it is the real answer.** A six-lead ECG is
+259 × 180 mm — a landscape shape. The button rotates the route (declaratively,
+through `setOptions`; `lockAsync` stays banned), hides everything but one slim
+floating bar of dense icons, and opens at the window that fits **all six leads
+to the height** (`fitWindowMm`). Note that this is a *height* calculation:
+the obvious "fit" — show the whole recording — gives 99 pt bands inside a
+353 pt sheet, so four of the six leads are below the fold. Where that leaves
+paper past the end of the recording, blank paper is drawn, exactly as a
+printout does.
+
+### The rest
+
+- **"the capsule sits on top of the waves instead of above them"** — the live
+  Δt / bpm / ΔmV readout was floating over the trace, covering the very
+  deflections whose distance it reports. It is now in the chrome, in the
+  status slot.
+- **"R PEAKS only works on lead II"** — a rule copied from the report, where
+  it is right (a printed sheet marks the one rhythm strip the rate came from).
+  In a *tool* the web marks every lead, for the stated reason that a reader
+  wants to see which beats the rate came from wherever they are looking. Fixed.
+- **"in COMPARE WITH you can't move the reference wave"** — same scroll-steals
+  -the-gesture defect, plus the control was buried behind two chips. Nudge is
+  now a row in the ⋯ sheet that puts the sheet into ghost mode directly.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18. As last time, that proves the code is well-formed and
+nothing about how it feels. This round exists precisely because the previous
+round's green checks meant less than one minute on a phone — the module stays
+🔬 in `PARITY.md`.
+
 ## v0.15.0 — 2026-08-01 — History becomes a module, not a placeholder
 
 The History tab said "Completed measurements sync here through the CYPHIX
