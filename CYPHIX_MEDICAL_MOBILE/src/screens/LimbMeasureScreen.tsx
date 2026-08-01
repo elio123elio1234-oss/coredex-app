@@ -74,6 +74,7 @@ import SixLeadMonitor from '@/components/organisms/SixLeadMonitor';
 import EcgReport from '@/components/organisms/EcgReport';
 import { LIMB_MEASURE_GUIDE_IMAGE } from '@/config/measurementGuides';
 import { useBle } from '@/features/ble/useBle';
+import { useSaveRecording } from '@/features/history/hooks/useSaveRecording';
 import { useHeartbeatGate } from '@/features/measurement/hooks/useHeartbeatGate';
 import { useLimbRecorder } from '@/features/measurement/hooks/useLimbRecorder';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -148,11 +149,20 @@ export default function LimbMeasureScreen() {
     nav.setOptions({ orientation: done ? 'portrait_up' : 'landscape' });
   }, [nav, done]);
 
+  /* ── The capture files itself into Scan History ──
+     Unconditionally hooked, above the early returns: `useSaveRecording` is a
+     no-op until `recorder.report` exists, and calling it from inside the
+     report branch below would break the rules of hooks the first time the
+     screen re-rendered in a different phase. It saves ONCE per capture and
+     surfaces a failure rather than letting a lost recording look saved. */
+  const save = useSaveRecording(recorder.report, 'limb', ble.deviceName ?? undefined);
+
   /* ══════════ Report ══════════ */
   if (phase === 'done' && recorder.report) {
     return (
       <EcgReport
         report={recorder.report}
+        save={save}
         onRecordAgain={recorder.reset}
         onFinish={() => nav.goBack()}
       />

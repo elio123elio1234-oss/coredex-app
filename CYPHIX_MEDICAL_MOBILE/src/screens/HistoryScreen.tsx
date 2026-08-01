@@ -1,41 +1,294 @@
-/* History — the clinician-facing recordings view (kept doctor-dense per
-   the CYPHIX UX direction). On the web this is the one screen with the
-   classic sidebar; on mobile it shares the shell and the dock, and the
-   recordings list becomes the page itself. */
+/* ==================================================================
+   HistoryScreen — every stored recording, newest first.
 
-import { StyleSheet, Text, View } from 'react-native';
+   ══ THE LIST IS THE SCREEN ══
+   On the web this module is a two-column reading view with the studies
+   tucked into a sidebar and a date dropdown. A phone cannot show a list and
+   a waveform at once and should not try: choosing WHICH study to read and
+   READING it are two different jobs, so they are two screens. This one
+   answers "what do I have, and is it worth opening" from the cached summary
+   the list already carries — no waveform is decoded to draw it.
+
+   History stays doctor-dense (the CYPHIX UX direction): it is the one
+   patient-facing tab that is allowed to be a list of records rather than
+   one big button.
+
+   ══ THIS SCREEN OWNS FETCHING ══
+   Cards take data as props. Storage, RBAC and audit live behind hooks.
+   ================================================================== */
+
+import { useCallback, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
+import HistorySkeleton from '@/components/molecules/HistorySkeleton';
+import StudyCard from '@/components/molecules/StudyCard';
 import PatientShell from '@/components/templates/PatientShell';
+import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
+import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
+import { useViewerFeatures } from '@/features/history/useViewerFeatures';
 import { useTranslation } from '@/i18n/useTranslation';
+import { logAudit } from '@/services/audit/auditLogger';
+import {
+  HISTORY_PAGE_SIZE,
+  useCreateRecordingMutation,
+  useListRecordingsQuery,
+} from '@/services/api/endpoints/recordingApi';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
 export default function HistoryScreen() {
   const t = useTheme();
-  const { t: tr, rtl } = useTranslation();
+  const { t: tr, lang, rtl } = useTranslation();
+  const navigation = useNavigation<{ navigate: (screen: string, params: object) => void }>();
+  const user = useCurrentUser();
+  const { can } = usePermissions();
+  const features = useViewerFeatures();
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  /* A patient sees only their own studies — as the QUERY ARGUMENT, never as
+     client-side filtering, so the server can enforce it unchanged. */
+  const selfOnly = !can('history:read') && can('history:read:self');
+  const subject = selfOnly ? (user?.linkedPatientId ?? 'MOCK-SELF') : undefined;
+  const list = useListRecordingsQuery({ patientId: subject, limit: HISTORY_PAGE_SIZE });
+  const [createRecording] = useCreateRecordingMutation();
+
+  const fmtWhen = useCallback(
+    (iso: string) =>
+      new Date(iso).toLocaleString(lang, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    [lang],
+  );
+
+  /* ── Import an ECG recorded somewhere else ──
+     The parser is the shared one, so this phone accepts and rejects exactly
+     the files the web app does. It refuses rather than guesses: an assumed
+     sample rate silently rescales every interval the viewer then reports. */
+  const handleImport = async () => {
+    setImportError(null);
+    const picked = await DocumentPicker.getDocumentAsync({
+      type: ['text/csv', 'text/comma-separated-values', 'public.comma-separated-values-text', '*/*'],
+      copyToCacheDirectory: true,
+    });
+    if (picked.canceled || !picked.assets?.[0]) return;
+
+    const asset = picked.assets[0];
+    setImporting(true);
+    try {
+      const text = await new File(asset.uri).text();
+      const result = parseEcgCsv(text, asset.name);
+      if (!result.ok) {
+        setImportError(`${result.error.problem} — ${result.error.remedy}`);
+        return;
+      }
+      const { leadI, leadII, sampleRate, sourceLabel } = result.data;
+      const created = await createRecording({
+        subject: user?.linkedPatientId ? `Patient/${user.linkedPatientId}` : SELF_SUBJECT,
+        recordedAt: new Date().toISOString(),
+        type: 'limb',
+        sampleRate,
+        rawLeadI: leadI,
+        rawLeadII: leadII,
+        isSimulated: false,
+        // Provenance: nobody may later mistake this for something this
+        // device measured. Not `isSimulated` — it is real data — but it did
+        // not come from our hardware and the record has to say so.
+        deviceLabel: `${tr('histImported')} · ${sourceLabel}`,
+        summary: {
+          bpm: null,
+          sqi: 0,
+          qrsMs: null,
+          qtcMs: null,
+          prMs: null,
+          axisDegrees: null,
+          beatsAnalyzed: 0,
+          insufficient: false,
+        },
+      }).unwrap();
+      logAudit({
+        actor: { id: user?.id ?? 'anonymous', role: user?.role ?? 'guest' },
+        action: 'recording:create',
+        resourceType: 'EcgRecording',
+        resourceId: created.id,
+        detail: 'import',
+      });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (created?.id) navigation.navigate('StudyViewer', { id: created.id });
+    } catch {
+      setImportError(tr('histImportFailed'));
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const align = rtl ? ('right' as const) : ('left' as const);
+  const empty = !list.data || list.data.length === 0;
+
+  const cardLabels = {
+    bpm: tr('bpm'),
+    simulated: tr('histSimulated'),
+    lowQuality: tr('histLowQuality'),
+    notes: tr('histNotes'),
+    hasNote: tr('noteTitle'),
+    leadSet: tr('reportLeadSetShort'),
+  };
+
+  const renderCard = ({ item }: { item: RecordingListItem }) => (
+    <StudyCard
+      when={fmtWhen(item.recordedAt)}
+      bpm={item.summary.bpm}
+      durationSec={item.durationSec}
+      sampleRate={item.sampleRate}
+      isSimulated={item.isSimulated}
+      insufficient={item.summary.insufficient}
+      annotationCount={item.annotations.length}
+      hasNote={Boolean(item.note && item.note.trim() !== '')}
+      rtl={rtl}
+      labels={cardLabels}
+      onPress={() => {
+        void Haptics.selectionAsync();
+        navigation.navigate('StudyViewer', { id: item.id });
+      }}
+    />
+  );
+
   return (
     <PatientShell>
-      <View style={styles.inner}>
-        <Text style={[styles.title, { color: t.textPrimary }]}>{tr('histTitle')}</Text>
-        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-          <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
-            {tr('histEmptyTitle')}
-          </Text>
-          <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
-            {tr('histEmptyBody')}
-          </Text>
+      <View style={styles.root}>
+        <View style={[styles.head, rtl && styles.rowRtl]}>
+          <View style={styles.headText}>
+            <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
+              {tr('histTitle')}
+            </Text>
+            {!empty && (
+              <Text style={[styles.count, { color: t.textSecondary, textAlign: align }]}>
+                {tr('histCount', { n: String(list.data?.length ?? 0) })}
+                {selfOnly ? ` · ${tr('histOwnOnly')}` : ''}
+              </Text>
+            )}
+          </View>
+
+          {/* Import lives on the LIST, not inside a study: it CREATES a study,
+              and an action that adds a row belongs where the rows are. */}
+          {features.has('exportRaw') && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr('histImport')}
+              disabled={importing}
+              onPress={() => void handleImport()}
+              style={({ pressed }) => [
+                styles.importBtn,
+                {
+                  backgroundColor: t.surface,
+                  borderColor: t.border,
+                  opacity: importing ? 0.4 : pressed ? 0.6 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="add" size={22} color={t.textPrimary} />
+            </Pressable>
+          )}
         </View>
+
+        {importError && (
+          <Text style={[styles.error, { color: t.danger, backgroundColor: t.dangerSoft }]}>
+            {importError}
+          </Text>
+        )}
+
+        {list.isLoading ? (
+          <HistorySkeleton />
+        ) : list.isError ? (
+          <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+            <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
+              {tr('histTitle')}
+            </Text>
+            <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
+              {tr('histLoadError')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void list.refetch()}
+              style={({ pressed }) => [
+                styles.retry,
+                { borderColor: t.border, opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={[styles.retryText, { color: t.textPrimary }]}>{tr('viewerRetry')}</Text>
+            </Pressable>
+          </View>
+        ) : empty ? (
+          <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+            <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
+              {tr('histEmptyTitle')}
+            </Text>
+            <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
+              {tr('histEmpty')}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={list.data}
+            keyExtractor={(item) => item.id}
+            renderItem={renderCard}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            accessibilityLabel={tr('histListLabel')}
+            refreshControl={
+              <RefreshControl
+                refreshing={list.isFetching && !list.isLoading}
+                onRefresh={() => void list.refetch()}
+                tintColor={t.textSecondary}
+              />
+            }
+          />
+        )}
       </View>
     </PatientShell>
   );
 }
 
 const styles = StyleSheet.create({
-  inner: { gap: 18 },
-  title: { fontSize: 32, fontWeight: '800', textAlign: 'center' },
+  root: { flex: 1, gap: 12 },
+  rowRtl: { flexDirection: 'row-reverse' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headText: { flex: 1, flexShrink: 1, gap: 2 },
+  title: { fontSize: 30, fontWeight: '800' },
+  count: { fontSize: 13 },
+  importBtn: {
+    flexShrink: 0,
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  error: { padding: 11, borderRadius: RADIUS.sm, fontSize: 12.5, lineHeight: 18 },
   card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 24, gap: 8 },
   cardTitle: { fontSize: 17, fontWeight: '700' },
   body: { fontSize: 14.5, lineHeight: 21 },
+  retry: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  retryText: { fontSize: 14, fontWeight: '700' },
+  listContent: { gap: 10, paddingBottom: 8 },
 });
 
-// v0.3.0 — Copy comes from the locale; prose re-aligns under an RTL language.
+// v1.0.0 — The History list: cached summaries as cards, pull to refresh, CSV
+//          import, and a tap into the study viewer.

@@ -1,5 +1,97 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.15.0 — 2026-08-01 — History becomes a module, not a placeholder
+
+The History tab said "Completed measurements sync here through the CYPHIX
+server". They did not, because there is no server yet — so the tab was a
+sentence about a plan. This ships the whole web History module on the phone.
+
+### Why there is an on-device store
+
+The web app has never had a backend either; its History works because
+`mockBaseQuery` routes to `localStorage`. Mobile now has the same thing:
+`services/db/recordingStore.ts` over AsyncStorage, behind
+`services/api/localBaseQuery.ts`, selected by exactly the line web's `baseApi`
+carries — `ENV.hasBackend ? httpBaseQuery : localBaseQuery`. Set
+`EXPO_PUBLIC_API_BASE_URL` and every endpoint, hook and screen above it is
+already talking to the real server; nothing changes but that line.
+
+One departure from the web store, and it is deliberate: recordings are kept as
+an **index plus one payload key each**, not as a single JSON blob.
+`RecordingRepository.list()` exists so browsing does not drag every waveform
+out of storage, and on a 6 MB AsyncStorage budget rewriting ~1.4 MB to save one
+note is the difference between that promise being kept and being decorative.
+
+A finished exam now files itself the moment the report appears
+(`useSaveRecording`, ported), saves **once**, and says so on the report — and
+says so louder if it failed. A recording that did not persist must never look
+like one that did.
+
+### The viewer, re-thought for a finger
+
+Same guarantees as the web: the scale is **frozen at 25 mm/s · 10 mm/mV**,
+zoom is a window over the paper, all six leads share ONE scroll so they always
+show the same instant, and the measurements are computed from the waveform
+actually on screen. What changed is every interaction that assumed a mouse:
+
+| Web | Phone | Why |
+|---|---|---|
+| Hover → click → click → click calipers | **Two crosshairs that are always there and are dragged** | A finger cannot hover, and it covers ~9 mm of paper — 360 ms of ECG, wider than a QRS. Every handle moves by the finger's *delta*, so the point being positioned stays visible beside the hand positioning it. Precision comes from zooming in, never from rescaling the trace |
+| Ctrl+wheel zoom | − / + and Fit | Redrawing six vector sheets per frame is not a 60 fps operation in JS. Discrete steps are what the web's own buttons do anyway |
+| Corner dropdown "Actions" | **Bottom sheet** | A 180 pt popover anchored to the far top corner of a 390 pt screen is the one place every platform's guidelines say not to put actions |
+| Floating annotation card | **Keyboard-aware bottom sheet, five quick tags above the field** | The thing that shrinks a phone's waveform is the keyboard. One tap on "PVC" and it never opens |
+| Ghost dragged whenever no tool owns the pointer | Ghost dragging is its **own mode** | A drag that both pans the paper and moves the ghost cannot be either |
+
+The sheet is **tiled**: each lead is a row of 65 mm `<Svg>` panes rather than
+one. react-native-svg gives each `<Svg>` a single native texture, and past
+~4 096 px an over-wide one draws *nothing at all* — a blank lead, not a clipped
+one. 65 mm is a multiple of the 5 mm major grid so the seams are invisible, and
+each tile's path starts one sample early so the trace crosses them unbroken.
+
+### Export leaves the building properly
+
+`buildRecordingCsv`, `buildRecordingEdf` and the CSV importer moved into
+`@cyphix/shared`, so a file exported on the phone and one exported in the
+browser are the same bytes. Only delivery differs: the web clicks a hidden
+`<a download>`, the phone writes to the cache and opens the OS share sheet —
+a phone has no downloads folder to click into.
+
+PDF is new work rather than a port: `window.print()` has nothing to snapshot on
+a phone, so `services/export/recordingPdf.ts` **builds** the A4 sheet from the
+same shared `buildEcgPath` / `buildEcgGrid` the screen uses. A ruler laid on the
+printout therefore agrees with the web print. A 10 s capture paginates across
+consecutive six-lead sheets the way a real machine does, instead of printing
+6.9 s and captioning the rest away.
+
+### The gates are real code, not a plan
+
+`types/rbac.ts` and `features/history/viewerFeatures.ts` are ported whole,
+rationale comments included. Calipers, filters, annotations, compare, export and
+delete each ask `features.has(...)`, never a role. `features/auth/useCurrentUser.ts`
+is the single stand-in identity — auth lands as a swap of that one file, not as a
+retrofit of permission checks into finished screens. Every read, annotate,
+export and delete goes through `services/audit/auditLogger.ts` with references
+only, never PII.
+
+### Four new dependencies, and what each buys
+
+`expo-file-system` + `expo-sharing` (export delivery), `expo-print` (the PDF),
+`expo-document-picker` (CSV import). All four are in Expo Go for SDK 54, so the
+Expo Go workflow is intact — verified against the SDK 54 bundled-module list,
+not against npm `latest`, which would have dragged the project to SDK 57 and
+broken Expo Go exactly as `CLAUDE.md` §1 warns.
+
+### Verified
+
+`tsc --noEmit` clean on the app **and** on `CYPHIX_SHARED` · `expo export`
+bundles for iOS and Android · `expo-doctor` 18/18.
+
+That means the code is well-formed. It does **not** mean the gestures feel
+right: a caliper that drags a hair off the finger, a tap target under a scroll,
+a seam that shows at one particular zoom — none of that is visible to a
+compiler. Everything here stays 🔬 in `PARITY.md` until it has been touched on a
+device.
+
 ## v0.14.0 — 2026-08-01 — The floating wordmark goes away (for now)
 
 The user asked to hide the CYPHIX logo in the top-start corner of the native

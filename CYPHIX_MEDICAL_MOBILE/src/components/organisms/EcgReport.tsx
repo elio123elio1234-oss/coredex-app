@@ -64,6 +64,16 @@ import { useIsDark, useTheme } from '@/theme/useTheme';
 
 interface Props {
   report: LimbReport;
+  /**
+   * Whether this capture reached Scan History.
+   *
+   * ★ Shown, not assumed. The save fires on its own the moment the report
+   * exists (see `useSaveRecording`) — which is right, because the patient's
+   * hands were busy — but a recording that did NOT persist must never look
+   * like one that did. Device storage full is the realistic failure, and it
+   * is silent unless something says so.
+   */
+  save?: { saved: boolean; saving: boolean; error: string | null };
   onRecordAgain: () => void;
   onFinish: () => void;
 }
@@ -121,7 +131,7 @@ const PANEL_BORDER = 1;
  */
 const MAX_STRIP_PX = 3600;
 
-export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
+export default function EcgReport({ report, save, onRecordAgain, onFinish }: Props) {
   const t = useTheme();
   const { t: tr, lang } = useTranslation();
   const dark = useIsDark();
@@ -210,6 +220,26 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
           rhythm={tr(REGULARITY_KEY[report.analysis.rate.regularity])}
           stats={stats}
         />
+
+        {/* One quiet line, directly under the summary. A failure is NOT quiet:
+            it takes the danger colour and names itself, because the only way
+            to recover is to notice before walking away. */}
+        {save && (save.saving || save.saved || save.error) && (
+          <Text
+            style={[
+              styles.saveLine,
+              save.error
+                ? { color: t.danger, backgroundColor: t.dangerSoft }
+                : { color: t.textTertiary },
+            ]}
+          >
+            {save.error
+              ? `${tr('histSaveFailed')} ${save.error}`
+              : save.saved
+                ? tr('histSaved')
+                : tr('histSaving')}
+          </Text>
+        )}
 
         <SegmentedTabs
           options={TABS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
@@ -371,6 +401,15 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   captionText: { fontSize: 10.5, fontWeight: '600' },
+  saveLine: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    lineHeight: 17,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+    marginTop: -6,
+  },
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
   actions: {
     position: 'absolute',

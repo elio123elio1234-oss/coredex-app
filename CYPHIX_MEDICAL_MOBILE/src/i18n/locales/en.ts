@@ -277,11 +277,143 @@ export const en = {
 
   setComingSoon: 'Coming soon',
 
-  /* ── History / Tests / Chat tabs ── */
+  /* ══════════════════════════════════════════════════════════════
+     Scan History.
+
+     Wherever the web says the same sentence, the wording here is the
+     web's verbatim (`CYPHIX_MEDICAL_WEB/src/i18n/locales/en.ts`) — two
+     apps that phrase "Delete this recording?" differently are two
+     products. The keys that end in `Touch` are the exceptions: they
+     describe a GESTURE, and the web's "click once to pin a marker" is
+     not a shorter way of saying what a finger does.
+     ══════════════════════════════════════════════════════════════ */
+
+  /* ── The list ── */
   histTitle: 'Scan History',
   histEmptyTitle: 'No recordings yet',
-  histEmptyBody:
-    'Completed measurements sync here through the CYPHIX server, with the same waveform viewer and calipers as the web history view.',
+  /* Replaces the old `histEmptyBody`, which promised recordings would "sync
+     here through the CYPHIX server" — they do not yet, and they no longer
+     need to: a finished capture is filed on the device the moment it ends.
+     A copy that describes a plan rather than the behaviour is a bug. */
+  histEmpty: 'No recordings yet. Finished measurements are filed here automatically.',
+  histLoading: 'Loading recordings…',
+  histLoadError: 'Could not load the recordings. Try again.',
+  histEmptyWaveform: 'This recording has no readable waveform.',
+  histListLabel: 'Recorded sessions',
+  histCount: '{n} recordings',
+  histOwnOnly: 'your own',
+  histNotes: '{n} notes',
+  histSimulated: 'SIMULATION',
+  histLowQuality: 'Low signal quality',
+  histDevice: 'Device',
+  histSelectOne: 'Select a recording from the list.',
+
+  /* ── Saving a finished capture ── */
+  histSaving: 'Saving to history…',
+  histSaved: 'Saved to history',
+  histSaveFailed: 'This recording was NOT saved:',
+
+  /* ── Import / export ── */
+  histImport: 'Import ECG (CSV)',
+  histImported: 'Imported',
+  histImportFailed: 'Could not read that file.',
+  histExportCsv: 'Export raw CSV',
+  histExportCsvHint: 'Raw samples, opens anywhere',
+  histExportEdf: 'Export EDF+',
+  histExportEdfHint: 'For EDFbrowser / MNE / WFDB',
+  histExportFailed: 'Could not export this recording.',
+  printReport: 'Share PDF report',
+  pdfHint: 'The printable sheet, at 25 mm/s',
+  pdfSheetOf: 'Sheet {n} of {total}',
+  reportRecorded: 'Recorded',
+
+  /* ── Deleting ── */
+  histActions: 'Actions',
+  histDelete: 'Delete',
+  histDeleteTitle: 'Delete this recording?',
+  histDeleteBody:
+    'This permanently removes the waveform and every note on it. A recording cannot be re-taken — the patient, the moment and the heartbeat were all specific to it. There is no undo.',
+  histDeleteForbidden: 'You do not have permission to delete this recording.',
+  histDeleteFailed: 'Could not delete the recording. Try again.',
+  viewerRetry: 'Try again',
+
+  /* ── Viewer tools ── */
+  bpm: 'BPM',
+  vtCalipers: 'Calipers',
+  vtCalipersHintTouch: 'Two markers you drag. The readout is the interval between them.',
+  vtMark: 'Mark',
+  vtMarkHintTouch: 'Tap a point on any trace to label it.',
+  vtCursor: 'Cursor',
+  vtCursorHintTouch: 'Reference lines dropped across every lead at once.',
+  vtRPeaks: 'R peaks',
+  vtRPeaksHint: 'Ticks the beats the rate was computed from.',
+  vtCompare: 'Compare with',
+  vtFilters: 'Filters',
+  vtBaseline: 'Baseline',
+  vtBaselineHint:
+    'Removes slow baseline drift from breathing. Off shows the true drift — and any genuine ST shift.',
+  vtNotch: '50 Hz',
+  vtNotchHint: 'Removes mains interference. Off shows the untouched signal.',
+  vtSmooth: 'Smooth',
+  vtSmoothHint: 'Savitzky-Golay smoothing. Off shows the sharpest detail, and the most noise.',
+  vtFiltersOff: 'Some filters are off',
+  vtZoomIn: 'Zoom in (show less time, larger)',
+  vtZoomOut: 'Zoom out (show more time)',
+  vtFit: 'Fit',
+  vtLayoutStack: 'All 6',
+
+  /* ── Gesture hints. One line each, never wrapped. ── */
+  calHintTouch: 'Drag either marker · zoom in to place it precisely',
+  annHintTouch: 'Tap a point to label it · tap a label to edit it · drag it to move it',
+  curHintTouch: 'Tap to drop a line across every lead · tap a line to remove it',
+
+  /* ── Comparing two studies ── */
+  ovNone: 'No comparison',
+  ovComparing: 'Ghost trace: {when}',
+  ovModeBeat: 'Beat 1',
+  ovModeBeatHint:
+    'Shift the ghost so its first beat sits on this one. Keeps the ghost’s own timing intact.',
+  ovModeWarp: 'Align P-QRS-T',
+  ovModeWarpHint:
+    'Stretch the ghost between its own P, Q, R, S and T so every feature lands on this recording’s. Compares shape, but destroys the ghost’s intervals — never measure off a warped trace.',
+  ovModeManual: 'Nudge',
+  ovModeManualHint: 'Move the ghost yourself.',
+  ovWarpApplied: 'aligned on {n} landmarks — shape only, do not measure the ghost',
+  ovWarpFailed: 'could not align — too few beats detected',
+  ovShifted: 'shifted {ms} ms',
+  ovDragHint: 'Drag the grey recording — sideways in time, up/down in height',
+
+  /* ── Notes on the record ── */
+  noteTitle: 'Clinical note',
+  notePlaceholder: 'Summary, impression, or a note for the patient…',
+  noteSave: 'Save note',
+  noteSaved: 'Saved',
+  noteHint: 'Free text — not a coded finding. Saved with this recording.',
+  annListTitle: 'Marked points',
+  annTitle: 'Label this point',
+  annEditTitle: 'Edit this note',
+  annAt: 'Lead {lead} · {time} s',
+  annPlaceholder: 'Your own note…',
+  annAdd: 'Add',
+  annSave: 'Save',
+  annCancel: 'Cancel',
+  annDelete: 'Delete note',
+  tagPvc: 'PVC',
+  tagPac: 'PAC',
+  tagPause: 'Pause',
+  tagArtifact: 'Artifact',
+  tagNote: 'Note',
+
+  /* ── Viewer feature names (the RBAC matrix, for a future roles screen) ── */
+  vfCalipers: 'Calipers',
+  vfFilters: 'Filter controls',
+  vfAnnotate: 'Annotations',
+  vfCompare: 'Compare studies',
+  vfExportPdf: 'Export PDF',
+  vfExportRaw: 'Export raw data',
+  vfDelete: 'Delete recordings',
+
+  /* ── Tests / Chat tabs ── */
   testsTitle: 'My Tests',
   testsEmptyTitle: 'No tests yet',
   testsEmptyBody: 'Finish a measurement from the home screen and it will appear here.',

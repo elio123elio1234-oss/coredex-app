@@ -56,6 +56,7 @@ import HomeScreen from '@/screens/HomeScreen';
 import LimbMeasureScreen from '@/screens/LimbMeasureScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
+import StudyViewerScreen from '@/screens/StudyViewerScreen';
 import TestsScreen from '@/screens/TestsScreen';
 import { DARK, LIGHT } from '@/theme/tokens';
 import { useIsDark } from '@/theme/useTheme';
@@ -132,10 +133,20 @@ export default function RootNavigator() {
           component={SettingsScreen}
           options={{ animation: 'slide_from_right' }}
         />
+        {/* Reading a study is a full-screen job: the dock's five destinations
+            would be competing with a toolbar, and the trace wants the height.
+            It stays PORTRAIT (inherited from the stack) — the six leads are
+            stacked and scrolled here, not shown at once as during the exam,
+            so the long edge belongs to the leads, not to time. */}
+        <Stack.Screen
+          name="StudyViewer"
+          component={StudyViewerScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-// v3.0.0 — Orientation is declared per route (react-native-screens) instead of
-//          locked imperatively; adds the Settings route above the tabs.
+// v3.1.0 — Adds the StudyViewer route (Scan History's reading screen) above the
+//          tabs, portrait like every route but the exam.
