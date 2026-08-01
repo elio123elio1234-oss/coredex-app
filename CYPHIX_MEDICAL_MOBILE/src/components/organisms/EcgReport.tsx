@@ -186,7 +186,9 @@ const styles = StyleSheet.create({
   headline: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   headlineLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.9 },
   headlineValue: { fontSize: 34, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  strips: { gap: 12 },
+  /* `.ecg-report-strips { gap: 10px }` — six sheets in one stack, so the
+     rhythm between them is part of reading them. */
+  strips: { gap: 10 },
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
   actions: {
     flexDirection: 'row',

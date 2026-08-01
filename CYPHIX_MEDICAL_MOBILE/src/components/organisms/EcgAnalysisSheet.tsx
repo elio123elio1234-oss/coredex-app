@@ -58,8 +58,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   const t = useTheme();
   return (
     <View style={styles.block}>
-      <Text style={[styles.sectionTitle, { color: t.textPrimary, borderBottomColor: t.border }]}>
-        {title}
+      {/* `.analysis-section` — uppercase, letter-spaced, in the ACCENT colour
+          with a hairline under it. It is the only thing separating five dense
+          blocks, so it has to read as a rule, not as another line of text. */}
+      <Text style={[styles.sectionTitle, { color: t.accent, borderBottomColor: t.border }]}>
+        {title.toUpperCase()}
       </Text>
       {children}
     </View>
@@ -227,20 +230,20 @@ export default function EcgAnalysisSheet({ analysis }: Props) {
 }
 
 const styles = StyleSheet.create({
-  sheet: { gap: 18 },
+  sheet: { gap: 20 },
   title: { fontSize: 17, fontWeight: '800' },
   sub: { fontSize: 12, lineHeight: 17, marginTop: 3 },
-  block: { gap: 10 },
+  block: { gap: 12 },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    paddingBottom: 5,
+    letterSpacing: 1.2,
+    paddingBottom: 6,
     borderBottomWidth: 1,
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  axisLayout: { gap: 12 },
+  /* `.metric-grid { gap: 10px }` */
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  axisLayout: { gap: 16, alignItems: 'center' },
   intervals: { gap: 14 },
   note: { fontSize: 10.5, lineHeight: 15 },
   warn: {
@@ -258,5 +261,5 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
 });
 
-// v1.0.0 — Report page 2: automated measurements (rate, axis, intervals,
-//          amplitudes, quality). No interpretation, by design.
+// v1.1.0 — Section rules in the accent colour and the web's 10px metric grid;
+//          measurements only, no interpretation, by design.

@@ -1,5 +1,69 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.10.1 — 2026-08-01 — Two regressions I introduced, both fixed at the source
+
+### The prep photograph was cropped to a corner. Again.
+
+This is the second time, and it is the same line of code both times.
+
+| version | Image style | result |
+|---|---|---|
+| v4.0.0 | `StyleSheet.absoluteFill` | cropped to a corner ❌ |
+| v5.0.0 | `{ width: '100%', height: '100%' }` | correct ✅ |
+| v5.2.0 | `StyleSheet.absoluteFill` (to stack both photos for the crossfade) | cropped again ❌ |
+
+`absoluteFill` gives an `<Image>` its box from four zero insets and no
+intrinsic size; `resizeMode="contain"` then resolves against the wrong frame
+and the parent's `overflow: hidden` crops what is left — the patient sees one
+finger. v0.10.0 reintroduced it purely to stack the two photographs for the
+crossfade, and brought the bug back with it.
+
+The frame's exact width and height are computed three lines above, so they are
+now passed explicitly (`position: 'absolute'` for the stack, real point
+dimensions for the size) and nothing is left to infer. The file carries a
+comment naming this so it cannot happen a third time.
+
+### The report strips were on pink paper. I invented that.
+
+The web's report tokens are in `report.css` and are **white paper with a BLUE
+grid**:
+
+```
+--ecg-paper: #FFFFFF   --ecg-grid-minor: rgba(0,82,255,.15)
+--ecg-trace: #0A2540   --ecg-grid-major: rgba(0,82,255,.30)
+```
+
+v0.10.0 painted `#FFF8F6` paper with red-orange grid lines, reasoning from
+what clinical ECG paper looks like in the real world rather than from the
+product it is supposed to mirror. Both themes now use the web's values
+verbatim, and the file says not to re-derive them from first principles again.
+
+### The measurement sheet reads as a sheet now
+
+The rest of the "it looks thrown on the screen" was three specific things:
+
+- **The lead label and the scale caption sat in a row ABOVE each strip**,
+  turning six clean sheets into eighteen competing elements. The web puts both
+  ON the paper (`.ecg-svg-label` top-start in the trace colour,
+  `.ecg-svg-scale` bottom-end, quiet) and so does this now — the strip is one
+  bordered card again.
+- **Metric tiles were laid out in ragged thirds.** The web grid is
+  `repeat(auto-fit, minmax(140px, 1fr))`, which on a phone column is exactly
+  two per row; `flexBasis: 46%` reproduces that and `flexGrow` makes each row
+  end flush. Tile styling is now the web's too: uppercase letter-spaced label,
+  22 px value (32 px for the hero heart rate), hero on `accent-soft`.
+- **Section headings were body-coloured text.** `.analysis-section` is
+  uppercase, letter-spaced, in the ACCENT colour with a hairline under it —
+  it is the only thing separating five dense blocks, so it has to read as a
+  rule rather than as another line.
+
+### Verified
+
+`tsc --noEmit` exit 0 · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18. The colour values were read out of `report.css` rather
+than remembered. Still not a device test.
+
+
 ## v0.10.0 — 2026-08-01 — The report becomes a document
 
 ### The report is the web's two-page sheet, and it is portrait

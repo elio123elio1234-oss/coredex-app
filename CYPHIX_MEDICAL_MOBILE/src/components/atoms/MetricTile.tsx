@@ -36,11 +36,13 @@ export default function MetricTile({ label, value, unit, hint, variant, accent }
     <View
       style={[
         styles.tile,
-        { backgroundColor: t.bgSoft, borderColor: t.border },
-        hero && { borderColor: t.accent },
+        hero
+          ? { backgroundColor: t.accentSoft, borderColor: t.accent }
+          : { backgroundColor: t.bgSoft, borderColor: t.border },
       ]}
     >
-      <Text style={[styles.label, { color: t.textSecondary }]}>{label}</Text>
+      {/* `.metric-label` — uppercase, letter-spaced, tertiary. */}
+      <Text style={[styles.label, { color: t.textTertiary }]}>{label.toUpperCase()}</Text>
       <View style={styles.valueRow}>
         <Text
           style={[
@@ -61,13 +63,26 @@ export default function MetricTile({ label, value, unit, hint, variant, accent }
 }
 
 const styles = StyleSheet.create({
-  tile: { flexGrow: 1, flexBasis: '30%', minWidth: 96, borderWidth: 1, borderRadius: RADIUS.md, padding: 10, gap: 2 },
-  label: { fontSize: 11, fontWeight: '700' },
-  valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  value: { fontSize: 19, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  valueHero: { fontSize: 30 },
-  unit: { fontSize: 10.5, fontWeight: '700' },
-  hint: { fontSize: 10, lineHeight: 13.5 },
+  /* `.metric-grid` is `repeat(auto-fit, minmax(140px, 1fr))`, which on a
+     phone's column resolves to TWO tiles per row. `flexBasis: 46%` reproduces
+     exactly that — two fit, three cannot — and `flexGrow` then shares out the
+     remainder so the row ends flush instead of ragged. */
+  tile: {
+    flexGrow: 1,
+    flexBasis: '46%',
+    minWidth: 130,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  label: { fontSize: 10, fontWeight: '700', letterSpacing: 0.7, marginBottom: 4 },
+  valueRow: { flexDirection: 'row', alignItems: 'baseline' },
+  value: { fontSize: 22, fontWeight: '800', lineHeight: 25.3, fontVariant: ['tabular-nums'] },
+  valueHero: { fontSize: 32, lineHeight: 36.8 },
+  unit: { fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  hint: { fontSize: 10.5, lineHeight: 14.7, marginTop: 4 },
 });
 
-// v1.0.0 — One measured number; an unmeasurable one renders an explicit dash.
+// v1.1.0 — Web `.metric-tile` styling: uppercase label, 22/32px value, hero
+//          on accent-soft, and a two-per-row grid basis instead of ragged thirds.

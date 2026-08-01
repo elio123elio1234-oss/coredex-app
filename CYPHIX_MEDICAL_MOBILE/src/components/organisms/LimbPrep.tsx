@@ -299,19 +299,34 @@ export default function LimbPrep({ onDone, onExit }: Props) {
                 <Animated.Image
                   key={i}
                   source={st.img}
-                  style={[
-                    StyleSheet.absoluteFill,
-                    {
-                      opacity:
-                        STEPS.length < 2
-                          ? 1
-                          : fade.interpolate({
-                              inputRange: [i - 1, i, i + 1],
-                              outputRange: [0, 1, 0],
-                              extrapolate: 'clamp',
-                            }),
-                    },
-                  ]}
+                  /* ★ EXPLICIT width/height in points — never
+                     `StyleSheet.absoluteFill`.
+
+                     This exact swap has now broken the picture twice. With
+                     `absoluteFill` the Image gets its box from four zero
+                     insets and no intrinsic size, `contain` resolves against
+                     the wrong frame, and `overflow: hidden` on the parent
+                     crops the photograph down to a corner — the patient sees
+                     one finger. v5.0.0 fixed it by giving the Image a real
+                     size; v5.2.0 reintroduced absoluteFill to stack the two
+                     photos for the crossfade and brought the bug back with
+                     it. The frame's dimensions are already computed right
+                     here, so pass them and leave nothing to infer. */
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: frameW,
+                    height: frameH,
+                    opacity:
+                      STEPS.length < 2
+                        ? 1
+                        : fade.interpolate({
+                            inputRange: [i - 1, i, i + 1],
+                            outputRange: [0, 1, 0],
+                            extrapolate: 'clamp',
+                          }),
+                  }}
                   resizeMode="contain"
                   accessibilityIgnoresInvertColors
                   accessibilityElementsHidden={i !== step}

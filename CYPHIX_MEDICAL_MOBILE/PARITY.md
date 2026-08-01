@@ -17,7 +17,7 @@ but never run on a physical iPhone — Windows dev machine, see root §5) · `�
 | Teal wavy shell backdrop | ✅ | 🔬 | 🔬 | 5 ribbon paths + field gradient, both themes. Alternate styles (waves/white/gray/calm) are now pickable in Settings › Appearance. **Not ported:** the web's `glass` style |
 | Home (greeting + blob button) | ✅ | 🔬 | 🔬 | Orb, particles, morphing blob ported. **The tap target must stay ABOVE the Skia canvas** — wrapping the canvas in the `Pressable` let the canvas eat the touch and the button did nothing (v0.4.1). Greeting name is static until auth lands |
 | **Limb (6-lead) exam** | ✅ | 🔬 | 🔬 | Full pipeline: LimbPrep → auto-armed monitor → 10 s capture → report, a **layout port of the web** (`.prep-stage` and `.limb-stage`), with the web's own guide photographs (`assets/guides/`) and copy verbatim from `en.ts`. Traces are the web's `2 × 3` `.lead-grid` with the web's drawing (3 s window, 12/60 px paper, 0.38 mV scale, window-mean centring). **Mobile-only:** the route is LANDSCAPE — declared on the `Stack.Screen`, never locked imperatively (v0.8.0) — and below a 500 pt stage every size is compacted so the content, not the chrome, gets the phone's height (v0.9.0; see the Phone-scale table below). **Not ported:** the 12-lead chain into the chest protocol, and saving to Scan History |
-| **End-of-exam report** | ✅ | 🔬 | 🔬 | Two-page port of the web `EcgReport`: letterhead per page (repeated so a separated sheet identifies itself), vector strips on 1 mm / 5 mm ECG paper at the clinical 25 mm/s · 10 mm/mV with the 1 mV calibration pulse and lead-II R-peak ticks, then the measurement sheet (rate tiles · hexaxial axis dial · interval bars vs reference bands · amplitude table · quality). **Rotates back to PORTRAIT** — a document is read top to bottom, and sideways halves every strip. **Not ported:** print / Save-PDF (no browser print dialog on a phone; needs `expo-print`) |
+| **End-of-exam report** | ✅ | 🔬 | 🔬 | Two-page port of the web `EcgReport`: letterhead per page (repeated so a separated sheet identifies itself), vector strips on 1 mm / 5 mm ECG paper at the clinical 25 mm/s · 10 mm/mV with the 1 mV calibration pulse and lead-II R-peak ticks, then the measurement sheet (rate tiles · hexaxial axis dial · interval bars vs reference bands · amplitude table · quality). Colours are the web's `--ecg-*` tokens **verbatim** — white paper, blue grid, navy trace (light) / `#0D1424` paper, green trace (dark). **Rotates back to PORTRAIT** — a document is read top to bottom, and sideways halves every strip. **Not ported:** print / Save-PDF (no browser print dialog on a phone; needs `expo-print`) |
 | Real frosted glass | ✅ (`backdrop-filter`) | 🔬 | 🔬 | `GlassSurface` atom. iOS 26+ uses Apple **Liquid Glass** (`expo-glass-effect`), which the web has no equivalent of; older iOS uses UIBlurEffect; Android needs `experimentalBlurMethod="dimezisBlurView"` or `expo-blur` does not blur **at all** |
 | ECG signal chain (DSP, Pan-Tompkins, report filter, analysis) | ✅ | ✅ | ✅ | **Now shared** in `CYPHIX_SHARED/src/ecg/`, consumed by mobile. ⚠️ The web still imports its own copy under `src/services/ecg/` — migrate it, and until then edit both |
 | Live Scan (camera + ONNX pose) | ✅ | ⏳ | ⏳ | Needs camera + `onnxruntime-react-native`; geometry math must be copied verbatim from web `services/scan/` |
@@ -95,6 +95,15 @@ SE 3rd gen / Pixel 7 / Pixel with 3-button nav): prep photograph **393 × 221 �
 462 × 260** (was ~259 × 146); trace **72–82 pt** waiting and **83–94 pt**
 recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
 
+## Traps this port has already paid for twice — do not reintroduce
+
+| Trap | What happens | Rule |
+|---|---|---|
+| `StyleSheet.absoluteFill` on an `<Image>` with `resizeMode="contain"` inside an `overflow: hidden` parent | The Image takes its box from four zero insets with no intrinsic size, `contain` resolves against the wrong frame, and the parent crops the photo to a corner — the patient sees one finger. Broke `LimbPrep` in v4.0.0 and again in v0.10.0 | Pass explicit point `width`/`height`. Use `position: 'absolute'` for stacking only |
+| Deriving a visual from "what the real thing looks like" | v0.10.0 painted the report strips on pink clinical ECG paper. CYPHIX's sheet is white with a blue grid (`--ecg-*` in `report.css`) | The web is the reference for anything on a brand surface. Read the token, do not reason about the domain |
+| Two writers of the iOS orientation API | Three rotations per navigation (v0.8.0 post-mortem in `RootNavigator`) | react-native-screens only — route `orientation` or `navigation.setOptions`. `lockAsync` is banned |
+| Stepping a size on a threshold | An 89 pt lead card drew a TALLER trace than a 92 pt one, so traces shrank as the layout grew | Scale continuously, and round dead margin DOWN |
+
 ## Open verification debt
 
 - Everything marked 🔬 was built on Windows and has **never run on an
@@ -104,5 +113,5 @@ recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
   If the packet format ever changes, all three must change together —
   consider a shared test vector fixture before clinical use.
 
-<!-- v0.4.0 — Adds the end-of-exam report row (two-page web port, portrait) and
-     the shared report-geometry row; prep copy/title departures recorded. -->
+<!-- v0.4.1 — Report colours pinned to the web's --ecg-* tokens; adds the
+     "traps already paid for twice" table. -->
