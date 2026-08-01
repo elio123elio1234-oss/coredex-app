@@ -12,6 +12,13 @@
    means, so putting it outside turns one readout into two things to look
    at.
 
+   ── SMALL RINGS DROP THE CAPTION AND GROW THE NUMBER ──
+   At the ~40 pt size that fits inside a phone's status bar there is no
+   room for a caption, and the web's 0.29 ratio (tuned for a 132 px ring
+   that also carries one) would leave an 11 px digit. With no caption to
+   share the middle with, the number takes 0.40 of the diameter instead.
+   The caller labels it in the row beside the ring.
+
    Purely presentational: it is told how much is left and draws it.
    ================================================================== */
 
@@ -39,7 +46,11 @@ export default function CountdownRing({ progress, secondsLeft, caption, size = 1
   const dashOffset = circumference * (1 - remaining / 100);
 
   return (
-    <View style={{ width: size, height: size }}>
+    <View
+      style={{ width: size, height: size }}
+      accessibilityRole="progressbar"
+      accessibilityLabel={`${secondsLeft} seconds left`}
+    >
       <Svg width={size} height={size}>
         {/* Track */}
         <Circle
@@ -68,7 +79,10 @@ export default function CountdownRing({ progress, secondsLeft, caption, size = 1
       <View style={[StyleSheet.absoluteFill, styles.label]} pointerEvents="none">
         <Text
           allowFontScaling={false}
-          style={[styles.value, { color: t.textPrimary, fontSize: size * 0.29 }]}
+          style={[
+            styles.value,
+            { color: t.textPrimary, fontSize: size * (caption != null ? 0.29 : 0.4) },
+          ]}
         >
           {secondsLeft}
         </Text>
@@ -91,4 +105,5 @@ const styles = StyleSheet.create({
   caption: { fontSize: 11, fontWeight: '600', letterSpacing: 0.44 },
 });
 
-// v2.0.0 — Web parity: green drain, caption inside the ring, 132px default.
+// v2.1.0 — A captionless ring gives its whole middle to the number, so the
+//          40pt bar-sized variant stays legible.

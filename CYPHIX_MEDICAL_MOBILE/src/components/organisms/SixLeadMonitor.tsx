@@ -62,8 +62,12 @@ import { useIsDark, useTheme } from '@/theme/useTheme';
 /** `.lead-grid { grid-template-columns: repeat(2, …) }` */
 const COLS = 2;
 const ROWS = 3;
-/** `.lead-grid { gap: 10px }` */
-const GAP = 10;
+/** `.lead-grid { gap: 10px }` — but a phone spends 20 of its ~300 pt of grid
+    on those two horizontal seams, and a seam is not information. Tightened
+    only where the cards are short; the web's value stands everywhere else. */
+const GAP_FULL = 10;
+const GAP_TIGHT = 6;
+const GAP_TIGHT_BELOW = 400;
 /** `.lead-card { padding: 8px; border-radius: var(--radius-md) }`.
     On a phone a cell can be ~65 px tall, where 16 px of padding is a quarter
     of the trace's whole height — so the inset scales with the card and only
@@ -102,9 +106,13 @@ export default function SixLeadMonitor({ width, height }: Props) {
   const [paths, setPaths] = useState<Record<string, SkPath>>({});
 
   /* ── Cell geometry ── */
+  const GAP = height < GAP_TIGHT_BELOW ? GAP_TIGHT : GAP_FULL;
   const cardW = (width - GAP * (COLS - 1)) / COLS;
   const cardH = (height - GAP * (ROWS - 1)) / ROWS;
-  const cardPad = Math.max(CARD_PAD_MIN, Math.min(CARD_PAD_MAX, Math.round(cardH * 0.07)));
+  /* `floor`, not `round`: this is dead margin between the card's border and
+     the ECG paper, so when it is between two values the trace should get the
+     spare point rather than the whitespace. */
+  const cardPad = Math.max(CARD_PAD_MIN, Math.min(CARD_PAD_MAX, Math.floor(cardH * 0.06)));
   const plotW = Math.max(1, cardW - cardPad * 2);
   const plotH = Math.max(1, cardH - cardPad * 2);
 
@@ -334,5 +342,5 @@ const styles = StyleSheet.create({
   labelText: { fontWeight: '800', letterSpacing: 0.5 },
 });
 
-// v3.0.0 — 2 × 3 lead grid with the web's own drawing: 3 s window, 12/60 px
-//          paper, 0.38 mV scale, per-frame window-mean centring.
+// v3.1.0 — Short grids tighten the seam between cards (10 → 6) and round the
+//          card's dead margin down, so the traces get the spare points.

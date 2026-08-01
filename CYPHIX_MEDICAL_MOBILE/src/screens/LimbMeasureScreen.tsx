@@ -77,6 +77,14 @@ import { useTheme } from '@/theme/useTheme';
 const BEATS_REQUIRED = 3;
 /** Below this height the web's small-screen rules apply (see the header). */
 const COMPACT_H = 500;
+/**
+ * The countdown ring inside the status bar.
+ *
+ * ★ Chosen to be ≤ the bar's existing content height, which the Exit pill
+ * sets at ~41 pt. Anything larger grows the bar and is paid for by the six
+ * traces below it; at 40 the ring is free.
+ */
+const BAR_RING_SIZE = 40;
 
 /* Copy is verbatim from the web locale (en.ts). */
 const LIMB_TITLE = 'Limb Leads';
@@ -165,7 +173,16 @@ export default function LimbMeasureScreen() {
 
   const compact = height < COMPACT_H;
   const pad = compact ? 10 : 14;
-  const gap = compact ? 8 : 12;
+  const gap = compact ? 6 : 12;
+
+  /* ── The bottom inset the traces do NOT have to clear ──
+     A home indicator / gesture pill is a thin translucent overlay, and the
+     grid underneath it is a DISPLAY with nothing to tap — so reserving its
+     full inset costs the traces ~11 pt to protect a card border. The one
+     bottom inset that IS opaque system chrome is Android's 3-button nav
+     bar, and that is what the > 40 test catches. Same rule, same threshold,
+     as `dockMetrics.dockBottomOffset` — see its note. */
+  const bottomInset = insets.bottom > 40 ? insets.bottom : 0;
 
   /* The bar's second line. Verbatim web copy while recording; dropped on a
      short stage while idle, where the guide circle carries the instruction
@@ -201,7 +218,7 @@ export default function LimbMeasureScreen() {
           backgroundColor: t.bg,
           gap,
           paddingTop: Math.max(insets.top, pad),
-          paddingBottom: Math.max(insets.bottom, pad),
+          paddingBottom: Math.max(bottomInset, pad),
           // Landscape puts the notch on a SIDE — the inset is the floor here.
           paddingLeft: Math.max(insets.left, compact ? pad : 18),
           paddingRight: Math.max(insets.right, compact ? pad : 18),
@@ -256,17 +273,19 @@ export default function LimbMeasureScreen() {
             <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>BPM</Text>
           </View>
 
-          {/* The capture clock, given the BPM's own treatment so the two read
-              as one instrument panel — see the header for why it lives here
-              rather than in a 132px ring at the bottom. */}
+          {/* The capture clock. ★ The ring is BAR_RING_SIZE precisely so it
+              fits inside the height the bar already has (the Exit pill is
+              ~41 pt tall and sets that floor), which means keeping the
+              web's draining-circle metaphor on a phone costs the traces
+              nothing at all. A bare number would have been cheaper only in
+              the sense that it says less. */}
           {isRecording && compact && (
-            <View style={styles.bpm}>
-              <Text
-                allowFontScaling={false}
-                style={[styles.bpmValue, { color: t.success, fontSize: 30 }]}
-              >
-                {secondsLeft}
-              </Text>
+            <View style={styles.barClock}>
+              <CountdownRing
+                progress={recorder.progress}
+                secondsLeft={secondsLeft}
+                size={BAR_RING_SIZE}
+              />
               <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>SEC LEFT</Text>
             </View>
           )}
@@ -375,6 +394,8 @@ const styles = StyleSheet.create({
   barSub: { marginTop: 3 },
   barVitals: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bpm: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  /* Centre-aligned, not baseline: the ring is a circle, not a digit. */
+  barClock: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bpmValue: { fontWeight: '800', fontVariant: ['tabular-nums'] },
   bpmUnit: { fontSize: 13, fontWeight: '700', letterSpacing: 0.65 },
   /* .sim-tag */

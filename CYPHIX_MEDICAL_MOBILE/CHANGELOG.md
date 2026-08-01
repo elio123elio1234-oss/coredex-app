@@ -1,5 +1,63 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.9.1 — 2026-08-01 — The ring comes back, and it is free
+
+Follow-up to v0.9.0 on the user's note: keep the circle that shows how much
+time is left, and tighten the seams between the traces.
+
+### The countdown ring, at zero cost to the traces
+
+v0.9.0 replaced the web's draining circle with a plain number to buy back the
+footer. That was the right trade for the footer and the wrong conclusion about
+the ring: the bar's height is set by the **Exit pill (~41 pt)**, so anything
+shorter than that sits inside height the bar already had. A **40 pt ring fits
+there for nothing.** The bar measures 57 pt with the ring and 57 pt without —
+the traces do not pay a single point for it.
+
+`CountdownRing` now gives a captionless ring its whole middle: the web's 0.29
+number-to-diameter ratio is tuned for a 132 px ring that also carries a
+caption, and at 40 pt it would have left an 11 px digit. With no caption to
+share the space, the ratio is 0.40 (≈16 px). The label lives beside the ring
+in the bar instead, and the ring carries an `accessibilityLabel`.
+
+### Tighter seams
+
+- Grid gap 10 → 6 px on short grids (< 400 pt). A phone was spending 20 of
+  ~300 pt of grid on two horizontal seams, and a seam carries no signal. The
+  web's 10 px stands on everything taller.
+- The card's inner margin now rounds **down** (`floor(cardH × 0.06)`, was
+  `round(… × 0.07)`). It is dead space between the card border and the ECG
+  paper, so when it falls between two values the trace should get the spare
+  point, not the whitespace.
+- The stage no longer reserves the **home indicator's** inset. That pill is a
+  thin translucent overlay and the grid beneath it is a display with nothing
+  to tap, so reserving ~11 pt to protect a card border is a bad trade. The one
+  bottom inset that IS opaque system chrome — Android's 3-button nav bar — is
+  still cleared, using the same `> 40` test and for the same reason as
+  `dockMetrics.dockBottomOffset`.
+
+### Where the traces landed
+
+Computed from the layout formulas (worst case), against the two earlier
+versions:
+
+| Device / state | v0.8.0 | v0.9.0 | **v0.9.1** |
+|---|---|---|---|
+| iPhone 15 Pro, recording | ~52 | 80 | **89** |
+| iPhone 15 Pro, waiting | ~52 | 68 | **76** |
+| iPhone SE 3rd gen, recording | ~52 | 78 | **83** |
+| Pixel 7, recording | ~52 | 84 | **94** |
+
+Widths are 311–425 pt. Net since v0.8.0: **+71 %** of trace height while
+recording, with the web's countdown ring still on screen.
+
+### Verified
+
+`tsc --noEmit` exit 0 · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18 · geometry recomputed from the formulas, including an
+Android 3-button-nav case. Still not a device test — `🔬` in `PARITY.md`.
+
+
 ## v0.9.0 — 2026-08-01 — A faithful port of a desktop layout is still a
 ##                        desktop layout
 

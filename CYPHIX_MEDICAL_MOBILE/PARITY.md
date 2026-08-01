@@ -78,15 +78,18 @@ own value**.
 | Prep headline | `clamp(23px, 5vw, 34px)` | driven by stage HEIGHT (~20 px) | `5vw` assumes width is the SHORT edge; in landscape it is the long one, so the web formula pins the headline at its ceiling |
 | Prep headline width | `max-width: 640px` | full stage width | At ~20 px the longest step title then fits on ONE line, worth ~30 pt of photograph |
 | Prep gaps / dots | 16–28 px · 9 px | 10 px · 7 px | Pure chrome |
-| Capture countdown | 132 px ring in the foot | number + `SEC LEFT` in the bar, beside the BPM | The foot is then empty during a capture and is not rendered, so the traces take the whole screen. **User-requested.** The ring is still used above 500 pt |
+| Capture countdown | 132 px ring in the foot | **the same ring at 40 pt, in the bar** beside the BPM, labelled `SEC LEFT` | The foot is then empty during a capture and is not rendered, so the traces take the whole screen. **User-requested.** 40 pt is ≤ the bar's existing content height (the Exit pill sets it at ~41), so the ring costs the traces nothing — bar is 57 pt with it and without. The 132 px foot ring is still used above 500 pt |
 | Bar subtitle (idle) | full `limbHowTo` line | not shown | The guide circle over the traces carries it in larger type. Dropped, never ellipsised — a clinical instruction cut mid-sentence is not a shorter version of it |
 | Auto-arm hint | always | hidden while the guide circle is up | The circle's caption already says the recording starts on its own |
 | Simulation badge | `SIMULATION — not a real signal` | `SIMULATION` | Full sentence kept as the accessibility label. Shortened only so it cannot push Exit off the bar; it still says the one thing that matters |
-| Lead-card padding | 8 px | scales 3–8 px with card height | A fixed 8 px is a quarter of a short card's trace. **Scaled, not stepped** — a threshold would make traces shrink as the layout grew |
+| Lead-card padding | 8 px | `floor(cardH × 0.06)`, clamped 3–8 | A fixed 8 px is a quarter of a short card's trace. **Scaled, not stepped** — a threshold would make traces shrink as the layout grew. Rounds DOWN: it is dead margin, so the spare point goes to the trace |
+| Grid gap between cards | 10 px | 6 px on grids under 400 pt | A phone spent 20 of ~300 pt of grid on two seams; a seam carries no signal |
+| Bottom safe-area inset | n/a | home indicator NOT reserved; Android 3-button nav bar is | The pill is a thin overlay and the grid beneath it has nothing to tap. Same `> 40` test as `dockMetrics.dockBottomOffset` |
 
 Resulting geometry (computed from the formulas, worst case, iPhone 15 Pro /
-SE 3rd gen / Pixel 7): prep photograph **393 × 221 – 462 × 260** (was ~259 ×
-146); trace **66–72 pt** waiting, **78–84 pt** recording (was ~52 pt).
+SE 3rd gen / Pixel 7 / Pixel with 3-button nav): prep photograph **393 × 221 –
+462 × 260** (was ~259 × 146); trace **72–82 pt** waiting and **83–94 pt**
+recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
 
 ## Open verification debt
 
@@ -97,5 +100,5 @@ SE 3rd gen / Pixel 7): prep photograph **393 × 221 – 462 × 260** (was ~259 �
   If the packet format ever changes, all three must change together —
   consider a shared test vector fixture before clinical use.
 
-<!-- v0.3.0 — Adds the phone-scale table: every place the web's desktop sizes
-     had to change for a ~390pt landscape stage, and what reverts above it. -->
+<!-- v0.3.1 — Countdown row updated: the web's ring is back, at a size that
+     fits inside the bar's existing height; seam + inset rows added. -->
