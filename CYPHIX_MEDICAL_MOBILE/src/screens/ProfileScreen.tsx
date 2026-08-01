@@ -30,6 +30,7 @@ import {
   MedicationIllustration,
   type IllustrationProps,
 } from '@/components/atoms/Illustration';
+import { SHOW_SHELL_WORDMARK } from '@/config/featureFlags';
 import { dockFootprint } from '@/navigation/dockMetrics';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD, type CodedItem } from '@/features/profile/demoCard';
@@ -201,14 +202,22 @@ export default function ProfileScreen() {
     <View style={styles.root}>
       <HeroBackdrop palette={palette} />
 
-      <View style={[styles.brand, { top: insets.top + 10 }]} pointerEvents="none">
-        <BrandLogo width={160} tint={palette.logoTint} />
-      </View>
+      {/* Profile does not use PatientShell (it scrolls), so it carries its own
+          copy of the shell's floating wordmark — and therefore its own copy of
+          the switch. Same flag, so the two can never disagree. */}
+      {SHOW_SHELL_WORDMARK && (
+        <View style={[styles.brand, { top: insets.top + 10 }]} pointerEvents="none">
+          <BrandLogo width={160} tint={palette.logoTint} />
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={[
           styles.page,
-          { paddingTop: insets.top + 70, paddingBottom: dockFootprint(insets.bottom, screenH) },
+          {
+            paddingTop: insets.top + (SHOW_SHELL_WORDMARK ? 70 : 12),
+            paddingBottom: dockFootprint(insets.bottom, screenH),
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -463,6 +472,5 @@ const styles = StyleSheet.create({
   settingsDesc: { fontSize: 12.5, lineHeight: 18 },
 });
 
-// v1.2.0 — Section titles, field labels and empty states come from the locale;
-//          rows, the identity header and the chevron follow the reading
-//          direction. Coded clinical `display` values stay as recorded.
+// v1.3.0 — The floating wordmark (and the padding that cleared it) follow
+//          SHOW_SHELL_WORDMARK, so the card starts at the top of the screen.

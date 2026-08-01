@@ -16,6 +16,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandLogo from '@/components/atoms/BrandLogo';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
+import { SHOW_SHELL_WORDMARK } from '@/config/featureFlags';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { dockFootprint } from '@/navigation/dockMetrics';
 import { shellPalette } from '@/theme/shellTheme';
@@ -42,11 +43,16 @@ export default function PatientShell({ children, chrome = true, dock = chrome }:
   const { prefs } = usePreferences();
   const palette = shellPalette(prefs.background, useIsDark());
 
+  /* One condition for BOTH the mark and the space reserved for it — see the
+     padding below. Two separate tests is how you end up with a 70 pt hole at
+     the top of every screen holding nothing. */
+  const wordmark = chrome && SHOW_SHELL_WORDMARK;
+
   return (
     <View style={styles.root}>
       <HeroBackdrop palette={palette} />
 
-      {chrome && (
+      {wordmark && (
         <View style={[styles.brand, { top: insets.top + 10 }]} pointerEvents="none">
           <BrandLogo width={160} tint={palette.logoTint} />
         </View>
@@ -56,7 +62,11 @@ export default function PatientShell({ children, chrome = true, dock = chrome }:
         style={[
           styles.content,
           {
-            paddingTop: insets.top + (chrome ? 70 : 12),
+            /* 70 exists ONLY to clear the floating wordmark; with the mark
+               hidden that height goes back to the content it was covering
+               for. The screens are vertically centred, so this reads as the
+               content settling up by ~29 pt rather than as a gap closing. */
+            paddingTop: insets.top + (wordmark ? 70 : 12),
             // Landscape puts the notch on a SIDE, so the horizontal padding
             // has to clear it — 20 is only the floor.
             paddingLeft: Math.max(insets.left, 20),
@@ -81,4 +91,5 @@ const styles = StyleSheet.create({
   content: { flex: 1, justifyContent: 'center' },
 });
 
-// v2.1.0 — The background field follows the patient's Settings choice.
+// v2.2.0 — The floating wordmark is behind SHOW_SHELL_WORDMARK (off for now),
+//          and the padding that cleared it follows the same switch.

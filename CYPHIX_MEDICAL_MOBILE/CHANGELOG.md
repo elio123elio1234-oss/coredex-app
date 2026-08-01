@@ -1,5 +1,45 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.14.0 — 2026-08-01 — The floating wordmark goes away (for now)
+
+The user asked to hide the CYPHIX logo in the top-start corner of the native
+app. **Hidden, not removed** — "for now" was the word, so it is a switch:
+
+```ts
+// src/config/featureFlags.ts
+export const SHOW_SHELL_WORDMARK = false;   // ← flip to true, it all comes back
+```
+
+It renders from **two** places, because Profile scrolls and therefore does not
+use `PatientShell` — it carries its own copy of the shell's floating mark. Both
+now read the same constant, so they cannot disagree.
+
+### The padding follows the switch
+
+The mark's 70 pt of top padding existed for exactly one reason: to keep content
+clear of a logo floating over it. With the logo hidden, that reservation holds
+nothing, which is the same mistake as the dock-inset bug written up in
+`CLAUDE.md` — space reserved for chrome that is not there. So the padding is
+tied to the same condition and drops to 12 pt.
+
+Visible effect, since the patient screens are vertically centred: content
+settles **up by ~29 pt** on Home / History / Tests / Chat, and the Profile card
+starts nearer the top. If the empty gap was actually wanted, that is a one-line
+change — say so and I will pin the padding back to 70.
+
+### What is NOT hidden
+
+`ReportHeader`'s letterhead mark, at the top of the end-of-exam report. That
+one identifies a clinical document rather than decorating a screen, and a
+report with no issuer on it is a different decision from a tidier home screen.
+Say the word if you want it gone too.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18. The re-centring is a layout change no typecheck can see —
+`🔬` until it is looked at on a device.
+
 ## v0.13.0 — 2026-08-01 — The app learns to speak: i18n, and a language picker in Settings
 
 The user asked three questions: is the native app modular, does it support

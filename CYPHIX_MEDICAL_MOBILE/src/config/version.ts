@@ -1,8 +1,14 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.13.0';
+export const APP_VERSION = '0.14.0';
 export const APP_BUILD_LABEL =
-  'i18n: the whole app speaks English + Hebrew, language picker in Settings';
+  'floating wordmark hidden (one switch, reversible); i18n en/he in Settings';
+
+// v0.14.0 — The floating CYPHIX wordmark in the top-start corner is behind
+//           `SHOW_SHELL_WORDMARK` and currently off, at the user's request.
+//           Hidden, not deleted — and the 70pt of padding that existed only
+//           to clear it follows the same switch, so nothing reserves space
+//           for something that is not drawn.
 
 // v0.13.0 — The app gets an i18n layer mirroring the web's: a language
 //           registry, en/he locale tables typed against each other, a provider
