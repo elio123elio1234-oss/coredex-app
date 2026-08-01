@@ -5,11 +5,17 @@
    FLOW:
      set-up steps → live monitor → (heartbeat proven) → 10 s capture → REPORT
 
-   ══ THE EXAM IS LANDSCAPE ══
-   Declared on the route in RootNavigator (`orientation: 'landscape'`), so
+   ══ LANDSCAPE TO MEASURE, PORTRAIT TO READ ══
+   The route is declared `orientation: 'landscape'` in RootNavigator, so
    the OS rotates as part of the push and this screen's FIRST layout pass
-   already measures the landscape box. Nothing here locks anything — see
-   the flicker post-mortem in RootNavigator.
+   already measures the landscape box. Six live traces need the long edge.
+
+   A REPORT is the opposite shape of problem — a document read top to
+   bottom, one full-width strip after another — so when the capture
+   finishes the screen asks for portrait back. That is still ONE writer of
+   the orientation API (react-native-screens, via `setOptions`), which is
+   the whole point of the flicker fix; nothing here calls `lockAsync`. See
+   the post-mortem in RootNavigator.
 
    ══ NOBODY PRESSES ANYTHING (the point of this screen) ══
    Holding this measurement takes BOTH of the patient's hands: the watch
@@ -103,7 +109,10 @@ const RAIL_WARNING =
 
 export default function LimbMeasureScreen() {
   const t = useTheme();
-  const nav = useNavigation<{ goBack: () => void }>();
+  const nav = useNavigation<{
+    goBack: () => void;
+    setOptions: (o: { orientation: 'landscape' | 'portrait_up' }) => void;
+  }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const ble = useBle();
@@ -142,6 +151,15 @@ export default function LimbMeasureScreen() {
   useEffect(() => {
     if (prepDone && phase === 'idle' && gate.ready && ble.isStreaming) start();
   }, [prepDone, gate.ready, phase, start, ble.isStreaming]);
+
+  /* ── Landscape to measure, portrait to read ──
+     Declarative, like the route's own option: react-native-screens stays
+     the single owner of the orientation API. `phase` is the only input, so
+     "record again" rotates back to landscape by the same path it came. */
+  const done = phase === 'done';
+  useEffect(() => {
+    nav.setOptions({ orientation: done ? 'portrait_up' : 'landscape' });
+  }, [nav, done]);
 
   /* ══════════ Report ══════════ */
   if (phase === 'done' && recorder.report) {
@@ -184,10 +202,14 @@ export default function LimbMeasureScreen() {
      as `dockMetrics.dockBottomOffset` — see its note. */
   const bottomInset = insets.bottom > 40 ? insets.bottom : 0;
 
-  /* The bar's second line. Verbatim web copy while recording; dropped on a
-     short stage while idle, where the guide circle carries the instruction
-     instead (see the header). */
-  const barSub = isRecording ? LIMB_RECORDING_NOW : compact ? null : LIMB_HOW_TO;
+  /* ── The bar's second line ──
+     Gone entirely on a phone. While idle the guide circle carries the
+     instruction in larger type; while RECORDING there is nothing useful
+     left to say — the draining ring beside the BPM already says a capture
+     is running, and a line of prose telling a patient to hold still is
+     read once and then just occupies the traces' height for ten seconds.
+     The desktop layout keeps the web's copy. */
+  const barSub = compact ? null : isRecording ? LIMB_RECORDING_NOW : LIMB_HOW_TO;
 
   /* ── What the foot still has to say ──
      On a short stage a capture puts the clock in the bar, so the foot is

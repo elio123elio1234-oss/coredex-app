@@ -1,5 +1,80 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.10.0 — 2026-08-01 — The report becomes a document
+
+### The report is the web's two-page sheet, and it is portrait
+
+Until now the report was a summary card: nine numbers in a grid and six
+Skia traces on a plain background. The web produces something else entirely,
+and this is now a port of that:
+
+- **A letterhead on every page** — wordmark, title, which page this is, and
+  the provenance block (recorded at / duration / lead set / sample rate).
+  Repeated on page 2 on purpose: a sheet separated from its first page must
+  still identify itself, or it ends up filed against the wrong record.
+- **Page 1, the waveforms**, as VECTOR strips on real ECG paper: a 1 mm /
+  5 mm grid at the clinical **25 mm/s and 10 mm/mV**, each with the 1 mV
+  calibration pulse so the gain can be checked by eye against the grid, and
+  R-peak ticks on lead II showing what the rate was computed from.
+- **Page 2, the measurements**: rate & rhythm tiles, the hexaxial axis dial,
+  interval bars against typical adult reference bands, the per-lead amplitude
+  table with its QRS profile, and signal quality. Measurements only — no
+  finding, no normal/abnormal label, nothing that reads as a diagnosis.
+
+**★ The screen rotates back to portrait to show it.** The exam is landscape
+because six live traces need the long edge; a report is the opposite shape of
+problem — a document read top to bottom, one full-width strip after another.
+Sideways would halve every strip and push the measurement sheet behind a
+scroll. This is done with `navigation.setOptions({ orientation })`, so
+react-native-screens remains the **single owner** of the orientation API — the
+whole point of the v0.8.0 flicker fix. `lockAsync` is still nowhere in this
+repo, and "record again" rotates back by the same path it came.
+
+`buildEcgPath`, `buildCalibrationPulse` and `buildEcgGrid` moved into
+`@cyphix/shared` (`src/ecg/ecgPath.ts`, `ecgGrid.ts`). This is geometry, not
+signal maths, but the same rule applies for a different reason: an interval
+measured off the web's sheet and one measured off the phone must land on the
+same ruler. The web still has its own copies and is untouched — it imports
+nothing from `@cyphix/shared` yet (verified), so this addition cannot affect
+it. Migrating it is still tracked in `PARITY.md`.
+
+### The set-up steps
+
+- **Both photographs are now exactly the same size.** They were not: the
+  picture's slot is the flex remainder, so step 2's longer title wrapped to a
+  second line and stole ~25 pt from its own photograph. The title block now
+  has a FIXED one-line height, which makes the remainder identical on every
+  step regardless of copy — and both steps get the LARGER frame (436 × 245 on
+  an iPhone 15 Pro, 462 × 260 on a Pixel 7).
+- **Step 2's line is shortened** to "Rest that hand on your left thigh". The
+  web's 74-character version was the cause above, and the detail it was
+  spending a line on — which way round the watch sits — is precisely what the
+  photograph shows unambiguously. `adjustsFontSizeToFit` is the safety net so
+  a longer string shrinks rather than truncating: a clinical instruction cut
+  off mid-sentence is worse than a small one.
+- **The step change is a crossfade, not a reload.** Swapping `source` on one
+  `<Image>` makes RN fetch and decode the asset at the moment of the tap — and
+  in a dev build that "file" is an HTTP request to Metro — so the frame went
+  blank for a beat. Both photographs are now mounted from the first render and
+  only their opacity animates; by the time the patient taps, the next one has
+  long since decoded.
+
+### The live bar
+
+"Recording — stay still and breathe normally" is gone from the phone layout.
+The draining ring beside the BPM already says a capture is running, and a line
+of prose is read once and then occupies the traces' height for ten seconds.
+The desktop layout keeps the web's copy.
+
+### Verified
+
+`tsc --noEmit` exit 0 · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18 · prep geometry recomputed and confirmed identical across
+both steps · confirmed the web imports nothing from `@cyphix/shared`, so the
+shared addition is additive-only. Still not a device test — `🔬` in
+`PARITY.md`.
+
+
 ## v0.9.1 — 2026-08-01 — The ring comes back, and it is free
 
 Follow-up to v0.9.0 on the user's note: keep the circle that shows how much

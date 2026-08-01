@@ -44,9 +44,10 @@
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Image,
+  Animated,
+  Easing,
   type LayoutChangeEvent,
   Pressable,
   StyleSheet,
@@ -145,7 +146,16 @@ function CheckIcon({ size = 22, color = '#FFFFFF' }: { size?: number; color?: st
   );
 }
 
-/* Text copied verbatim from the web locale (en.ts limbPrep*). */
+/* Confirmations are verbatim from the web locale (en.ts limbPrep*).
+   ★ The step-2 TITLE is shortened. The web's line —
+       "Rest that hand on your left thigh — the back of the watch touching
+        your leg"
+   is 74 characters against step 1's 33, so it wrapped to a second line and
+   step 2's photograph came out visibly SMALLER than step 1's. Two pictures
+   of the same procedure at two different sizes reads as a glitch, and the
+   detail it was spending that line on — which way round the watch sits — is
+   the one thing the photograph itself shows unambiguously. Both titles are
+   now one short line. Recorded in PARITY.md. */
 const STEPS = [
   {
     img: LIMB_PREP_IMAGES.wear,
@@ -154,7 +164,7 @@ const STEPS = [
   },
   {
     img: LIMB_PREP_IMAGES.rest,
-    title: 'Rest that hand on your left thigh — the back of the watch touching your leg',
+    title: 'Rest that hand on your left thigh',
     confirm: 'My hand is resting on my left leg',
   },
 ];
@@ -163,6 +173,24 @@ export default function LimbPrep({ onDone, onExit }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
+
+  /* ── Why every photograph is mounted from the first render ──
+     Swapping `source` on one <Image> makes RN fetch and decode the new
+     asset at the moment of the tap — and in a dev build the "file" is an
+     HTTP request to Metro — so the frame went blank for a beat and the
+     step change felt broken. Both photographs are therefore mounted at
+     once and only their OPACITY changes: by the time the patient taps,
+     the next one has long since decoded, and the swap is a crossfade with
+     nothing to load. */
+  const fade = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fade, {
+      toValue: step,
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }, [step, fade]);
   /** The whole stage, for the viewport-relative sizes the web uses. */
   const [stage, setStage] = useState({ width: 0, height: 0 });
   /** What the picture actually has left after the title, dots and button. */
@@ -267,29 +295,59 @@ export default function LimbPrep({ onDone, onExit }: Props) {
                   hide the very thing being pointed at, so the failure mode has
                   to be a border, never a missing hand. The artwork is drawn on
                   white, so any residual band disappears into the frame. */}
-              <Image
-                source={s.img}
-                style={styles.image}
-                resizeMode="contain"
-                accessibilityIgnoresInvertColors
-              />
+              {STEPS.map((st, i) => (
+                <Animated.Image
+                  key={i}
+                  source={st.img}
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      opacity:
+                        STEPS.length < 2
+                          ? 1
+                          : fade.interpolate({
+                              inputRange: [i - 1, i, i + 1],
+                              outputRange: [0, 1, 0],
+                              extrapolate: 'clamp',
+                            }),
+                    },
+                  ]}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                  accessibilityElementsHidden={i !== step}
+                />
+              ))}
             </View>
           )}
         </View>
 
-        <Text
-          style={[
-            styles.title,
-            {
-              color: t.textPrimary,
-              fontSize: titleSize,
-              lineHeight: titleSize * 1.22,
-              maxWidth: titleMaxW,
-            },
-          ]}
-        >
-          {s.title}
-        </Text>
+        {/* ★ A FIXED height, not an auto one.
+            The photograph's slot is the flex remainder, so anything above it
+            that changes size between steps changes the PICTURE's size too —
+            which is exactly how step 2 ended up with a smaller photograph
+            than step 1. Reserving one line makes the remainder identical on
+            every step regardless of copy. `adjustsFontSizeToFit` is the
+            safety net: a longer string (or a future translation) shrinks
+            slightly rather than being cut off, because a truncated clinical
+            instruction is worse than a small one. */}
+        <View style={{ height: titleSize * 1.22, justifyContent: 'center' }}>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+            style={[
+              styles.title,
+              {
+                color: t.textPrimary,
+                fontSize: titleSize,
+                lineHeight: titleSize * 1.22,
+                maxWidth: titleMaxW,
+              },
+            ]}
+          >
+            {s.title}
+          </Text>
+        </View>
 
         <View style={styles.dots}>
           {STEPS.map((_, i) => (
@@ -381,5 +439,6 @@ const styles = StyleSheet.create({
   confirmText: { color: '#FFFFFF', fontWeight: '800', flexShrink: 1 },
 });
 
-// v5.1.0 — Chrome shrinks on a short (landscape-phone) stage so the
-//          photograph is the hero: the picture roughly doubles in area.
+// v5.2.0 — Both photographs mount at once and crossfade (no decode on tap),
+//          and the title's height is fixed so every step's picture is the
+//          SAME size; step-2 copy shortened to one line.

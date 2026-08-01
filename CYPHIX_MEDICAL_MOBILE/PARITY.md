@@ -17,6 +17,7 @@ but never run on a physical iPhone — Windows dev machine, see root §5) · `�
 | Teal wavy shell backdrop | ✅ | 🔬 | 🔬 | 5 ribbon paths + field gradient, both themes. Alternate styles (waves/white/gray/calm) are now pickable in Settings › Appearance. **Not ported:** the web's `glass` style |
 | Home (greeting + blob button) | ✅ | 🔬 | 🔬 | Orb, particles, morphing blob ported. **The tap target must stay ABOVE the Skia canvas** — wrapping the canvas in the `Pressable` let the canvas eat the touch and the button did nothing (v0.4.1). Greeting name is static until auth lands |
 | **Limb (6-lead) exam** | ✅ | 🔬 | 🔬 | Full pipeline: LimbPrep → auto-armed monitor → 10 s capture → report, a **layout port of the web** (`.prep-stage` and `.limb-stage`), with the web's own guide photographs (`assets/guides/`) and copy verbatim from `en.ts`. Traces are the web's `2 × 3` `.lead-grid` with the web's drawing (3 s window, 12/60 px paper, 0.38 mV scale, window-mean centring). **Mobile-only:** the route is LANDSCAPE — declared on the `Stack.Screen`, never locked imperatively (v0.8.0) — and below a 500 pt stage every size is compacted so the content, not the chrome, gets the phone's height (v0.9.0; see the Phone-scale table below). **Not ported:** the 12-lead chain into the chest protocol, and saving to Scan History |
+| **End-of-exam report** | ✅ | 🔬 | 🔬 | Two-page port of the web `EcgReport`: letterhead per page (repeated so a separated sheet identifies itself), vector strips on 1 mm / 5 mm ECG paper at the clinical 25 mm/s · 10 mm/mV with the 1 mV calibration pulse and lead-II R-peak ticks, then the measurement sheet (rate tiles · hexaxial axis dial · interval bars vs reference bands · amplitude table · quality). **Rotates back to PORTRAIT** — a document is read top to bottom, and sideways halves every strip. **Not ported:** print / Save-PDF (no browser print dialog on a phone; needs `expo-print`) |
 | Real frosted glass | ✅ (`backdrop-filter`) | 🔬 | 🔬 | `GlassSurface` atom. iOS 26+ uses Apple **Liquid Glass** (`expo-glass-effect`), which the web has no equivalent of; older iOS uses UIBlurEffect; Android needs `experimentalBlurMethod="dimezisBlurView"` or `expo-blur` does not blur **at all** |
 | ECG signal chain (DSP, Pan-Tompkins, report filter, analysis) | ✅ | ✅ | ✅ | **Now shared** in `CYPHIX_SHARED/src/ecg/`, consumed by mobile. ⚠️ The web still imports its own copy under `src/services/ecg/` — migrate it, and until then edit both |
 | Live Scan (camera + ONNX pose) | ✅ | ⏳ | ⏳ | Needs camera + `onnxruntime-react-native`; geometry math must be copied verbatim from web `services/scan/` |
@@ -42,6 +43,7 @@ but never run on a physical iPhone — Windows dev machine, see root §5) · `�
 | RBAC route guards | ✅ | ⏳ | ⏳ | Lands with auth |
 | i18n (en/he + RTL) | ✅ | ⏳ | ⏳ | RN needs `I18nManager` RTL handling |
 | Theme (light/dark) | ✅ | 🔬 | 🔬 | Tokens ported 1:1 from `tokens.css`. Resolution order is the Settings choice, then the OS (`useIsDark`) — every surface must use that hook, never `useColorScheme()` directly, or the app goes half dark |
+| Report geometry (mm grid + path) | ✅ own copy | 🔬 | 🔬 | **Now shared** in `CYPHIX_SHARED/src/ecg/ecgPath.ts` + `ecgGrid.ts`, consumed by mobile. An interval measured off the web sheet and off the phone must land on one ruler. ⚠️ The web still imports its own copies under `src/services/ecg/` and imports NOTHING from `@cyphix/shared` (verified) — until it migrates, edit both |
 | Preference persistence | ✅ (`localStorage`) | 🔬 | 🔬 | `preferencesSlice` + AsyncStorage, hydrated before first paint. **Tokens stay in SecureStore** — non-secret settings must not be joined to them |
 
 ## Settings rows (where mobile differs from the web page, and why)
@@ -79,7 +81,9 @@ own value**.
 | Prep headline width | `max-width: 640px` | full stage width | At ~20 px the longest step title then fits on ONE line, worth ~30 pt of photograph |
 | Prep gaps / dots | 16–28 px · 9 px | 10 px · 7 px | Pure chrome |
 | Capture countdown | 132 px ring in the foot | **the same ring at 40 pt, in the bar** beside the BPM, labelled `SEC LEFT` | The foot is then empty during a capture and is not rendered, so the traces take the whole screen. **User-requested.** 40 pt is ≤ the bar's existing content height (the Exit pill sets it at ~41), so the ring costs the traces nothing — bar is 57 pt with it and without. The 132 px foot ring is still used above 500 pt |
-| Bar subtitle (idle) | full `limbHowTo` line | not shown | The guide circle over the traces carries it in larger type. Dropped, never ellipsised — a clinical instruction cut mid-sentence is not a shorter version of it |
+| Bar subtitle | `limbHowTo` idle · `limbRecordingNow` recording | not shown at all | Idle: the guide circle carries it in larger type. Recording: the draining ring already says a capture is running, and a line of prose is read once then occupies the traces' height for ten seconds. Dropped, never ellipsised — a clinical instruction cut mid-sentence is not a shorter version of it |
+| Prep step-2 title | "Rest that hand on your left thigh — the back of the watch touching your leg" (74 chars) | "Rest that hand on your left thigh" | The long line wrapped to a second row and stole ~25 pt from step 2's OWN photograph, so the two steps showed different-sized pictures. The dropped detail — which way round the watch sits — is exactly what the photograph shows |
+| Prep title height | auto | FIXED at one line | The picture's slot is the flex remainder, so anything above it that changes size between steps changes the picture's size too. `adjustsFontSizeToFit` shrinks a longer string rather than truncating it |
 | Auto-arm hint | always | hidden while the guide circle is up | The circle's caption already says the recording starts on its own |
 | Simulation badge | `SIMULATION — not a real signal` | `SIMULATION` | Full sentence kept as the accessibility label. Shortened only so it cannot push Exit off the bar; it still says the one thing that matters |
 | Lead-card padding | 8 px | `floor(cardH × 0.06)`, clamped 3–8 | A fixed 8 px is a quarter of a short card's trace. **Scaled, not stepped** — a threshold would make traces shrink as the layout grew. Rounds DOWN: it is dead margin, so the spare point goes to the trace |
@@ -100,5 +104,5 @@ recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
   If the packet format ever changes, all three must change together —
   consider a shared test vector fixture before clinical use.
 
-<!-- v0.3.1 — Countdown row updated: the web's ring is back, at a size that
-     fits inside the bar's existing height; seam + inset rows added. -->
+<!-- v0.4.0 — Adds the end-of-exam report row (two-page web port, portrait) and
+     the shared report-geometry row; prep copy/title departures recorded. -->
