@@ -1,5 +1,105 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.9.0 — 2026-08-01 — A faithful port of a desktop layout is still a
+##                        desktop layout
+
+v0.8.0 got the structure right and the SCALE wrong. Every size came from the
+web's CSS, which was measured on a viewport several times taller than a phone
+held sideways (~390 pt). Rendered there, the chrome ate the content:
+
+| | v0.8.0 | v0.9.0 |
+|---|---|---|
+| Prep photograph | ~259 × 146 | **393 × 221 – 462 × 260** |
+| Trace, waiting | ~52 pt tall | **66 – 72 pt** |
+| Trace, recording | ~52 pt tall | **78 – 84 pt** |
+
+(Computed from the layout formulas for iPhone 15 Pro, iPhone SE 3rd gen and
+Pixel 7, worst case — a two-line step title.)
+
+### The set-up steps: the button was bigger than the instruction
+
+An 18 px-padded button with 21 px text, a 34 px headline and 28 px gaps cost
+~140 pt of height. On a desktop that is a tenth of the page; on a landscape
+phone it is nearly half, and the photograph — the only thing step 1 has to
+communicate — got what was left. You could not tell which wrist the watch was
+on.
+
+There are now two sets of metrics in `LimbPrep`, and below a 500 pt stage the
+compact one applies: 13/16 button (still over the 44 pt tap-target floor),
+~20 px headline, 10 px gaps, 7 px dots. **Nothing is hidden or truncated** —
+the layout is identical, only tighter, and every pixel saved goes to the
+picture. The headline also gets the full stage width instead of the web's
+`max-width: 640px`, because at 20 px the longest step title then fits on one
+line and the line it saves is worth ~30 pt of photograph.
+
+### The live monitor: the traces are the screen now
+
+Per the user's suggestion, **the capture clock moved into the top bar beside
+the BPM**, styled the same way (big number + unit) so the two read as one
+instrument panel. That was the load-bearing change: during a capture the foot
+then has nothing left to say, so it is not rendered at all and the traces take
+the entire screen below the bar — which is where the patient is looking during
+the ten seconds that matter.
+
+Also on a short stage:
+- The bar drops its second line while idle. The instruction is not lost — the
+  guide circle over the traces carries it, in bigger type. It is dropped
+  rather than ellipsised: a clinical instruction cut off mid-sentence is not a
+  shorter version of itself.
+- The auto-arm hint is hidden while that circle is up, since the circle's
+  caption already says the recording starts on its own.
+- The simulation badge shortens to `SIMULATION` (full sentence kept as the
+  accessibility label) so it cannot push the Exit button off the bar. It still
+  says the one thing that matters.
+
+Above `COMPACT_H` nothing changed: the desktop layout and the web's 132 px
+countdown ring in the foot are exactly as they were.
+
+`SixLeadMonitor`'s card padding now **scales** with the card instead of
+stepping at 90 pt. The step was a trap: an 89 pt card drew a taller trace than
+a 92 pt one, so the traces would have visibly shrunk as the layout grew.
+
+### `npm start`: the QR pointed at a port nothing was listening on
+
+The recurring "the QR doesn't work" had a specific cause, and it was in our
+own launcher. `scripts/start.js` printed `exp://<ip>:8081` **before Expo had
+bound anything**. When a Metro from an earlier session still held 8081 — which
+survives closing the terminal and closing the lid — Expo asked to move to
+8082, and every URL and QR already advertised pointed at a dead port. It
+looked like a broken QR; it was a correct QR for the wrong port.
+
+Rewritten (v2.0.0), and the failure cannot recur:
+
+1. **A stale dev server on 8081 is reclaimed.** Only processes whose command
+   line matches Expo/Metro are killed; anything else on that port is left
+   alone and we move to the next free port instead.
+2. **Nothing is printed until the server answers.** The host, port and QR all
+   come from the running server's own manifest.
+3. **The manifest must carry the address we launched with.** Found while
+   testing this: without that check the script attached to a leftover server
+   from an earlier session — on an earlier Wi-Fi network — and printed a QR
+   for an IP this machine no longer had.
+
+Two bugs were caught by that same test and are worth recording:
+
+- `isPortFree` used `listen(port, '0.0.0.0')`, which *looks* like the careful
+  version and is the broken one. Metro listens on the dual-stack wildcard
+  `::`; an IPv4-only probe binds `0.0.0.0` right beside it and reports the
+  port FREE. Now it binds with no host at all.
+- The machine's LAN address had changed between sessions (10.0.0.19 →
+  192.168.7.33), which is a second, independent way a printed QR goes stale —
+  and the reason the address is re-detected on every run.
+
+New dev dependency: `qrcode-terminal` (12 kB, no native code), so the QR comes
+from the verified address rather than from Expo's own pre-bind guess.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18 · the layout numbers above computed from the formulas
+themselves. Still not a device test — everything stays `🔬` in `PARITY.md`.
+
+
 ## v0.8.0 — 2026-08-01 — The exam is a port of the web again, and the flicker
 ##                        had a cause, not a symptom
 

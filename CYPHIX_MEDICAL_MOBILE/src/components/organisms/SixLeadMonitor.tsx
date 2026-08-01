@@ -65,13 +65,16 @@ const ROWS = 3;
 /** `.lead-grid { gap: 10px }` */
 const GAP = 10;
 /** `.lead-card { padding: 8px; border-radius: var(--radius-md) }`.
-    On a phone in landscape a cell is ~65 px tall, where 16 px of padding is
-    a quarter of the trace's whole height — so short cards keep the border
-    radius but halve the inset. The web never meets this case: its cards are
-    a 110 px canvas plus padding. */
-const CARD_PAD_FULL = 8;
-const CARD_PAD_TIGHT = 4;
-const CARD_TIGHT_BELOW = 90;
+    On a phone a cell can be ~65 px tall, where 16 px of padding is a quarter
+    of the trace's whole height — so the inset scales with the card and only
+    reaches the web's 8 px once there is room for it. The web never meets
+    this case: its cards are a 110 px canvas plus padding.
+
+    ★ Scaled, not stepped. A threshold ("< 90 → 4, else 8") is a trap here:
+    an 89 px card would draw a TALLER trace than a 92 px one, so the traces
+    would visibly shrink as the layout grew. */
+const CARD_PAD_MAX = 8;
+const CARD_PAD_MIN = 3;
 const CARD_RADIUS = 14;
 
 /** Visible window per card: 3 seconds, same as the web and the reference
@@ -101,7 +104,7 @@ export default function SixLeadMonitor({ width, height }: Props) {
   /* ── Cell geometry ── */
   const cardW = (width - GAP * (COLS - 1)) / COLS;
   const cardH = (height - GAP * (ROWS - 1)) / ROWS;
-  const cardPad = cardH < CARD_TIGHT_BELOW ? CARD_PAD_TIGHT : CARD_PAD_FULL;
+  const cardPad = Math.max(CARD_PAD_MIN, Math.min(CARD_PAD_MAX, Math.round(cardH * 0.07)));
   const plotW = Math.max(1, cardW - cardPad * 2);
   const plotH = Math.max(1, cardH - cardPad * 2);
 
@@ -308,7 +311,7 @@ export default function SixLeadMonitor({ width, height }: Props) {
               allowFontScaling={false}
               style={[
                 styles.labelText,
-                { color: t.textSecondary, fontSize: cardPad === CARD_PAD_TIGHT ? 11 : 13 },
+                { color: t.textSecondary, fontSize: cardH < 90 ? 11 : 13 },
               ]}
             >
               {lead}

@@ -29,6 +29,9 @@ interface Props {
   peaksNeeded: number;
   hr: number;
   sqi: number;
+  /** Tighter padding and type for a short (landscape-phone) stage, where
+      every point this card takes comes out of the six traces above it. */
+  compact?: boolean;
 }
 
 /* One honest line explaining exactly what the gate is waiting for —
@@ -108,6 +111,7 @@ export default function HeartbeatSearch({
   peaksNeeded,
   hr,
   sqi,
+  compact = false,
 }: Props) {
   const t = useTheme();
   const live = peaksFound > 0;
@@ -121,10 +125,20 @@ export default function HeartbeatSearch({
         : { borderColor: t.border, backgroundColor: t.surface };
 
   return (
-    <View style={[styles.card, tone]}>
+    <View
+      style={[
+        styles.card,
+        tone,
+        {
+          gap: compact ? 14 : 22,
+          paddingVertical: compact ? 8 : 12,
+          paddingHorizontal: compact ? 14 : 20,
+        },
+      ]}
+    >
       <View style={styles.main}>
         <PulseDot live={live} color={live ? t.danger : t.textTertiary} />
-        <Text style={[styles.msg, { color: t.textPrimary }]}>
+        <Text style={[styles.msg, { color: t.textPrimary, fontSize: compact ? 15 : 18 }]}>
           {statusText(status, failReason)}
         </Text>
       </View>
@@ -176,15 +190,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    gap: 22,
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
   },
   main: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1 },
   pulse: { width: 14, height: 14, borderRadius: 7 },
-  msg: { fontSize: 18, fontWeight: '700', flexShrink: 1 },
+  msg: { fontWeight: '700', flexShrink: 1 },
   beats: { flexDirection: 'row', gap: 7 },
   beat: { width: 13, height: 13, borderRadius: 7, borderWidth: 1 },
   metrics: { flexDirection: 'row', gap: 18 },
@@ -192,4 +203,5 @@ const styles = StyleSheet.create({
   metricValue: { fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
-// v2.0.0 — The web's own row layout and gate copy (pulse · beats · BPM/Steadiness).
+// v2.1.0 — Adds the `compact` variant so a landscape phone spends its height
+//          on the six traces instead of on this card.

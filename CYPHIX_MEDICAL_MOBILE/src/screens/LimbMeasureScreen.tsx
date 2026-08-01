@@ -26,11 +26,26 @@
    never scrolls: a patient in position cannot reach a scrollbar, and a
    clinician must see all six leads at once.
 
-   The one thing scaled for the phone is what the web's own
-   `@media (max-width: 720px)` block scales — stage padding, row gap and
-   the BPM digits — applied here on a SHORT viewport rather than a narrow
-   one, because a phone held sideways is wide and short. Everything else
-   is the desktop rule verbatim.
+   ══ ON A PHONE THE TRACES GET EVERYTHING ELSE'S HEIGHT ══
+   A landscape phone is ~390 pt tall. Laid out at the web's desktop sizes
+   the bar took ~85 of those and the foot ~71, leaving each of the three
+   trace rows about 52 pt — a waveform drawn in a letterbox. So on a short
+   stage:
+
+     • The countdown moves INTO the bar, beside the BPM and styled like
+       it (big number + unit). During a capture the foot then has nothing
+       left to show and is not rendered at all, so the traces take the
+       whole screen below the bar — which is where the patient's eyes are
+       during the ten seconds that matter.
+     • The bar drops its second line while idle. The instruction is not
+       lost: the guide circle overlaying the traces carries it, in bigger
+       type, until the gate starts finding beats.
+     • The auto-arm hint is hidden while that same circle is up, because
+       the circle's caption already says the recording starts on its own.
+
+   Net: ~52 pt per trace → ~74 idle and ~90 recording. The desktop layout
+   is untouched above `COMPACT_H`; the web's countdown ring still lives in
+   the foot there.
    ================================================================== */
 
 import { useNavigation } from '@react-navigation/native';
@@ -152,6 +167,22 @@ export default function LimbMeasureScreen() {
   const pad = compact ? 10 : 14;
   const gap = compact ? 8 : 12;
 
+  /* The bar's second line. Verbatim web copy while recording; dropped on a
+     short stage while idle, where the guide circle carries the instruction
+     instead (see the header). */
+  const barSub = isRecording ? LIMB_RECORDING_NOW : compact ? null : LIMB_HOW_TO;
+
+  /* ── What the foot still has to say ──
+     On a short stage a capture puts the clock in the bar, so the foot is
+     EMPTY and must not be rendered: an empty 8pt-gapped row would quietly
+     tax the traces for nothing. */
+  const showRing = isRecording && !compact;
+  const showGate = !isRecording && ble.isStreaming;
+  const showWaiting = !isRecording && !ble.isStreaming;
+  // The circle's caption already promises the recording starts on its own.
+  const showAutoHint = showGate && !(compact && showGuide);
+  const hasFoot = showRing || showGate || showWaiting || railedLeads.length > 0;
+
   /* `.guide-image-circle { width: clamp(190px, 44vw, 300px) }`, but it also
      has to leave room for its caption inside the traces row. */
   const guideSize = Math.max(
@@ -178,14 +209,40 @@ export default function LimbMeasureScreen() {
       ]}
     >
       {/* ── .limb-bar — everything the patient needs, nothing to scroll to ── */}
-      <View style={[styles.bar, { backgroundColor: t.surface, borderColor: t.border }]}>
+      <View
+        style={[
+          styles.bar,
+          {
+            backgroundColor: t.surface,
+            borderColor: t.border,
+            gap: compact ? 12 : 18,
+            paddingVertical: compact ? 8 : 12,
+            paddingHorizontal: compact ? 14 : 18,
+          },
+        ]}
+      >
         <View style={styles.barLead}>
-          <Text style={[styles.barTitle, { color: t.textPrimary }]} numberOfLines={1}>
+          <Text
+            style={[styles.barTitle, { color: t.textPrimary, fontSize: compact ? 17 : 19 }]}
+            numberOfLines={1}
+          >
             {LIMB_TITLE}
           </Text>
-          <Text style={[styles.barSub, { color: t.textSecondary }]} numberOfLines={2}>
-            {isRecording ? LIMB_RECORDING_NOW : LIMB_HOW_TO}
-          </Text>
+          {/* On a short stage the long idle instruction is dropped rather than
+              truncated — the guide circle over the traces is showing it, in
+              larger type. Truncating a clinical instruction mid-sentence is
+              not a smaller version of it. */}
+          {barSub != null && (
+            <Text
+              style={[
+                styles.barSub,
+                { color: t.textSecondary, fontSize: compact ? 12.5 : 14 },
+              ]}
+              numberOfLines={compact ? 1 : 2}
+            >
+              {barSub}
+            </Text>
+          )}
         </View>
 
         <View style={styles.barVitals}>
@@ -198,7 +255,30 @@ export default function LimbMeasureScreen() {
             </Text>
             <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>BPM</Text>
           </View>
-          {ble.isSimulated && <Text style={styles.simTag}>{SIMULATION_BANNER}</Text>}
+
+          {/* The capture clock, given the BPM's own treatment so the two read
+              as one instrument panel — see the header for why it lives here
+              rather than in a 132px ring at the bottom. */}
+          {isRecording && compact && (
+            <View style={styles.bpm}>
+              <Text
+                allowFontScaling={false}
+                style={[styles.bpmValue, { color: t.success, fontSize: 30 }]}
+              >
+                {secondsLeft}
+              </Text>
+              <Text style={[styles.bpmUnit, { color: t.textTertiary }]}>SEC LEFT</Text>
+            </View>
+          )}
+
+          {ble.isSimulated && (
+            /* Shortened only where the full sentence would push the Exit
+               button off the bar. It still says the one thing that matters:
+               this is not a patient signal. */
+            <Text style={styles.simTag} accessibilityLabel={SIMULATION_BANNER}>
+              {compact ? 'SIMULATION' : SIMULATION_BANNER}
+            </Text>
+          )}
         </View>
 
         <ExitScanButton label="Exit" onPress={() => nav.goBack()} />
@@ -229,22 +309,27 @@ export default function LimbMeasureScreen() {
       </View>
 
       {/* ── .limb-foot — either why we're waiting, or how long is left ── */}
-      <View style={styles.foot}>
-        {isRecording ? (
-          <View style={styles.countdown}>
-            <CountdownRing
-              progress={recorder.progress}
-              secondsLeft={secondsLeft}
-              caption={LIMB_COUNTDOWN_CAPTION}
-              size={ringSize}
-            />
-            <Text style={[styles.countdownMsg, { color: t.success }]}>{LIMB_RECORDING_NOW}</Text>
-          </View>
-        ) : !ble.isStreaming ? (
-          <Text style={styles.noticeWarn}>{LIMB_WAITING}</Text>
-        ) : (
-          <>
+      {hasFoot && (
+        <View style={styles.foot}>
+          {showRing && (
+            <View style={styles.countdown}>
+              <CountdownRing
+                progress={recorder.progress}
+                secondsLeft={secondsLeft}
+                caption={LIMB_COUNTDOWN_CAPTION}
+                size={ringSize}
+              />
+              <Text style={[styles.countdownMsg, { color: t.success }]}>
+                {LIMB_RECORDING_NOW}
+              </Text>
+            </View>
+          )}
+
+          {showWaiting && <Text style={styles.noticeWarn}>{LIMB_WAITING}</Text>}
+
+          {showGate && (
             <HeartbeatSearch
+              compact={compact}
               status={gate.status}
               failReason={gate.failReason}
               peaksFound={gate.peaksFound}
@@ -252,19 +337,24 @@ export default function LimbMeasureScreen() {
               hr={gate.hr}
               sqi={gate.sqi}
             />
+          )}
+          {showAutoHint && (
             <Text style={[styles.autoHint, { color: t.textTertiary }]}>{LIMB_AUTO_HINT}</Text>
-          </>
-        )}
+          )}
 
-        {/* Saturated leads read as a clean flat line, which is indistinguishable
-            from a working trace with no beats. Say so explicitly — but never
-            block the recording on it. */}
-        {railedLeads.length > 0 && (
-          <Text style={[styles.railNote, { color: t.textSecondary }]}>
-            {RAIL_WARNING.replace('{leads}', railedLeads.join(', '))}
-          </Text>
-        )}
-      </View>
+          {/* Saturated leads read as a clean flat line, which is indistinguishable
+              from a working trace with no beats. Say so explicitly — but never
+              block the recording on it. */}
+          {railedLeads.length > 0 && (
+            <Text
+              style={[styles.railNote, { color: t.textSecondary }]}
+              numberOfLines={compact ? 2 : undefined}
+            >
+              {RAIL_WARNING.replace('{leads}', railedLeads.join(', '))}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -277,15 +367,12 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
   },
   barLead: { flex: 1, minWidth: 0 },
-  barTitle: { fontSize: 19, fontWeight: '700' },
-  barSub: { fontSize: 14, lineHeight: 19.6, marginTop: 3 },
+  barTitle: { fontWeight: '700' },
+  barSub: { marginTop: 3 },
   barVitals: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bpm: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   bpmValue: { fontWeight: '800', fontVariant: ['tabular-nums'] },
@@ -352,6 +439,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// v3.0.0 — The web `.limb-stage` three-row layout: compact bar (title · BPM ·
-//          Exit pill), the 2 × 3 trace grid, and the status foot with the
-//          circular touch-the-watch guide overlaid while the gate searches.
+// v3.1.0 — On a phone the capture clock moves into the bar beside the BPM and
+//          the foot is dropped, so the six traces get the rest of the screen
+//          (~52pt per trace → ~90 while recording).
