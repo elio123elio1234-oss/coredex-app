@@ -1,10 +1,11 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.11.0';
+export const APP_VERSION = '0.12.0';
 export const APP_BUILD_LABEL =
-  'report rebuilt for the phone: summary card, tabs, 2× bigger scrollable strips';
+  'report: full-width sliding tabs, one continuous ECG sheet, glass action bar, big axis dial';
 
-// v0.11.0 — The end-of-exam report is no longer a literal port of the web's
-//           two A4 sheets. One letterhead, a headline summary card, a
-//           segmented control instead of stacked pages, and a waveform window
-//           that draws the paper at 2× the scale and scrolls through all 10 s.
+// v0.12.0 — Report polish pass: the tab switcher spans the width and slides,
+//           the six leads are one continuous sheet on a surface panel instead
+//           of strips floating on grey, the action bar is real glass with the
+//           document scrolling under it, the axis dial fills the width, and
+//           word-valued metrics no longer print through their tile borders.

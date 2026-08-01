@@ -46,6 +46,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LIMB_LEAD_ORDER, STANDARD_MM_PER_MV, STANDARD_MM_PER_SEC, type LimbLeadName } from '@cyphix/shared';
+import GlassSurface from '@/components/atoms/GlassSurface';
 import EcgStripSvg, {
   CAL_WIDTH_MM,
   ECG_PAPER_DARK,
@@ -53,7 +54,7 @@ import EcgStripSvg, {
 } from '@/components/molecules/EcgStripSvg';
 import ReportHeader from '@/components/molecules/ReportHeader';
 import ReportSummaryCard from '@/components/molecules/ReportSummaryCard';
-import SegmentedControl from '@/components/molecules/SegmentedControl';
+import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import EcgAnalysisSheet, { REGULARITY } from '@/components/organisms/EcgAnalysisSheet';
 import type { LimbReport } from '@/features/measurement/hooks/useLimbRecorder';
 import { RADIUS } from '@/theme/tokens';
@@ -91,11 +92,27 @@ const TABS = [
  */
 const VIEWPORT_MM = 100;
 
-/** Strip height: 32 mm ≙ ±1.6 mV at 10 mm/mV, before the 0.6 mm clip margin. */
-const STRIP_HEIGHT_MM = 32;
+/**
+ * Height of one lead's band, in millimetres. 30 mm ≙ ±1.5 mV at 10 mm/mV.
+ *
+ * ★ It must be a MULTIPLE OF 5. The six leads are drawn with no gap between
+ * them (`variant="channel"`), so band N's last grid line and band N+1's first
+ * are the same line on screen. At a multiple of the 5 mm major step they
+ * coincide exactly and the grid tiles unbroken down the whole sheet, the way
+ * a six-channel printout does. At 32 mm the major grid reset at every band and
+ * the seams showed as a stripe of mismatched squares.
+ */
+const STRIP_HEIGHT_MM = 30;
 
-/** `.ecg-report-strips { gap: 10px }` */
-const STRIP_GAP = 10;
+/**
+ * The waveform panel's border, in points.
+ *
+ * The paper runs edge to edge inside it — no inner padding — so the panel IS
+ * the sheet's edge and its corner radius clips the paper. Six separately
+ * bordered cards with gaps between them, floating on the page's grey, was the
+ * "hovering on nothing" look.
+ */
+const PANEL_BORDER = 1;
 
 /**
  * Ceiling on how wide one strip may be in DEVICE pixels.
@@ -110,13 +127,15 @@ const MAX_STRIP_PX = 3600;
 
 export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
   const t = useTheme();
-  const paper = useIsDark() ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
+  const dark = useIsDark();
+  const paper = dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [tab, setTab] = useState<Tab>('waveform');
 
   const padH = Math.max(insets.left, insets.right, 16);
-  const viewportW = width - padH * 2;
+  /* The paper fills the panel; only its border is not paper. */
+  const viewportW = width - padH * 2 - PANEL_BORDER * 2;
 
   const longest = LIMB_LEAD_ORDER.reduce(
     (max, l) => Math.max(max, report.filtered[l]?.length ?? 0),
@@ -154,6 +173,12 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
     fn();
   };
 
+  /* The action bar is absolutely positioned so the document scrolls UNDER the
+     glass — that motion is the whole reason the material is there. The scroll
+     therefore has to reserve its height itself: 12 pt top pad + a 49 pt button
+     + whatever the home indicator needs. */
+  const barH = 12 + 49 + Math.max(insets.bottom, 14);
+
   return (
     <View style={[styles.root, { backgroundColor: t.bg }]}>
       <ScrollView
@@ -162,7 +187,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
           styles.scroll,
           {
             paddingTop: insets.top + 10,
-            paddingBottom: 20,
+            paddingBottom: barH + 16,
             paddingLeft: padH,
             paddingRight: padH,
           },
@@ -184,7 +209,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
           stats={stats}
         />
 
-        <SegmentedControl
+        <SegmentedTabs
           options={TABS}
           value={tab}
           onChange={setTab}
@@ -192,13 +217,16 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
         />
 
         {tab === 'waveform' ? (
-          <View style={styles.section}>
-            <View style={{ height: stripH * 6 + STRIP_GAP * 5 }}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={scrollable}
-              >
-                <View style={{ gap: STRIP_GAP }}>
+          /* One panel, one sheet. The strips used to float on the page's grey
+             with six separate borders; giving them a single surface behind
+             them is what makes the section read as a document rather than as
+             loose parts. */
+          <View
+            style={[styles.panel, { backgroundColor: t.surface, borderColor: t.border }]}
+          >
+            <View style={[styles.sheet, { height: stripH * 6, backgroundColor: paper.paper }]}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={scrollable}>
+                <View>
                   {LIMB_LEAD_ORDER.map((lead: LimbLeadName) => (
                     <EcgStripSvg
                       key={lead}
@@ -208,7 +236,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
                       width={paperW}
                       widthMm={paperMm}
                       heightMm={STRIP_HEIGHT_MM}
-                      chrome={false}
+                      variant="channel"
                       /* Lead II carries the ticks: it is the rhythm strip the
                          rate was computed from, and marking all six would
                          imply six independent detections. */
@@ -221,9 +249,9 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
               {/* Pinned lead labels. They sit outside the scroll because a
                   label that slides off the paper is worse than none — you
                   would be looking at an unidentified trace. The rows are laid
-                  out from the same stripH/gap constants as the strips, so they
-                  cannot drift out of alignment. */}
-              <View pointerEvents="none" style={[styles.gutter, { gap: STRIP_GAP }]}>
+                  out from the same stripH the strips use, so they cannot
+                  drift out of alignment. */}
+              <View pointerEvents="none" style={styles.gutter}>
                 {LIMB_LEAD_ORDER.map((lead: LimbLeadName) => (
                   <View key={lead} style={{ height: stripH }}>
                     <View style={[styles.leadChip, { backgroundColor: paper.paper }]}>
@@ -239,7 +267,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
               </View>
             </View>
 
-            <View style={styles.caption}>
+            <View style={[styles.caption, { borderTopColor: t.border }]}>
               <Text style={[styles.captionText, { color: t.textTertiary }]}>
                 {STANDARD_MM_PER_SEC} mm/s · {STANDARD_MM_PER_MV} mm/mV
               </Text>
@@ -263,12 +291,22 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
       </ScrollView>
 
       {/* Pinned, not scrolled: after a ten-second capture the patient's next
-          action must not be to find it. */}
-      <View
+          action must not be to find it.
+
+          ══ THE GLASS BELONGS HERE, NOT ON THE TABS ══
+          A frosted material only reads as glass when there is something
+          moving behind it to refract. This bar is the one place in the report
+          where that is true: it floats over the document, and the paper
+          slides underneath as you scroll. On iOS 26 it is Apple's real Liquid
+          Glass; everywhere else GlassSurface falls back to a blur that
+          actually blurs (see that file — Android needs an explicit flag or it
+          silently draws a flat rectangle). */}
+      <GlassSurface
+        dark={dark}
+        fallbackTint={dark ? 'rgba(19, 27, 44, 0.72)' : 'rgba(255, 255, 255, 0.72)'}
         style={[
           styles.actions,
           {
-            backgroundColor: t.surface,
             borderTopColor: t.border,
             paddingBottom: Math.max(insets.bottom, 14),
           },
@@ -295,7 +333,7 @@ export default function EcgReport({ report, onRecordAgain, onFinish }: Props) {
         >
           <Text style={[styles.btnText, { color: '#FFFFFF' }]}>Done</Text>
         </Pressable>
-      </View>
+      </GlassSurface>
     </View>
   );
 }
@@ -304,7 +342,9 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scrollView: { flex: 1 },
   scroll: { gap: 16 },
-  section: { gap: 8 },
+  /* `overflow: hidden` is what gives the paper the panel's rounded corners. */
+  panel: { borderWidth: PANEL_BORDER, borderRadius: RADIUS.lg, overflow: 'hidden' },
+  sheet: { overflow: 'hidden' },
   gutter: { position: 'absolute', left: 0, top: 0 },
   /* Backed with the paper colour so the millimetre grid does not run through
      the letters. */
@@ -317,10 +357,22 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   leadChipText: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.5 },
-  caption: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  /* Inside the panel, under the paper: the scale belongs to the sheet. */
+  caption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   captionText: { fontSize: 10.5, fontWeight: '600' },
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
   actions: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 16,

@@ -64,10 +64,20 @@ export const AXIS: Record<AxisClass, string> = {
   indeterminate: 'Not determined',
 };
 
+/**
+ * One block of the sheet, on its own surface.
+ *
+ * The web draws these as bare `.analysis-block`s separated only by the accent
+ * rule, because they sit on a white `.report-page` that already is the sheet.
+ * On mobile there is no page under them, so five dense blocks sat directly on
+ * the app's grey background and read as loose parts floating on nothing.
+ * Giving each one a surface is the platform's own answer — an inset grouped
+ * list — and it costs nothing but a container.
+ */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const t = useTheme();
   return (
-    <View style={styles.block}>
+    <View style={[styles.block, { backgroundColor: t.surface, borderColor: t.border }]}>
       {/* `.analysis-section` — uppercase, letter-spaced, in the ACCENT colour
           with a hairline under it. It is the only thing separating five dense
           blocks, so it has to read as a rule, not as another line of text. */}
@@ -246,10 +256,10 @@ export default function EcgAnalysisSheet({ analysis, showTitle = true }: Props) 
 }
 
 const styles = StyleSheet.create({
-  sheet: { gap: 20 },
+  sheet: { gap: 12 },
   title: { fontSize: 17, fontWeight: '800' },
   sub: { fontSize: 12, lineHeight: 17, marginTop: 3 },
-  block: { gap: 12 },
+  block: { gap: 12, borderWidth: 1, borderRadius: RADIUS.lg, padding: 14 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '800',
@@ -259,7 +269,9 @@ const styles = StyleSheet.create({
   },
   /* `.metric-grid { gap: 10px }` */
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  axisLayout: { gap: 16, alignItems: 'center' },
+  /* NOT `alignItems: 'center'` — that shrank the metric grid below to its
+     text width and left the row ragged. The dial centres itself. */
+  axisLayout: { gap: 16 },
   intervals: { gap: 14 },
   note: { fontSize: 10.5, lineHeight: 15 },
   warn: {
@@ -277,5 +289,6 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
 });
 
-// v1.2.0 — Optional title (the report names this content itself), label maps
-//          exported for the summary chip, rate tile no longer doubles as a hero.
+// v1.3.0 — Each block on its own surface (inset-grouped, the platform's answer
+//          to five dense blocks with no page under them); optional title; label
+//          maps exported for the summary chip; rate tile is no longer a hero.

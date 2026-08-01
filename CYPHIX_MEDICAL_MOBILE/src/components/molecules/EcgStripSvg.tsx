@@ -51,11 +51,16 @@ interface Props {
   /** Sample indices of detected R peaks, marked with a small tick. */
   rPeaks?: number[];
   /**
-   * Draw the lead label and the scale caption on the paper. Off when the
-   * strip lives inside a horizontally scrolling window — chrome that slides
-   * off the screen is worse than no chrome, so the caller pins its own.
+   * `card` — a standalone sheet: its own border, corners, lead label and
+   * scale caption printed on the paper.
+   *
+   * `channel` — one band of a CONTINUOUS multi-channel sheet, the way a real
+   * six-lead printout comes off the machine: no border, no corners, no
+   * chrome, so the millimetre grid runs unbroken from the top lead to the
+   * bottom one. The container owns the edges and pins the lead labels, since
+   * a label printed on paper that scrolls sideways slides off it.
    */
-  chrome?: boolean;
+  variant?: 'card' | 'channel';
 }
 
 /** Space reserved at the left for the calibration pulse. */
@@ -95,7 +100,7 @@ export default function EcgStripSvg({
   heightMm = 28,
   widthMm = 182,
   rPeaks,
-  chrome = true,
+  variant = 'card',
 }: Props) {
   const t = useTheme();
   const c = useIsDark() ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
@@ -138,12 +143,18 @@ export default function EcgStripSvg({
      would make every interval measured off this sheet wrong. */
   const height = (width * heightMm) / widthMm;
 
+  const card = variant === 'card';
+
   return (
     /* `.ecg-svg-strip` — the paper IS the card, with the label and the scale
        sitting on it. Stacking them in a row above each strip (an earlier
        attempt) turned six clean sheets into eighteen competing elements. */
     <View
-      style={[styles.strip, { width, height, backgroundColor: c.paper, borderColor: t.border }]}
+      style={[
+        { width, height, backgroundColor: c.paper },
+        card && styles.strip,
+        card && { borderColor: t.border },
+      ]}
     >
       <Svg
         width={width}
@@ -191,7 +202,7 @@ export default function EcgStripSvg({
         />
       </Svg>
 
-      {chrome && (
+      {card && (
         <>
           {/* `.ecg-svg-label` — on the paper, in the trace's own colour. */}
           <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
@@ -214,5 +225,5 @@ const styles = StyleSheet.create({
   scale: { position: 'absolute', bottom: 4, right: 7, fontSize: 8.5, fontVariant: ['tabular-nums'] },
 });
 
-// v2.1.0 — Optional `chrome` (the caller pins its own label when the strip
-//          scrolls), exported paper palette + CAL_WIDTH_MM, 6 buckets/mm.
+// v2.2.0 — `variant`: a standalone card, or one `channel` of a continuous
+//          multi-lead sheet. Exported paper palette + CAL_WIDTH_MM, 6 buckets/mm.

@@ -1,5 +1,96 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.12.0 — 2026-08-01 — Report polish: the five things that still read as "not native"
+
+v0.11.0 fixed the report's *structure*. This fixes how it looks, against five
+specific observations from the user.
+
+### 1. The tab switcher sat in the left third of the screen
+
+`SegmentedControl` is a port of the web's `.settings-seg` — chips sized to
+their own text, brand-navy fill on the active one. That is a settings **chip
+group**, and it is right in Settings. As a tab bar it occupied the left third
+of the row and recoloured on tap, which reads as a toggle rather than as
+navigation.
+
+New molecule `SegmentedTabs`, left `SegmentedControl` alone so Settings does
+not change underneath the user. Segments are `flex: 1` (they divide the full
+width) and the active one is marked by a **thumb that slides** between them on
+the native driver — so it keeps moving smoothly while the tab it is revealing
+mounts six SVG strips.
+
+### 2. Glass — but where it can actually do something
+
+The user asked for a glass effect on the tab switcher. A frosted material only
+reads as glass when there is something behind it to refract, and the tab bar
+sits on a flat page background: glass over flat grey renders as flat grey.
+
+So the glass went on the **action bar** instead, which is the one place in this
+screen where it earns its keep — the bar is now absolutely positioned and the
+document scrolls underneath it. `GlassSurface` (already proven on the dock)
+gives Apple's real Liquid Glass on iOS 26+ and a genuinely blurring fallback
+elsewhere. If the user wants it on the tabs anyway that is a one-line change,
+but it would be decoration rather than material.
+
+### 3. The waveform section floated on grey
+
+Six separately bordered cards with gaps between them, on the app background.
+Now: **one surface panel**, and inside it the six leads are drawn edge to edge
+with **no gap at all** (`EcgStripSvg variant="channel"` — no border, no
+corners, no per-strip chrome), so the millimetre grid runs unbroken from lead I
+to aVF. That is what actually comes off a six-channel ECG machine, and it is
+also simply cleaner.
+
+One constant had to change for it to work: the band height is now **30 mm, not
+32**. It must be a multiple of the 5 mm major step, or band N's last grid line
+and band N+1's first do not coincide and every seam shows as a stripe of
+mismatched squares. The panel's corner radius clips the paper, and the scale
+caption moved inside the panel under a hairline, where it belongs to the sheet.
+
+| iPhone 15 Pro | before | v0.11.0 | now |
+|---|---|---|---|
+| band height | 50.6 pt | 115.5 pt | 107.7 pt |
+| 1 mV | 18.1 pt | 36.1 pt | **35.9 pt** (1.99×) |
+| leads | 6 bordered cards | 6 bordered cards | one continuous sheet |
+
+### 4. Units spilled out of their tiles
+
+Not the numbers — the **word-valued** measurements. "Slightly variable" is 17
+characters at 22 px, about 200 pt inside a 147 pt tile. A `<Text>` inside a
+`flexDirection: 'row'` does not wrap by default; it overflows its parent and
+prints straight through the border. `flexShrink: 1` on the value (and `0` on
+the unit, so "ms" never breaks across lines) is the RN equivalent of the web's
+`.metric-value { overflow-wrap: anywhere }`.
+
+While in there: `axisLayout` had `alignItems: 'center'`, which was shrinking
+the metric grid under the dial to its text width and leaving that row ragged.
+
+### 5. The axis dial was a thumbnail
+
+It was a fixed 190 pt. It is now self-sizing — it measures the width it is
+given and fills it, capped at 340 pt (**1.74×** on an iPhone 15 Pro). Every
+stroke, label and radius scales by **√**, not linearly: at 1.8× the diameter,
+1.8× stroke weights would have made it look coarse rather than bigger.
+
+This diagram is the only thing on the measurement sheet that is *read* rather
+than looked up — "+62°" means nothing without the hexaxial reference frame —
+so it was the worst thing on the page to have shrunk.
+
+### Also: the measurement blocks are grouped cards now
+
+The web draws them as bare blocks separated by the accent rule, because they
+sit on a white `.report-page` that already is the sheet. On mobile there was no
+page under them, so five dense blocks sat on the grey background looking like
+loose parts. Each is on its own surface now — the platform's own inset-grouped
+list.
+
+### Verified
+
+`tsc --noEmit` clean, iOS and Android both bundle, `expo-doctor` 18/18. The
+measurements above are computed from the layout formulas. None of it proves the
+glass renders or that the thumb slides at 60 fps — that stays 🔬 in `PARITY.md`
+until it has been touched on the phone.
+
 ## v0.11.0 — 2026-08-01 — The report is a phone document now, not a photocopy of an A4 sheet
 
 The user's report: *"it still feels messy, not native, not professional for a

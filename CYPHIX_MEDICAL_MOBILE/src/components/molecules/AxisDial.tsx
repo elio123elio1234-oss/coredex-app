@@ -19,6 +19,7 @@
    Purely presentational.
    ================================================================== */
 
+import { useState } from 'react';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
@@ -30,8 +31,18 @@ interface Props {
   classLabel: string;
   /** Caption for the shaded reference sector. */
   normalRangeLabel: string;
-  size?: number;
+  /**
+   * Ceiling on the dial's diameter. It otherwise takes the full width it is
+   * given: this diagram is the only thing on the measurement sheet that is
+   * READ rather than looked up, and at the old fixed 190 pt it was a thumbnail
+   * of itself — the six lead labels were 10 pt and the reference sector was
+   * too small to judge the vector against.
+   */
+  maxSize?: number;
 }
+
+/** Every stroke, label and radius is scaled by √(size / this). */
+const BASE_SIZE = 190;
 
 /** The six frontal leads and where each one points, in degrees. */
 const LEAD_AXES: Array<{ name: string; deg: number }> = [
@@ -47,10 +58,22 @@ const LEAD_AXES: Array<{ name: string; deg: number }> = [
 const NORMAL_FROM = -30;
 const NORMAL_TO = 90;
 
-export default function AxisDial({ degrees, classLabel, normalRangeLabel, size = 190 }: Props) {
+export default function AxisDial({
+  degrees,
+  classLabel,
+  normalRangeLabel,
+  maxSize = 340,
+}: Props) {
   const t = useTheme();
+  const [avail, setAvail] = useState(0);
+
+  const size = Math.min(maxSize, avail || BASE_SIZE);
+  /* Square root, not linear: at 1.8× the diameter, 1.8× stroke weights would
+     make the dial look coarse rather than bigger. √ keeps the drawing's
+     proportions reading the same at every size. */
+  const k = Math.sqrt(size / BASE_SIZE);
   const c = size / 2;
-  const r = size / 2 - 24;
+  const r = size / 2 - 24 * k;
 
   const point = (deg: number, radius: number) => {
     const rad = (deg * Math.PI) / 180;
@@ -63,32 +86,32 @@ export default function AxisDial({ degrees, classLabel, normalRangeLabel, size =
   const largeArc = NORMAL_TO - NORMAL_FROM > 180 ? 1 : 0;
   const sector = `M${c} ${c} L${a.x.toFixed(2)} ${a.y.toFixed(2)} A${r} ${r} 0 ${largeArc} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)} Z`;
 
-  const tip = degrees === null ? null : point(degrees, r - 6);
+  const tip = degrees === null ? null : point(degrees, r - 6 * k);
 
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} onLayout={(e) => setAvail(e.nativeEvent.layout.width)}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} accessibilityLabel={classLabel}>
         {/* Reference sector */}
         <Path d={sector} fill={t.accentSoft} />
 
         {/* Dial face */}
-        <Circle cx={c} cy={c} r={r} fill="none" stroke={t.border} strokeWidth={1.5} />
-        <Circle cx={c} cy={c} r={r * 0.5} fill="none" stroke={t.border} strokeWidth={1} />
+        <Circle cx={c} cy={c} r={r} fill="none" stroke={t.border} strokeWidth={1.5 * k} />
+        <Circle cx={c} cy={c} r={r * 0.5} fill="none" stroke={t.border} strokeWidth={1 * k} />
 
         {/* Lead axes — each drawn as a full diameter, since a lead axis runs
             both ways (its positive pole is the labelled end). */}
         {LEAD_AXES.map(({ name, deg }) => {
           const p1 = point(deg, r);
           const p2 = point(deg + 180, r);
-          const l = point(deg, r + 13);
+          const l = point(deg, r + 13 * k);
           return (
             <G key={name}>
-              <Line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={t.border} strokeWidth={1} />
+              <Line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={t.border} strokeWidth={1 * k} />
               <SvgText
                 x={l.x}
                 y={l.y}
                 fill={t.textTertiary}
-                fontSize={10}
+                fontSize={10 * k}
                 fontWeight="700"
                 textAnchor="middle"
                 alignmentBaseline="middle"
@@ -108,18 +131,22 @@ export default function AxisDial({ degrees, classLabel, normalRangeLabel, size =
               x2={tip.x}
               y2={tip.y}
               stroke={t.accentLive}
-              strokeWidth={3.5}
+              strokeWidth={3.5 * k}
               strokeLinecap="round"
             />
-            <Circle cx={tip.x} cy={tip.y} r={5} fill={t.accentLive} />
+            <Circle cx={tip.x} cy={tip.y} r={5 * k} fill={t.accentLive} />
           </G>
         )}
-        <Circle cx={c} cy={c} r={3.5} fill={t.textSecondary} />
+        <Circle cx={c} cy={c} r={3.5 * k} fill={t.textSecondary} />
       </Svg>
 
       <View style={styles.readout}>
         <Text
-          style={[styles.value, { color: degrees === null ? t.textTertiary : t.textPrimary }]}
+          style={[
+            styles.value,
+            { fontSize: 24 * k, lineHeight: 28 * k },
+            { color: degrees === null ? t.textTertiary : t.textPrimary },
+          ]}
         >
           {degrees === null ? '—' : `${degrees}°`}
         </Text>
@@ -131,11 +158,13 @@ export default function AxisDial({ degrees, classLabel, normalRangeLabel, size =
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: 6 },
-  readout: { alignItems: 'center', gap: 1 },
-  value: { fontSize: 24, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  class: { fontSize: 13, fontWeight: '700' },
-  hint: { fontSize: 10.5 },
+  /* No `width` — the dial measures what it is given and fills it. */
+  wrap: { alignItems: 'center', gap: 8 },
+  readout: { alignItems: 'center', gap: 2 },
+  value: { fontWeight: '800', fontVariant: ['tabular-nums'] },
+  class: { fontSize: 14, fontWeight: '700' },
+  hint: { fontSize: 11 },
 });
 
-// v1.0.0 — Hexaxial QRS-axis dial (ECG sign convention: +90° is down / aVF).
+// v1.1.0 — Self-sizing: fills the width it is given (capped), with every
+//          stroke, label and radius scaled by √ so it reads the same at any size.

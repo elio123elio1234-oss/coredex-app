@@ -44,6 +44,13 @@ export default function MetricTile({ label, value, unit, hint, variant, accent }
       {/* `.metric-label` — uppercase, letter-spaced, tertiary. */}
       <Text style={[styles.label, { color: t.textTertiary }]}>{label.toUpperCase()}</Text>
       <View style={styles.valueRow}>
+        {/* ★ `flexShrink` is what keeps the value INSIDE the tile.
+            A Text in a `flexDirection: 'row'` does not wrap by default — it
+            overflows its parent and prints straight through the border. It
+            was not the numbers that escaped but the word-valued measurements
+            ("Slightly variable" is 17 characters at 22 px, ~200 pt in a 147 pt
+            tile). This is the RN equivalent of the web's
+            `.metric-value { overflow-wrap: anywhere }`. */}
         <Text
           style={[
             styles.value,
@@ -53,6 +60,8 @@ export default function MetricTile({ label, value, unit, hint, variant, accent }
         >
           {missing ? '—' : String(value)}
         </Text>
+        {/* The unit never shrinks: "ms" broken across two lines is worse than
+            a slightly narrower number. */}
         {!missing && unit != null && (
           <Text style={[styles.unit, { color: t.textTertiary }]}>{unit}</Text>
         )}
@@ -78,11 +87,17 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: 10, fontWeight: '700', letterSpacing: 0.7, marginBottom: 4 },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
-  value: { fontSize: 22, fontWeight: '800', lineHeight: 25.3, fontVariant: ['tabular-nums'] },
+  value: {
+    flexShrink: 1,
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 25.3,
+    fontVariant: ['tabular-nums'],
+  },
   valueHero: { fontSize: 32, lineHeight: 36.8 },
-  unit: { fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  unit: { flexShrink: 0, fontSize: 12, fontWeight: '600', marginLeft: 4 },
   hint: { fontSize: 10.5, lineHeight: 14.7, marginTop: 4 },
 });
 
-// v1.1.0 — Web `.metric-tile` styling: uppercase label, 22/32px value, hero
-//          on accent-soft, and a two-per-row grid basis instead of ragged thirds.
+// v1.2.0 — `flexShrink` on the value so word-valued measurements wrap inside
+//          the tile instead of printing through its border.
