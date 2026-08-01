@@ -50,20 +50,36 @@ interface Props {
   widthMm?: number;
   /** Sample indices of detected R peaks, marked with a small tick. */
   rPeaks?: number[];
+  /**
+   * Draw the lead label and the scale caption on the paper. Off when the
+   * strip lives inside a horizontally scrolling window — chrome that slides
+   * off the screen is worse than no chrome, so the caller pins its own.
+   */
+  chrome?: boolean;
 }
 
 /** Space reserved at the left for the calibration pulse. */
-const CAL_WIDTH_MM = 9;
+export const CAL_WIDTH_MM = 9;
+
+/**
+ * Output buckets per millimetre of paper. The shared default of 8 was tuned
+ * for a 182 mm A4 column; a phone strip can be 259 mm of scrollable paper, and
+ * at 8 buckets/mm six of those cross the bridge as ~270 kB of path string.
+ * 6 buckets/mm is 240 µs of time resolution at 25 mm/s — still finer than a
+ * 320 Hz sample — and the decimation is peak-preserving either way, so no R
+ * wave is lost.
+ */
+const BUCKETS_PER_MM = 6;
 
 /* report.css `:root` / `[data-theme="dark"]` — verbatim. */
-const LIGHT = {
+export const ECG_PAPER_LIGHT = {
   paper: '#FFFFFF',
   gridMinor: 'rgba(0, 82, 255, 0.15)',
   gridMajor: 'rgba(0, 82, 255, 0.30)',
   trace: '#0A2540',
   marker: 'rgba(0, 82, 255, 0.55)',
 };
-const DARK = {
+export const ECG_PAPER_DARK = {
   paper: '#0D1424',
   gridMinor: 'rgba(76, 141, 255, 0.18)',
   gridMajor: 'rgba(76, 141, 255, 0.34)',
@@ -79,9 +95,10 @@ export default function EcgStripSvg({
   heightMm = 28,
   widthMm = 182,
   rPeaks,
+  chrome = true,
 }: Props) {
   const t = useTheme();
-  const c = useIsDark() ? DARK : LIGHT;
+  const c = useIsDark() ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
 
   const mmPerSec = STANDARD_MM_PER_SEC;
   const mmPerMv = STANDARD_MM_PER_MV;
@@ -111,6 +128,7 @@ export default function EcgStripSvg({
     mmPerMv,
     baselineMm,
     xOffsetMm: CAL_WIDTH_MM,
+    bucketsPerMm: BUCKETS_PER_MM,
     clipMm: baselineMm - 0.6,
   });
   const calPath = buildCalibrationPulse(baselineMm, mmPerMv, mmPerSec, 1);
@@ -173,15 +191,19 @@ export default function EcgStripSvg({
         />
       </Svg>
 
-      {/* `.ecg-svg-label` — on the paper, in the trace's own colour. */}
-      <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
-        {label}
-      </Text>
-      {/* `.ecg-svg-scale` — bottom-end, quiet. */}
-      <Text style={[styles.scale, { color: t.textTertiary }]} allowFontScaling={false}>
-        {mmPerSec} mm/s · {mmPerMv} mm/mV
-        {truncated ? ` · ${shownSec.toFixed(1)}s of ${totalSec.toFixed(1)}s` : ''}
-      </Text>
+      {chrome && (
+        <>
+          {/* `.ecg-svg-label` — on the paper, in the trace's own colour. */}
+          <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
+            {label}
+          </Text>
+          {/* `.ecg-svg-scale` — bottom-end, quiet. */}
+          <Text style={[styles.scale, { color: t.textTertiary }]} allowFontScaling={false}>
+            {mmPerSec} mm/s · {mmPerMv} mm/mV
+            {truncated ? ` · ${shownSec.toFixed(1)}s of ${totalSec.toFixed(1)}s` : ''}
+          </Text>
+        </>
+      )}
     </View>
   );
 }
@@ -192,5 +214,5 @@ const styles = StyleSheet.create({
   scale: { position: 'absolute', bottom: 4, right: 7, fontSize: 8.5, fontVariant: ['tabular-nums'] },
 });
 
-// v2.0.0 — Web colour tokens (white paper, blue grid), and the label + scale
-//          sit ON the strip as `.ecg-svg-label` / `.ecg-svg-scale` do.
+// v2.1.0 — Optional `chrome` (the caller pins its own label when the strip
+//          scrolls), exported paper palette + CAL_WIDTH_MM, 6 buckets/mm.

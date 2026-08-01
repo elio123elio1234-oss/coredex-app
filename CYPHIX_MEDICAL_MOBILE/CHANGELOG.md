@@ -1,5 +1,83 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.11.0 — 2026-08-01 — The report is a phone document now, not a photocopy of an A4 sheet
+
+The user's report: *"it still feels messy, not native, not professional for a
+phone."* They were right, and v0.10.1 only fixed the report's **colours**. The
+structure was still wrong, and the structure was the actual complaint.
+
+### What I had built, and why it read as a fax
+
+The web report is deliberately two A4 sheets: `.report-page` × 2, each with a
+full `.report-header` letterhead, built for a printer. I ported that layout
+element-for-element, which on a 393 pt screen produced:
+
+| symptom | cause |
+|---|---|
+| the brand mark and four provenance fields, twice, in one scroll | the letterhead repeat — correct on paper (a separated sheet must identify itself), meaningless on a screen that cannot be separated |
+| six 51 pt slivers of grid paper | a 182 mm sheet squeezed into 361 pt is **1.9 pt per millimetre**, so a 1 mV R wave stood 19 pt tall |
+| everything arriving at once | two "pages" stacked in one vertical scroll with no navigation between them |
+
+Every one of those is a *faithful* port. Fidelity to a print layout is what
+made it wrong here — root `CLAUDE.md` §3.3 already says brand identity is
+identical to web and layout patterns follow the platform, and I applied the
+first half only.
+
+### What it is now
+
+Same content, same tokens, the same frozen 25 mm/s · 10 mm/mV geometry from
+`@cyphix/shared`. Restructured:
+
+- **One letterhead** for the document (`ReportHeader` v2.0.0), not one per
+  sheet. The provenance it used to hold moved into the card below.
+- **A summary card** (`ReportSummaryCard`, new) answers *"what did it say?"* in
+  the first screenful: the rate at 46 px, the rhythm, then duration / leads /
+  sample rate. Without it the report opened on a wall of grid paper.
+  The rhythm chip is tinted with the **accent, never green** — "Regular" is a
+  measurement, and a green chip would quietly turn it into a finding.
+- **A segmented control** (Waveform | Measurements) replaces the two paper
+  pages. Native, and it is what stops the screen being a dump.
+- **The waveform window scrolls.** This is the change that fixes "the graphs
+  are too small". The window shows 100 mm of paper instead of 182, so the scale
+  doubles — and the strip is as long as the recording and slides under it:
+
+  | | v0.10.1 | v0.11.0 |
+  |---|---|---|
+  | strip height (iPhone 15 Pro) | 50.6 pt | **115.5 pt** (2.28×) |
+  | 1 mV deflection | 18.1 pt | **36.1 pt** (2.00×) |
+  | one 1 mm square | 5.4 device px | **10.8 device px** |
+  | recording shown | 7.3 s, rest discarded | **all 10 s**, 3.6 s per window |
+
+  The alternative ways to fit a 10 s strip on a phone were to rescale the time
+  axis — banned in `ecgPath.ts`, because a QRS eyeballed off a stretched axis
+  reads the wrong width — or to silently throw away six seconds of a clinical
+  recording. Scrolling costs a gesture and keeps both.
+
+  All six leads live in **one** horizontal `ScrollView`, so they move together.
+  Six independently scrolled strips would let you compare lead I at t=2 s with
+  lead aVF at t=7 s and not notice.
+
+- **Lead labels are pinned** outside that scroll, on paper-coloured chips. A
+  label that slides off the sheet leaves you looking at an unidentified trace.
+- The heart rate is no longer a `hero` tile inside the analysis sheet: the
+  summary card already carries it at 46 px directly above, and two hero
+  treatments of one number is precisely the "thrown on the screen" look.
+
+### One defensive limit
+
+`react-native-svg` rasterises each `<Svg>` into a single native texture, and
+past the GPU limit (4096 px on much Android hardware) it draws **nothing** —
+a blank strip, not a clipped one. Ten seconds of paper is 2 805 px on a 3×
+phone, comfortably inside, but `MAX_STRIP_PX` caps it so an unusually wide
+screen costs a little zoom instead of the whole trace.
+
+### Verified
+
+`tsc --noEmit` clean; iOS and Android both bundle. Those prove the code is
+well-formed, not that it looks right — the geometry above is computed from the
+layout formulas, and the report stays 🔬 in `PARITY.md` until it has been
+scrolled on the phone.
+
 ## v0.10.1 — 2026-08-01 — Two regressions I introduced, both fixed at the source
 
 ### The prep photograph was cropped to a corner. Again.

@@ -27,6 +27,14 @@ import { useTheme } from '@/theme/useTheme';
 
 interface Props {
   analysis: EcgAnalysis;
+  /**
+   * Draw the sheet's own "Automated Measurements" title. Off when the caller
+   * already names this content (the mobile report puts it behind a segmented
+   * control labelled "Measurements", so the title would say it twice). The
+   * "measurements only" sub-line is NOT optional — it is the honesty
+   * statement, not decoration.
+   */
+  showTitle?: boolean;
 }
 
 /* Reference bands — the ranges these intervals typically fall in for
@@ -38,15 +46,17 @@ const REF = {
   qtc: { low: 350, high: 450, min: 280, max: 600 },
 } as const;
 
-/* Copy verbatim from the web locale (en.ts). */
-const REGULARITY: Record<RegularityClass, string> = {
+/* Copy verbatim from the web locale (en.ts). Exported because the report's
+   summary card shows the same rhythm word in its chip, and two copies of a
+   label table drift apart the first time one of them is edited. */
+export const REGULARITY: Record<RegularityClass, string> = {
   regular: 'Regular',
   slightlyIrregular: 'Slightly variable',
   irregular: 'Variable',
   indeterminate: 'Not determined',
 };
 
-const AXIS: Record<AxisClass, string> = {
+export const AXIS: Record<AxisClass, string> = {
   normal: 'Normal axis',
   left: 'Left axis',
   right: 'Right axis',
@@ -69,7 +79,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function EcgAnalysisSheet({ analysis }: Props) {
+export default function EcgAnalysisSheet({ analysis, showTitle = true }: Props) {
   const t = useTheme();
   const { rate, intervals, axis, amplitudes, quality } = analysis;
 
@@ -79,7 +89,9 @@ export default function EcgAnalysisSheet({ analysis }: Props) {
   return (
     <View style={styles.sheet}>
       <View>
-        <Text style={[styles.title, { color: t.textPrimary }]}>Automated Measurements</Text>
+        {showTitle && (
+          <Text style={[styles.title, { color: t.textPrimary }]}>Automated Measurements</Text>
+        )}
         <Text style={[styles.sub, { color: t.textSecondary }]}>
           Computed from the recorded waveform. Measurements only — no interpretation is made or
           implied.
@@ -96,12 +108,16 @@ export default function EcgAnalysisSheet({ analysis }: Props) {
       {/* ── Rate & rhythm ── */}
       <Section title="Rate & Rhythm">
         <View style={styles.grid}>
+          {/* Not `variant="hero"` here as on web: the report's summary card
+              already carries the rate at 46 px directly above this sheet, and
+              two hero treatments of one number is the "thrown on the screen"
+              look. It stays in the table because a measurement sheet must be
+              complete on its own. */}
           <MetricTile
             label="Heart rate"
             value={rate.bpm}
             unit="BPM"
             hint="From the mean R-to-R interval"
-            variant="hero"
             accent={t.accentLive}
           />
           <MetricTile label="Mean R-R" value={rate.rrMeanMs} unit="ms" />
@@ -261,5 +277,5 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15.5 },
 });
 
-// v1.1.0 — Section rules in the accent colour and the web's 10px metric grid;
-//          measurements only, no interpretation, by design.
+// v1.2.0 — Optional title (the report names this content itself), label maps
+//          exported for the summary chip, rate tile no longer doubles as a hero.
