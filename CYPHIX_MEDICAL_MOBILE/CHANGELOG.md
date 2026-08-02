@@ -1,5 +1,77 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.18.2 — 2026-08-02 — It was never the animation. It was one un-memoised object.
+
+> "you just made the animation faster, but it flickers — it's not the speed it
+> opens, there's just judder, it's not smooth"
+
+Correct, and v0.18.1's shortened timings were me guessing at a symptom instead
+of measuring a cause. The timings are back to 240/160 with a comment saying not
+to reach for them again for a smoothness complaint.
+
+### ★ One line, three complaints
+
+```ts
+const palette = { ...(dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT), ghost: t.textTertiary };
+```
+
+A fresh object on every render of `StudyViewerScreen` — and it is a prop of six
+`EcgReviewStrip`s, **every one of which is `memo`-wrapped specifically to avoid
+this**. The memo therefore never held, not once. So every re-render of the
+screen — opening a sheet, nudging a caliper, one frame of any drag — re-ran
+`buildEcgPath` over **four tiles × six leads**, doubled again when a ghost was
+on. That is 24–48 decimating passes over thousands of samples, on the JS
+thread, on the frame the sheet was trying to animate in.
+
+Memoised, the strips now skip re-rendering entirely.
+
+### Dragging the ghost was worse than that
+
+> "when you move the reference trace it stutters, really slow, feels dated"
+
+Everything above, *plus* every touch event re-entered `useOverlayRecording`,
+which allocated six shifted `Float32Array`s — and in warp mode re-ran
+`alignByFiducials` on all six leads. Per move event. The fiducial warp is the
+most expensive thing in this module and it was running at touch frequency.
+
+None of it was necessary. **A manual nudge is a pure translation of an
+already-aligned curve**, so it belongs where translations belong:
+
+- `useOverlayRecording` no longer takes the reader's nudge at all, and reports
+  only what the *algorithm* did — which is also the only part a reader needs
+  stated.
+- The nudge is carried in **millimetres of paper** (the unit it is drawn in,
+  rather than samples) and applied as a `<G translate>` on the ghost. One native
+  attribute update; the path strings never change, so react-native-svg has
+  nothing to re-parse.
+- ⚠️ The catch: each tile only draws the samples that land on it, so a translate
+  would open a gap the width of the shift at every seam. Each tile's ghost path
+  is now over-drawn by `GHOST_NUDGE_LIMIT_MM` (40 mm = 1.6 s, more than one RR
+  interval at any resting rate) on both sides, the `<Svg>` viewBox clips the
+  overhang, and the nudge is clamped to exactly that margin.
+
+### The compare capsule stayed on screen with nothing to drag
+
+> "even after you leave compare mode the DRAG TO MOVE THE GRAY TRACE capsule is
+> stuck on screen although there is no reference trace"
+
+Clearing the comparison set `overlayId` to null and left `mode` on `'ghost'`.
+Two fixes, because either alone would have been luck: the screen now drops out
+of ghost mode when the overlay goes away, **and** the sheet requires a ghost to
+*exist* before drawing any of its chrome.
+
+That second one mattered more than the capsule did. Underneath it sat an
+invisible full-sheet drag surface, also gated on `mode` alone — so a stuck ghost
+mode was silently swallowing every touch on the trace and freezing its scroll.
+The visible symptom was a leftover capsule; the real one was a dead sheet.
+
+### Verified
+
+`tsc --noEmit` clean · both `expo export`s bundle · `expo-doctor` 18/18 — and
+a frame rate remains something none of them can see.
+
+---
+
 ## v0.18.1 — 2026-08-02 — Two blurs were one too many, and I over-corrected on the drag
 
 ### The sheets were slow and flickered on open

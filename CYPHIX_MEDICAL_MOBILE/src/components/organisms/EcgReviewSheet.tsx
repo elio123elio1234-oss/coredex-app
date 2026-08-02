@@ -101,6 +101,8 @@ interface Props {
   showRPeaks: boolean;
   ghost: OverlayView | null;
   ghostOffsetMm: number;
+  /** Reader's horizontal nudge of the ghost, in mm of paper. */
+  ghostShiftMm: number;
   annotations: RecordingAnnotation[];
   /** Marker being composed right now — drawn so the reader keeps their place. */
   pending: PendingMark | null;
@@ -204,6 +206,7 @@ export default function EcgReviewSheet({
   showRPeaks,
   ghost,
   ghostOffsetMm,
+  ghostShiftMm,
   annotations,
   pending,
   lockedCursorsSec,
@@ -326,7 +329,7 @@ export default function EcgReviewSheet({
               /* Frozen while a handle is held, and while the ghost is being
                  nudged. This is the fix for "the waves move when I grab the
                  marker" — see trap 1 in the header. */
-              scrollEnabled={mode !== 'ghost' && !dragging}
+              scrollEnabled={!(mode === 'ghost' && ghost) && !dragging}
               showsHorizontalScrollIndicator
               scrollEventThrottle={32}
               onScroll={(e) => {
@@ -340,6 +343,7 @@ export default function EcgReviewSheet({
                       data={view.leads[lead]}
                       ghost={ghost?.leads[lead]}
                       ghostOffsetMm={ghostOffsetMm}
+                      ghostShiftMm={ghostShiftMm}
                       sampleRate={view.sampleRate}
                       paperMm={paperMm}
                       heightMm={stripHeightMm}
@@ -494,7 +498,13 @@ export default function EcgReviewSheet({
           handle is fixed to the VIEWPORT, not the paper, so it stays put while
           the ghost slides under it — which is also why it cannot live inside
           the horizontal scroll. */}
-      {mode === 'ghost' && (
+      {/* ★ The `ghost &&` is load-bearing, not defensive. Clearing the
+          comparison leaves `mode` on 'ghost', and without this test the
+          "drag to move the grey trace" capsule stayed on screen with no
+          reference trace behind it — and, worse, the invisible full-sheet
+          drag surface below stayed with it and swallowed every touch.
+          Reported exactly that way. */}
+      {mode === 'ghost' && ghost && (
         <>
           {/* The surface first, so the handle draws over it. Both carry the
               same spec; whichever the finger lands on behaves identically. */}
@@ -765,6 +775,12 @@ const styles = StyleSheet.create({
   },
   ghostHandleText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '700', maxWidth: 200 },
 });
+
+// v3.2.0 — The ghost capsule and its full-sheet drag surface now require a
+//          ghost to EXIST, not just the mode: clearing the comparison left both
+//          on screen, and the invisible surface swallowed every touch. The
+//          reader nudge is passed through as millimetres for the strip to apply
+//          as a transform.
 
 // v3.1.0 — Ghost dragging is the WHOLE sheet again, with the labelled handle
 //          kept over it. Buttons were discoverable and wrong: lining two

@@ -80,7 +80,7 @@ import AnnotationComposer from '@/components/molecules/AnnotationComposer';
 import ClinicalNote from '@/components/molecules/ClinicalNote';
 import CompareSheet from '@/components/molecules/CompareSheet';
 import ConfirmDialog from '@/components/molecules/ConfirmDialog';
-import { CAL_WIDTH_MM } from '@/components/molecules/EcgReviewStrip';
+import { CAL_WIDTH_MM, GHOST_NUDGE_LIMIT_MM } from '@/components/molecules/EcgReviewStrip';
 import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import EcgAnalysisSheet, { REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
@@ -160,7 +160,10 @@ export default function StudyViewerScreen() {
   const [fullscreen, setFullscreen] = useState(false);
   const [lockedCursorsSec, setLockedCursorsSec] = useState<number[]>([]);
   const [alignMode, setAlignMode] = useState<OverlayAlignMode>('warp');
-  const [manualShift, setManualShift] = useState(0);
+  /* The reader's own nudge, in MILLIMETRES OF PAPER — the unit it is drawn in.
+     It used to be samples, which meant every drag event re-derived the ghost's
+     six signal arrays; it is now a transform at draw time. */
+  const [ghostShiftMm, setGhostShiftMm] = useState(0);
   const [ghostOffsetMm, setGhostOffsetMm] = useState(0);
   const [pending, setPending] = useState<{
     lead: LimbLeadName;
@@ -213,7 +216,7 @@ export default function StudyViewerScreen() {
   }, [selectedId]);
 
   useEffect(() => {
-    setManualShift(0);
+    setGhostShiftMm(0);
     setGhostOffsetMm(0);
   }, [settings.overlayId, alignMode]);
 
@@ -228,11 +231,17 @@ export default function StudyViewerScreen() {
     settings,
     view,
     alignMode,
-    manualShift,
   );
   const overlayActive = Boolean(
     features.has('compare') && settings.overlayId && overlay && !overlay.isLoading,
   );
+
+  /* Leaving the comparison must leave its MODE. Without this the ghost's drag
+     capsule stayed on screen with nothing to drag, and the invisible drag
+     surface under it kept swallowing every touch on the sheet. */
+  useEffect(() => {
+    if (!overlayActive) setMode((m) => (m === 'ghost' ? 'read' : m));
+  }, [overlayActive]);
 
   const leads: LimbLeadName[] =
     settings.layout === 'single' ? [settings.focusLead] : [...LIMB_LEAD_ORDER];
@@ -339,14 +348,18 @@ export default function StudyViewerScreen() {
         : { layout: 'single', focusLead: lead },
     );
 
+  /* Both axes clamp. Sideways to `GHOST_NUDGE_LIMIT_MM`, which is exactly the
+     margin each tile over-draws the ghost by — past it the translate would
+     slide the drawn paper off the tile and open a gap at the seam. */
   const onGhostDrag = useCallback(
     (dxMm: number, dyMm: number) => {
-      if (!view) return;
-      setManualShift((s) => s + Math.round((dxMm / STANDARD_MM_PER_SEC) * view.sampleRate));
+      setGhostShiftMm((x) =>
+        Math.max(-GHOST_NUDGE_LIMIT_MM, Math.min(GHOST_NUDGE_LIMIT_MM, x + dxMm)),
+      );
       const limit = stripHeightMm / 2;
       setGhostOffsetMm((o) => Math.max(-limit, Math.min(limit, o + dyMm)));
     },
-    [view, stripHeightMm],
+    [stripHeightMm],
   );
 
   const onSheetLayout = useCallback(
@@ -534,7 +547,7 @@ export default function StudyViewerScreen() {
     }));
 
   const resetGhost = () => {
-    setManualShift(0);
+    setGhostShiftMm(0);
     setGhostOffsetMm(0);
   };
 
@@ -552,7 +565,15 @@ export default function StudyViewerScreen() {
   const hintKey: TranslationKey | null =
     mode === 'mark' ? 'annHintTouch' : mode === 'cursor' ? 'curHintTouch' : null;
 
-  const palette = { ...(dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT), ghost: t.textTertiary };
+  /* ★ MEMOISED, and that is not a micro-optimisation. This object is a prop of
+     every `EcgReviewStrip`, every one of which is `memo`-wrapped — and rebuilt
+     inline it defeated all of them. Opening a sheet or nudging a caliper
+     therefore re-ran `buildEcgPath` over four tiles × six leads, twice over
+     with a ghost. That is what "it flickers, it isn't smooth" was. */
+  const palette = useMemo(
+    () => ({ ...(dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT), ghost: t.textTertiary }),
+    [dark, t.textTertiary],
+  );
 
   /* The point a composer is open on, so the reader keeps their place while the
      sheet covers the trace. */
@@ -731,7 +752,7 @@ export default function StudyViewerScreen() {
 
   /** The reader's OWN nudge, live. Shown on screen while dragging so the sheet
       never has to be reopened to read a number off it. */
-  const ghostMovedMs = view ? (manualShift / view.sampleRate) * 1000 : 0;
+  const ghostMovedMs = (ghostShiftMm / STANDARD_MM_PER_SEC) * 1000;
   const ghostMovedMv = -ghostOffsetMm / 10;
 
   /* The comparison status line: what is being compared, and — once the ghost
@@ -778,6 +799,7 @@ export default function StudyViewerScreen() {
         showRPeaks={settings.showRPeaks}
         ghost={overlayActive ? overlay : null}
         ghostOffsetMm={ghostOffsetMm}
+        ghostShiftMm={ghostShiftMm}
         annotations={recording.annotations}
         pending={pendingMark}
         lockedCursorsSec={lockedCursorsSec}
@@ -1417,6 +1439,13 @@ const styles = StyleSheet.create({
   annText: { flex: 1, flexShrink: 1, fontSize: 14.5, fontWeight: '600' },
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
+
+// v4.2.0 — Three performance and correctness fixes from one device session:
+//          the strip palette is MEMOISED (rebuilt inline it defeated every
+//          EcgReviewStrip memo, so every sheet-open rebuilt 24-48 SVG paths),
+//          the reader nudge is carried in millimetres and applied as a draw-time
+//          transform instead of re-deriving the ghost signals per touch event,
+//          and leaving a comparison now leaves ghost mode with it.
 
 // v4.1.0 — The ghost moves on the paper again, and how far it has been taken
 //          reads out on the status line while it is being dragged, so nothing

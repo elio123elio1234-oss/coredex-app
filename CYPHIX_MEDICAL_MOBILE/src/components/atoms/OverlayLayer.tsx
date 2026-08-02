@@ -81,11 +81,15 @@ import {
 } from 'react-native';
 import { useIsDark } from '@/theme/useTheme';
 
-/** Rising is slower than leaving — a sheet should arrive, not appear. Both are
-    short: this was 260/170 and read as "slow" on the device, and a modal that
-    keeps you waiting is one you notice instead of one you use. */
-const IN_MS = 210;
-const OUT_MS = 140;
+/** Rising is slower than leaving — a sheet should arrive, not appear.
+    ⚠️ These are NOT where the reported judder came from. v0.18.1 shortened them
+    on that assumption and was told plainly it made no difference: "it's not the
+    speed, it just isn't smooth." The cause was the JS thread rebuilding 24–48
+    SVG paths on the frame the sheet opened (see the palette memo in
+    StudyViewerScreen). Do not reach for these numbers again for a smoothness
+    complaint — find what is running on the same frame. */
+const IN_MS = 240;
+const OUT_MS = 160;
 
 interface Props {
   visible: boolean;

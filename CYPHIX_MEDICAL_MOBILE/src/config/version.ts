@@ -1,8 +1,25 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.18.1';
+export const APP_VERSION = '0.18.2';
 export const APP_BUILD_LABEL =
-  'One blur instead of two so sheets open without flicker, and the ghost is dragged on the paper again — the arrow buttons are gone';
+  'The judder was 48 SVG paths rebuilt per frame — one memo fixes both the sheet and the ghost drag; the stuck compare capsule is gone';
+
+// v0.18.2 — The judder was never the animation, and v0.18.1 shortening it was
+//           me guessing. ONE LINE caused it: `palette` was rebuilt inline on
+//           every render of StudyViewerScreen, and it is a prop of six
+//           `memo`-wrapped EcgReviewStrips — so the memo never held once, and
+//           every re-render (opening a sheet, nudging a caliper, one frame of a
+//           drag) re-ran `buildEcgPath` over four tiles × six leads, twice over
+//           with a ghost. Memoised, the strips now skip entirely.
+//           Dragging the ghost was worse still: it also re-entered
+//           `useOverlayRecording`, which allocated six shifted Float32Arrays and
+//           in warp mode re-ran `alignByFiducials` on all six leads — PER TOUCH
+//           EVENT. A manual nudge is a pure translation, so it is now a `<G>`
+//           transform at draw time and the signals are never re-derived.
+//           And: leaving a comparison now leaves ghost mode with it. It did not,
+//           so the "drag to move the grey trace" capsule stayed on screen with
+//           nothing to drag — and the invisible full-sheet drag surface under it
+//           stayed too, swallowing every touch.
 
 // v0.18.1 — Two from the device, and one of them is me over-correcting.
 //           SPEED: the scrim was a second full-screen blur under the panel's

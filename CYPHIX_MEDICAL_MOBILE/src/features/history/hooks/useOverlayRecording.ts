@@ -25,6 +25,15 @@
    them. A ghost that had been silently stretched would be the most
    misleading thing in this whole application.
 
+   ★ THE READER'S OWN NUDGE IS NOT COMPUTED HERE. It used to be — every
+   drag event re-entered this memo, allocated six shifted `Float32Array`s
+   and, in warp mode, re-ran `alignByFiducials` on all six leads. Per touch
+   event. Dragging the ghost was reported as "very slow and stuttery", and
+   that was why. A manual nudge is a pure translation of an already-aligned
+   curve, so it is applied where translations belong: as a transform at
+   DRAW time (`EcgReviewStrip`). What this hook reports is therefore what
+   the ALGORITHM did, which is also the only part a reader needs stated.
+
    The ghost is always put through the SAME filter settings as the
    foreground, never the ones it was saved with — otherwise the shapes
    differ because of the DSP rather than the heart.
@@ -43,7 +52,8 @@ export interface OverlayView {
   leads: Record<LimbLeadName, Float32Array>;
   sampleRate: number;
   mode: OverlayAlignMode;
-  /** Samples the ghost was shifted by (beat/manual modes). */
+  /** Samples the ALGORITHM shifted the ghost by (beat mode). The reader's own
+      nudge is a draw-time transform and is reported separately. */
   shiftSamples: number;
   shiftMs: number;
   /** Landmark correspondences used (warp mode). */
@@ -70,8 +80,6 @@ export function useOverlayRecording(
   settings: ViewerSettings,
   foreground: { analysis: EcgAnalysis; leads: Record<LimbLeadName, Float32Array> } | null,
   mode: OverlayAlignMode,
-  /** Reader's manual nudge, in samples. Applied in every mode. */
-  manualShift: number,
 ): OverlayView | null {
   const query = useGetRecordingQuery(overlayId ?? '', { skip: !overlayId });
   const view = useRecordingView(query.data, settings);
@@ -95,7 +103,7 @@ export function useOverlayRecording(
 
     const length = foreground.leads.II.length;
     const leads = {} as Record<LimbLeadName, Float32Array>;
-    let shift = manualShift;
+    let shift = 0;
     let anchorCount = 0;
     let beatsMatched = 0;
     let degraded = false;
@@ -113,8 +121,7 @@ export function useOverlayRecording(
           foreground.analysis.rPeaks,
           view.sampleRate,
         );
-        leads[lead] =
-          manualShift === 0 ? result.warped : shiftSignal(result.warped, manualShift, length);
+        leads[lead] = result.warped;
         if (lead === 'II') {
           anchorCount = result.anchorCount;
           beatsMatched = result.beatsMatched;
@@ -123,7 +130,7 @@ export function useOverlayRecording(
       }
     } else {
       // 'beat' lines up the first R peaks; 'manual' starts from raw and lets
-      // the reader do it. Both then take the manual nudge on top.
+      // the reader do it — with a transform at draw time, not here.
       const fgFirst = foreground.analysis.rPeaks[0];
       const ghostFirst = view.analysis.rPeaks[0];
       const beatShift =
@@ -132,7 +139,7 @@ export function useOverlayRecording(
           : 0;
       degraded =
         mode === 'beat' && beatShift === 0 && (fgFirst === undefined || ghostFirst === undefined);
-      shift = beatShift + manualShift;
+      shift = beatShift;
       for (const lead of LIMB_LEAD_ORDER) {
         leads[lead] = shiftSignal(view.leads[lead], shift, length);
       }
@@ -150,8 +157,13 @@ export function useOverlayRecording(
       recordedAt: query.data.recordedAt,
       isLoading: false,
     };
-  }, [overlayId, view, query.data, query.isLoading, foreground, mode, manualShift]);
+  }, [overlayId, view, query.data, query.isLoading, foreground, mode]);
 }
+
+// v2.0.0 — The reader's manual nudge left this memo. Re-deriving six shifted
+//          Float32Arrays (and re-running the fiducial warp on six leads) per
+//          touch event is what made dragging the ghost stutter; a translation
+//          belongs at draw time. What this reports is what the ALGORITHM did.
 
 // v1.0.0 — Three alignment modes (beat shift / fiducial warp / manual nudge),
 //          each stated in the UI, ported from web.
