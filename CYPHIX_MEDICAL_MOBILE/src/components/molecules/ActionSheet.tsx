@@ -36,11 +36,11 @@ export interface ActionSheetItem {
   /**
    * Set (true/false) to render the row as a TOGGLE with a trailing check.
    *
-   * This is what lets the filter stages and the alignment modes live in a
-   * sheet instead of on the toolbar: they need words ("50 Hz", "Align
-   * P-QRS-T") to be honest, and an icon for "Savitzky-Golay smoothing" would
-   * be a guess. Toggling one does NOT close the sheet — a reader comparing
-   * the notch on against off would otherwise reopen it every time.
+   * This is what lets the filter stages live in a sheet instead of on the
+   * toolbar: they need words ("50 Hz", "Baseline") to be honest, and an icon
+   * for "Savitzky-Golay smoothing" would be a guess. Toggling one does NOT
+   * close the sheet — a reader comparing the notch on against off would
+   * otherwise reopen it every time.
    */
   checked?: boolean;
   /** Sub-heading printed above this row. Groups a sheet without nesting it. */
@@ -77,9 +77,9 @@ export default function ActionSheet({ visible, title, items, cancelLabel, onClos
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             /* A toggle stays open — see `checked`. Everything else closes
-               FIRST: a share sheet or file picker opened from inside a
-               still-mounted Modal is presented behind it on iOS, so the user
-               sees nothing happen and taps again. */
+               FIRST: the system share sheet is a real view controller and
+               would slide up behind a sheet that is still on screen, so the
+               reader would see their own panel and think nothing happened. */
             if (!isToggle) onClose();
             item.onSelect();
           }}
@@ -176,5 +176,5 @@ const styles = StyleSheet.create({
   cancelText: { fontSize: 16, fontWeight: '700' },
 });
 
-// v2.0.0 — Presentation moved into BottomSheet (blurred scrim + glass panel);
-//          rows keep their toggle/section behaviour and the destructive divider.
+// v2.0.1 — Comment only: the alignment modes left this sheet for CompareSheet,
+//          so the note explaining why `checked` exists no longer names them.

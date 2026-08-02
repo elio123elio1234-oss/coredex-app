@@ -1,8 +1,25 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.17.0';
+export const APP_VERSION = '0.18.0';
 export const APP_BUILD_LABEL =
-  'Glass sheets, safe-area full screen with its own way out, cursor drag fixed, visible ghost handle';
+  'Sheets leave Modal — the crash in landscape and the grey rectangle were the same import; comparison gets its own explaining sheet';
+
+// v0.18.0 — Three from the device, two of them one root cause. React Native's
+//           `Modal` is a SEPARATE WINDOW, and that fact caused both remaining
+//           sheet complaints: (a) `UIVisualEffectView` and Android's
+//           dimezisBlurView can only sample their own window, which inside a
+//           Modal is empty — so every "glass" sheet shipped in v0.17.0 was, on
+//           the device, exactly the grey rectangle it was written to replace;
+//           (b) Modal defaults to portrait-only, so raising one while full
+//           screen is landscape makes UIKit throw
+//           UIApplicationInvalidInterfaceOrientation and the process DIES —
+//           that is the MARKERS crash. Overlays are now rendered IN TREE
+//           (`OverlayLayer`), where the page is really behind them.
+//           Separately, comparison stops being three rows in the middle of the
+//           filters sheet: it is its own toolbar tool and its own sheet, which
+//           opens by saying what the grey trace IS and offers BUTTONS to move
+//           it — one small square per tap — instead of only a drag nobody
+//           could discover.
 
 // v0.17.0 — Seven more from the device. The one that was a real bug: a
 //           PanResponder rebuilt mid-gesture forgets its running totals, so a

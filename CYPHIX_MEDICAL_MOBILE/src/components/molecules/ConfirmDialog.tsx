@@ -10,12 +10,16 @@
 
    The subject (which study) is shown in its own line above the body, so the
    reader confirms a specific recording rather than the idea of one.
+
+   Presented through `OverlayLayer`, not `Modal` — the page has to be really
+   behind it for the blur to sample, and a Modal is portrait-only by default,
+   which crashes the app when this is raised from full screen. See that file.
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import GlassSurface from '@/components/atoms/GlassSurface';
+import OverlayLayer from '@/components/atoms/OverlayLayer';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
@@ -49,81 +53,65 @@ export default function ConfirmDialog({
   const dark = useIsDark();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      {/* The page blurs behind the dialog rather than going flat black: the
-          study you are about to delete stays recognisable underneath, which
-          is the whole point of confirming against a specific record. */}
-      <BlurView
-        intensity={dark ? 26 : 20}
-        tint={dark ? 'dark' : 'light'}
-        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
-        style={styles.scrim}
+    /* The page blurs behind the dialog rather than going flat black: the study
+       you are about to delete stays recognisable underneath, which is the whole
+       point of confirming against a specific record. */
+    <OverlayLayer visible={visible} onRequestClose={onCancel} closeLabel={cancelLabel} enter="fade">
+      <GlassSurface
+        dark={dark}
+        fallbackTint={dark ? 'rgba(19, 27, 44, 0.86)' : 'rgba(255, 255, 255, 0.88)'}
+        style={[
+          styles.card,
+          { borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)' },
+        ]}
       >
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: dark ? 'rgba(0,0,0,0.32)' : 'rgba(15,23,42,0.20)' },
-          ]}
-          pointerEvents="none"
-        />
-        <GlassSurface
-          dark={dark}
-          fallbackTint={dark ? 'rgba(19, 27, 44, 0.86)' : 'rgba(255, 255, 255, 0.88)'}
-          style={[
-            styles.card,
-            { borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)' },
-          ]}
-        >
-          <Text style={[styles.title, { color: t.textPrimary }]}>{title}</Text>
-          {subject && (
-            <Text style={[styles.subject, { color: destructive ? t.danger : t.textPrimary }]}>
-              {subject}
-            </Text>
-          )}
-          <Text style={[styles.body, { color: t.textSecondary }]}>{body}</Text>
+        <Text style={[styles.title, { color: t.textPrimary }]}>{title}</Text>
+        {subject && (
+          <Text style={[styles.subject, { color: destructive ? t.danger : t.textPrimary }]}>
+            {subject}
+          </Text>
+        )}
+        <Text style={[styles.body, { color: t.textSecondary }]}>{body}</Text>
 
-          <View style={styles.actions}>
-            {/* Cancel FIRST in the reading order and visually the calmer of
-                the two: the safe way out should not be the one you have to
-                look for. */}
-            <Pressable
-              accessibilityRole="button"
-              onPress={onCancel}
-              disabled={busy}
-              style={({ pressed }) => [
-                styles.btn,
-                styles.ghost,
-                { borderColor: t.border, opacity: pressed ? 0.6 : 1 },
-              ]}
-            >
-              <Text style={[styles.btnText, { color: t.textPrimary }]}>{cancelLabel}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy}
-              onPress={() => {
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                onConfirm();
-              }}
-              style={({ pressed }) => [
-                styles.btn,
-                {
-                  backgroundColor: destructive ? t.danger : t.brandNavy,
-                  opacity: busy ? 0.5 : pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{confirmLabel}</Text>
-            </Pressable>
-          </View>
-        </GlassSurface>
-      </BlurView>
-    </Modal>
+        <View style={styles.actions}>
+          {/* Cancel FIRST in the reading order and visually the calmer of the
+              two: the safe way out should not be the one you have to look for. */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={onCancel}
+            disabled={busy}
+            style={({ pressed }) => [
+              styles.btn,
+              styles.ghost,
+              { borderColor: t.border, opacity: pressed ? 0.6 : 1 },
+            ]}
+          >
+            <Text style={[styles.btnText, { color: t.textPrimary }]}>{cancelLabel}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={() => {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              onConfirm();
+            }}
+            style={({ pressed }) => [
+              styles.btn,
+              {
+                backgroundColor: destructive ? t.danger : t.brandNavy,
+                opacity: busy ? 0.5 : pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{confirmLabel}</Text>
+          </Pressable>
+        </View>
+      </GlassSurface>
+    </OverlayLayer>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: 'center', paddingHorizontal: 26 },
   card: {
     borderRadius: 26,
     borderWidth: StyleSheet.hairlineWidth,
@@ -145,5 +133,6 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 15.5, fontWeight: '700' },
 });
 
-// v1.1.0 — Glass card over a BLURRED page rather than a flat panel over flat
-//          black: the study being deleted stays recognisable behind it.
+// v2.0.0 — Presented through OverlayLayer instead of Modal: only in tree does
+//          the blur have the page to sample, and only without a Modal can this
+//          be raised from landscape full screen without killing the app.

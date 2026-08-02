@@ -22,12 +22,17 @@
    marker on a short screen, and a subtitle alone would leave a clinician
    guessing which beat they tapped.
 
-   Presentation belongs to `BottomSheet`.
+   Presentation belongs to `BottomSheet`, and the KEYBOARD belongs to
+   `OverlayLayer` beneath it — a bottom-anchored sheet rendered in tree is not
+   lifted by the OS, so the layer measures the keyboard and rides above it.
+   `KeyboardAvoidingView` was removed rather than kept "just in case": it does
+   not work inside an absolutely-positioned host, so it was only ever adding a
+   second thing that could move the sheet.
    ================================================================== */
 
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import BottomSheet from '@/components/molecules/BottomSheet';
 import { ANNOTATION_TAGS } from '@/features/history/annotationTags';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -77,95 +82,93 @@ export default function AnnotationComposer({
 
   return (
     <BottomSheet visible={visible} onClose={onCancel} closeLabel={tr('annCancel')}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.body}>
-          <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
-            {existingText != null ? tr('annEditTitle') : tr('annTitle')}
-          </Text>
-          <Text style={[styles.at, { color: t.textSecondary, textAlign: align }]}>
-            {tr('annAt', { lead, time: timeSec.toFixed(2) })}
-          </Text>
+      <View style={styles.body}>
+        <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
+          {existingText != null ? tr('annEditTitle') : tr('annTitle')}
+        </Text>
+        <Text style={[styles.at, { color: t.textSecondary, textAlign: align }]}>
+          {tr('annAt', { lead, time: timeSec.toFixed(2) })}
+        </Text>
 
-          {/* One tap, no keyboard — the reason the shortlist exists. */}
-          <View style={[styles.tags, rtl && styles.rowRtl]}>
-            {ANNOTATION_TAGS.map((tag) => (
-              <Pressable
-                key={tag.id}
-                accessibilityRole="button"
-                disabled={busy}
-                onPress={() => submit(tr(tag.labelKey))}
-                style={({ pressed }) => [
-                  styles.tag,
-                  {
-                    backgroundColor: pressed ? t.accentSoft : wash,
-                    borderColor: tag.tone === 'artifact' ? t.danger : hairline,
-                  },
-                ]}
-              >
-                <Text style={[styles.tagText, { color: t.textPrimary }]}>{tr(tag.labelKey)}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <TextInput
-            style={[
-              styles.input,
-              { color: t.textPrimary, backgroundColor: wash, borderColor: hairline, textAlign: align },
-            ]}
-            value={text}
-            onChangeText={setText}
-            placeholder={tr('annPlaceholder')}
-            placeholderTextColor={t.textTertiary}
-            autoCapitalize="sentences"
-            accessibilityLabel={tr('annPlaceholder')}
-          />
-
-          <View style={[styles.actions, rtl && styles.rowRtl]}>
-            {onDelete && (
-              <Pressable
-                accessibilityRole="button"
-                disabled={busy}
-                onPress={onDelete}
-                style={({ pressed }) => [
-                  styles.btn,
-                  styles.ghost,
-                  { borderColor: t.danger, opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Text style={[styles.btnText, { color: t.danger }]}>{tr('annDelete')}</Text>
-              </Pressable>
-            )}
+        {/* One tap, no keyboard — the reason the shortlist exists. */}
+        <View style={[styles.tags, rtl && styles.rowRtl]}>
+          {ANNOTATION_TAGS.map((tag) => (
             <Pressable
+              key={tag.id}
               accessibilityRole="button"
               disabled={busy}
-              onPress={onCancel}
+              onPress={() => submit(tr(tag.labelKey))}
               style={({ pressed }) => [
-                styles.btn,
-                styles.ghost,
-                { borderColor: hairline, opacity: pressed ? 0.6 : 1 },
-              ]}
-            >
-              <Text style={[styles.btnText, { color: t.textPrimary }]}>{tr('annCancel')}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy || text.trim() === ''}
-              onPress={() => submit(text)}
-              style={({ pressed }) => [
-                styles.btn,
+                styles.tag,
                 {
-                  backgroundColor: t.brandNavy,
-                  opacity: busy || text.trim() === '' ? 0.35 : pressed ? 0.85 : 1,
+                  backgroundColor: pressed ? t.accentSoft : wash,
+                  borderColor: tag.tone === 'artifact' ? t.danger : hairline,
                 },
               ]}
             >
-              <Text style={[styles.btnText, { color: dark ? t.bg : '#FFFFFF' }]}>
-                {existingText != null ? tr('annSave') : tr('annAdd')}
-              </Text>
+              <Text style={[styles.tagText, { color: t.textPrimary }]}>{tr(tag.labelKey)}</Text>
             </Pressable>
-          </View>
+          ))}
         </View>
-      </KeyboardAvoidingView>
+
+        <TextInput
+          style={[
+            styles.input,
+            { color: t.textPrimary, backgroundColor: wash, borderColor: hairline, textAlign: align },
+          ]}
+          value={text}
+          onChangeText={setText}
+          placeholder={tr('annPlaceholder')}
+          placeholderTextColor={t.textTertiary}
+          autoCapitalize="sentences"
+          accessibilityLabel={tr('annPlaceholder')}
+        />
+
+        <View style={[styles.actions, rtl && styles.rowRtl]}>
+          {onDelete && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={onDelete}
+              style={({ pressed }) => [
+                styles.btn,
+                styles.ghost,
+                { borderColor: t.danger, opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={[styles.btnText, { color: t.danger }]}>{tr('annDelete')}</Text>
+            </Pressable>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={onCancel}
+            style={({ pressed }) => [
+              styles.btn,
+              styles.ghost,
+              { borderColor: hairline, opacity: pressed ? 0.6 : 1 },
+            ]}
+          >
+            <Text style={[styles.btnText, { color: t.textPrimary }]}>{tr('annCancel')}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy || text.trim() === ''}
+            onPress={() => submit(text)}
+            style={({ pressed }) => [
+              styles.btn,
+              {
+                backgroundColor: t.brandNavy,
+                opacity: busy || text.trim() === '' ? 0.35 : pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={[styles.btnText, { color: dark ? t.bg : '#FFFFFF' }]}>
+              {existingText != null ? tr('annSave') : tr('annAdd')}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </BottomSheet>
   );
 }
@@ -191,5 +194,6 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 14.5, fontWeight: '700' },
 });
 
-// v2.0.0 — Rises in the shared glass BottomSheet; fields and chips are a
-//          translucent wash of the panel rather than solid blocks pasted on it.
+// v2.1.0 — KeyboardAvoidingView removed: OverlayLayer under the sheet owns the
+//          keyboard now, and a KAV inside an absolutely-positioned host was a
+//          second thing that could move the panel without ever working.

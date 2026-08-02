@@ -37,6 +37,13 @@
    ══ THE TOOLS ARE MODES, AND ONLY ONE IS ON ══
    A finger cannot hover and there is only one of it, so turning a tool on
    turns the others off. Every switch also closes any open composer.
+
+   ══ COMPARISON IS A TOOL, NOT A SETTING ══
+   It used to be three rows in the middle of the ⋯ sheet, under the filters,
+   and was reported twice as impossible to understand or use. It now has its
+   own toolbar button and its own sheet, which opens by saying what the grey
+   trace IS and offers BUTTONS for moving it (see `CompareSheet`). The drag
+   is still there; it is no longer the only way.
    ================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -69,6 +76,7 @@ import ToolToggle from '@/components/atoms/ToolToggle';
 import ActionSheet, { type ActionSheetItem } from '@/components/molecules/ActionSheet';
 import AnnotationComposer from '@/components/molecules/AnnotationComposer';
 import ClinicalNote from '@/components/molecules/ClinicalNote';
+import CompareSheet from '@/components/molecules/CompareSheet';
 import ConfirmDialog from '@/components/molecules/ConfirmDialog';
 import { CAL_WIDTH_MM } from '@/components/molecules/EcgReviewStrip';
 import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
@@ -158,7 +166,7 @@ export default function StudyViewerScreen() {
     timeSec: number;
   } | null>(null);
   const [editing, setEditing] = useState<RecordingAnnotation | null>(null);
-  const [sheet, setSheet] = useState<'none' | 'actions' | 'studies' | 'tools'>('none');
+  const [sheet, setSheet] = useState<'none' | 'actions' | 'studies' | 'tools' | 'compare'>('none');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [sheetBox, setSheetBox] = useState({ width: 0, height: 0 });
@@ -480,13 +488,14 @@ export default function StudyViewerScreen() {
     onSelect: () => setSelectedId(r.id),
   }));
 
-  /* Everything that needs WORDS lives here, not on the toolbar. */
+  /* The filter stages, and only those. Comparison used to be tacked on below
+     them in this same sheet and was reported twice as incomprehensible — it
+     now has its own sheet that explains itself (CompareSheet). */
   const toolItems: ActionSheetItem[] = [
     ...(features.has('filters')
       ? [
           {
             id: 'f-base',
-            section: tr('vtFilters'),
             label: tr('vtBaseline'),
             hint: tr('vtBaselineHint'),
             checked: settings.filters.baseline,
@@ -511,56 +520,21 @@ export default function StudyViewerScreen() {
           },
         ]
       : []),
-    ...(features.has('compare') && (list.data ?? []).length > 1
-      ? [
-          {
-            id: 'cmp-none',
-            section: tr('vtCompare'),
-            label: tr('ovNone'),
-            checked: !settings.overlayId,
-            onSelect: () => patch({ overlayId: null }),
-          },
-          ...(list.data ?? [])
-            .filter((r) => r.id !== selectedId)
-            .map((r) => ({
-              id: `cmp-${r.id}`,
-              label: fmtWhen(r.recordedAt),
-              hint: `${r.summary.bpm ?? '—'} ${tr('bpm')}`,
-              checked: settings.overlayId === r.id,
-              onSelect: () => patch({ overlayId: r.id }),
-            })),
-        ]
-      : []),
-    ...(overlayActive
-      ? [
-          {
-            id: 'al-beat',
-            section: tr('ovAlignSection'),
-            label: tr('ovModeBeat'),
-            hint: tr('ovModeBeatHint'),
-            checked: alignMode === 'beat',
-            onSelect: () => setAlignMode('beat'),
-          },
-          {
-            id: 'al-warp',
-            label: tr('ovModeWarp'),
-            hint: tr('ovModeWarpHint'),
-            checked: alignMode === 'warp',
-            onSelect: () => setAlignMode('warp'),
-          },
-          {
-            id: 'al-manual',
-            label: tr('ovModeManual'),
-            hint: tr('ovModeManualHint'),
-            checked: mode === 'ghost',
-            onSelect: () => {
-              setAlignMode('manual');
-              setMode('ghost');
-            },
-          },
-        ]
-      : []),
   ];
+
+  /* The studies this one can be compared against — never itself. */
+  const compareStudies = (list.data ?? [])
+    .filter((r) => r.id !== selectedId)
+    .map((r) => ({
+      id: r.id,
+      label: fmtWhen(r.recordedAt),
+      hint: `${r.summary.bpm ?? '—'} ${tr('bpm')}`,
+    }));
+
+  const resetGhost = () => {
+    setManualShift(0);
+    setGhostOffsetMm(0);
+  };
 
   /* ── Derived display values ── */
   const align = rtl ? ('right' as const) : ('left' as const);
@@ -631,8 +605,21 @@ export default function StudyViewerScreen() {
           dense={dense}
           label={tr('vtMoreTools')}
           icon="options-outline"
-          active={overlayActive || hasFiltersOff(settings)}
+          active={hasFiltersOff(settings)}
           onToggle={() => setSheet('tools')}
+        />
+      )}
+      {/* Comparison is a TOOL, not a setting buried in a menu. It was reported
+          twice as impossible to use, and being three rows down someone else's
+          sheet was most of the reason. */}
+      {features.has('compare') && (
+        <ToolToggle
+          dense={dense}
+          label={tr('vtCompare')}
+          hint={tr('ovExplain')}
+          icon="layers-outline"
+          active={overlayActive}
+          onToggle={() => setSheet('compare')}
         />
       )}
       {!fullscreen && (
@@ -730,19 +717,33 @@ export default function StudyViewerScreen() {
       </View>
     ) : null;
 
-  /* The comparison status line doubles as the way INTO moving the ghost. It
-     was only reachable through two levels of the ⋯ sheet, which is why
-     "compare" read as a feature with no way to use it. */
+  /** What the alignment actually did, in words. Never silent: a ghost that had
+      been stretched without saying so would be the most misleading thing here. */
+  const alignmentSaid = overlay
+    ? overlay.mode === 'warp'
+      ? overlay.degraded
+        ? tr('ovWarpFailed')
+        : tr('ovWarpApplied', { n: String(overlay.anchorCount) })
+      : tr('ovShifted', { ms: String(Math.round(overlay.shiftMs)) })
+    : null;
+
+  /* The comparison status line is the way back INTO the comparison sheet,
+     where the ghost can be moved with buttons. It used to jump straight to a
+     drag mode whose handle the reader had never seen. */
   const compareStatus =
     overlayActive && overlay ? (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={tr('ovDragHandle')}
-        onPress={() => pickMode('ghost')}
-        style={({ pressed }) => [styles.compareRow, rtl && styles.rowRtl, { opacity: pressed ? 0.6 : 1 }]}
+        accessibilityLabel={tr('vtCompare')}
+        onPress={() => setSheet('compare')}
+        style={({ pressed }) => [
+          styles.compareRow,
+          rtl && styles.rowRtl,
+          { opacity: pressed ? 0.6 : 1 },
+        ]}
       >
         <Ionicons
-          name="move"
+          name={mode === 'ghost' ? 'move' : 'layers-outline'}
           size={13}
           color={mode === 'ghost' ? t.accentLive : t.textSecondary}
         />
@@ -750,12 +751,7 @@ export default function StudyViewerScreen() {
           style={[styles.hint, { color: mode === 'ghost' ? t.accentLive : t.textSecondary }]}
           numberOfLines={1}
         >
-          {tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} ·{' '}
-          {overlay.mode === 'warp'
-            ? overlay.degraded
-              ? tr('ovWarpFailed')
-              : tr('ovWarpApplied', { n: String(overlay.anchorCount) })
-            : tr('ovShifted', { ms: String(Math.round(overlay.shiftMs)) })}
+          {tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} · {alignmentSaid}
         </Text>
       </Pressable>
     ) : null;
@@ -814,6 +810,34 @@ export default function StudyViewerScreen() {
         cancelLabel={tr('setDone')}
         onClose={() => setSheet('none')}
       />
+
+      {features.has('compare') && (
+        <CompareSheet
+          visible={sheet === 'compare'}
+          onClose={() => setSheet('none')}
+          studies={compareStudies}
+          overlayId={settings.overlayId}
+          onPick={(id) => patch({ overlayId: id })}
+          active={overlayActive}
+          alignMode={alignMode}
+          onAlignMode={setAlignMode}
+          statusLine={overlay && !overlay.degraded ? alignmentSaid : null}
+          degraded={Boolean(overlay?.degraded)}
+          /* The reader's OWN nudge, not the total shift: the algorithm's
+             contribution is already stated on the line above. */
+          offsetMs={view ? (manualShift / view.sampleRate) * 1000 : 0}
+          /* Screen down is a SMALLER voltage, and 10 mm is 1 mV. */
+          offsetMv={-ghostOffsetMm / 10}
+          onNudge={onGhostDrag}
+          onReset={resetGhost}
+          onDragOnStrip={() => {
+            setSheet('none');
+            setAlignMode('manual');
+            setMode('ghost');
+          }}
+          ghostColor={palette.ghost}
+        />
+      )}
 
       {(pending || editing) && recording && (
         <AnnotationComposer
@@ -901,66 +925,70 @@ export default function StudyViewerScreen() {
      is on a SIDE and a full-bleed sheet hides the first ~50 pt of every lead. */
   if (fullscreen) {
     return (
-      <View
-        style={[
-          styles.root,
-          {
-            backgroundColor: t.bg,
-            paddingTop: Math.max(insets.top, 6),
-            paddingBottom: Math.max(insets.bottom, 6),
-            paddingLeft: Math.max(insets.left, 8),
-            paddingRight: Math.max(insets.right, 8),
-          },
-        ]}
-      >
-        <View style={[styles.fsBar, rtl && styles.rowRtl]}>
-          {/* The way out, first and unmistakable. Full screen had no exit of
-              its own — only the toolbar's contract icon, which nobody found. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={tr('vtExitFullscreen')}
-            hitSlop={8}
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setFullscreen(false);
-            }}
-            style={({ pressed }) => [
-              styles.fsExit,
-              { backgroundColor: t.brandNavy, opacity: pressed ? 0.75 : 1 },
-            ]}
-          >
-            <Ionicons name="contract-outline" size={17} color={dark ? t.bg : '#FFFFFF'} />
-            <Text
-              style={[styles.fsExitText, { color: dark ? t.bg : '#FFFFFF' }]}
-              allowFontScaling={false}
+      /* The safe-area padding is on an INNER view: an overlay's scrim is
+         positioned against its parent's content box, so a padded root would
+         leave four unblurred strips around every sheet. */
+      <View style={[styles.root, { backgroundColor: t.bg }]}>
+        <View
+          style={[
+            styles.flex,
+            {
+              paddingTop: Math.max(insets.top, 6),
+              paddingBottom: Math.max(insets.bottom, 6),
+              paddingLeft: Math.max(insets.left, 8),
+              paddingRight: Math.max(insets.right, 8),
+            },
+          ]}
+        >
+          <View style={[styles.fsBar, rtl && styles.rowRtl]}>
+            {/* The way out, first and unmistakable. Full screen had no exit of
+                its own — only the toolbar's contract icon, which nobody found. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr('vtExitFullscreen')}
+              hitSlop={8}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFullscreen(false);
+              }}
+              style={({ pressed }) => [
+                styles.fsExit,
+                { backgroundColor: t.brandNavy, opacity: pressed ? 0.75 : 1 },
+              ]}
             >
-              {tr('vtExitFullscreen')}
-            </Text>
-          </Pressable>
-
-          <View style={styles.fsTools}>{tools(true)}</View>
-          <View style={styles.fsZoom}>{zoomControls(true)}</View>
-        </View>
-
-        {/* One line under the bar, still outside the paper. */}
-        {(caliperReadout || hintKey || compareStatus) && (
-          <View style={styles.fsStatus}>{caliperReadout ?? compareStatus ?? (
-            hintKey ? (
-              <Text style={[styles.hint, { color: t.textSecondary }]} numberOfLines={1}>
-                {tr(hintKey)}
+              <Ionicons name="contract-outline" size={17} color={dark ? t.bg : '#FFFFFF'} />
+              <Text
+                style={[styles.fsExitText, { color: dark ? t.bg : '#FFFFFF' }]}
+                allowFontScaling={false}
+              >
+                {tr('vtExitFullscreen')}
               </Text>
-            ) : null
-          )}</View>
-        )}
+            </Pressable>
 
-        <View style={[styles.fsSheet, { borderColor: t.border }]}>
-          {reviewSheet ?? (
-            <View style={styles.centre}>
-              <Text style={[styles.centreText, { color: t.textSecondary }]}>
-                {tr('histEmptyWaveform')}
-              </Text>
-            </View>
+            <View style={styles.fsTools}>{tools(true)}</View>
+            <View style={styles.fsZoom}>{zoomControls(true)}</View>
+          </View>
+
+          {/* One line under the bar, still outside the paper. */}
+          {(caliperReadout || hintKey || compareStatus) && (
+            <View style={styles.fsStatus}>{caliperReadout ?? compareStatus ?? (
+              hintKey ? (
+                <Text style={[styles.hint, { color: t.textSecondary }]} numberOfLines={1}>
+                  {tr(hintKey)}
+                </Text>
+              ) : null
+            )}</View>
           )}
+
+          <View style={[styles.fsSheet, { borderColor: t.border }]}>
+            {reviewSheet ?? (
+              <View style={styles.centre}>
+                <Text style={[styles.centreText, { color: t.textSecondary }]}>
+                  {tr('histEmptyWaveform')}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {sheets}
@@ -1266,7 +1294,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  toolbar: { flexDirection: 'row', gap: 7, paddingHorizontal: 14, paddingTop: 9, paddingBottom: 4 },
+  /* Seven 44 pt tools + six gaps + the padding = 364 pt, which is the widest
+     this row may be: it has to survive a 375 pt screen (SE, 13 mini) without
+     clipping the last tool. Adding an eighth means shrinking ToolToggle, not
+     shrinking the gap again. */
+  toolbar: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 9, paddingBottom: 4 },
   /* Fixed height so the trace's size does not depend on which tool is on. */
   statusRow: { height: 28, justifyContent: 'center', paddingHorizontal: 14 },
   compareRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1376,8 +1408,9 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
-// v3.0.0 — The header is a GLASS bar the measurements scroll under, earning its
-//          edge only once something is behind it. Full screen puts its bar IN
-//          FLOW and insets the whole screen, so neither the bar nor the notch
-//          covers a trace, and carries its own labelled way out. The comparison
-//          status line is now the way in to moving the ghost.
+// v4.0.0 — Comparison becomes its own toolbar tool and its own explaining sheet
+//          instead of three rows under the filters; the ⋯ sheet is filters only.
+//          Full screen moves its safe-area padding to an inner view so an
+//          overlay's scrim covers the whole display rather than stopping at the
+//          inset — and every sheet raised from here is now in tree, which is
+//          what stops landscape from killing the app.

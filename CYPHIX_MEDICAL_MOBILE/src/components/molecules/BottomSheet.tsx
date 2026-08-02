@@ -11,26 +11,34 @@
    looks like it is IN FRONT OF the thing you were just reading, which is
    exactly the relationship a modal has to its page.
 
-   So one file owns it, and every sheet gets the same:
+   ★ v0.18.0: and none of that could work until the `Modal` went. A Modal
+   is its own window, so the blur had nothing behind it to sample and fell
+   back to — precisely — a grey rectangle. Presentation now lives in
+   `OverlayLayer`, in tree, where the page is really there to blur. Read
+   that file before changing anything here.
 
-     • The scrim BLURS the page instead of dimming it. What is behind stays
-       recognisable, so the sheet reads as temporary.
-     • The panel is `GlassSurface` — Apple's Liquid Glass on iOS 26+, a real
+   What this owns:
+     • 28 pt corners, a hairline edge, a shadow that lifts it off the page,
+       and a grabber that says "this can be dismissed".
+     • `GlassSurface` — Apple's Liquid Glass on iOS 26+, a real
        `dimezisBlurView` blur on Android, never a translucent rectangle
-       pretending to be one (see that file).
-     • 28 pt corners, a hairline top edge, a shadow that lifts it off the
-       page, and a grabber that says "this can be dismissed".
-     • Tapping the scrim closes it — the first thing a user tries.
+       pretending to be one.
+     • A height ceiling measured from the WINDOW, not a percentage: the
+       panel's own height is content-driven, so a percentage would have
+       nothing to resolve against.
 
    Content is the caller's. This owns presentation only.
    ================================================================== */
 
 import type { ReactNode } from 'react';
-import { BlurView } from 'expo-blur';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlassSurface from '@/components/atoms/GlassSurface';
+import OverlayLayer from '@/components/atoms/OverlayLayer';
 import { useIsDark, useTheme } from '@/theme/useTheme';
+
+/** Fraction of the window a sheet may cover before it should be a screen. */
+const MAX_FRACTION = 0.82;
 
 interface Props {
   visible: boolean;
@@ -40,7 +48,7 @@ interface Props {
   /** Accessible name for the tap-to-dismiss scrim. */
   closeLabel: string;
   children: ReactNode;
-  /** Extra bottom padding beyond the home indicator (e.g. for a footer). */
+  /** Pinned below the scrolling content (e.g. a Cancel button). */
   footer?: ReactNode;
 }
 
@@ -55,30 +63,10 @@ export default function BottomSheet({
   const t = useTheme();
   const dark = useIsDark();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      {/* The scrim blurs rather than dims. `pointerEvents` is the Pressable's
-          job, so the blur sits inside it rather than over it. */}
-      <Pressable style={styles.scrimTouch} onPress={onClose} accessibilityLabel={closeLabel}>
-        <BlurView
-          intensity={dark ? 24 : 18}
-          tint={dark ? 'dark' : 'light'}
-          // Without this Android draws NO blur at all — see GlassSurface.
-          experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
-          style={StyleSheet.absoluteFill}
-        >
-          {/* A little darkening under the blur, so white text on the sheet
-              still has contrast over a white page. */}
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: dark ? 'rgba(0,0,0,0.30)' : 'rgba(15,23,42,0.18)' },
-            ]}
-          />
-        </BlurView>
-      </Pressable>
-
+    <OverlayLayer visible={visible} onRequestClose={onClose} closeLabel={closeLabel} enter="slide">
       <GlassSurface
         dark={dark}
         fallbackTint={dark ? 'rgba(19, 27, 44, 0.80)' : 'rgba(255, 255, 255, 0.82)'}
@@ -87,6 +75,7 @@ export default function BottomSheet({
           {
             borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)',
             paddingBottom: Math.max(insets.bottom, 14),
+            maxHeight: height * MAX_FRACTION,
           },
         ]}
       >
@@ -95,12 +84,11 @@ export default function BottomSheet({
         {children}
         {footer}
       </GlassSurface>
-    </Modal>
+    </OverlayLayer>
   );
 }
 
 const styles = StyleSheet.create({
-  scrimTouch: { flex: 1 },
   panel: {
     /* 28 pt is the current platform radius for a presented sheet; the old
        22 read as a card, not as a sheet. `overflow: hidden` is what makes the
@@ -113,7 +101,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 10,
     paddingTop: 8,
-    maxHeight: '82%',
     // Lifts the panel off the page. iOS reads shadow*, Android elevation.
     shadowColor: '#000',
     shadowOpacity: 0.22,
@@ -139,5 +126,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// v1.0.0 — One modern sheet chrome for the whole app: blurred scrim, glass
-//          panel, 28 pt corners, grabber, lift. Replaces the flat grey rectangle.
+// v2.0.0 — Presented through OverlayLayer instead of Modal, which is the only
+//          way the blur has anything to sample. Height ceiling measured from
+//          the window rather than a percentage of an auto-height parent.

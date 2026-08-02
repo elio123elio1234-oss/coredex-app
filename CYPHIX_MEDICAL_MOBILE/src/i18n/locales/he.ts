@@ -356,10 +356,12 @@ export const he: Record<TranslationKey, string> = {
   vtZoomOut: 'הקטנה (יותר זמן)',
   vtFit: 'התאמה',
   vtLayoutStack: 'כל 6',
-  /* סרגל הכלים הוא אייקונים; אלה מה שקורא־המסך מקריא, ומה שמכותרת גיליון
-     ה-⋯. כל מה שצריך מילים כדי להיות כנה — שלבי הסינון, ההשוואה, מצבי
-     היישור — יושב שם ולא מאחורי פיקטוגרמה שצריך לנחש. */
-  vtMoreTools: 'מסננים והשוואה',
+  /* סרגל הכלים הוא אייקונים; אלה מה שקורא־המסך מקריא, ומה שמכותרת הגיליונות
+     שמאחוריהם. כל מה שצריך מילים כדי להיות כנה — שלבי הסינון, מצבי היישור —
+     יושב בגיליון ולא מאחורי פיקטוגרמה שצריך לנחש.
+     ההשוואה חלקה את הגיליון הזה ודווחה פעמיים כבלתי מובנת; יש לה עכשיו
+     גיליון משלה (ראו CompareSheet). */
+  vtMoreTools: 'מסננים',
   vtFullscreen: 'מסך מלא',
   vtExitFullscreen: 'יציאה ממסך מלא',
   ovAlignSection: 'יישור השניים לפי',
@@ -388,6 +390,25 @@ export const he: Record<TranslationKey, string> = {
   ovWarpFailed: 'לא ניתן ליישר — זוהו מעט מדי פעימות',
   ovShifted: 'הוזז {ms} ms',
   ovDragHint: 'גררו את ההקלטה האפורה — לצדדים בזמן, למעלה/למטה בגובה',
+
+  /* גיליון ההשוואה. הוא נפתח בהסבר מה העקבה האפורה, כי זו השאלה שיש לקורא
+     ברגע שהיא מופיעה. */
+  ovExplain:
+    'הניחו הקלטה קודמת מעל הנוכחית. היא מצוירת באפור, מאחורי העקבה הנוכחית, כך ששינוי בצורה נראה כשתי העקבות מתרחקות זו מזו.',
+  ovLegendThis: 'ההקלטה הזו',
+  ovLegendGhost: 'ההקלטה הקודמת',
+  ovPick: 'להשוות מול',
+  ovNeedTwo: 'להשוואה צריך הקלטה שנייה. בצעו בדיקה נוספת והיא תופיע כאן.',
+  ovMoveTitle: 'הזזת העקבה האפורה',
+  ovMoveStep: 'כל לחיצה מזיזה משבצת קטנה אחת — 40 ms לרוחב, 0.1 mV לגובה.',
+  ovEarlier: 'מוקדם יותר',
+  ovLater: 'מאוחר יותר',
+  ovUp: 'למעלה',
+  ovDown: 'למטה',
+  ovOffset: 'הוזזה {ms} ms · {mv} mV',
+  ovResetPos: 'למרכז מחדש',
+  ovDragInstead: 'לגרור במקום',
+  ovRemove: 'הפסקת ההשוואה',
 
   /* ── הערות על הרשומה ── */
   noteTitle: 'הערה קלינית',
@@ -431,5 +452,5 @@ export const he: Record<TranslationKey, string> = {
   exit: 'יציאה',
 };
 
-// v1.0.0 — Hebrew locale (RTL); wording copied from the web locale where the
-//          web already says the same sentence.
+// v1.1.0 — Hebrew locale (RTL); wording copied from the web locale where the
+//          web already says the same sentence. Adds the comparison sheet’s copy.

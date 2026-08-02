@@ -362,10 +362,12 @@ export const en = {
   vtFit: 'Fit',
   vtLayoutStack: 'All 6',
   /* The toolbar is icons; these are what a screen reader announces, and what
-     the ⋯ sheet is titled. Anything that needs WORDS to be honest — the
-     filter stages, the comparison, the alignment modes — lives in that sheet
-     rather than behind a pictogram somebody would have to guess at. */
-  vtMoreTools: 'Filters & comparison',
+     the sheets behind them are titled. Anything that needs WORDS to be honest
+     — the filter stages, the alignment modes — lives in a sheet rather than
+     behind a pictogram somebody would have to guess at.
+     Comparison used to share this sheet and was reported twice as
+     incomprehensible; it now has its own (see CompareSheet). */
+  vtMoreTools: 'Filters',
   vtFullscreen: 'Full screen',
   vtExitFullscreen: 'Exit full screen',
   ovAlignSection: 'Line the two up by',
@@ -394,6 +396,26 @@ export const en = {
   ovWarpFailed: 'could not align — too few beats detected',
   ovShifted: 'shifted {ms} ms',
   ovDragHint: 'Drag the grey recording — sideways in time, up/down in height',
+
+  /* The comparison sheet. It opens by saying what the grey trace IS, because
+     that is the question a reader has the moment one appears. */
+  ovExplain:
+    'Lay an earlier recording over this one. It is drawn in grey, behind the current trace, so a change in shape shows up as the two pulling apart.',
+  ovLegendThis: 'This recording',
+  ovLegendGhost: 'The earlier one',
+  ovPick: 'Compare with',
+  ovNeedTwo:
+    'Comparing needs a second recording. Take another exam and it will appear here.',
+  ovMoveTitle: 'Move the grey trace',
+  ovMoveStep: 'One tap moves it one small square — 40 ms across, 0.1 mV up.',
+  ovEarlier: 'Earlier',
+  ovLater: 'Later',
+  ovUp: 'Up',
+  ovDown: 'Down',
+  ovOffset: 'Moved {ms} ms · {mv} mV',
+  ovResetPos: 'Centre it again',
+  ovDragInstead: 'Drag it instead',
+  ovRemove: 'Stop comparing',
 
   /* ── Notes on the record ── */
   noteTitle: 'Clinical note',
@@ -441,4 +463,6 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
-// v1.0.0 — English locale: the canonical key set for the mobile app.
+// v1.1.0 — English locale: the canonical key set for the mobile app. Adds the
+//          comparison sheet’s copy — the legend, the nudge pad and the sentence
+//          that says what the grey trace actually is.

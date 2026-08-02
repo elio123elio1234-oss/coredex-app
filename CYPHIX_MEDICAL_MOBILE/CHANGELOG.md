@@ -1,5 +1,103 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.18.0 — 2026-08-02 — One import caused two of the three
+
+Three findings came back from the device. Two of them are the same bug, and
+v0.17.0's changelog entry for the sheets was **wrong** — it claimed the sheets
+now rise on a blurred material. They did not, and could not have. The code was
+right and the container made it impossible.
+
+### ★ `Modal` is a separate window, and that ruins blur *and* landscape
+
+React Native's `Modal` is not a view in your tree. On iOS it is its own
+`UIViewController` in its own window; on Android it is a `Dialog` with its own
+`Window`. Two consequences, both of which the user reported:
+
+> "when you press FILTERS AND COMPARISONS it still looks dated with the grey
+> rectangle coming up over it"
+
+`UIVisualEffectView` — what `expo-blur` wraps — samples the layer tree of **its
+own window**, and dimezis' `BlurView` snapshots **its own decor view**. Inside a
+`Modal` that content is empty, so both degrade to a flat translucent rectangle
+over black. Every glass sheet shipped in v0.17.0 was, on the device, precisely
+the grey rectangle it was written to replace. No radius, tint or intensity
+could have fixed it: **a material needs something behind it, and a Modal is
+defined by having nothing behind it.**
+
+> "in FULL SCREEN when working with MARKERS or something else it crashes the
+> app in Expo Go"
+
+`Modal` defaults to `supportedOrientations={['portrait']}`. Present one while
+the app is landscape and UIKit raises `UIApplicationInvalidInterfaceOrientation`
+— an uncaught Objective-C exception, so the **process dies**. Full screen is
+landscape; MARK → tap a beat → the composer presents → gone. This was not a
+JS error and would never have appeared in a red box.
+
+Note that `supportedOrientations` would have silenced the crash and left the
+grey rectangle. Only leaving `Modal` fixes both, so overlays are now rendered
+**in tree** — an absolutely-positioned layer inside the screen's own hierarchy
+(`components/atoms/OverlayLayer.tsx`). The blur samples the real page, and
+there is no second window to disagree about orientation.
+
+What that file had to take over from `Modal`, none of which is optional:
+
+- **Android's hardware back button** (`onRequestClose`). Without it the first
+  thing an Android user tries leaves the *app* rather than the sheet.
+- **The keyboard.** A bottom-anchored sheet in tree is not lifted by the OS, so
+  the layer measures the keyboard and rides above it. `KeyboardAvoidingView`
+  came out of `AnnotationComposer` rather than being kept "just in case" — it
+  does not work inside an absolutely-positioned host, so it was only ever a
+  second thing that could move the panel without ever having moved it.
+- **Mount/unmount around the animation**, so a closed sheet costs nothing and a
+  closing one is still visible while it leaves.
+
+Full screen's safe-area padding moved to an inner view at the same time: an
+overlay's scrim is positioned against its parent's *content* box, so a padded
+root would have left four unblurred strips around every sheet.
+
+### Comparison stops being a settings list for an unexplained feature
+
+> "COMPARE WITH is still not clear or intuitive to use"
+
+Reported twice now, and the reason is in the sentence: what was on screen was
+**a list of settings for a feature that had never been explained**, three rows
+down the middle of the filters sheet, whose only control — moving the reference
+trace — was a drag on a surface the reader had no reason to think was
+draggable. v0.17.0 added a visible handle. That fixed *discovering the drag*
+and not *understanding the feature*.
+
+It is now its own toolbar tool and its own sheet (`CompareSheet`), which
+answers the three questions a reader actually has, in order:
+
+1. **What is this?** One sentence, plus a **legend**. The grey trace is the
+   most confusing thing on the screen the moment it appears; a two-swatch key
+   costs 20 pt and removes the confusion outright. The swatch is painted from
+   the colour the ghost is really drawn in, so it cannot drift out of date.
+2. **Compared with what?** The studies, as a plain radio picker.
+3. **How do I move it?** **Buttons.** A drag is the nicest way to move the
+   ghost and the worst way to discover that moving it is possible. One tap =
+   **one small square** — 40 ms across, 0.1 mV up — which is the unit a reader
+   is already looking at. The drag is still there, offered in the sheet as an
+   alternative rather than being the secret.
+
+The alignment modes stay, as a segmented control with the selected mode's
+**consequence printed underneath**. "Never measure off a warped trace" is not a
+footnote; it is simultaneously the reason the mode exists and the reason it is
+dangerous.
+
+The ⋯ sheet is therefore filters only, and is titled that.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18. **None of which would have caught either bug fixed here**
+— a Modal typechecks, bundles and passes doctor whether or not it crashes in
+landscape, and a blur that samples an empty window is well-formed code. This is
+the second consecutive release where every real defect was invisible to all
+three checks. The module stays 🔬 in `PARITY.md`.
+
+---
+
 ## v0.17.0 — 2026-08-02 — Seven more from the device
 
 ### ★ The cursor bug was real, and it is the same class as last time
