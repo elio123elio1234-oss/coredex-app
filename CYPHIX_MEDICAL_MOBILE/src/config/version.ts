@@ -1,8 +1,24 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.18.0';
+export const APP_VERSION = '0.18.1';
 export const APP_BUILD_LABEL =
-  'Sheets leave Modal — the crash in landscape and the grey rectangle were the same import; comparison gets its own explaining sheet';
+  'One blur instead of two so sheets open without flicker, and the ghost is dragged on the paper again — the arrow buttons are gone';
+
+// v0.18.1 — Two from the device, and one of them is me over-correcting.
+//           SPEED: the scrim was a second full-screen blur under the panel's
+//           own, and its opacity was ANIMATED — which makes a
+//           UIVisualEffectView re-compute the whole effect every frame, and on
+//           Android stacks two experimental dimezisBlurViews. That is what
+//           "slow, and it flickers a bit" was. The scrim is now a plain
+//           animated colour and the panel keeps the material, which is also
+//           what the platform's own sheets do. Timings 260/170 → 210/140.
+//           MOVING THE GHOST: the arrow pad is gone; the paper is draggable
+//           everywhere again, with the labelled handle kept over it. Lining two
+//           heartbeats up is judged continuously by eye, and 40 ms steps in a
+//           list you have to look away at cannot close that loop. The drag was
+//           never the problem — its invisibility was, and the handle fixes that
+//           without taking the gesture away. The offset now reads out on screen
+//           while dragging, so the sheet never has to be reopened for a number.
 
 // v0.18.0 — Three from the device, two of them one root cause. React Native's
 //           `Modal` is a SEPARATE WINDOW, and that fact caused both remaining

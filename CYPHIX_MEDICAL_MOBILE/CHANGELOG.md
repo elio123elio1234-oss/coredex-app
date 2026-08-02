@@ -1,5 +1,62 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.18.1 — 2026-08-02 — Two blurs were one too many, and I over-corrected on the drag
+
+### The sheets were slow and flickered on open
+
+> "when you open it, it's slow and flickers a bit"
+
+Both symptoms, one cause: **two full-screen blurs, the outer one with an
+animated opacity.**
+
+- The scrim blurred the page, and the panel's own `GlassSurface` then blurred
+  *that*. On Android `dimezisBlurView` is experimental and snapshots a view
+  tree per frame; two stacked is visibly janky.
+- Worse, the scrim's opacity was what animated. A `UIVisualEffectView`
+  **re-computes its effect whenever its opacity changes**, so fading one in
+  re-renders a full-screen blur on every frame of the presentation. That is the
+  flicker, exactly.
+
+The scrim is now a plain animated colour — free to fade, native driver, no
+effect to re-compute — and the **panel keeps the blur**, sampling the page
+straight through the dim. Nothing was lost: this is what the platform itself
+does, since an iOS sheet dims its backdrop and reserves the material for the
+sheet. A blur was moved, not removed. Timings came down too, 260/170 → 210/140.
+
+### The ghost is dragged on the paper again
+
+> "the moving like before, with everything on the screen, not like now with
+> buttons"
+
+Fair, and v0.18.0's arrow pad was me answering the wrong question for the
+second time running. The complaint was never that the drag was hard to *do* —
+it was that nothing said it existed. v0.17.0 fixed that with a labelled handle.
+Then v0.18.0 replaced the gesture anyway, and made it worse: **lining two
+heartbeats up is a direct-manipulation task.** The eye judges the fit
+continuously, and none of that loop survives being expressed as 40 ms steps in
+a list you have to look away from the trace to press.
+
+So: the paper is draggable **everywhere** in ghost mode (the interaction), the
+labelled handle stays over it (the affordance that says so), and both carry
+their own responder instance rather than sharing one — a responder keeps its
+running totals in a single closure, and two nodes sharing them would be the
+mid-gesture-rebuild bug in a new hat.
+
+The comparison sheet keeps its job — what the grey trace is, which study, how
+they are aligned and what that costs — and now ends with one primary action
+that **closes it** and hands the trace back draggable. Comparing two waveforms
+is done by looking at them; a panel over the thing being judged is the last
+thing that helps. The offset reads out on the status line while dragging, so
+the sheet never has to be reopened just to see a number.
+
+### Verified
+
+`tsc --noEmit` clean · both `expo export`s bundle · `expo-doctor` 18/18. As
+ever, none of that can see a frame rate or a gesture. Both fixes here are
+exactly the kind only a hand on a device can confirm.
+
+---
+
 ## v0.18.0 — 2026-08-02 — One import caused two of the three
 
 Three findings came back from the device. Two of them are the same bug, and

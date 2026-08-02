@@ -50,8 +50,9 @@
      mark      a tap labels that point; a tap on a marker opens it.
      cursor    a tap drops a reference line across every lead; a tap on a
                line removes it; a drag anywhere along it moves it.
-     ghost     the comparison trace is dragged, via a visible handle, and
-               the sheet stops scrolling for the duration.
+     ghost     the comparison trace is dragged ANYWHERE on the paper, with
+               a labelled handle over it saying so; the sheet stops scrolling
+               for the duration.
 
    ══ WHY EVERY HANDLE IS DRAGGED RELATIVELY ══
    Everything moves by the finger's DELTA, never to its absolute position.
@@ -278,6 +279,15 @@ export default function EcgReviewSheet({
     onStepMm: onGhostDrag,
     setDragging,
   });
+  /* Its own instance, not the same handlers spread on two views: a responder
+     keeps its running totals in one closure, and two nodes sharing them is the
+     mid-gesture-rebuild bug wearing a different hat. */
+  const ghostSurface = useDragHandle({
+    enabled: mode === 'ghost',
+    ptPerMm,
+    onStepMm: onGhostDrag,
+    setDragging,
+  });
 
   /* ── Taps on the paper itself ── */
   const handleBandPress = (lead: LimbLeadName, locationX: number) => {
@@ -468,31 +478,48 @@ export default function EcgReviewSheet({
         </ScrollView>
       )}
 
-      {/* ══ THE GHOST HANDLE ══
-          ★ Fixed to the VIEWPORT, not to the paper, and visible.
+      {/* ══ MOVING THE GHOST: THE WHOLE SHEET, PLUS A HANDLE ══
+          ★ Both, and each fixes the other's failure.
 
-          v0.16.0 made the whole sheet the drag surface, which is invisible:
-          there was nothing on screen saying the grey trace could be moved, so
-          it read as "compare does not work". A labelled handle in the middle
-          of the sheet is a thing you can see and reach, and it stays put while
-          the ghost slides — which is also why it cannot live inside the
-          horizontal scroll. */}
+          v0.16.0 made the whole sheet the drag surface with nothing on screen
+          saying so — invisible, so it read as "compare does not work".
+          v0.18.0 answered that with buttons in a sheet, which was DISCOVERABLE
+          and wrong: you cannot line two heartbeats up by 40 ms steps while
+          looking at a list. Aligning traces is a direct-manipulation task —
+          the eye judges the fit continuously, and only a finger on the thing
+          itself closes that loop.
+
+          So the paper is draggable EVERYWHERE (the interaction), and a
+          labelled handle sits over it (the affordance that says so). The
+          handle is fixed to the VIEWPORT, not the paper, so it stays put while
+          the ghost slides under it — which is also why it cannot live inside
+          the horizontal scroll. */}
       {mode === 'ghost' && (
-        /* A full-width row centres it reliably; `alignSelf` on an absolutely
-           positioned child is not a centring mechanism you want to rely on. */
-        <View style={styles.ghostHandleRow} pointerEvents="box-none">
+        <>
+          {/* The surface first, so the handle draws over it. Both carry the
+              same spec; whichever the finger lands on behaves identically. */}
           <View
-            style={[styles.ghostHandle, { backgroundColor: t.brandNavy }]}
-            {...ghostHandle}
-            accessibilityRole="adjustable"
-            accessibilityLabel={ghostHandleLabel}
-          >
-            <Ionicons name="move" size={18} color="#FFFFFF" />
-            <Text style={styles.ghostHandleText} numberOfLines={1} allowFontScaling={false}>
-              {ghostHandleLabel}
-            </Text>
+            style={StyleSheet.absoluteFill}
+            {...ghostSurface}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
+          {/* A full-width row centres it reliably; `alignSelf` on an absolutely
+              positioned child is not a centring mechanism to rely on. */}
+          <View style={styles.ghostHandleRow} pointerEvents="box-none">
+            <View
+              style={[styles.ghostHandle, { backgroundColor: t.brandNavy }]}
+              {...ghostHandle}
+              accessibilityRole="adjustable"
+              accessibilityLabel={ghostHandleLabel}
+            >
+              <Ionicons name="move" size={18} color="#FFFFFF" />
+              <Text style={styles.ghostHandleText} numberOfLines={1} allowFontScaling={false}>
+                {ghostHandleLabel}
+              </Text>
+            </View>
           </View>
-        </View>
+        </>
       )}
     </View>
   );
@@ -738,6 +765,11 @@ const styles = StyleSheet.create({
   },
   ghostHandleText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '700', maxWidth: 200 },
 });
+
+// v3.1.0 — Ghost dragging is the WHOLE sheet again, with the labelled handle
+//          kept over it. Buttons were discoverable and wrong: lining two
+//          heartbeats up is a direct-manipulation task, and a 40 ms step in a
+//          list cannot close the loop between the eye and the fit.
 
 // v3.0.0 — Responders are built ONCE and read live state through a ref: a
 //          `useMemo` keyed on callback props rebuilt them mid-gesture, which

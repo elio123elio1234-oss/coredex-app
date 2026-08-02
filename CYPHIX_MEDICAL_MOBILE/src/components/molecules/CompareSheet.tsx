@@ -18,11 +18,14 @@
         the single most confusing thing on the screen when it appears; a
         two-swatch key costs 20 pt and removes the confusion entirely.
      2. **Compared with what?** The studies, as a picker.
-     3. **How do I move it?** BUTTONS. A drag gesture is the nicest way to
-        move the ghost and the worst way to discover that moving it is
-        possible; taps do not have to be discovered, and one tap = one
-        small square is the unit a reader is already thinking in. The drag
-        stays, offered here as an alternative rather than as the secret.
+     3. **How do I move it?** By dragging it, on the paper — and this sheet
+        gets out of the way and says so. v0.18.0 tried arrow buttons here
+        instead. They were discoverable and they were WRONG: lining two
+        heartbeats up is a direct-manipulation task, judged continuously by
+        eye, and nothing about that loop survives being expressed as 40 ms
+        steps in a list you have to look away at. Discoverability was
+        never the drag's problem — invisibility was, and a labelled handle
+        on the strip fixes that without taking the gesture away.
 
    The alignment modes stay, but as a segmented control with the selected
    mode's consequence printed underneath — "never measure off a warped
@@ -43,13 +46,6 @@ import type { OverlayAlignMode } from '@/features/history/hooks/useOverlayRecord
 import { useTranslation } from '@/i18n/useTranslation';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
-
-/**
- * One tap = one small square of ECG paper: 1 mm, which is 40 ms across at
- * 25 mm/s and 0.1 mV up at 10 mm/mV. Deliberately NOT a pixel or a percent —
- * the reader is looking at millimetre graph paper and thinking in it.
- */
-const NUDGE_MM = 1;
 
 export interface CompareStudy {
   id: string;
@@ -73,9 +69,8 @@ interface Props {
   degraded: boolean;
   offsetMs: number;
   offsetMv: number;
-  onNudge: (dxMm: number, dyMm: number) => void;
   onReset: () => void;
-  /** Hand the reader back to the strip in drag mode. */
+  /** Close, and hand the reader back to the strip with the ghost draggable. */
   onDragOnStrip: () => void;
   /** The colour the ghost is actually drawn in, so the legend cannot lie. */
   ghostColor: string;
@@ -94,7 +89,6 @@ export default function CompareSheet({
   degraded,
   offsetMs,
   offsetMv,
-  onNudge,
   onReset,
   onDragOnStrip,
   ghostColor,
@@ -113,11 +107,6 @@ export default function CompareSheet({
   const pick = (id: string | null) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPick(id);
-  };
-
-  const nudge = (dxMm: number, dyMm: number) => {
-    void Haptics.selectionAsync();
-    onNudge(dxMm, dyMm);
   };
 
   const choice = (id: string | null, label: string, hint?: string) => {
@@ -152,29 +141,6 @@ export default function CompareSheet({
       </Pressable>
     );
   };
-
-  /** One arrow in the nudge pad. */
-  const pad = (
-    icon: keyof typeof Ionicons.glyphMap,
-    label: string,
-    dxMm: number,
-    dyMm: number,
-  ) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={() => nudge(dxMm, dyMm)}
-      style={({ pressed }) => [
-        styles.pad,
-        { borderColor: t.border, backgroundColor: pressed ? t.accentSoft : 'transparent' },
-      ]}
-    >
-      <Ionicons name={icon} size={17} color={t.textPrimary} />
-      <Text style={[styles.padText, { color: t.textPrimary }]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
-  );
 
   return (
     <BottomSheet
@@ -269,25 +235,40 @@ export default function CompareSheet({
               {tr('ovMoveTitle')}
             </Text>
             <Text style={[styles.modeHint, { color: t.textSecondary, textAlign: align }]}>
-              {tr('ovMoveStep')}
+              {tr('ovDragHint')}
             </Text>
 
-            <View style={styles.padGrid}>
-              {pad('arrow-back', tr('ovEarlier'), -NUDGE_MM, 0)}
-              {pad('arrow-forward', tr('ovLater'), NUDGE_MM, 0)}
-              {/* Screen y grows DOWNWARD, so "up" is a negative step. */}
-              {pad('arrow-up', tr('ovUp'), 0, -NUDGE_MM)}
-              {pad('arrow-down', tr('ovDown'), 0, NUDGE_MM)}
+            {/* The primary action closes this sheet. Comparing two traces is
+                done by LOOKING at them, so the last thing the reader needs is
+                a panel over the thing they are judging. */}
+            <View style={styles.moveWrap}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityHint={tr('ovDragHint')}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  onDragOnStrip();
+                }}
+                style={({ pressed }) => [
+                  styles.moveBtn,
+                  { backgroundColor: t.brandNavy, opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <Ionicons name="move" size={18} color="#FFFFFF" />
+                <Text style={styles.moveText}>{tr('ovMoveOnScreen')}</Text>
+              </Pressable>
             </View>
 
-            <Text style={[styles.offset, { color: t.textSecondary, textAlign: align }]}>
-              {tr('ovOffset', {
-                ms: String(Math.round(offsetMs)),
-                mv: offsetMv.toFixed(2),
-              })}
-            </Text>
-
             <View style={[styles.tail, rtl && styles.rowRtl]}>
+              <Text
+                style={[styles.offset, { color: t.textSecondary, textAlign: align }]}
+                numberOfLines={1}
+              >
+                {tr('ovOffset', {
+                  ms: String(Math.round(offsetMs)),
+                  mv: offsetMv.toFixed(2),
+                })}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
@@ -300,17 +281,6 @@ export default function CompareSheet({
                 ]}
               >
                 <Text style={[styles.tailText, { color: t.textPrimary }]}>{tr('ovResetPos')}</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityHint={tr('ovDragHint')}
-                onPress={onDragOnStrip}
-                style={({ pressed }) => [
-                  styles.tailBtn,
-                  { borderColor: t.border, opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Text style={[styles.tailText, { color: t.brandNavy }]}>{tr('ovDragInstead')}</Text>
               </Pressable>
             </View>
 
@@ -364,41 +334,31 @@ const styles = StyleSheet.create({
   warn: { fontSize: 12.5, fontWeight: '700', paddingHorizontal: 14, paddingTop: 5 },
   status: { fontSize: 12, paddingHorizontal: 14, paddingTop: 4 },
 
-  padGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-  },
-  /* Two per row on any phone, and each is a 46 pt target — the whole point of
-     offering taps is that they cannot be missed. */
-  pad: {
-    flexGrow: 1,
-    flexBasis: '46%',
+  moveWrap: { paddingHorizontal: 14, paddingTop: 11 },
+  moveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 46,
+    gap: 9,
+    height: 50,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
   },
-  padText: { fontSize: 14, fontWeight: '700' },
+  moveText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '700' },
   offset: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 12.5,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    paddingHorizontal: 14,
-    paddingTop: 9,
   },
 
-  tail: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingTop: 10 },
+  tail: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 12 },
   tailBtn: {
-    flex: 1,
+    flexShrink: 0,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     alignItems: 'center',
   },
   tailText: { fontSize: 13.5, fontWeight: '700' },
@@ -423,7 +383,7 @@ const styles = StyleSheet.create({
   doneText: { fontSize: 16, fontWeight: '700' },
 });
 
-// v1.0.0 — Comparison gets its own sheet: what the grey trace IS (legend),
-//          which study, how they are lined up and what that costs, and BUTTONS
-//          for moving it — one small square per tap — instead of only a drag
-//          nobody could discover.
+// v2.0.0 — The arrow pad is gone. Moving the ghost belongs on the paper, where
+//          the eye judges the fit; this sheet explains, picks and aligns, then
+//          gets out of the way with one primary action that closes it and makes
+//          the trace draggable.

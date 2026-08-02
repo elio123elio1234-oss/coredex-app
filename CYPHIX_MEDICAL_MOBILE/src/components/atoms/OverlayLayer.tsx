@@ -43,11 +43,31 @@
        callers no longer need `KeyboardAvoidingView`, which does not work
        reliably inside an absolutely-positioned host anyway.
 
+   ══════════════════════════════════════════════════════════════════
+   ★ THE SCRIM IS A DIM, NOT A BLUR — AND THAT IS A PERFORMANCE FIX
+   ══════════════════════════════════════════════════════════════════
+   v0.18.0 blurred the scrim as well as the panel. Reported as "slow, and
+   it flickers a bit when it opens", which is exactly what that costs:
+
+     • **Two full-screen blurs stacked.** The panel's own `GlassSurface`
+       samples what is behind it — which was a second blur sampling the
+       page. Android's `dimezisBlurView` is experimental and snapshots a
+       view tree per frame; two of them is visibly janky.
+     • **Animating a blur's opacity is the expensive case.** A
+       `UIVisualEffectView` re-renders its effect whenever its opacity
+       changes, so fading one in re-computes a full-screen blur every
+       frame of the animation. That is the flicker, precisely.
+
+   So the scrim is a plain animated colour — free to fade, native
+   driver, no effect to re-compute — and the PANEL keeps the blur,
+   sampling the page straight through the dim. Which is also what the
+   platform itself does: an iOS sheet dims its backdrop and reserves the
+   material for the sheet. Nothing was lost; a blur was moved.
+
    Callers own their own panel: this positions and animates it only.
    ================================================================== */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BlurView } from 'expo-blur';
 import {
   Animated,
   BackHandler,
@@ -61,9 +81,11 @@ import {
 } from 'react-native';
 import { useIsDark } from '@/theme/useTheme';
 
-/** Rising is slower than leaving — a sheet should arrive, not appear. */
-const IN_MS = 260;
-const OUT_MS = 170;
+/** Rising is slower than leaving — a sheet should arrive, not appear. Both are
+    short: this was 260/170 and read as "slow" on the device, and a modal that
+    keeps you waiting is one you notice instead of one you use. */
+const IN_MS = 210;
+const OUT_MS = 140;
 
 interface Props {
   visible: boolean;
@@ -163,33 +185,20 @@ export default function OverlayLayer({
       style={[styles.host, slide ? styles.hostBottom : styles.hostCentre]}
       pointerEvents="box-none"
     >
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: progress }]}>
+      {/* A plain colour: free to fade on the native driver, and it gives the
+          panel's own blur the contrast it needs over a white page. */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          { opacity: progress, backgroundColor: dark ? 'rgba(0,0,0,0.46)' : 'rgba(15,23,42,0.30)' },
+        ]}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={closeLabel}
           onPress={onRequestClose}
           style={StyleSheet.absoluteFill}
-        >
-          {/* Now that this is in tree, the blur has the actual page to sample:
-              the study stays recognisable behind the sheet, which is what
-              tells a reader the sheet is temporary. */}
-          <BlurView
-            intensity={dark ? 26 : 20}
-            tint={dark ? 'dark' : 'light'}
-            // Without this Android draws NO blur at all — see GlassSurface.
-            experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
-            style={StyleSheet.absoluteFill}
-          >
-            {/* A little darkening under the blur, so text on the panel keeps
-                its contrast over a white page. */}
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: dark ? 'rgba(0,0,0,0.30)' : 'rgba(15,23,42,0.18)' },
-              ]}
-            />
-          </BlurView>
-        </Pressable>
+        />
       </Animated.View>
 
       <Animated.View
@@ -219,6 +228,11 @@ const styles = StyleSheet.create({
   hostBottom: { justifyContent: 'flex-end' },
   hostCentre: { justifyContent: 'center', paddingHorizontal: 26 },
 });
+
+// v1.1.0 — The scrim is a plain dim, not a second full-screen blur. Two stacked
+//          blurs, one of them with an ANIMATED opacity (which makes a
+//          UIVisualEffectView re-compute every frame), is what "slow, and it
+//          flickers when it opens" was. The panel keeps the material.
 
 // v1.0.0 — Overlays are presented IN TREE, not in a Modal: a Modal is its own
 //          window, so its blur has nothing to sample (the grey rectangle) and

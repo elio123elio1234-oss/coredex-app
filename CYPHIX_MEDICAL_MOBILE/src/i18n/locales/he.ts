@@ -400,14 +400,9 @@ export const he: Record<TranslationKey, string> = {
   ovPick: 'להשוות מול',
   ovNeedTwo: 'להשוואה צריך הקלטה שנייה. בצעו בדיקה נוספת והיא תופיע כאן.',
   ovMoveTitle: 'הזזת העקבה האפורה',
-  ovMoveStep: 'כל לחיצה מזיזה משבצת קטנה אחת — 40 ms לרוחב, 0.1 mV לגובה.',
-  ovEarlier: 'מוקדם יותר',
-  ovLater: 'מאוחר יותר',
-  ovUp: 'למעלה',
-  ovDown: 'למטה',
+  ovMoveOnScreen: 'להזיז על המסך',
   ovOffset: 'הוזזה {ms} ms · {mv} mV',
   ovResetPos: 'למרכז מחדש',
-  ovDragInstead: 'לגרור במקום',
   ovRemove: 'הפסקת ההשוואה',
 
   /* ── הערות על הרשומה ── */
@@ -452,5 +447,6 @@ export const he: Record<TranslationKey, string> = {
   exit: 'יציאה',
 };
 
-// v1.1.0 — Hebrew locale (RTL); wording copied from the web locale where the
-//          web already says the same sentence. Adds the comparison sheet’s copy.
+// v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
+//          web already says the same sentence. Carries the comparison sheet’s
+//          copy; the nudge-pad wording is gone with the pad.

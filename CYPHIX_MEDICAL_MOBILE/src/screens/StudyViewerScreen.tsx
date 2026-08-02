@@ -42,8 +42,10 @@
    It used to be three rows in the middle of the ⋯ sheet, under the filters,
    and was reported twice as impossible to understand or use. It now has its
    own toolbar button and its own sheet, which opens by saying what the grey
-   trace IS and offers BUTTONS for moving it (see `CompareSheet`). The drag
-   is still there; it is no longer the only way.
+   trace IS (see `CompareSheet`) and then gets out of the way: MOVING the
+   ghost happens on the paper, by dragging it, and how far it has been taken
+   reads out here on the status line. A sheet full of arrow buttons was tried
+   and rejected — you cannot line two heartbeats up while looking at a list.
    ================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -727,9 +729,14 @@ export default function StudyViewerScreen() {
       : tr('ovShifted', { ms: String(Math.round(overlay.shiftMs)) })
     : null;
 
-  /* The comparison status line is the way back INTO the comparison sheet,
-     where the ghost can be moved with buttons. It used to jump straight to a
-     drag mode whose handle the reader had never seen. */
+  /** The reader's OWN nudge, live. Shown on screen while dragging so the sheet
+      never has to be reopened to read a number off it. */
+  const ghostMovedMs = view ? (manualShift / view.sampleRate) * 1000 : 0;
+  const ghostMovedMv = -ghostOffsetMm / 10;
+
+  /* The comparison status line: what is being compared, and — once the ghost
+     is draggable — how far the reader has taken it. Tapping it returns to the
+     comparison sheet. */
   const compareStatus =
     overlayActive && overlay ? (
       <Pressable
@@ -751,7 +758,12 @@ export default function StudyViewerScreen() {
           style={[styles.hint, { color: mode === 'ghost' ? t.accentLive : t.textSecondary }]}
           numberOfLines={1}
         >
-          {tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} · {alignmentSaid}
+          {mode === 'ghost'
+            ? `${tr('ovDragHint')} · ${tr('ovOffset', {
+                ms: String(Math.round(ghostMovedMs)),
+                mv: ghostMovedMv.toFixed(2),
+              })}`
+            : `${tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} · ${alignmentSaid}`}
         </Text>
       </Pressable>
     ) : null;
@@ -825,10 +837,8 @@ export default function StudyViewerScreen() {
           degraded={Boolean(overlay?.degraded)}
           /* The reader's OWN nudge, not the total shift: the algorithm's
              contribution is already stated on the line above. */
-          offsetMs={view ? (manualShift / view.sampleRate) * 1000 : 0}
-          /* Screen down is a SMALLER voltage, and 10 mm is 1 mV. */
-          offsetMv={-ghostOffsetMm / 10}
-          onNudge={onGhostDrag}
+          offsetMs={ghostMovedMs}
+          offsetMv={ghostMovedMv}
           onReset={resetGhost}
           onDragOnStrip={() => {
             setSheet('none');
@@ -1407,6 +1417,10 @@ const styles = StyleSheet.create({
   annText: { flex: 1, flexShrink: 1, fontSize: 14.5, fontWeight: '600' },
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
+
+// v4.1.0 — The ghost moves on the paper again, and how far it has been taken
+//          reads out on the status line while it is being dragged, so nothing
+//          has to be reopened for a number.
 
 // v4.0.0 — Comparison becomes its own toolbar tool and its own explaining sheet
 //          instead of three rows under the filters; the ⋯ sheet is filters only.

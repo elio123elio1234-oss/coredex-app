@@ -407,14 +407,9 @@ export const en = {
   ovNeedTwo:
     'Comparing needs a second recording. Take another exam and it will appear here.',
   ovMoveTitle: 'Move the grey trace',
-  ovMoveStep: 'One tap moves it one small square — 40 ms across, 0.1 mV up.',
-  ovEarlier: 'Earlier',
-  ovLater: 'Later',
-  ovUp: 'Up',
-  ovDown: 'Down',
+  ovMoveOnScreen: 'Move it on the screen',
   ovOffset: 'Moved {ms} ms · {mv} mV',
   ovResetPos: 'Centre it again',
-  ovDragInstead: 'Drag it instead',
   ovRemove: 'Stop comparing',
 
   /* ── Notes on the record ── */
@@ -463,6 +458,6 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
-// v1.1.0 — English locale: the canonical key set for the mobile app. Adds the
-//          comparison sheet’s copy — the legend, the nudge pad and the sentence
-//          that says what the grey trace actually is.
+// v1.2.0 — English locale: the canonical key set for the mobile app. Carries
+//          the comparison sheet’s copy — the legend and the sentence saying
+//          what the grey trace is. The nudge-pad wording is gone with the pad.
