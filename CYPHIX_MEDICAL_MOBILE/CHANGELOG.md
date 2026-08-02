@@ -1,5 +1,87 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.17.0 — 2026-08-02 — Seven more from the device
+
+### ★ The cursor bug was real, and it is the same class as last time
+
+> "in CURSOR when you place one and then move it and lift your finger, it
+> moves with the finger and gets deleted instead of staying where I put it"
+
+Both halves of that sentence come from one line. The handlers close over the
+running totals that turn `gestureState`'s *distance since touch-down* into
+*distance since the last event*. `useMemo(..., [onTap, onStep])` rebuilt the
+responder between move events — those props are fresh arrows on every parent
+render, and every drag re-renders the parent — and a rebuilt responder starts
+with `last = 0` and `travelled = 0`. So:
+
+- each move applied the **full** distance from touch-down → it ran away from
+  the finger;
+- release read `travelled === 0` as a **tap** → and a tap on a reference line
+  removes it.
+
+Responders are now built **once** and read everything live through a ref.
+`useDragHandle` exists so no call site can reintroduce it. **Never put a
+callback prop in a responder's dependency array.**
+
+### The sheets stop looking like 1998
+
+> "when the BASELINE SMOOTH tab and the MARKER tab open, make it beautiful,
+> it looks like an app from the 80s with a grey rectangle"
+
+Fair. They were a flat `surface`-coloured rectangle over flat black. Every
+sheet and dialog now rises in one shared `BottomSheet`: the scrim **blurs** the
+page instead of dimming it, the panel is `GlassSurface` (Apple Liquid Glass on
+iOS 26+, a real `dimezisBlurView` blur on Android — never a translucent
+rectangle pretending to be one), 28 pt corners, a grabber, a hairline edge and
+a shadow that lifts it. Fields and chips inside are a translucent wash of the
+panel rather than solid blocks pasted onto it. `ConfirmDialog` gets the same
+treatment — the study you are about to delete stays recognisable behind it,
+which is the point of confirming against a specific record.
+
+### Full screen: three separate faults
+
+> "the top bar goes over the waves" · "there's the island on iPhone and you
+> didn't account for it, it hides parts of the wave" · "there's no exit button"
+
+1. The bar **floated over the paper**. It is now in flow above the sheet.
+2. The screen was **full-bleed**. In landscape the notch/Dynamic Island is on a
+   SIDE, so the first ~50 pt of every lead sat under it. The whole screen is
+   now inset on all four edges. A cut-off ECG is not a cosmetic problem.
+3. The only way out was the toolbar's contract icon. There is now a **labelled
+   exit button**, first in the bar.
+
+### The measurements header
+
+> "it's nice that the tabs stick, but it looks dated — content just scrolls
+> beneath with no threshold"
+
+The header is now a blurred glass bar that content genuinely passes **under**,
+and it earns a hairline edge only once something has actually gone behind it
+(6 pt of scroll). A line drawn over an unscrolled page is a boundary between
+nothing and nothing.
+
+### Compare, and the missing marker
+
+> "in COMPARE I still don't understand how to move the reference wave"
+
+Because the drag surface was invisible — the whole sheet was draggable and
+nothing said so. Ghost mode now shows a **labelled handle** in the middle of
+the sheet, and the comparison status line is itself the way in: tap it and the
+ghost becomes movable.
+
+> "in MARKER, as soon as I lift my finger the sheet comes up and nothing is
+> left on screen for the doctor to know where they left the marker"
+
+The point being composed is now drawn on the trace — a dashed hollow marker, so
+it cannot be mistaken for a saved one — for as long as the sheet is open.
+
+### Verified
+
+`tsc --noEmit` clean · `expo export` bundles for iOS and Android ·
+`expo-doctor` 18/18. Which is what the two previous rounds also passed. Every
+fix here is a gesture or a material, and both are invisible to all three — this
+needs a phone.
+
 ## v0.16.0 — 2026-08-01 — The viewer meets a real finger
 
 v0.15.0 typechecked, bundled and passed `expo-doctor`, and the CHANGELOG said

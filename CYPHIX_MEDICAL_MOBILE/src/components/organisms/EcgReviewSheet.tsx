@@ -13,38 +13,55 @@
    ══ ONE SCROLL, SIX LEADS ══
    All the leads live inside ONE horizontal scroll, so they always show the
    same instant. Six independently scrolled strips would let a reader
-   compare 2.1 s of one lead against 3.4 s of another without noticing — a
-   genuine misread, not a glitch. The lead labels are pinned outside it.
+   compare 2.1 s of one lead against 3.4 s of another without noticing.
 
    ══════════════════════════════════════════════════════════════════
-   ★ WHY EVERY HANDLE TURNS THE SCROLL OFF THE MOMENT IT IS TOUCHED
+   ★ TWO GESTURE BUGS THIS FILE HAS ALREADY PAID FOR — READ BEFORE EDITING
    ══════════════════════════════════════════════════════════════════
-   v0.15.0 shipped every draggable thing here as a `PanResponder` that
-   claimed the gesture on MOVE. It does not work, and the failure is not
-   subtle: a `ScrollView` that has already begun panning OWNS the responder,
-   and a child asking for it afterwards is simply ignored. So grabbing a
-   caliper crosshair scrolled the paper underneath it — the crosshair moved
-   AND the trace moved, and the measurement could not be placed at all.
-   Cursor lines and markers had the same defect for the same reason.
 
-   The fix is to decide before the pan can start: every handle claims on
-   TOUCH-DOWN (`onStartShouldSetPanResponder`) and sets `dragging` in its
-   `onPanResponderGrant`, which flips `scrollEnabled` to false in the same
-   commit. The ScrollView therefore never begins. Release turns it back on.
+   1. CLAIMING ON MOVE LOSES TO THE SCROLL (v0.15.0).
+      A `ScrollView` that has begun panning OWNS the responder; a child
+      asking afterwards is ignored. Grabbing a caliper crosshair scrolled
+      the paper underneath it, and markers and reference lines could not be
+      moved at all. Every handle now claims on TOUCH-DOWN and sets
+      `dragging` in `onPanResponderGrant`, which flips `scrollEnabled` off
+      in the same commit, so the scroll never starts.
 
-   A handle that must ALSO be tappable (a marker opens its composer; a
-   reference line is removed by tapping it) cannot use a `Pressable` inside
-   the responder — the responder swallows it. So tap and drag are told apart
-   on RELEASE by how far the finger travelled: under `TAP_SLOP` it was a tap.
+   2. ★ A `PanResponder` REBUILT MID-GESTURE LOSES ITS MEMORY (v0.16.0).
+      The handlers close over the running totals that turn `gestureState`'s
+      "distance since touch-down" into "distance since the last event". If
+      the responder is re-created between two move events — which
+      `useMemo(..., [onTap, onStep])` guarantees, because those props are
+      fresh arrows on every parent render, and every drag re-renders the
+      parent — then:
+        • `last` is 0 again, so each event applies the FULL distance from
+          touch-down. The thing runs away from the finger.
+        • `travelled` is 0 again, so RELEASE reads the drag as a TAP.
+      On a reference line that meant: drag it, lift, and it jumped and then
+      DELETED ITSELF (tap = remove). Exactly the reported behaviour.
+
+      So responders are built ONCE (`useMemo(..., [])`) and read everything
+      live through a ref. **Never put a callback prop in a responder's
+      dependency array.**
+
+   ══ ONE POINTER, ONE JOB ══
+     read      scroll and read. Taps focus a lead.
+     calipers  two draggable crosshairs; everything else still scrolls.
+     mark      a tap labels that point; a tap on a marker opens it.
+     cursor    a tap drops a reference line across every lead; a tap on a
+               line removes it; a drag anywhere along it moves it.
+     ghost     the comparison trace is dragged, via a visible handle, and
+               the sheet stops scrolling for the duration.
 
    ══ WHY EVERY HANDLE IS DRAGGED RELATIVELY ══
-   Everything here moves by the finger's DELTA, never to its absolute
-   position. A fingertip is ~9 mm across — at 25 mm/s that is 360 ms of ECG,
-   wider than a QRS — so an absolute drag hides the thing being positioned
-   under the hand that is positioning it.
+   Everything moves by the finger's DELTA, never to its absolute position.
+   A fingertip is ~9 mm across — at 25 mm/s that is 360 ms of ECG, wider
+   than a QRS — so an absolute drag hides the thing being positioned under
+   the hand positioning it.
    ================================================================== */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   PanResponder,
   Pressable,
@@ -68,6 +85,12 @@ import { useTheme } from '@/theme/useTheme';
 
 export type ViewerMode = 'read' | 'calipers' | 'mark' | 'cursor' | 'ghost';
 
+/** The point a composer is currently open on, drawn provisionally. */
+export interface PendingMark {
+  lead: LimbLeadName;
+  sampleIndex: number;
+}
+
 interface Props {
   view: RecordingView;
   leads: LimbLeadName[];
@@ -78,10 +101,14 @@ interface Props {
   ghost: OverlayView | null;
   ghostOffsetMm: number;
   annotations: RecordingAnnotation[];
+  /** Marker being composed right now — drawn so the reader keeps their place. */
+  pending: PendingMark | null;
   lockedCursorsSec: number[];
   mode: ViewerMode;
   calipers: UseCalipersResult;
   palette: StripPalette;
+  /** Copy for the ghost handle, supplied by the screen (i18n stays out). */
+  ghostHandleLabel: string;
   onTapLead: (lead: LimbLeadName) => void;
   onTapPoint: (lead: LimbLeadName, sampleIndex: number, timeSec: number) => void;
   onTapAnnotation: (annotation: RecordingAnnotation) => void;
@@ -103,10 +130,70 @@ const LINE_GRAB = 14;
 
 /**
  * Tap within this many millimetres of a reference line to REMOVE it instead
- * of dropping another. Exported because the screen owns the list and so owns
- * the toggle; 2.5 mm is 100 ms of paper, comfortably inside a fingertip.
+ * of dropping another. 2.5 mm is 100 ms of paper, comfortably inside a
+ * fingertip.
  */
 export const CURSOR_HIT_MM = 2.5;
+
+/** Everything a live drag needs, read through a ref — never a dependency. */
+interface DragSpec {
+  enabled: boolean;
+  ptPerMm: number;
+  /** Incremental, in millimetres of paper. */
+  onStepMm?: (dxMm: number, dyMm: number) => void;
+  /** Absolute offset in points since touch-down (for a live preview). */
+  onOffsetPt?: (dxPt: number) => void;
+  onTap?: () => void;
+  /** Total point offset at release, when it was a drag and not a tap. */
+  onCommitPt?: (dxPt: number) => void;
+  setDragging: (v: boolean) => void;
+}
+
+/**
+ * ★ Builds the responder ONCE. See trap 2 in the header — this is the whole
+ * reason the hook exists rather than a `useMemo` at each call site.
+ */
+function useDragHandle(spec: DragSpec): GestureResponderHandlers {
+  const live = useRef(spec);
+  live.current = spec;
+
+  return useMemo(() => {
+    let last = { x: 0, y: 0 };
+    let travelled = 0;
+    const reset = () => {
+      last = { x: 0, y: 0 };
+      travelled = 0;
+      live.current.setDragging(false);
+    };
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => live.current.enabled,
+      onStartShouldSetPanResponderCapture: () => live.current.enabled,
+      onPanResponderGrant: () => {
+        last = { x: 0, y: 0 };
+        travelled = 0;
+        live.current.setDragging(true);
+      },
+      onPanResponderMove: (_e, g) => {
+        const s = live.current;
+        if (!s.enabled || s.ptPerMm === 0) return;
+        travelled = Math.max(travelled, Math.abs(g.dx) + Math.abs(g.dy));
+        s.onStepMm?.((g.dx - last.x) / s.ptPerMm, (g.dy - last.y) / s.ptPerMm);
+        s.onOffsetPt?.(g.dx);
+        last = { x: g.dx, y: g.dy };
+      },
+      onPanResponderRelease: (_e, g) => {
+        const s = live.current;
+        if (travelled < TAP_SLOP) s.onTap?.();
+        else s.onCommitPt?.(g.dx);
+        reset();
+      },
+      onPanResponderTerminate: reset,
+      // A drag must not be interrupted by an ancestor half-way through.
+      onPanResponderTerminationRequest: () => false,
+    }).panHandlers;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
 
 export default function EcgReviewSheet({
   view,
@@ -117,10 +204,12 @@ export default function EcgReviewSheet({
   ghost,
   ghostOffsetMm,
   annotations,
+  pending,
   lockedCursorsSec,
   mode,
   calipers,
   palette,
+  ghostHandleLabel,
   onTapLead,
   onTapPoint,
   onTapAnnotation,
@@ -141,8 +230,7 @@ export default function EcgReviewSheet({
   const traceMm = CAL_WIDTH_MM + view.durationSec * STANDARD_MM_PER_SEC;
   /* Blank paper past the end of the recording when the window is wider than
      the trace — which is what "fit all six leads to the height" produces on a
-     landscape phone. A printout does exactly this; the alternative is a sheet
-     that does not reach the edge of its own panel. */
+     landscape phone. A printout does exactly this. */
   const paperMm = Math.max(traceMm, windowMm);
   const ptPerMm = box.width > 0 ? box.width / windowMm : 0;
   const bandH = stripHeightMm * ptPerMm;
@@ -162,8 +250,7 @@ export default function EcgReviewSheet({
 
   /* Drop the calipers into the CURRENTLY VISIBLE window the moment the tool
      is switched on. Placing them at the start of the recording instead would
-     put them off screen for anyone who had scrolled — a measuring tool that
-     appears to do nothing. */
+     put them off screen for anyone who had scrolled. */
   const activeLead = calipers.lead ?? leads[0];
   const { a: caliperA, place: placeCalipers, nudge: nudgeCaliper } = calipers;
   useEffect(() => {
@@ -173,65 +260,24 @@ export default function EcgReviewSheet({
 
   const caliperBandIndex = Math.max(0, leads.indexOf(activeLead as LimbLeadName));
 
-  /**
-   * The one gesture factory. Everything draggable on this sheet goes through
-   * it so they cannot drift apart — and so the scroll-freeze can never be
-   * forgotten on one of them.
-   */
-  const grabber = (opts: {
-    enabled: boolean;
-    onStepMm: (dxMm: number, dyMm: number) => void;
-    onTap?: () => void;
-    onCommit?: () => void;
-  }) => {
-    const last = { x: 0, y: 0 };
-    let travelled = 0;
-    const end = () => {
-      last.x = 0;
-      last.y = 0;
-      setDragging(false);
-    };
-    return PanResponder.create({
-      /* ★ On START, not on move — see the header. By the time a move event
-         arrives the ScrollView already owns the gesture. */
-      onStartShouldSetPanResponder: () => opts.enabled,
-      onStartShouldSetPanResponderCapture: () => opts.enabled,
-      onPanResponderGrant: () => {
-        travelled = 0;
-        setDragging(true);
-      },
-      onPanResponderMove: (_e, g) => {
-        if (ptPerMm === 0) return;
-        travelled = Math.max(travelled, Math.abs(g.dx) + Math.abs(g.dy));
-        opts.onStepMm((g.dx - last.x) / ptPerMm, (g.dy - last.y) / ptPerMm);
-        last.x = g.dx;
-        last.y = g.dy;
-      },
-      onPanResponderRelease: () => {
-        // Under the slop the finger did not really move: it was a tap.
-        if (travelled < TAP_SLOP) opts.onTap?.();
-        else opts.onCommit?.();
-        end();
-      },
-      onPanResponderTerminate: end,
-    });
-  };
-
-  const handleA = useMemo(
-    () => grabber({ enabled: mode === 'calipers', onStepMm: (dx, dy) => nudgeCaliper('a', dx, dy) }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, nudgeCaliper, ptPerMm],
-  );
-  const handleB = useMemo(
-    () => grabber({ enabled: mode === 'calipers', onStepMm: (dx, dy) => nudgeCaliper('b', dx, dy) }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, nudgeCaliper, ptPerMm],
-  );
-  const ghostGrab = useMemo(
-    () => grabber({ enabled: mode === 'ghost', onStepMm: onGhostDrag }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, onGhostDrag, ptPerMm],
-  );
+  const handleA = useDragHandle({
+    enabled: mode === 'calipers',
+    ptPerMm,
+    onStepMm: (dx, dy) => nudgeCaliper('a', dx, dy),
+    setDragging,
+  });
+  const handleB = useDragHandle({
+    enabled: mode === 'calipers',
+    ptPerMm,
+    onStepMm: (dx, dy) => nudgeCaliper('b', dx, dy),
+    setDragging,
+  });
+  const ghostHandle = useDragHandle({
+    enabled: mode === 'ghost',
+    ptPerMm,
+    onStepMm: onGhostDrag,
+    setDragging,
+  });
 
   /* ── Taps on the paper itself ── */
   const handleBandPress = (lead: LimbLeadName, locationX: number) => {
@@ -268,8 +314,8 @@ export default function EcgReviewSheet({
               horizontal
               directionalLockEnabled
               /* Frozen while a handle is held, and while the ghost is being
-                 nudged. This is the whole fix for "the waves move when I grab
-                 the marker" — see the header. */
+                 nudged. This is the fix for "the waves move when I grab the
+                 marker" — see trap 1 in the header. */
               scrollEnabled={mode !== 'ghost' && !dragging}
               showsHorizontalScrollIndicator
               scrollEventThrottle={32}
@@ -291,15 +337,14 @@ export default function EcgReviewSheet({
                       /* ★ EVERY lead, not just II. The rate is computed from
                          one rhythm strip, but a reader wants to see which
                          beats it came from wherever they happen to be
-                         looking — which is exactly what the web viewer does
-                         (`showRPeaks` there is per-lead too). The report is
-                         the one place that marks II alone, because a printed
-                         sheet is a statement rather than a tool. */
+                         looking — which is what the web viewer does. The
+                         REPORT is the one place that marks II alone, because
+                         a printed sheet is a statement rather than a tool. */
                       rPeaks={showRPeaks ? view.analysis.rPeaks : undefined}
                       palette={palette}
                     />
 
-                    {/* Tap layer. Below the markers in z-order so a tap on a
+                    {/* Tap layer, below the markers in z-order so a tap on a
                         marker opens it rather than creating another. */}
                     <Pressable
                       style={StyleSheet.absoluteFill}
@@ -307,6 +352,25 @@ export default function EcgReviewSheet({
                       accessibilityLabel={`Lead ${lead}`}
                       onPress={(e) => handleBandPress(lead, e.nativeEvent.locationX)}
                     />
+
+                    {/* The point whose composer is open. Dashed and hollow so
+                        it cannot be mistaken for a saved marker — but present,
+                        because a clinician who taps a beat and then reads a
+                        sheet must not lose which beat it was. */}
+                    {pending?.lead === lead && (
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.pendingWrap,
+                          { left: xMmToPt(CAL_WIDTH_MM + pending.sampleIndex * mmPerSample) },
+                        ]}
+                      >
+                        <View
+                          style={[styles.pendingLine, { height: bandH, borderColor: t.accentLive }]}
+                        />
+                        <View style={[styles.pendingDot, { borderColor: t.accentLive }]} />
+                      </View>
+                    )}
 
                     {annotations
                       .filter((a) => a.lead === lead)
@@ -368,7 +432,7 @@ export default function EcgReviewSheet({
                       bandH={bandH}
                       sheetH={bandH * leads.length}
                       color={t.accent}
-                      responder={handleA.panHandlers}
+                      responder={handleA}
                     />
                     <CaliperHandle
                       left={xMmToPt(calipers.b.xMm)}
@@ -377,25 +441,15 @@ export default function EcgReviewSheet({
                       bandH={bandH}
                       sheetH={bandH * leads.length}
                       color={t.accent}
-                      responder={handleB.panHandlers}
+                      responder={handleB}
                     />
                   </>
-                )}
-
-                {/* Ghost drag surface — the one gesture that owns the whole
-                    sheet, and only in its own mode. */}
-                {mode === 'ghost' && (
-                  <View
-                    style={[styles.ghostSurface, { height: bandH * leads.length }]}
-                    {...ghostGrab.panHandlers}
-                  />
                 )}
               </View>
             </ScrollView>
 
             {/* Pinned lead labels. Outside the scroll, backed with the paper
-                colour so the millimetre grid does not run through the
-                letters. */}
+                colour so the millimetre grid does not run through them. */}
             <View pointerEvents="none" style={styles.gutter}>
               {leads.map((lead) => (
                 <View key={lead} style={{ height: bandH }}>
@@ -413,13 +467,40 @@ export default function EcgReviewSheet({
           </View>
         </ScrollView>
       )}
+
+      {/* ══ THE GHOST HANDLE ══
+          ★ Fixed to the VIEWPORT, not to the paper, and visible.
+
+          v0.16.0 made the whole sheet the drag surface, which is invisible:
+          there was nothing on screen saying the grey trace could be moved, so
+          it read as "compare does not work". A labelled handle in the middle
+          of the sheet is a thing you can see and reach, and it stays put while
+          the ghost slides — which is also why it cannot live inside the
+          horizontal scroll. */}
+      {mode === 'ghost' && (
+        /* A full-width row centres it reliably; `alignSelf` on an absolutely
+           positioned child is not a centring mechanism you want to rely on. */
+        <View style={styles.ghostHandleRow} pointerEvents="box-none">
+          <View
+            style={[styles.ghostHandle, { backgroundColor: t.brandNavy }]}
+            {...ghostHandle}
+            accessibilityRole="adjustable"
+            accessibilityLabel={ghostHandleLabel}
+          >
+            <Ionicons name="move" size={18} color="#FFFFFF" />
+            <Text style={styles.ghostHandleText} numberOfLines={1} allowFontScaling={false}>
+              {ghostHandleLabel}
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────
-   Sub-parts. Kept in this file rather than split out because none of
-   them means anything without the sheet's coordinate system.
+   Sub-parts. Kept in this file because none of them means anything
+   without the sheet's coordinate system.
    ──────────────────────────────────────────────────────────────── */
 
 function CaliperSpan({
@@ -455,9 +536,9 @@ function CaliperHandle({
 }) {
   return (
     <>
-      {/* The vertical line runs the WHOLE sheet at low opacity, so the
-          instant being measured is visible on every lead even though the
-          measurement itself belongs to one. */}
+      {/* The vertical line runs the WHOLE sheet at low opacity, so the instant
+          being measured is visible on every lead even though the measurement
+          belongs to one. */}
       <View
         pointerEvents="none"
         style={[styles.caliperLine, { left, height: sheetH, backgroundColor: color }]}
@@ -472,10 +553,7 @@ function CaliperHandle({
       />
       {/* The grab pad is bigger than the ring and INVISIBLE. A visible 52 pt
           disc on the trace would hide the waveform it is measuring. */}
-      <View
-        style={[styles.grab, { left: left - GRAB_PAD, top: top + yPt - GRAB_PAD }]}
-        {...responder}
-      />
+      <View style={[styles.grab, { left: left - GRAB_PAD, top: top + yPt - GRAB_PAD }]} {...responder} />
     </>
   );
 }
@@ -499,36 +577,13 @@ function CursorLine({
   onStepMm: (dxMm: number) => void;
   onTap: () => void;
 }) {
-  const responder = useMemo(() => {
-    let lastX = 0;
-    let travelled = 0;
-    const end = () => {
-      lastX = 0;
-      setDragging(false);
-    };
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => grabbable,
-      onStartShouldSetPanResponderCapture: () => grabbable,
-      onPanResponderGrant: () => {
-        travelled = 0;
-        setDragging(true);
-      },
-      onPanResponderMove: (_e, g) => {
-        if (ptPerMm === 0) return;
-        travelled = Math.max(travelled, Math.abs(g.dx));
-        onStepMm((g.dx - lastX) / ptPerMm);
-        lastX = g.dx;
-      },
-      onPanResponderRelease: () => {
-        /* A tap ON the line removes it; a drag moves it. Both live on the
-           same target because a reference line is a thin thing and giving it
-           two separate hit areas would mean neither is comfortable. */
-        if (travelled < TAP_SLOP) onTap();
-        end();
-      },
-      onPanResponderTerminate: end,
-    });
-  }, [grabbable, ptPerMm, onStepMm, onTap, setDragging]);
+  const responder = useDragHandle({
+    enabled: grabbable,
+    ptPerMm,
+    onStepMm: (dxMm) => onStepMm(dxMm),
+    onTap,
+    setDragging,
+  });
 
   return (
     <>
@@ -540,10 +595,7 @@ function CursorLine({
           vertical scroll a 48 pt tab at y = 0 is off screen, which is what
           made a dropped line impossible to move at all. */}
       {grabbable && (
-        <View
-          style={[styles.cursorGrab, { left: left - LINE_GRAB, height }]}
-          {...responder.panHandlers}
-        >
+        <View style={[styles.cursorGrab, { left: left - LINE_GRAB, height }]} {...responder}>
           <View style={[styles.cursorTab, { backgroundColor: color }]} />
         </View>
       )}
@@ -579,41 +631,28 @@ function AnnotationPin({
   const [dragPt, setDragPt] = useState(0);
   const color = colors[tone];
 
-  const responder = useMemo(() => {
-    let dx = 0;
-    const end = () => {
-      dx = 0;
+  const responder = useDragHandle({
+    enabled: draggable,
+    ptPerMm,
+    onOffsetPt: setDragPt,
+    onTap: () => {
       setDragPt(0);
-      setDragging(false);
-    };
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => draggable,
-      onStartShouldSetPanResponderCapture: () => draggable,
-      onPanResponderGrant: () => {
-        dx = 0;
-        setDragging(true);
-      },
-      onPanResponderMove: (_e, g) => {
-        dx = g.dx;
-        setDragPt(g.dx);
-      },
-      /* Committed ONCE on release, not on every move: the mutation is an
-         in-place PATCH so it could not duplicate anyway, but writing on every
-         frame would still be ~60 round trips to the store for one change. */
-      onPanResponderRelease: () => {
-        if (Math.abs(dx) < TAP_SLOP) onTap();
-        else if (ptPerMm > 0) {
-          const shift = Math.round(dx / ptPerMm / mmPerSample);
-          onCommit(Math.max(0, annotation.sampleIndex + shift));
-        }
-        end();
-      },
-      onPanResponderTerminate: end,
-    });
-  }, [draggable, ptPerMm, mmPerSample, annotation.sampleIndex, onCommit, onTap, setDragging]);
+      onTap();
+    },
+    /* Committed ONCE on release, not on every move: the mutation is an
+       in-place PATCH so it could not duplicate anyway, but writing on every
+       frame would still be ~60 round trips to the store for one change. */
+    onCommitPt: (dxPt) => {
+      if (ptPerMm > 0) {
+        onCommit(Math.max(0, annotation.sampleIndex + Math.round(dxPt / ptPerMm / mmPerSample)));
+      }
+      setDragPt(0);
+    },
+    setDragging,
+  });
 
   return (
-    <View style={[styles.pinWrap, { left: left + dragPt }]} {...responder.panHandlers}>
+    <View style={[styles.pinWrap, { left: left + dragPt }]} {...responder}>
       <View pointerEvents="none" style={[styles.pinLine, { height: bandH, backgroundColor: color }]} />
       <View style={[styles.pinChip, { backgroundColor: color }]}>
         <Text style={styles.pinText} numberOfLines={1} allowFontScaling={false}>
@@ -640,8 +679,6 @@ const styles = StyleSheet.create({
   },
   leadChipText: { fontSize: 11.5, fontWeight: '800', letterSpacing: 0.5 },
 
-  ghostSurface: { position: 'absolute', left: 0, right: 0, top: 0 },
-
   caliperLine: { position: 'absolute', top: 0, width: 1, opacity: 0.35 },
   caliperBand: { position: 'absolute', width: 1.5 },
   caliperRing: {
@@ -659,18 +696,53 @@ const styles = StyleSheet.create({
   cursorGrab: { position: 'absolute', top: 0, width: LINE_GRAB * 2, alignItems: 'center' },
   cursorTab: { width: 14, height: 14, borderRadius: 4, marginTop: 2 },
 
-  /* The wrap's LEFT edge is the marked instant: the hairline sits at x = 0
-     and the label hangs off to its right, so the chip never covers the
-     sample it points at. */
+  pendingWrap: { position: 'absolute', top: 0, alignItems: 'flex-start' },
+  pendingLine: { position: 'absolute', top: 0, left: 0, borderLeftWidth: 1.5, borderStyle: 'dashed' },
+  pendingDot: {
+    marginTop: 4,
+    marginLeft: -5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+  },
+
+  /* The wrap's LEFT edge is the marked instant: the hairline sits at x = 0 and
+     the label hangs off to its right, so the chip never covers the sample it
+     points at. */
   pinWrap: { position: 'absolute', top: 0, alignItems: 'flex-start' },
   pinLine: { position: 'absolute', top: 0, left: 0, width: 1, opacity: 0.75 },
   pinChip: { marginTop: 2, marginLeft: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, maxWidth: 110 },
   pinText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+
+  ghostHandleRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '42%',
+    alignItems: 'center',
+  },
+  ghostHandle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+  },
+  ghostHandleText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '700', maxWidth: 200 },
 });
 
-// v2.0.0 — Every handle now claims the gesture on TOUCH-DOWN and freezes both
-//          scrolls while held (v0.15.0 claimed on move, which a ScrollView
-//          that has already begun panning ignores — so nothing was draggable).
-//          Tap and drag are told apart on release by travel. Reference lines
-//          are grabbable along their whole length. R peaks draw on every lead.
-//          The caliper readout moved out to the screen's chrome.
+// v3.0.0 — Responders are built ONCE and read live state through a ref: a
+//          `useMemo` keyed on callback props rebuilt them mid-gesture, which
+//          reset the running totals, so a dragged reference line ran away from
+//          the finger and then deleted itself on release (travel read as 0 =
+//          tap). Adds the provisional marker for the point being composed and
+//          a VISIBLE ghost handle, since an invisible drag surface reads as a
+//          feature that does not work.

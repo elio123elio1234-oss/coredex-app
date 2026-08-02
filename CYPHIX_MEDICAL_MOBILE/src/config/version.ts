@@ -1,8 +1,21 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.16.0';
+export const APP_VERSION = '0.17.0';
 export const APP_BUILD_LABEL =
-  'History viewer: nothing was draggable — every handle now freezes the scroll; landscape full screen';
+  'Glass sheets, safe-area full screen with its own way out, cursor drag fixed, visible ghost handle';
+
+// v0.17.0 — Seven more from the device. The one that was a real bug: a
+//           PanResponder rebuilt mid-gesture forgets its running totals, so a
+//           dragged reference line ran away from the finger and then DELETED
+//           itself on release (zero travel reads as a tap). Responders are now
+//           built once and read live state through a ref. Also: every sheet
+//           and dialog is a blurred glass material instead of a flat grey
+//           rectangle; full screen insets the safe area (the Dynamic Island was
+//           cutting the start of every trace in landscape), keeps its bar in
+//           flow instead of over the paper, and carries a labelled way out; the
+//           point being annotated is drawn on the trace while its sheet is
+//           open; and the comparison status line is now the way in to moving
+//           the ghost, which itself has a visible handle.
 
 // v0.16.0 — Six things the device found that no compiler could. The big one:
 //           NOTHING on the sheet was actually draggable, because a handle that

@@ -387,6 +387,9 @@ export const en = {
     'Stretch the ghost between its own P, Q, R, S and T so every feature lands on this recording’s. Compares shape, but destroys the ghost’s intervals — never measure off a warped trace.',
   ovModeManual: 'Nudge',
   ovModeManualHint: 'Move the ghost yourself.',
+  /* The label on the visible drag handle. An invisible drag surface reads as
+     a feature that does not work, which is exactly how it was reported. */
+  ovDragHandle: 'Drag to move the grey trace',
   ovWarpApplied: 'aligned on {n} landmarks — shape only, do not measure the ghost',
   ovWarpFailed: 'could not align — too few beats detected',
   ovShifted: 'shifted {ms} ms',

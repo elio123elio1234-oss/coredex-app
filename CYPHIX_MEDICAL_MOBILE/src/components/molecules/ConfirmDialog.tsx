@@ -13,9 +13,11 @@
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import GlassSurface from '@/components/atoms/GlassSurface';
 import { RADIUS } from '@/theme/tokens';
-import { useTheme } from '@/theme/useTheme';
+import { useIsDark, useTheme } from '@/theme/useTheme';
 
 interface Props {
   visible: boolean;
@@ -44,11 +46,34 @@ export default function ConfirmDialog({
   onCancel,
 }: Props) {
   const t = useTheme();
+  const dark = useIsDark();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.scrim}>
-        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+      {/* The page blurs behind the dialog rather than going flat black: the
+          study you are about to delete stays recognisable underneath, which
+          is the whole point of confirming against a specific record. */}
+      <BlurView
+        intensity={dark ? 26 : 20}
+        tint={dark ? 'dark' : 'light'}
+        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
+        style={styles.scrim}
+      >
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: dark ? 'rgba(0,0,0,0.32)' : 'rgba(15,23,42,0.20)' },
+          ]}
+          pointerEvents="none"
+        />
+        <GlassSurface
+          dark={dark}
+          fallbackTint={dark ? 'rgba(19, 27, 44, 0.86)' : 'rgba(255, 255, 255, 0.88)'}
+          style={[
+            styles.card,
+            { borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)' },
+          ]}
+        >
           <Text style={[styles.title, { color: t.textPrimary }]}>{title}</Text>
           {subject && (
             <Text style={[styles.subject, { color: destructive ? t.danger : t.textPrimary }]}>
@@ -91,20 +116,26 @@ export default function ConfirmDialog({
               <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{confirmLabel}</Text>
             </Pressable>
           </View>
-        </View>
-      </View>
+        </GlassSurface>
+      </BlurView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    paddingHorizontal: 26,
+  scrim: { flex: 1, justifyContent: 'center', paddingHorizontal: 26 },
+  card: {
+    borderRadius: 26,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    padding: 22,
+    gap: 9,
+    shadowColor: '#000',
+    shadowOpacity: 0.24,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 24,
   },
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 22, gap: 9 },
   title: { fontSize: 19, fontWeight: '800' },
   subject: { fontSize: 15, fontWeight: '700' },
   body: { fontSize: 14, lineHeight: 20.5 },
@@ -114,4 +145,5 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 15.5, fontWeight: '700' },
 });
 
-// v1.0.0 — Destructive confirmation with room for the sentence that matters.
+// v1.1.0 — Glass card over a BLURRED page rather than a flat panel over flat
+//          black: the study being deleted stays recognisable behind it.

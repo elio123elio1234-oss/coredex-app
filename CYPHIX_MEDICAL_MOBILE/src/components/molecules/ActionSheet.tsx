@@ -9,17 +9,18 @@
 
    The native pattern is a sheet from the BOTTOM: it appears where the thumb
    already is, its rows are full-width so they cannot be mis-tapped, and it
-   is dismissed by tapping away or dragging down — the two things a user
-   tries first.
+   is dismissed by tapping away or dragging down.
 
-   Same content, same ordering rule as the web menu: destructive items sit
-   below a divider, in the danger colour, never adjacent to a routine one.
+   Presentation (blurred scrim, glass panel, corners, grabber) belongs to
+   `BottomSheet`; this file is the rows. Same ordering rule as the web menu:
+   destructive items sit below a divider, in the danger colour, never
+   adjacent to a routine one.
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import BottomSheet from '@/components/molecules/BottomSheet';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -56,7 +57,6 @@ interface Props {
 
 export default function ActionSheet({ visible, title, items, cancelLabel, onClose }: Props) {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
 
   const normal = items.filter((i) => !i.danger);
   const danger = items.filter((i) => i.danger);
@@ -86,7 +86,11 @@ export default function ActionSheet({ visible, title, items, cancelLabel, onClos
           style={({ pressed }) => [
             styles.row,
             {
-              backgroundColor: pressed ? t.surfaceHover : 'transparent',
+              backgroundColor: pressed
+                ? item.danger
+                  ? t.dangerSoft
+                  : t.accentSoft
+                : 'transparent',
               opacity: item.disabled ? 0.4 : 1,
             },
           ]}
@@ -117,71 +121,42 @@ export default function ActionSheet({ visible, title, items, cancelLabel, onClos
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      {/* The scrim IS the dismiss target — tapping away is what a user tries
-          before looking for a Cancel button. */}
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={cancelLabel} />
-      <View
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: t.surface,
-            borderColor: t.border,
-            paddingBottom: Math.max(insets.bottom, 12),
-          },
-        ]}
-      >
-        <View style={[styles.grabber, { backgroundColor: t.border }]} />
-        <Text style={[styles.title, { color: t.textTertiary }]}>{title}</Text>
-
-        <ScrollView bounces={false}>
-          {normal.map(row)}
-          {danger.length > 0 && normal.length > 0 && (
-            <View style={[styles.divider, { backgroundColor: t.border }]} />
-          )}
-          {danger.map(row)}
-        </ScrollView>
-
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      closeLabel={cancelLabel}
+      footer={
         <Pressable
           accessibilityRole="button"
           onPress={onClose}
           style={({ pressed }) => [
             styles.cancel,
-            { borderColor: t.border, opacity: pressed ? 0.6 : 1 },
+            { backgroundColor: t.accentSoft, opacity: pressed ? 0.6 : 1 },
           ]}
         >
           <Text style={[styles.cancelText, { color: t.textPrimary }]}>{cancelLabel}</Text>
         </Pressable>
-      </View>
-    </Modal>
+      }
+    >
+      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+        {normal.map(row)}
+        {danger.length > 0 && normal.length > 0 && (
+          <View style={[styles.divider, { backgroundColor: t.border }]} />
+        )}
+        {danger.map(row)}
+      </ScrollView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheet: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderTopWidth: 1,
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    maxHeight: '75%',
-  },
-  grabber: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, marginBottom: 10 },
-  title: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
-    paddingHorizontal: 12,
-    paddingBottom: 6,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
     borderRadius: RADIUS.md,
   },
   rowText: { flex: 1, flexShrink: 1, gap: 2 },
@@ -190,24 +165,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingHorizontal: 14,
+    paddingTop: 14,
     paddingBottom: 2,
   },
   label: { fontSize: 16.5, fontWeight: '600' },
   hint: { fontSize: 12.5, lineHeight: 17 },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: 6, marginHorizontal: 12 },
-  cancel: {
-    marginTop: 8,
-    marginHorizontal: 4,
-    paddingVertical: 14,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 6, marginHorizontal: 14 },
+  cancel: { marginTop: 10, marginHorizontal: 4, paddingVertical: 14, borderRadius: 16, alignItems: 'center' },
   cancelText: { fontSize: 16, fontWeight: '700' },
 });
 
-// v1.1.0 — Rows can be TOGGLES (`checked`) that keep the sheet open, and can
-//          carry a `section` heading — so the filter stages and the alignment
-//          modes can leave the toolbar without losing their words.
+// v2.0.0 — Presentation moved into BottomSheet (blurred scrim + glass panel);
+//          rows keep their toggle/section behaviour and the destructive divider.

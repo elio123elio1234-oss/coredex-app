@@ -6,31 +6,29 @@
    The web reads a study in a two-column layout: the trace on the left, the
    measurements beside it, the list one click away in the sidebar. A phone
    has one column, so those three things become a LIST SCREEN and a STUDY
-   SCREEN, and the measurements move behind the second tab of the study —
-   the same split the end-of-exam report already uses.
+   SCREEN, and the measurements move behind the second tab of the study.
 
    ══════════════════════════════════════════════════════════════════
    ★ THE WAVEFORM IS THE SUBJECT, AND IT GETS THE SCREEN
    ══════════════════════════════════════════════════════════════════
-   v0.15.0 spent ~a third of a portrait phone on chrome: labelled 44 pt tool
-   chips, a headline, a separate metadata line, tabs, and a hint. On the one
-   module whose entire content is a trace, that ratio is backwards. Two
-   changes fix it, and they are different answers to the same problem:
+   Two different answers to the same problem:
 
-   1. PORTRAIT is compacted. The tools are icons (38 pt row instead of
-      ~120 pt of wrapped chips); the metadata folds into the headline; the
-      hint line only exists while a tool is on, and is replaced by the
-      caliper readout rather than stacked with it. Everything that needs
-      WORDS to be honest — the filter stages, the comparison, the alignment
-      modes — moved into a labelled sheet behind ⋯, where it can be read.
+   1. PORTRAIT compacts the chrome, and what chrome remains is a MATERIAL:
+      the header is a blurred glass bar the measurements scroll UNDER,
+      picking up a hairline only once something has actually gone behind it.
+      A header that content slides beneath with no edge and no blur is what
+      made this read as a form from 2004; a header that is opaque and static
+      just eats the trace. Neither was necessary.
 
-   2. FULL SCREEN is landscape, and it is the real answer. Rotating gives
-      the sheet ~90 % of the display with one slim bar of dense icons
-      floating over it, and it opens at the window that fits ALL SIX LEADS
-      to the height (`fitWindowMm`) — the whole study, at the clinical scale,
-      in one look. Same idea as the web's full-screen button; the rotation is
-      the part a phone adds, because a six-lead ECG is 259 × 180 mm and that
-      is a landscape shape.
+   2. FULL SCREEN is landscape, and it is the real answer. A six-lead ECG is
+      259 × 180 mm — a landscape shape — so portrait can never give it 90 %
+      of the display however hard the chrome is squeezed.
+
+      ★ In full screen the bar is IN FLOW above the sheet, not floating over
+      it, and the whole screen is inset for the safe area. In landscape the
+      notch/Dynamic Island is on a SIDE, and a full-bleed sheet puts the
+      first ~50 pt of every trace underneath it. A cut-off ECG is not a
+      cosmetic problem.
 
    Orientation is declared through `navigation.setOptions`, never
    `lockAsync` — react-native-screens stays the single owner of that API
@@ -45,7 +43,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   buildRecordingCsv,
@@ -56,6 +64,7 @@ import {
   type LimbLeadName,
   type RecordingAnnotation,
 } from '@cyphix/shared';
+import GlassSurface from '@/components/atoms/GlassSurface';
 import ToolToggle from '@/components/atoms/ToolToggle';
 import ActionSheet, { type ActionSheetItem } from '@/components/molecules/ActionSheet';
 import AnnotationComposer from '@/components/molecules/AnnotationComposer';
@@ -111,6 +120,17 @@ type Nav = {
 const ZOOM_STEP = 0.65;
 /** Tap within this many mm of a reference line to remove it (2.5 mm ≙ 100 ms). */
 const CURSOR_HIT_MM = 2.5;
+/** Points of scroll before the header earns its edge. Below this, nothing is
+    behind it yet and a line would be drawing a boundary that isn't there. */
+const HEADER_SHADOW_AT = 6;
+/** The glass bar's own bottom padding, added back when measuring it. */
+const HEADER_PAD_BOTTOM = 10;
+/**
+ * First-frame estimate of the header's height, used only until `onLayout`
+ * reports the real one. Without it the first paint puts the toolbar under the
+ * glass and then jumps — one frame, but a visible one.
+ */
+const HEADER_H_GUESS = 150;
 
 export default function StudyViewerScreen() {
   const t = useTheme();
@@ -142,10 +162,11 @@ export default function StudyViewerScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [sheetBox, setSheetBox] = useState({ width: 0, height: 0 });
+  const [headerH, setHeaderH] = useState(HEADER_H_GUESS);
+  const [scrolled, setScrolled] = useState(false);
 
   /* A patient sees only their own studies. Expressed as the QUERY ARGUMENT,
-     not as client-side filtering — the same shape the web uses, so the
-     server can enforce it the day it exists. */
+     not as client-side filtering — the same shape the web uses. */
   const selfOnly = !can('history:read') && can('history:read:self');
   const subject = selfOnly ? (user?.linkedPatientId ?? 'MOCK-SELF') : undefined;
   const list = useListRecordingsQuery({ patientId: subject, limit: HISTORY_PAGE_SIZE });
@@ -162,8 +183,7 @@ export default function StudyViewerScreen() {
     [user],
   );
 
-  /* One audit entry per study OPENED, not per render. Keyed on the id alone —
-     `recording` is a fresh object on every RTK Query render. */
+  /* One audit entry per study OPENED, not per render. */
   useEffect(() => {
     if (!recording) return;
     logAudit({
@@ -175,8 +195,7 @@ export default function StudyViewerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recording?.id]);
 
-  /* Reference lines belong to the recording they were dropped on — a new
-     study starts with a clean trace, not the previous one's markers. */
+  /* Reference lines belong to the recording they were dropped on. */
   useEffect(() => {
     setLockedCursorsSec([]);
     setSettings((s) => ({ ...s, overlayId: null, layout: 'all' }));
@@ -188,9 +207,7 @@ export default function StudyViewerScreen() {
     setGhostOffsetMm(0);
   }, [settings.overlayId, alignMode]);
 
-  /* ── Full screen is a ROTATION ──
-     Declarative, exactly like the exam route's own option, so
-     react-native-screens stays the single owner of the orientation API. */
+  /* ── Full screen is a ROTATION ── */
   useEffect(() => {
     navigation.setOptions({ orientation: fullscreen ? 'landscape' : 'portrait_up' });
   }, [navigation, fullscreen]);
@@ -217,8 +234,8 @@ export default function StudyViewerScreen() {
 
   /* Entering full screen re-fits ONCE, after the rotated layout has been
      measured — computing it from the pre-rotation box would size the sheet to
-     a portrait width and then leave it there. The ref is what makes it once:
-     without it, every re-render would drag the reader's own zoom back. */
+     a portrait width and leave it there. The ref is what makes it once:
+     without it every re-render would drag the reader's own zoom back. */
   const refitRef = useRef(false);
   useEffect(() => {
     if (!fullscreen) {
@@ -253,7 +270,7 @@ export default function StudyViewerScreen() {
     [lang],
   );
 
-  /* ── Mode switching. One tool at a time; every switch closes composers. ── */
+  /* ── Mode switching ── */
   const pickMode = (next: ViewerMode) => {
     void Haptics.selectionAsync();
     setPending(null);
@@ -264,12 +281,11 @@ export default function StudyViewerScreen() {
   const patch = (p: Partial<ViewerSettings>) => setSettings((s) => ({ ...s, ...p }));
 
   /**
-   * How far out zooming is allowed to go.
-   *
-   * NOT `MAX_WINDOW_MM` — that is only the ceiling the fit calculation needs.
-   * Past the point where either the whole recording is on screen OR all six
-   * leads fit the height, zooming out only adds blank paper, and a control
-   * that keeps responding by showing more nothing reads as broken.
+   * How far out zooming is allowed to go. NOT `MAX_WINDOW_MM` — that is only
+   * the ceiling the fit calculation needs. Past the point where either the
+   * whole recording is on screen OR all six leads fit the height, zooming out
+   * adds blank paper, and a control that responds by showing more nothing
+   * reads as broken.
    */
   const maxUsefulMm = () => Math.min(MAX_WINDOW_MM, Math.max(traceMm, fitMm));
 
@@ -285,8 +301,8 @@ export default function StudyViewerScreen() {
         (s) => Math.abs(s - timeSec) * STANDARD_MM_PER_SEC <= CURSOR_HIT_MM,
       );
       if (hit >= 0) return prev.filter((_, i) => i !== hit);
-      // Kept in insertion order, NOT sorted — a stable index is what lets a
-      // later drag move the right line.
+      // Insertion order, NOT sorted — a stable index is what lets a later drag
+      // move the right line.
       return [...prev, timeSec];
     });
 
@@ -325,11 +341,16 @@ export default function StudyViewerScreen() {
 
   const onSheetLayout = useCallback(
     (b: { width: number; height: number }) =>
-      setSheetBox((prev) =>
-        prev.width === b.width && prev.height === b.height ? prev : b,
-      ),
+      setSheetBox((prev) => (prev.width === b.width && prev.height === b.height ? prev : b)),
     [],
   );
+
+  /* Only re-render when the header actually crosses the threshold — an
+     onScroll that setStates every frame would re-run the six-lead layout. */
+  const onAnalysisScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const past = e.nativeEvent.contentOffset.y > HEADER_SHADOW_AT;
+    setScrolled((was) => (was === past ? was : past));
+  };
 
   /* ── Exports ── */
   const exportAudit = (detailText: string, ok = true) =>
@@ -459,9 +480,7 @@ export default function StudyViewerScreen() {
     onSelect: () => setSelectedId(r.id),
   }));
 
-  /* ★ Everything that needs WORDS lives here, not on the toolbar. "50 Hz",
-     "Align P-QRS-T" and "Savitzky-Golay smoothing" have no honest pictogram,
-     and guessing at one is worse than a second tap. */
+  /* Everything that needs WORDS lives here, not on the toolbar. */
   const toolItems: ActionSheetItem[] = [
     ...(features.has('filters')
       ? [
@@ -546,21 +565,26 @@ export default function StudyViewerScreen() {
   /* ── Derived display values ── */
   const align = rtl ? ('right' as const) : ('left' as const);
   const durationSec = view?.durationSec ?? 0;
-  const visibleSec = Math.min(durationSec, Math.max(0, (windowMm - CAL_WIDTH_MM) / STANDARD_MM_PER_SEC));
+  const visibleSec = Math.min(
+    durationSec,
+    Math.max(0, (windowMm - CAL_WIDTH_MM) / STANDARD_MM_PER_SEC),
+  );
   const canZoomOut = windowMm < maxUsefulMm() - 0.5;
   const canZoomIn = windowMm > MIN_WINDOW_MM + 0.5;
   const offFit = Math.abs(windowMm - fitMm) > 1;
 
   const hintKey: TranslationKey | null =
-    mode === 'mark'
-      ? 'annHintTouch'
-      : mode === 'cursor'
-        ? 'curHintTouch'
-        : mode === 'ghost'
-          ? 'ovDragHint'
-          : null;
+    mode === 'mark' ? 'annHintTouch' : mode === 'cursor' ? 'curHintTouch' : null;
 
   const palette = { ...(dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT), ghost: t.textTertiary };
+
+  /* The point a composer is open on, so the reader keeps their place while the
+     sheet covers the trace. */
+  const pendingMark = pending
+    ? { lead: pending.lead, sampleIndex: pending.sampleIndex }
+    : editing && editing.lead
+      ? { lead: editing.lead as LimbLeadName, sampleIndex: editing.sampleIndex }
+      : null;
 
   /* The tool row, shared by the portrait toolbar and the full-screen bar so
      the two can never offer different tools. */
@@ -611,22 +635,21 @@ export default function StudyViewerScreen() {
           onToggle={() => setSheet('tools')}
         />
       )}
-      <ToolToggle
-        dense={dense}
-        label={fullscreen ? tr('vtExitFullscreen') : tr('vtFullscreen')}
-        icon={fullscreen ? 'contract-outline' : 'expand-outline'}
-        active={fullscreen}
-        onToggle={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setFullscreen((f) => !f);
-        }}
-      />
+      {!fullscreen && (
+        <ToolToggle
+          dense={dense}
+          label={tr('vtFullscreen')}
+          icon="expand-outline"
+          active={false}
+          onToggle={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setFullscreen(true);
+          }}
+        />
+      )}
     </>
   );
 
-  /* The zoom control, likewise shared. The readout says how many SECONDS are
-     on screen, because the scale never changes — a percentage would be a
-     number with no clinical meaning. */
   const zoomControls = (dense: boolean) => (
     <>
       <Pressable
@@ -685,9 +708,9 @@ export default function StudyViewerScreen() {
     </>
   );
 
-  /* The live caliper readout. ★ Rendered in the CHROME, above the paper —
-     never floating on the trace, where it covers the very deflections whose
-     distance it is reporting. */
+  /* The live caliper readout. Rendered in the CHROME, above the paper — never
+     floating on the trace, where it covers the deflections whose distance it
+     is reporting. */
   const caliperReadout =
     mode === 'calipers' && calipers.delta ? (
       <View style={[styles.readout, { backgroundColor: t.brandNavy }]} pointerEvents="none">
@@ -707,6 +730,36 @@ export default function StudyViewerScreen() {
       </View>
     ) : null;
 
+  /* The comparison status line doubles as the way INTO moving the ghost. It
+     was only reachable through two levels of the ⋯ sheet, which is why
+     "compare" read as a feature with no way to use it. */
+  const compareStatus =
+    overlayActive && overlay ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={tr('ovDragHandle')}
+        onPress={() => pickMode('ghost')}
+        style={({ pressed }) => [styles.compareRow, rtl && styles.rowRtl, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        <Ionicons
+          name="move"
+          size={13}
+          color={mode === 'ghost' ? t.accentLive : t.textSecondary}
+        />
+        <Text
+          style={[styles.hint, { color: mode === 'ghost' ? t.accentLive : t.textSecondary }]}
+          numberOfLines={1}
+        >
+          {tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} ·{' '}
+          {overlay.mode === 'warp'
+            ? overlay.degraded
+              ? tr('ovWarpFailed')
+              : tr('ovWarpApplied', { n: String(overlay.anchorCount) })
+            : tr('ovShifted', { ms: String(Math.round(overlay.shiftMs)) })}
+        </Text>
+      </Pressable>
+    ) : null;
+
   const reviewSheet =
     view && recording ? (
       <EcgReviewSheet
@@ -718,10 +771,12 @@ export default function StudyViewerScreen() {
         ghost={overlayActive ? overlay : null}
         ghostOffsetMm={ghostOffsetMm}
         annotations={recording.annotations}
+        pending={pendingMark}
         lockedCursorsSec={lockedCursorsSec}
         mode={mode}
         calipers={calipers}
         palette={palette}
+        ghostHandleLabel={tr('ovDragHandle')}
         onTapLead={focusLead}
         onTapPoint={(lead, sampleIndex, timeSec) => setPending({ lead, sampleIndex, timeSec })}
         onTapAnnotation={setEditing}
@@ -841,17 +896,64 @@ export default function StudyViewerScreen() {
   );
 
   /* ══════════ FULL SCREEN ══════════
-     One slim bar over the paper, everything else gone. The bar is drawn ON
-     the sheet rather than above it so the trace keeps the full height; it is
-     the only element here that is allowed to overlap the paper, and it sits
-     in the top margin where the strips have their quietest millimetres. */
+     The bar is IN FLOW above the sheet — it never covers a trace — and the
+     whole screen is inset for the safe area, because in landscape the notch
+     is on a SIDE and a full-bleed sheet hides the first ~50 pt of every lead. */
   if (fullscreen) {
     return (
-      <View style={[styles.root, { backgroundColor: palette.paper }]}>
-        {/* Guarded rather than falling through to the portrait branch: the
-            device is already rotated, and a portrait layout drawn sideways is
-            worse than an honest message. */}
-        <View style={styles.fsSheet}>
+      <View
+        style={[
+          styles.root,
+          {
+            backgroundColor: t.bg,
+            paddingTop: Math.max(insets.top, 6),
+            paddingBottom: Math.max(insets.bottom, 6),
+            paddingLeft: Math.max(insets.left, 8),
+            paddingRight: Math.max(insets.right, 8),
+          },
+        ]}
+      >
+        <View style={[styles.fsBar, rtl && styles.rowRtl]}>
+          {/* The way out, first and unmistakable. Full screen had no exit of
+              its own — only the toolbar's contract icon, which nobody found. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr('vtExitFullscreen')}
+            hitSlop={8}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setFullscreen(false);
+            }}
+            style={({ pressed }) => [
+              styles.fsExit,
+              { backgroundColor: t.brandNavy, opacity: pressed ? 0.75 : 1 },
+            ]}
+          >
+            <Ionicons name="contract-outline" size={17} color={dark ? t.bg : '#FFFFFF'} />
+            <Text
+              style={[styles.fsExitText, { color: dark ? t.bg : '#FFFFFF' }]}
+              allowFontScaling={false}
+            >
+              {tr('vtExitFullscreen')}
+            </Text>
+          </Pressable>
+
+          <View style={styles.fsTools}>{tools(true)}</View>
+          <View style={styles.fsZoom}>{zoomControls(true)}</View>
+        </View>
+
+        {/* One line under the bar, still outside the paper. */}
+        {(caliperReadout || hintKey || compareStatus) && (
+          <View style={styles.fsStatus}>{caliperReadout ?? compareStatus ?? (
+            hintKey ? (
+              <Text style={[styles.hint, { color: t.textSecondary }]} numberOfLines={1}>
+                {tr(hintKey)}
+              </Text>
+            ) : null
+          )}</View>
+        )}
+
+        <View style={[styles.fsSheet, { borderColor: t.border }]}>
           {reviewSheet ?? (
             <View style={styles.centre}>
               <Text style={[styles.centreText, { color: t.textSecondary }]}>
@@ -861,40 +963,6 @@ export default function StudyViewerScreen() {
           )}
         </View>
 
-        <View
-          style={[
-            styles.fsBar,
-            {
-              backgroundColor: t.surface,
-              borderColor: t.border,
-              top: Math.max(insets.top, 8),
-              left: Math.max(insets.left, 10),
-              right: Math.max(insets.right, 10),
-            },
-          ]}
-        >
-          <View style={styles.fsTools}>{tools(true)}</View>
-          <View style={styles.fsZoom}>{zoomControls(true)}</View>
-        </View>
-
-        {caliperReadout && (
-          <View style={[styles.fsReadout, { top: Math.max(insets.top, 8) + 44 }]}>
-            {caliperReadout}
-          </View>
-        )}
-
-        {hintKey && (
-          <Text
-            style={[
-              styles.fsHint,
-              { color: t.textSecondary, backgroundColor: t.surface, bottom: Math.max(insets.bottom, 8) },
-            ]}
-            numberOfLines={1}
-          >
-            {tr(hintKey)}
-          </Text>
-        )}
-
         {sheets}
       </View>
     );
@@ -902,221 +970,244 @@ export default function StudyViewerScreen() {
 
   /* ══════════ PORTRAIT ══════════ */
   return (
-    <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top }]}>
-      <View style={[styles.header, rtl && styles.rowRtl]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={tr('back')}
-          onPress={() => navigation.goBack()}
-          style={styles.iconBtn}
-          hitSlop={8}
-        >
-          <Ionicons
-            name={rtl ? 'chevron-forward' : 'chevron-back'}
-            size={26}
-            color={t.textPrimary}
-          />
-        </Pressable>
-
-        {/* The date IS the switcher, exactly as on the web: tapping the study
-            you are reading opens the list of the others. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={tr('histSelectOne')}
-          onPress={() => setSheet('studies')}
-          style={styles.titleBtn}
-        >
-          <Text style={[styles.title, { color: t.brandNavy }]} numberOfLines={1}>
-            {recording ? fmtWhen(recording.recordedAt) : tr('histLoading')}
-          </Text>
-          <Ionicons name="chevron-down" size={14} color={t.textSecondary} />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={tr('histActions')}
-          onPress={() => setSheet('actions')}
-          disabled={!recording || actionItems.length === 0}
-          style={styles.iconBtn}
-          hitSlop={8}
-        >
-          <Ionicons
-            name="ellipsis-horizontal"
-            size={22}
-            color={recording && actionItems.length > 0 ? t.textPrimary : t.textTertiary}
-          />
-        </Pressable>
-      </View>
-
+    <View style={[styles.root, { backgroundColor: t.bg }]}>
+      {/* Content FIRST in the tree, so the glass header paints over it. */}
       {detail.isLoading && (
-        <View style={styles.centre}>
+        <View style={[styles.centre, { paddingTop: headerH }]}>
           <ActivityIndicator color={t.brandNavy} />
           <Text style={[styles.centreText, { color: t.textSecondary }]}>{tr('histLoading')}</Text>
         </View>
       )}
 
       {!detail.isLoading && !view && (
-        <View style={styles.centre}>
+        <View style={[styles.centre, { paddingTop: headerH }]}>
           <Text style={[styles.centreText, { color: t.textSecondary }]}>
             {detail.isError ? tr('histLoadError') : tr('histEmptyWaveform')}
           </Text>
         </View>
       )}
 
-      {view && recording && (
-        <>
-          {/* Rate, rhythm and provenance in ONE row. They were three rows,
-              which cost the trace ~60 pt to say what fits on one line. */}
-          <View style={[styles.headline, rtl && styles.rowRtl]}>
-            <Text style={[styles.bpm, { color: t.textPrimary }]} allowFontScaling={false}>
-              {view.analysis.rate.bpm ?? '—'}
-              <Text style={[styles.bpmUnit, { color: t.textTertiary }]}> {tr('bpm')}</Text>
-            </Text>
-            <Text style={[styles.rhythm, { color: t.textSecondary }]} numberOfLines={1}>
-              {tr(REGULARITY_KEY[view.analysis.rate.regularity])} · {durationSec.toFixed(1)}s ·{' '}
-              {recording.sampleRate} Hz
-            </Text>
-            {recording.isSimulated && (
-              <Text style={[styles.simChip, { color: t.danger, backgroundColor: t.dangerSoft }]}>
-                {tr('histSimulated')}
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.tabs}>
-            <SegmentedTabs
-              options={[
-                { value: 'waveform' as const, label: tr('reportTabWaveform') },
-                { value: 'measurements' as const, label: tr('reportTabMeasurements') },
-              ]}
-              value={tab}
-              onChange={setTab}
-              accessibilityLabel={tr('reportSectionA11y')}
-            />
-          </View>
-
+      {view && recording && tab === 'waveform' && (
+        <View style={[styles.flex, { paddingTop: headerH }]}>
           {banner && (
             <Text style={[styles.banner, { color: t.danger, backgroundColor: t.dangerSoft }]}>
               {banner}
             </Text>
           )}
 
-          {tab === 'waveform' ? (
-            <>
-              <View style={[styles.toolbar, rtl && styles.rowRtl]}>{tools(false)}</View>
+          <View style={[styles.toolbar, rtl && styles.rowRtl]}>{tools(false)}</View>
 
-              {/* ONE line, and only when something needs saying. The caliper
-                  readout takes this slot rather than adding another, so the
-                  trace's height never depends on which tool is on. */}
-              <View style={styles.statusRow}>
-                {caliperReadout ??
-                  (hasFiltersOff(settings) ? (
-                    <Text style={[styles.warn, { color: t.danger }]} numberOfLines={1}>
-                      {tr('vtFiltersOff')}
-                    </Text>
-                  ) : overlayActive && overlay ? (
-                    <Text style={[styles.hint, { color: t.textSecondary }]} numberOfLines={1}>
-                      {tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} ·{' '}
-                      {overlay.mode === 'warp'
-                        ? overlay.degraded
-                          ? tr('ovWarpFailed')
-                          : tr('ovWarpApplied', { n: String(overlay.anchorCount) })
-                        : tr('ovShifted', { ms: String(Math.round(overlay.shiftMs)) })}
-                    </Text>
-                  ) : hintKey ? (
-                    <Text style={[styles.hint, { color: t.textSecondary }]} numberOfLines={1}>
-                      {tr(hintKey)}
-                    </Text>
-                  ) : null)}
-              </View>
+          {/* ONE fixed-height slot. The caliper readout SHARES it rather than
+              adding a row, so the trace's height never depends on which tool
+              is on. */}
+          <View style={styles.statusRow}>
+            {caliperReadout ??
+              compareStatus ??
+              (hasFiltersOff(settings) ? (
+                <Text style={[styles.warn, { color: t.danger }]} numberOfLines={1}>
+                  {tr('vtFiltersOff')}
+                </Text>
+              ) : hintKey ? (
+                <Text style={[styles.hint, { color: t.textSecondary }]} numberOfLines={1}>
+                  {tr(hintKey)}
+                </Text>
+              ) : null)}
+          </View>
 
-              <View style={[styles.sheet, { borderColor: t.border, backgroundColor: t.surface }]}>
-                {reviewSheet}
-              </View>
+          <View style={[styles.sheet, { borderColor: t.border, backgroundColor: t.surface }]}>
+            {reviewSheet}
+          </View>
 
-              <View
-                style={[
-                  styles.zoomBar,
-                  rtl && styles.rowRtl,
-                  { paddingBottom: Math.max(insets.bottom, 8) },
-                ]}
+          <View
+            style={[
+              styles.zoomBar,
+              rtl && styles.rowRtl,
+              { paddingBottom: Math.max(insets.bottom, 8) },
+            ]}
+          >
+            {zoomControls(false)}
+            {settings.layout === 'single' && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => patch({ layout: 'all' })}
+                style={({ pressed }) => [styles.fitBtn, { opacity: pressed ? 0.6 : 1 }]}
               >
-                {zoomControls(false)}
-                {settings.layout === 'single' && (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => patch({ layout: 'all' })}
-                    style={({ pressed }) => [styles.fitBtn, { opacity: pressed ? 0.6 : 1 }]}
+                <Text style={[styles.fitText, { color: t.brandNavy }]}>{tr('vtLayoutStack')}</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
+
+      {view && recording && tab === 'measurements' && (
+        /* Full-height scroll with the header's height as top padding: the
+           measurements pass UNDER the glass rather than starting below it,
+           which is the whole point of the material. */
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.analysis,
+            { paddingTop: headerH + 14, paddingBottom: Math.max(insets.bottom, 16) + 16 },
+          ]}
+          scrollEventThrottle={32}
+          onScroll={onAnalysisScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <EcgAnalysisSheet analysis={view.analysis} showTitle={false} />
+          <ClinicalNote
+            value={recording.note ?? ''}
+            resetKey={recording.id}
+            canEdit={noteAllowed}
+            busy={note.busy}
+            rtl={rtl}
+            onSave={(text) => note.save(recording.id, text)}
+            labels={{
+              title: tr('noteTitle'),
+              placeholder: tr('notePlaceholder'),
+              save: tr('noteSave'),
+              saved: tr('noteSaved'),
+              hint: tr('noteHint'),
+            }}
+          />
+          {recording.annotations.length > 0 && (
+            <View style={[styles.annList, { backgroundColor: t.surface, borderColor: t.border }]}>
+              <Text style={[styles.annListTitle, { color: t.textPrimary, textAlign: align }]}>
+                {tr('annListTitle')}
+              </Text>
+              {recording.annotations.map((a) => (
+                <Pressable
+                  key={a.id}
+                  accessibilityRole="button"
+                  disabled={!features.has('annotate')}
+                  onPress={() => {
+                    setTab('waveform');
+                    setMode('mark');
+                    setEditing(a);
+                  }}
+                  style={({ pressed }) => [
+                    styles.annRow,
+                    rtl && styles.rowRtl,
+                    { borderTopColor: t.border, opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <Text style={[styles.annText, { color: t.textPrimary }]} numberOfLines={1}>
+                    {a.text}
+                  </Text>
+                  <Text style={[styles.annAt, { color: t.textTertiary }]}>
+                    {a.lead ?? '—'} · {(a.sampleIndex / recording.sampleRate).toFixed(2)}s
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* ── The glass header, over everything ── */}
+      <GlassSurface
+        dark={dark}
+        fallbackTint={dark ? 'rgba(19, 27, 44, 0.72)' : 'rgba(255, 255, 255, 0.74)'}
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top,
+            paddingLeft: Math.max(insets.left, 0),
+            paddingRight: Math.max(insets.right, 0),
+            /* The edge appears only once something is behind it. A hairline
+               drawn over an unscrolled page is a boundary between nothing and
+               nothing. */
+            borderBottomColor: scrolled ? t.border : 'transparent',
+          },
+        ]}
+      >
+        <View
+          onLayout={(e: LayoutChangeEvent) => {
+            /* The measured View is INSIDE the glass, so the bar's own padding
+               has to be added back: without it the content sits ~34 pt too
+               high and the first section hides behind the tabs. */
+            const h = e.nativeEvent.layout.height + insets.top + HEADER_PAD_BOTTOM;
+            setHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+          }}
+        >
+          <View style={[styles.navRow, rtl && styles.rowRtl]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr('back')}
+              onPress={() => navigation.goBack()}
+              style={styles.iconBtn}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={rtl ? 'chevron-forward' : 'chevron-back'}
+                size={26}
+                color={t.textPrimary}
+              />
+            </Pressable>
+
+            {/* The date IS the switcher, exactly as on the web. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr('histSelectOne')}
+              onPress={() => setSheet('studies')}
+              style={styles.titleBtn}
+            >
+              <Text style={[styles.title, { color: t.brandNavy }]} numberOfLines={1}>
+                {recording ? fmtWhen(recording.recordedAt) : tr('histLoading')}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color={t.textSecondary} />
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr('histActions')}
+              onPress={() => setSheet('actions')}
+              disabled={!recording || actionItems.length === 0}
+              style={styles.iconBtn}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={22}
+                color={recording && actionItems.length > 0 ? t.textPrimary : t.textTertiary}
+              />
+            </Pressable>
+          </View>
+
+          {view && recording && (
+            <>
+              <View style={[styles.headline, rtl && styles.rowRtl]}>
+                <Text style={[styles.bpm, { color: t.textPrimary }]} allowFontScaling={false}>
+                  {view.analysis.rate.bpm ?? '—'}
+                  <Text style={[styles.bpmUnit, { color: t.textTertiary }]}> {tr('bpm')}</Text>
+                </Text>
+                <Text style={[styles.rhythm, { color: t.textSecondary }]} numberOfLines={1}>
+                  {tr(REGULARITY_KEY[view.analysis.rate.regularity])} · {durationSec.toFixed(1)}s ·{' '}
+                  {recording.sampleRate} Hz
+                </Text>
+                {recording.isSimulated && (
+                  <Text
+                    style={[styles.simChip, { color: t.danger, backgroundColor: t.dangerSoft }]}
                   >
-                    <Text style={[styles.fitText, { color: t.brandNavy }]}>
-                      {tr('vtLayoutStack')}
-                    </Text>
-                  </Pressable>
+                    {tr('histSimulated')}
+                  </Text>
                 )}
               </View>
+
+              <View style={styles.tabs}>
+                <SegmentedTabs
+                  options={[
+                    { value: 'waveform' as const, label: tr('reportTabWaveform') },
+                    { value: 'measurements' as const, label: tr('reportTabMeasurements') },
+                  ]}
+                  value={tab}
+                  onChange={setTab}
+                  accessibilityLabel={tr('reportSectionA11y')}
+                />
+              </View>
             </>
-          ) : (
-            <ScrollView
-              style={styles.flex}
-              contentContainerStyle={[
-                styles.analysis,
-                { paddingBottom: Math.max(insets.bottom, 16) + 16 },
-              ]}
-              showsVerticalScrollIndicator={false}
-            >
-              <EcgAnalysisSheet analysis={view.analysis} showTitle={false} />
-              <ClinicalNote
-                value={recording.note ?? ''}
-                resetKey={recording.id}
-                canEdit={noteAllowed}
-                busy={note.busy}
-                rtl={rtl}
-                onSave={(text) => note.save(recording.id, text)}
-                labels={{
-                  title: tr('noteTitle'),
-                  placeholder: tr('notePlaceholder'),
-                  save: tr('noteSave'),
-                  saved: tr('noteSaved'),
-                  hint: tr('noteHint'),
-                }}
-              />
-              {recording.annotations.length > 0 && (
-                <View
-                  style={[styles.annList, { backgroundColor: t.surface, borderColor: t.border }]}
-                >
-                  <Text style={[styles.annListTitle, { color: t.textPrimary, textAlign: align }]}>
-                    {tr('annListTitle')}
-                  </Text>
-                  {recording.annotations.map((a) => (
-                    <Pressable
-                      key={a.id}
-                      accessibilityRole="button"
-                      disabled={!features.has('annotate')}
-                      onPress={() => {
-                        setTab('waveform');
-                        setMode('mark');
-                        setEditing(a);
-                      }}
-                      style={({ pressed }) => [
-                        styles.annRow,
-                        rtl && styles.rowRtl,
-                        { borderTopColor: t.border, opacity: pressed ? 0.6 : 1 },
-                      ]}
-                    >
-                      <Text style={[styles.annText, { color: t.textPrimary }]} numberOfLines={1}>
-                        {a.text}
-                      </Text>
-                      <Text style={[styles.annAt, { color: t.textTertiary }]}>
-                        {a.lead ?? '—'} · {(a.sampleIndex / recording.sampleRate).toFixed(2)}s
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-            </ScrollView>
           )}
-        </>
-      )}
+        </View>
+      </GlassSurface>
 
       {sheets}
     </View>
@@ -1128,7 +1219,16 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   rowRtl: { flexDirection: 'row-reverse' },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, height: 42 },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 10,
+  },
+  navRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, height: 42 },
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   titleBtn: {
     flex: 1,
@@ -1168,11 +1268,18 @@ const styles = StyleSheet.create({
 
   toolbar: { flexDirection: 'row', gap: 7, paddingHorizontal: 14, paddingTop: 9, paddingBottom: 4 },
   /* Fixed height so the trace's size does not depend on which tool is on. */
-  statusRow: { height: 26, justifyContent: 'center', paddingHorizontal: 14 },
-  hint: { fontSize: 11 },
+  statusRow: { height: 28, justifyContent: 'center', paddingHorizontal: 14 },
+  compareRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hint: { flexShrink: 1, fontSize: 11 },
   warn: { fontSize: 11, fontWeight: '700' },
 
-  sheet: { flex: 1, marginHorizontal: 10, borderWidth: 1, borderRadius: RADIUS.md, overflow: 'hidden' },
+  sheet: {
+    flex: 1,
+    marginHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+  },
 
   zoomBar: {
     flexDirection: 'row',
@@ -1206,7 +1313,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   zoomTextDense: {
-    minWidth: 78,
+    minWidth: 74,
     textAlign: 'center',
     fontSize: 11,
     fontWeight: '700',
@@ -1234,33 +1341,28 @@ const styles = StyleSheet.create({
   },
 
   /* ── Full screen ── */
-  fsSheet: { flex: 1 },
   fsBar: {
-    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    opacity: 0.97,
+    paddingBottom: 5,
   },
+  fsExit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: RADIUS.sm,
+  },
+  fsExitText: { fontSize: 12.5, fontWeight: '700' },
   fsTools: { flexDirection: 'row', gap: 6 },
   fsZoom: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  fsReadout: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  fsHint: {
-    position: 'absolute',
-    alignSelf: 'center',
-    fontSize: 11,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
+  fsStatus: { height: 22, justifyContent: 'center', alignItems: 'center', paddingBottom: 3 },
+  fsSheet: { flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.sm, overflow: 'hidden' },
 
-  analysis: { padding: 16, gap: 14 },
+  analysis: { paddingHorizontal: 16, gap: 14 },
   annList: { borderRadius: RADIUS.lg, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
   annListTitle: { fontSize: 15.5, fontWeight: '700', marginBottom: 4 },
   annRow: {
@@ -1274,7 +1376,8 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
-// v2.0.0 — The trace gets the screen: icon toolbar, one-line headline, a fixed
-//          26 pt status slot that the caliper readout shares rather than adds
-//          to, and a LANDSCAPE full-screen view that opens fitted to all six
-//          leads. Filters / compare / alignment moved into a labelled sheet.
+// v3.0.0 — The header is a GLASS bar the measurements scroll under, earning its
+//          edge only once something is behind it. Full screen puts its bar IN
+//          FLOW and insets the whole screen, so neither the bar nor the notch
+//          covers a trace, and carries its own labelled way out. The comparison
+//          status line is now the way in to moving the ghost.
