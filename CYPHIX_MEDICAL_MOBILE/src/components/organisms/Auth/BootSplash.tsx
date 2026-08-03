@@ -8,13 +8,17 @@
    flickers reads as a fault, and this is the frame in which the app says
    what it is.
 
-   ── How big, and why it is measured rather than typed ──
-   `BrandLogo` was drawn at a flat 210 pt here, which is a guess that is
-   right on exactly one screen — deliberate in a mock-up, small on a real
-   phone. It is 82 % of the window's width instead, capped at 460 so a
-   tablet does not get a billboard. The lockup is wide and thin (aspect
-   ≈ 5.8), so a near-full-width setting reads as confident rather than
-   loud: ~320 pt on a standard iPhone against the old 210.
+   ── Why it is `crop`, and why it is nearly the full width ──
+   The logo looked off-centre here because it WAS: the inherited viewBox
+   holds 7.3 units of air on the left and 27.6 on the right, so the ink sat
+   ~18 pt left of the screen's centre and filled four fifths of the width
+   it claimed. `crop` draws the ink's measured box instead — centred, and
+   ~24 % larger for the same number.
+   The width is 90 % of the window (capped at 520 so a tablet does not get
+   a billboard) rather than a flat point size, which is a guess that is
+   right on exactly one screen. The lockup is wide and thin (aspect ≈ 6.6),
+   so near-full-width reads as confident rather than shouted: 351 pt of
+   real ink on a standard iPhone, against 256 pt before.
 
    ── What used to be here, and why it is gone ──
    The design reference put a pulsing ring with a stylised ECG trace
@@ -37,8 +41,8 @@ import { LABEL_TYPE, authPalette } from '@/theme/authTheme';
 import { useTranslation } from '@/i18n/useTranslation';
 
 /** Share of the window the lockup takes, and the point it stops growing. */
-const WIDTH_RATIO = 0.82;
-const MAX_WIDTH = 460;
+const WIDTH_RATIO = 0.9;
+const MAX_WIDTH = 520;
 
 export default function BootSplash() {
   const palette = authPalette(false); // the splash is navy in both themes
@@ -52,7 +56,7 @@ export default function BootSplash() {
       <StatusBar style="light" />
 
       <FadeUpView delay={120}>
-        <BrandLogo width={logoWidth} tint="light" />
+        <BrandLogo width={logoWidth} tint="light" crop />
       </FadeUpView>
 
       <View style={styles.footer}>
@@ -78,7 +82,10 @@ const styles = StyleSheet.create({
   version: { fontSize: 10, letterSpacing: 0.6, opacity: 0.7 },
 });
 
+// v1.4.0 — The lockup was really off-centre (the source viewBox is padded
+//          asymmetrically, 7.3 units left vs 27.6 right): `crop` fixes that at
+//          the atom, and the width goes to 90 % of the window, capped at 520.
 // v1.3.0 — Back to the navy screen and the full `BrandLogo` (v0.19.3's white
 //          screen + mark-only lockup is reverted), keeping the one thing that
-//          was actually wanted: the lockup is sized from the window (82 %,
-//          capped at 460) instead of a fixed 210 pt.
+//          was actually wanted: the lockup is sized from the window instead of
+//          a fixed 210 pt.

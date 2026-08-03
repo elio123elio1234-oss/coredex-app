@@ -9,6 +9,18 @@
 
    On the dark teal backdrop the navy wordmark would vanish, so the web
    whitens it; `tint="light"` does the same here.
+
+   ── `crop`, and the padding that is baked into the source viewBox ──
+   The inherited viewBox is NOT tight around the artwork. Measured, the ink
+   runs x 41.34 → 181.45 inside a box declared 34 → 209, which leaves
+   7.3 units of air on the left and 27.6 on the right — so the lockup sits
+   10.1 units LEFT of the box's centre (≈ 18 pt when drawn 320 pt wide) and
+   fills only 80 % of the width it claims. It goes unnoticed wherever the
+   logo is anchored to a corner, which is every other caller. Centre it on
+   a screen and it reads as visibly off.
+   `crop` swaps in the measured ink box instead. It is opt-in, and the
+   default is byte-identical to what shipped, because changing it globally
+   would resize the logo on every screen that already looks right.
    ================================================================== */
 
 import Svg, { Circle, G, Path } from 'react-native-svg';
@@ -17,12 +29,23 @@ interface Props {
   width: number;
   /** 'light' paints the whole mark white for dark backgrounds. */
   tint?: 'brand' | 'light';
+  /**
+   * Draw the ink's own bounding box instead of the source's padded one:
+   * the lockup is then truly centred and ~24 % larger for the same width.
+   * For anywhere the logo is centred or is the subject of the screen.
+   */
+  crop?: boolean;
 }
 
 /** Native aspect ratio of the wordmark viewBox (175 × 30). */
 const ASPECT = 175 / 30;
 
-export default function BrandLogo({ width, tint = 'brand' }: Props) {
+/* Measured bounding box of the ink (mark + dot + CYPHIX + MEDICAL), padded
+   by 0.35 units — half the mark's hairline stroke, so nothing is clipped. */
+const CROP_BOX = '40.988 84.769 140.810 21.225';
+const CROP_ASPECT = 140.81 / 21.225;
+
+export default function BrandLogo({ width, tint = 'brand', crop = false }: Props) {
   const blob = tint === 'light' ? '#FFFFFF' : '#0a2540';
   const dot = tint === 'light' ? '#0A2540' : '#ffffff';
   const cyphix = tint === 'light' ? '#FFFFFF' : '#0d2041';
@@ -31,8 +54,8 @@ export default function BrandLogo({ width, tint = 'brand' }: Props) {
   return (
     <Svg
       width={width}
-      height={width / ASPECT}
-      viewBox="34 79 175 30"
+      height={width / (crop ? CROP_ASPECT : ASPECT)}
+      viewBox={crop ? CROP_BOX : '34 79 175 30'}
       preserveAspectRatio="xMinYMid meet"
       accessibilityLabel="CYPHIX Medical"
     >
@@ -57,4 +80,8 @@ export default function BrandLogo({ width, tint = 'brand' }: Props) {
   );
 }
 
-// v1.0.0 — CYPHIX wordmark, path data verbatim from the web BrandLogo.
+// v1.1.0 — Optional `crop`: the source viewBox carries 7.3 units of air on the
+//          left and 27.6 on the right, which puts the lockup 10 units left of
+//          centre and wastes a fifth of its width. `crop` draws the measured
+//          ink box instead. Default unchanged — every existing caller anchors
+//          the logo to a corner, where the padding never showed.

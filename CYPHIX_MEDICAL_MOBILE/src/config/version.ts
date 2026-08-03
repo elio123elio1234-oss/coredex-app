@@ -1,7 +1,19 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.19.4';
-export const APP_BUILD_LABEL = 'The splash is navy and the full lockup again — just bigger';
+export const APP_VERSION = '0.19.5';
+export const APP_BUILD_LABEL = 'The splash logo is centred — because it really was not — and near full width';
+
+// v0.19.5 — "זה לא ממורכז בכלל" was not an impression, it was arithmetic.
+//           `BrandLogo`'s inherited viewBox is padded ASYMMETRICALLY: the ink
+//           runs 41.34 → 181.45 inside a box declared 34 → 209, so 7.3 units
+//           of air on the left against 27.6 on the right. Centre that box and
+//           the artwork lands ~18 pt left of the screen's middle, and fills
+//           only 80 % of the width it claims. Every other caller anchors the
+//           logo to a corner, which is why it never showed before.
+//           `crop` (new, opt-in, default byte-identical) draws the ink's own
+//           measured box. The splash uses it and goes to 90 % of the window
+//           capped at 520: 351 pt of real lockup on a standard iPhone against
+//           256 pt in v0.19.4 — centred this time.
 
 // v0.19.4 — v0.19.3 is REVERTED at the user's word: the splash is the navy
 //           screen with the FULL `BrandLogo` (mark + CYPHIX + "MEDICAL")

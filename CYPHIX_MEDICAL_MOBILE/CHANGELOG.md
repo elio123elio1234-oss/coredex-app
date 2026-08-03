@@ -1,5 +1,63 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.19.5 — 2026-08-03 — It was not centred, and that was measurable
+
+> "אבל זה לא ממורכז בכלל אז או שתעשה שזה יהיה כמעט על כל רוחב המסך (מומלץ כי
+> הלוגו ארוך) או שתמרכז את זה בבקשה"
+
+Both, and the reason they were the same fix.
+
+### Why it looked off-centre: it was off-centre
+
+`BrandLogo`'s viewBox is inherited from the web app, and it is **not tight
+around the artwork**. Measured (bezier-sampled, not eyeballed):
+
+```
+ink        x  41.34 → 181.45     y  85.12 → 105.64
+declared   x  34.00 → 209.00     y  79.00 → 109.00
+
+air on the left :  7.34 units
+air on the right: 27.55 units      → the ink sits 10.1 units left of centre
+```
+
+Centre that box on a screen and the artwork lands **~18 pt to the left of the
+middle** at 320 pt wide. It also means the logo was only ever filling **80 %**
+of the width it was given — which is part of why "make it bigger" kept not
+being enough.
+
+It never showed anywhere else because every other caller anchors the logo to a
+corner: `PatientShell` and `ProfileScreen` pin it top-start (and both are behind
+`SHOW_SHELL_WORDMARK`, currently off), and `ReportHeader` sets it in a row.
+Padding on the right of a left-aligned logo is just a gap.
+
+### The fix
+
+`BrandLogo` takes an opt-in **`crop`** prop that swaps in the ink's measured
+box (`40.988 84.769 140.810 21.225` — padded 0.35 units, half the mark's
+hairline stroke, so nothing clips). Default is unchanged **byte for byte**:
+correcting it globally would resize the logo on screens nobody has complained
+about, and that is not this change.
+
+The splash uses `crop` and goes to **90 % of the window**, capped at 520:
+
+```
+                    v0.19.4 ink      now (90 %, cropped)
+iPhone SE  320 →     210 × 30    →    288 × 43 pt
+iPhone 15  390 →     256 × 37    →    351 × 53 pt
+Pixel      412 →     271 × 39    →    371 × 56 pt
+tablet     768 →     368 × 53    →    520 × 78 pt  (capped)
+```
+
+("ink" is the artwork itself, not the padded box it was drawn inside — which
+is the only measurement that describes what an eye sees.)
+
+**Verified:** `tsc` clean, both platforms bundle, `expo-doctor` 18/18, and every
+number above is computed from the path data rather than estimated. That the
+lockup is now centred follows from the geometry; that it *looks* right at 90 %
+is still a look-at-it-on-the-phone question.
+
+---
+
 ## v0.19.4 — 2026-08-03 — The splash goes back to navy and the full logo, at the bigger size
 
 > "עזוב תחזיר למה שהיה עם הרקע הכחול והלוגו המלא … פשוט תגדיל אותו קצת כי זה
