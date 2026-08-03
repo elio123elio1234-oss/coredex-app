@@ -12,6 +12,7 @@ import { fetchBaseQuery, type BaseQueryFn } from '@reduxjs/toolkit/query';
 import type { ApiError, ApiRequest } from '@cyphix/shared';
 import { API_VERSION_PATH } from '@cyphix/shared';
 import { ENV } from '@/config/env';
+import { sessionExpired } from '@/services/auth/authEvents';
 import { clearSession, getAccessToken, refreshSession } from './tokenStore';
 
 const rawQuery = fetchBaseQuery({
@@ -35,7 +36,12 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError> = async (
     if (user) {
       result = await rawQuery(args, api, extraOptions);
     } else {
+      /* The session is genuinely over (or unreachable). Clearing alone
+         would leave the app rendering a signed-in shell over 401s, so the
+         slice is told to drop the principal and show the door — the same
+         `sessionExpired` bridge the web uses. */
       await clearSession();
+      api.dispatch(sessionExpired());
     }
   }
 
@@ -47,4 +53,5 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError> = async (
   return { data: result.data };
 };
 
-// v0.1.0 — Bearer auth + 401→refresh→retry, mirroring web httpBaseQuery.
+// v1.0.0 — Refresh is real now: a failed one clears the enclave AND dispatches
+//          sessionExpired, so the app cannot sit signed-in over 401s.

@@ -1,36 +1,36 @@
 /* ==================================================================
    The current principal, and what it may do.
 
-   ★ THE ONE FILE AUTH LANDS IN — and, as of the onboarding flow, the one
-   place where the app KNOWS BETTER and says so.
+   ★ THE FILE AUTH LANDS IN — and, since v0.20.0, the file that stops
+   guessing when there is a server to ask.
 
-   There IS a real signed-in account now (`features/auth/authSlice`), and
-   its role is `patient`. This file still answers with `DEMO_USER`, a
-   clinician, ON PURPOSE: every viewer tool in Scan History — calipers,
-   filters, annotations, compare, export — is gated on clinician
-   permissions, so wiring the RBAC principal to the new session would
-   silently strip a finished module down to a read-only trace with no way
-   to switch back. That is a decision about who this product is for, not
-   a wiring detail, and it is not one to make as a side effect of adding
-   a login screen.
+   ── Two modes, and the reason they differ ──
+   • CONNECTED (`EXPO_PUBLIC_API_BASE_URL` set): the principal is the
+     SIGNED-IN ACCOUNT, role included. It has to be. The server enforces
+     its own RBAC and row scoping on every request, so a client that
+     pretends to be a clinician while the server knows it is a patient
+     draws a toolbar of buttons whose requests come back 403 — the worst
+     of both worlds: nothing is unlocked and everything looks broken.
+     `linkedPatientId` matters just as much: it is what makes a recording
+     saved on this phone belong to the same Patient the web app opens.
+   • OFFLINE (no URL): `DEMO_USER`, a fictitious clinician. With no server
+     there is no authority to defer to, and demoting the demo to `patient`
+     would hide most of Scan History — calipers, filters, annotations,
+     compare — behind a role nobody could switch out of. The offline demo
+     is a showcase; showing it as a clinician is the whole point.
 
-   The swap is one line here once "preview as role" exists (the web's
-   demo control). Tracked in PARITY.md. Until then:
-     • WHO the patient is (name, profile) comes from `useAuth()` and is
-       real — that is what the greeting and Settings show.
-     • WHAT they may do comes from here and is the demo clinician.
+   The previous version returned DEMO_USER unconditionally and said so
+   loudly; that was right while every account was device-local. It stops
+   being right the moment a real server answers, which is exactly when
+   this switches over.
 
-   The stand-in is the `clinician` role deliberately: History is the
-   doctor-facing module (CYPHIX UX direction), and demoing it as a patient
-   would hide the calipers, the filters, annotations and compare — i.e.
-   most of what was built — behind a role nobody can currently switch out
-   of. `Preview as role` (the web's demo control) is the follow-up that
-   makes this switchable; it is tracked in PARITY.md.
-
-   PII is fictitious per web CLAUDE.md §7.4 and obviously so.
+   PII in the demo principal is fictitious per web CLAUDE.md §7.4 and
+   obviously so.
    ================================================================== */
 
 import { useMemo } from 'react';
+import { ENV } from '@/config/env';
+import { useAppSelector } from '@/store/hooks';
 import { roleCan, type AuthUser, type Permission, type Role } from '@/types/rbac';
 
 /** Fictitious. `MOCK-` prefixes make that visible at a glance. */
@@ -41,7 +41,21 @@ export const DEMO_USER: AuthUser = {
 };
 
 export function useCurrentUser(): AuthUser | null {
-  return DEMO_USER;
+  const sessionUser = useAppSelector((s) => s.auth.user);
+
+  return useMemo(() => {
+    if (!ENV.hasBackend) return DEMO_USER;
+    if (!sessionUser) return null;
+    /* Projected, not spread: the slice's user is the server's answer and
+       may grow fields the RBAC layer has no business seeing (data
+       minimization, web CLAUDE.md §7.3). */
+    return {
+      id: sessionUser.id,
+      displayName: sessionUser.displayName,
+      role: sessionUser.role,
+      linkedPatientId: sessionUser.linkedPatientId,
+    };
+  }, [sessionUser]);
 }
 
 export interface Permissions {
@@ -62,6 +76,6 @@ export function usePermissions(): Permissions {
   );
 }
 
-// v1.1.0 — Unchanged behaviour, now a DELIBERATE divergence: a real session
-//          exists, but the RBAC principal stays the demo clinician so History's
-//          tools remain reachable. See the header and PARITY.md.
+// v2.0.0 — Connected mode uses the REAL signed-in principal (role + linked
+//          patient) so the client and the server agree on who is asking; the
+//          demo clinician survives only as the offline stand-in.

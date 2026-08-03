@@ -34,6 +34,33 @@ export interface SessionUser {
   id: string;
   role: 'admin' | 'clinician' | 'technician' | 'patient' | 'guest';
   displayName: string;
+  /**
+   * For patient-role users: the Patient resource this account IS.
+   *
+   * ★ This is what makes one account the same person on every platform.
+   * The server derives it from `users.patient_id` and returns it from
+   * login / refresh / `GET /auth/me`; every row-scoped request
+   * (`patients/:id/...`, a recording's `subject`) is answered against it.
+   * A client that drops this field can still sign in and will then ask
+   * for records it does not own — which the server correctly answers 403.
+   */
+  linkedPatientId?: string;
 }
 
-// v1.0.0 — Shared request/error envelope + auth behaviour contract.
+/**
+ * What `POST /auth/login`, `/auth/register` and `/auth/refresh` return.
+ *
+ * The refresh token is ROTATED on every use and its whole family is
+ * revoked if a rotated-out one is ever replayed, so a client must persist
+ * the newest one it was handed and nothing older. `accessToken` is a
+ * ~15-minute JWT and belongs in memory only, on every platform.
+ */
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresInSec: number;
+  user: SessionUser;
+}
+
+// v1.1.0 — SessionUser carries linkedPatientId (the cross-platform identity
+//          link) + the AuthTokens envelope every platform's auth client stores.

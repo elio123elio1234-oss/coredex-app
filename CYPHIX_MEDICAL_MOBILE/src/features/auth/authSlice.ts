@@ -25,6 +25,7 @@ import {
   type SessionUser,
 } from '@cyphix/shared';
 import { authService } from '@/services/auth/authService';
+import { sessionExpired } from '@/services/auth/authEvents';
 import { logAudit } from '@/services/audit/auditLogger';
 
 /** idle = signed out (show onboarding); restoring = checking the device
@@ -153,6 +154,17 @@ const authSlice = createSlice({
         state.error = null;
         state.justRegistered = false;
       })
+      /* The HTTP layer exhausted its refresh (token revoked, expired, or
+         replay detected server-side). Same landing as a sign-out, and
+         NOT an error state: nothing the patient did failed — the session
+         simply ended, so the door is the honest place to be. */
+      .addCase(sessionExpired, (state) => {
+        state.user = null;
+        state.profile = {};
+        state.status = 'idle';
+        state.error = null;
+        state.justRegistered = false;
+      })
       /* Sign-in and registration land the same way — except that
          registration also latches `justRegistered`, so they cannot share
          one matcher. RTK requires every addCase BEFORE any addMatcher. */
@@ -184,5 +196,7 @@ const authSlice = createSlice({
 export const { clearAuthError, welcomeAcknowledged } = authSlice.actions;
 export default authSlice.reducer;
 
+// v1.1.0 — Handles sessionExpired from the HTTP layer (refresh exhausted → the
+//          onboarding gate), matching the web slice's v2.2.0 behaviour.
 // v1.0.0 — Session + sign-in lifecycle, mirroring the web auth slice, plus the
 //          `justRegistered` latch that lets the success screen be seen at all.

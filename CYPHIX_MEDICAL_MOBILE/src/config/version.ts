@@ -1,7 +1,21 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.19.5';
-export const APP_BUILD_LABEL = 'The splash logo is centred — because it really was not — and near full width';
+export const APP_VERSION = '0.20.0';
+export const APP_BUILD_LABEL = 'Signs in to the web app’s server — one account across browser and phone';
+
+// v0.20.0 — The app stopped having accounts of its own. With
+//           EXPO_PUBLIC_API_BASE_URL set, sign-in goes to CYPHIX_SERVER — the
+//           same Postgres the web app uses — so one person is one account
+//           everywhere. `HttpAuthService` + a real `tokenStore` (rotating
+//           refresh token in the enclave, single-flight exchange, because the
+//           server kills a token family on replay) sit behind the same
+//           `authService` object every onboarding step already talked to.
+//           `useCurrentUser` now answers with the REAL principal when
+//           connected: the server enforces RBAC and row scoping, so a client
+//           claiming clinician while the server says patient only draws
+//           buttons that come back 403. Offline: unchanged, demo clinician.
+//           Contract verified end-to-end against the live server + DB; the
+//           screens are unverified on a handset (PARITY 🔬).
 
 // v0.19.5 — "זה לא ממורכז בכלל" was not an impression, it was arithmetic.
 //           `BrandLogo`'s inherited viewBox is padded ASYMMETRICALLY: the ink

@@ -1,5 +1,89 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.20.0 — 2026-08-03 — One account system: the phone signs into the web app's server
+
+The native app no longer has accounts of its own. With `EXPO_PUBLIC_API_BASE_URL`
+set it authenticates against **CYPHIX_SERVER** — the same Fastify API and the
+same Neon Postgres the web app has been using since web v1.46.0 — so a person
+who registered in the browser signs in on the phone and is the same `users` row,
+the same FHIR Patient, the same recordings. Registering on the phone works the
+other way round just as well.
+
+### What the investigation found first (it changed the plan twice)
+
+The server was already there and already correct, so almost nothing needed
+inventing — the work was making the mobile client tell the truth about it:
+
+- **Auth is argon2id + a 15-minute HS256 access JWT + a ROTATING refresh token
+  family with theft detection.** Present a refresh token that was already
+  rotated out and the server revokes the entire family. That single fact is why
+  `refreshSession` had to be single-flight: several screens 401ing in the same
+  frame would each refresh, the second would look like a replay, and the patient
+  would be signed out by their own app. The stub it replaced would have hidden
+  this — it always returned `null`.
+- **The web keeps its refresh token in a cookie AND in the request body.** A
+  native app has no cookie jar; the server reads the body first
+  (`presentedRefreshToken`), so mobile needs no server-side special case.
+- **`user.linkedPatientId` is the identity link**, and it was missing from the
+  shared `SessionUser`. Without it a signed-in patient asks for records they do
+  not own — which the server answers 403, correctly. Verified: a foreign patient
+  id really is refused.
+- **The server refuses to be an account-enumeration oracle** (unknown account and
+  wrong password return one identical message). So the sign-up step's "is this
+  address taken?" check has nothing to ask when connected; 409 on register is the
+  real answer, and it lands on the same step with the same message.
+
+### The changes
+
+- **`@cyphix/shared`** — `SessionUser.linkedPatientId` (the cross-platform
+  identity link) and an `AuthTokens` envelope. `AUTH_ROUTES` now names the routes
+  the server actually serves: it listed `/auth/session`, which has never existed
+  — it is `/auth/me`. The three routes the server does *not* implement (password
+  reset, SMS code, SMS verify) moved to `AUTH_ROUTES_PLANNED`, so no client can
+  call one by accident and the gap cannot be forgotten.
+- **`tokenStore`** — real now. Enclave-stored rotating refresh token, in-memory
+  access token, single-flight exchange, and the distinction a phone needs most:
+  a server *rejection* clears the session; a *network failure* keeps it, because
+  offline is not signed-out.
+- **`httpAuthService`** (new) — login / register / restore / logout, mapping the
+  server's statuses onto the same `AuthErrorCode`s the UI already translates.
+  `authService.ts` picks it over the device mock in one line.
+- **`useCurrentUser`** — connected, the RBAC principal is now the **real signed-in
+  account**. It had deliberately answered "demo clinician" while every account was
+  device-local; against a server that stops being a harmless stand-in, because
+  the server enforces its own RBAC and the client would draw a toolbar whose
+  every request comes back 403. Offline it is still the demo clinician, so the
+  showcase keeps History's tools. **Expect a real patient login to hide calipers,
+  filters, annotations and compare — that is the correct answer, not a bug.**
+- **`sessionExpired`** — the service→slice bridge the web has, so an exhausted
+  refresh puts the app back on the door instead of leaving it signed-in over 401s.
+- **Server `auth.ts` v0.2.1** — accepts `emergencyRelation`. The mobile sign-up is
+  the only flow that asks who the emergency contact is, and every card was
+  reading "Emergency contact" regardless.
+
+### What was verified, and what "verified" means here
+
+Replayed the client's exact sequence against the live server and the real
+database — no cookies, as a phone has none: login · `/auth/me` · own-patient
+read · **foreign patient refused (403)** · refresh rotates · replay of a
+rotated-out token 401s · the family is dead afterwards · logout · re-login ·
+enumeration-safe failures · 400-mentions-password → `weak-password` ·
+409 → `email-taken`. All pass. The registration body was probed against a
+known-taken address, which the server validates *before* the duplicate check —
+so the shape is proven with **zero rows written** to the production database.
+
+That proves the contract. It does not prove the screens: nobody has yet signed
+in on a handset. Every affected row in `PARITY.md` stays `🔬`.
+
+### Not done, and named rather than left quiet
+
+Biometric unlock is **not offered** when connected (the only thing a fingerprint
+could release is a refresh token that `restore()` has already used — the button
+would be decorative; an app-lock on resume is the real feature). Password reset
+and SMS verification remain device-honest because the server has no mailer and no
+SMS gateway. The Profile tab still renders `DEMO_CARD` rather than
+`GET /patients/:id/card`.
+
 ## v0.19.5 — 2026-08-03 — It was not centred, and that was measurable
 
 > "אבל זה לא ממורכז בכלל אז או שתעשה שזה יהיה כמעט על כל רוחב המסך (מומלץ כי

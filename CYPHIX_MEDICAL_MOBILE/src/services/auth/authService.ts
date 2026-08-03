@@ -5,11 +5,15 @@
    same failure codes — only the storage is native.
 
    The whole onboarding UI talks to the object exported at the bottom and
-   to NOTHING else. Today that is `MockAuthService`, which keeps accounts
-   on the device so the app is fully usable with no backend. When
-   CYPHIX_SERVER is reachable, an `HttpAuthService` implementing the same
-   contract (POST AUTH_ROUTES.login / .register …) is swapped in HERE and
-   not a line of the slice, the hook or any step changes.
+   to NOTHING else.
+
+   ★★★ THE SWAP HAPPENED (v0.20.0) ★★★
+   With `EXPO_PUBLIC_API_BASE_URL` set, that object is `HttpAuthService`
+   and this app signs in against CYPHIX_SERVER — the same accounts, the
+   same Postgres, the same person as the web app. With it empty it is the
+   `MockAuthService` below, which keeps accounts on the device so the app
+   stays fully usable with no backend. Not a line of the slice, the hook
+   or any onboarding step changed for either.
 
    ── Where each thing is stored, and why ──
    • The session TOKEN goes to the OS secure enclave (Keychain / Android
@@ -31,14 +35,19 @@ import * as Crypto from 'expo-crypto';
 import {
   AuthError,
   MIN_PASSWORD_LENGTH,
-  type AuthServiceContract,
   type AuthSession,
   type Credentials,
   type RegistrationInput,
   type RegistrationProfile,
   type SessionUser,
 } from '@cyphix/shared';
+import { ENV } from '@/config/env';
 import { setAccessToken } from '@/services/api/tokenStore';
+import { MOCK_SMS_CODE, type MobileAuthService, type RememberedAccount } from './authContract';
+import { HttpAuthService } from './httpAuthService';
+
+/* Re-exported so the swap did not move an import that already worked. */
+export { MOCK_SMS_CODE } from './authContract';
 
 const ACCOUNTS_KEY = 'cyphix:auth:accounts';
 const SESSION_KEY = 'cyphix:auth:session';
@@ -103,7 +112,7 @@ function toSession(account: StoredAccount, token: string): AuthSession {
   return { user: toUser(account), token, profile: account.profile };
 }
 
-class MockAuthService implements AuthServiceContract {
+class MockAuthService implements MobileAuthService {
   /** A little latency so the UI's loading state is real, not decorative
       (web CLAUDE.md §4.3 — async is always modeled). */
   private async settle(): Promise<void> {
@@ -183,7 +192,7 @@ class MockAuthService implements AuthServiceContract {
   /** The account this device last signed in as, if any. Name only — it
       is shown above the biometric button so the patient knows WHOSE
       record is about to open. */
-  async rememberedAccount(): Promise<{ id: string; displayName: string } | null> {
+  async rememberedAccount(): Promise<RememberedAccount | null> {
     const pointer = await readJson<StoredSessionPointer>(REMEMBERED_KEY);
     if (!pointer) return null;
     const account = (await this.accounts()).find((a) => a.id === pointer.userId);
@@ -241,14 +250,21 @@ class MockAuthService implements AuthServiceContract {
   }
 }
 
-/** The stand-in SMS code. Obviously synthetic, like every other mock in
-    the app (web CLAUDE.md §7.4), and displayed on the screen that asks
-    for it so nobody waits for a text that is not coming. */
-export const MOCK_SMS_CODE = '000000';
+/**
+ * The single auth service the app talks to.
+ *
+ * THE SWAP, and it is one line by design: a configured API base URL means
+ * the accounts are the SERVER's — the same rows the web app signs into —
+ * and everything above this file (slice, hook, every onboarding step)
+ * cannot tell the difference. An empty URL keeps the offline device mock,
+ * so the app still demos on a plane.
+ *
+ * Both sides are typed as `MobileAuthService`, so a method one of them
+ * forgets is a compile error rather than a screen that does nothing.
+ */
+export const authService: MobileAuthService = ENV.hasBackend
+  ? new HttpAuthService()
+  : new MockAuthService();
 
-/** The single auth service the app talks to. Swap this line — not the
-    UI — when CYPHIX_SERVER's /auth routes go live. */
-export const authService = new MockAuthService();
-
-// v1.0.0 — Device-local mock auth (SHA-256 digests, enclave token, AsyncStorage
-//          accounts) behind the shared AuthServiceContract.
+// v2.0.0 — Live swap point: HttpAuthService (CYPHIX_SERVER accounts, shared with
+//          the web app) when EXPO_PUBLIC_API_BASE_URL is set; device mock when not.

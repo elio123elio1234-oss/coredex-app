@@ -96,14 +96,35 @@ export interface AuthServiceContract {
 /** Matches the server policy (≥10 chars; letter + digit enforced there). */
 export const MIN_PASSWORD_LENGTH = 10;
 
-/** The routes an HTTP implementation calls, relative to API_VERSION_PATH.
-    Named here so web and mobile cannot drift onto different URLs. */
+/**
+ * The routes an HTTP implementation calls, relative to API_VERSION_PATH.
+ * Named here so web and mobile cannot drift onto different URLs.
+ *
+ * ⚠️ These are the routes CYPHIX_SERVER actually serves today (verified
+ * against `CYPHIX_SERVER/src/routes/auth.ts`). `session` was previously
+ * listed as `/auth/session` — the server has never had that path; it is
+ * `/auth/me`. A constant that names a route nobody implements is worse
+ * than no constant, because it reads as verified.
+ */
 export const AUTH_ROUTES = {
   login: '/auth/login',
   register: '/auth/register',
-  session: '/auth/session',
+  /** Fresh principal for a live access token (the server's session read). */
+  me: '/auth/me',
   logout: '/auth/logout',
   refresh: '/auth/refresh',
+} as const;
+
+/**
+ * Routes the product needs and the SERVER DOES NOT IMPLEMENT YET.
+ *
+ * Kept separate, and deliberately not merged into AUTH_ROUTES, so a client
+ * cannot call one by accident and so the gap is impossible to forget: a
+ * platform that offers "forgot password" or SMS verification today is
+ * answering out of its own device, not out of the server (tracked in
+ * CYPHIX_MEDICAL_MOBILE/PARITY.md).
+ */
+export const AUTH_ROUTES_PLANNED = {
   requestPasswordReset: '/auth/password-reset',
   requestPhoneCode: '/auth/phone/code',
   verifyPhoneCode: '/auth/phone/verify',
@@ -127,4 +148,5 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
-// v1.0.0 — Auth/registration contract shared by web, iOS and Android.
+// v1.1.0 — AUTH_ROUTES now matches what CYPHIX_SERVER really serves (/auth/me,
+//          not /auth/session); unimplemented routes moved to AUTH_ROUTES_PLANNED.
