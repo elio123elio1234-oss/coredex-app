@@ -63,7 +63,7 @@ company.
 
 | Feature | Web | iOS | Android | Notes |
 |---|---|---|---|---|
-| **Splash** | ⏳ (web boots straight into its gate) | 🔬 | 🔬 | WHITE screen (v0.19.3): the mark + CYPHIX lockup fading up, then the tagline. The lockup is `CyphixLogo`, the third of three that are NOT interchangeable — `BrandLogo` (mark + CYPHIX + "MEDICAL", the full signature), `CyphixLogo` (mark + CYPHIX, the identity alone), `CyphixWordmark` (the word alone, for over a headline) — and its width is 82 % of the window capped at 460 — a fixed 210 pt read as deliberate in a mock-up and small on a real phone. Dark mode keeps the app’s dark surface rather than flashing white. **v0.19.1 removed the reference's pulsing ECG mark** — two rings around a stylised trace that drew itself — at the user's instruction: it is not the CYPHIX identity, and a mark that behaves like a logo without being one teaches people the wrong thing to recognise. `EcgSweepMark` is deleted, not left unused. Held for 1 700 ms **minimum**, with the session check running inside that window, and 4 000 ms **maximum**, after which the app opens signed out rather than staring at a logo. It carries the version, so "is my build actually on the phone?" is answered on the first screen anyone sees |
+| **Splash** | ⏳ (web boots straight into its gate) | 🔬 | 🔬 | NAVY screen, in both themes: the full `BrandLogo` (mark + CYPHIX + "MEDICAL") fading up, then the tagline. Its width is **82 % of the window capped at 460** (v0.19.3's sizing, kept) — a fixed 210 pt is a guess that is right on exactly one screen, deliberate in a mock-up and small on a real phone; it is ~320 pt on a standard iPhone now. ⚠️ **v0.19.4 REVERTED v0.19.3**, which had made this a WHITE screen carrying a mark-only `CyphixLogo`: three things changed when only the size was the complaint. `CyphixLogo` is deleted rather than left uncalled — three lockups with two callers is how the wrong one gets picked later (`git show 542a650`). The two that remain are still not interchangeable: `BrandLogo` is the full signature (shell, profile, reports, this screen) and `CyphixWordmark` is the word alone, for over a headline. **v0.19.1 removed the reference's pulsing ECG mark** — two rings around a stylised trace that drew itself — at the user's instruction: it is not the CYPHIX identity, and a mark that behaves like a logo without being one teaches people the wrong thing to recognise. `EcgSweepMark` is deleted, not left unused. Held for 1 700 ms **minimum**, with the session check running inside that window, and 4 000 ms **maximum**, after which the app opens signed out rather than staring at a logo. It carries the version, so "is my build actually on the phone?" is answered on the first screen anyone sees |
 | **Welcome** | ✅ (`AuthPage` choice mode) | 🔬 | 🔬 | A PHOTOGRAPH of the device in use (v0.19.1, replacing the reference's flat navy panel) over Create account / Sign in / two platform marks. **Divergence:** the web's is a centred wordmark card |
 | ↳ Welcome — the scrim | — | 🔬 | 🔬 | Structural, not decoration: the photo is warm and LIGHT, so a navy gradient sits between it and the type — `0.45` at the very top (light status-bar glyphs stay legible), clearing to `0.10` where the picture is the subject, then `0.72 → 0.97` under the words. The headline is always on navy whatever the image does underneath. ⚠️ The 34 pt rounding is on the WRAPPER: a native image view ignores a parent's `borderRadius` on Android unless the clip belongs to the view that owns `overflow` |
 | ↳ Welcome — the lockup | ✅ full wordmark | 🔬 | 🔬 | v0.19.1: the **text-only** `CyphixWordmark` (no mark, no "MEDICAL"), as the reference has it — a second line of type directly over a headline argues with it. Path verbatim from the brand file; ⚠️ that file is an **A4 Inkscape page**, so the viewBox here is the glyphs' measured bounding box or the word renders as a speck on an empty sheet. `BrandLogo` stays the full lockup everywhere else |
@@ -249,12 +249,14 @@ recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
   the shared builders, but page breaks, margins and how a printer renders
   0.1 mm grid strokes are only knowable on paper.
 
+<!-- v0.10.4 — The splash reverts to navy + the full BrandLogo; only v0.10.3's
+     window-relative sizing survives. `CyphixLogo` deleted, not left uncalled. -->
+<!-- v0.10.3 — The splash: white, the mark+CYPHIX lockup, sized from the
+     window instead of a fixed point size. (Reverted by v0.10.4.) -->
 <!-- v0.10.0 — The judder had a cause: an inline `palette` prop deleted every
      EcgReviewStrip memo. Three traps recorded — unstable props to a memo,
      re-deriving a signal for what was a transform, and an invisible touch
      surface gated on mode alone. -->
-<!-- v0.10.3 — The splash: white, the mark+CYPHIX lockup, sized from the
-     window instead of a fixed point size. -->
 <!-- v0.10.2 — The glass row and a new trap: a tint that reached only one of
      two per-platform materials made every sheet invisible on iOS 26 while
      Android was correct. Dialogs stop being glass entirely. -->

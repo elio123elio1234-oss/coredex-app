@@ -1,6 +1,52 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.19.4 — 2026-08-03 — The splash goes back to navy and the full logo, at the bigger size
+
+> "עזוב תחזיר למה שהיה עם הרקע הכחול והלוגו המלא … פשוט תגדיל אותו קצת כי זה
+> היה קטן מדיי"
+
+v0.19.3 changed three things when only one of them was the complaint. The
+complaint was the **size**; the white screen and the mark-only lockup were my
+reading of "maximise it", and they are reverted.
+
+So the splash is again the navy screen with the **full** `BrandLogo` — mark +
+CYPHIX + "MEDICAL", the same signature that sits on the shell, the profile and
+every report — and it keeps the one thing that was worth keeping:
+
+```
+                    was          now (82 % of the window)
+iPhone SE  320 →   210 × 36  →   262 × 45 pt
+iPhone 15  390 →   210 × 36  →   320 × 55 pt
+Pixel      412 →   210 × 36  →   338 × 58 pt
+tablet     768 →   210 × 36  →   460 × 79 pt  (capped)
+```
+
+A flat 210 pt is a guess that is right on exactly one screen. The lockup is
+wide and thin (aspect ≈ 5.8), so near-full-width reads as confident rather than
+shouted, and 9 % of clear space each side is still more than the app's 24 pt
+gutter.
+
+`CyphixLogo` — the mark-only atom v0.19.3 introduced — is **deleted**, not left
+sitting in `atoms/`. Three lockups with two callers is how the wrong one gets
+picked six months from now. It is one `git show 542a650` away if it is ever
+wanted, and the brand SVG it was built from has not moved.
+
+Still true from v0.19.3, and still worth knowing: `app.json` configures **no**
+native splash, so a standalone build shows Expo's default before this screen.
+In Expo Go it does not matter. When the first real build happens, pointing
+`expo-splash-screen` at navy with this mark makes the native → JS handoff
+seamless instead of a change of screen.
+
+**Verified:** `tsc` clean, both platforms bundle, `expo-doctor` 18/18, and the
+table above is computed rather than eyeballed. Whether 82 % is *right* is a
+look-at-it-on-the-phone question — it is one number in one file.
+
+---
+
 ## v0.19.3 — 2026-08-03 — The splash is the logo, on white, at the size it should have been
+
+> **Superseded by v0.19.4** — reverted at the user's request. The size change
+> below is the part that survived.
 
 > "כשיש את הלוגו המלא נטען עם המסך הכחול שהוספת הוא ממש קטן … תנסה למקסם את
 > הגודל שלו שייראה נורמלי … ותשים את זה על מסך לבן בבקשה"

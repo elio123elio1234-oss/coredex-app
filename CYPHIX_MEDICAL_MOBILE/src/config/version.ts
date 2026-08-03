@@ -1,23 +1,23 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.19.3';
-export const APP_BUILD_LABEL =
-  'The splash is the mark + CYPHIX lockup, sized from the screen, on white';
+export const APP_VERSION = '0.19.4';
+export const APP_BUILD_LABEL = 'The splash is navy and the full lockup again — just bigger';
 
-// v0.19.3 — The splash was a small logo on navy; it is now the LOCKUP on
-//           WHITE, as large as the screen sensibly allows.
-//           `CyphixLogo` is the third lockup in the app and they are not
-//           interchangeable: `BrandLogo` is mark + CYPHIX + "MEDICAL" (the
-//           full signature, for documents), `CyphixLogo` is mark + CYPHIX
-//           (the identity alone, for a screen that IS the logo), and
-//           `CyphixWordmark` is the word alone (for over a headline).
-//           The size is measured, not typed: 82 % of the window's width,
-//           capped at 460 — a fixed point size is a guess that is wrong on
-//           every screen but one, which is exactly how the old 210 pt looked
-//           deliberate in a mock-up and small on a real phone. It is now
-//           ~320 pt wide on a standard iPhone instead of 210.
-//           Dark mode keeps the app's dark surface rather than flashing
-//           white at 2 a.m. — the same reason `PreferencesGate` exists.
+// v0.19.4 — v0.19.3 is REVERTED at the user's word: the splash is the navy
+//           screen with the FULL `BrandLogo` (mark + CYPHIX + "MEDICAL")
+//           again. Only the part that was actually asked for survives — the
+//           size. It is 82 % of the window's width capped at 460, so ~320 pt
+//           on a standard iPhone instead of the flat 210 pt that read as
+//           small; a fixed point size is a guess that is right on exactly
+//           one screen.
+//           `CyphixLogo` is DELETED rather than left unused: three lockups
+//           with only two callers is how the wrong one gets picked later.
+//           It is one `git show 542a650` away if it is ever wanted.
+
+// v0.19.3 — (superseded by 0.19.4) The splash became the mark + CYPHIX
+//           lockup on WHITE. The white screen and the mark-only lockup were
+//           not what the user wanted; the sizing fix from this version is
+//           what carried forward.
 
 // v0.19.2 — Two from an iPhone next to a Galaxy.
 //           THE SIGN-OUT DIALOG HAD NO BACKGROUND ON iOS AND A PROPER PANEL
