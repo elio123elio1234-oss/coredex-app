@@ -5,12 +5,14 @@
 
 import { configureStore } from '@reduxjs/toolkit';
 import { baseApi } from '@/services/api/baseApi';
+import authReducer from '@/features/auth/authSlice';
 import bleReducer from '@/features/ble/bleSlice';
 import preferencesReducer from '@/features/preferences/preferencesSlice';
 
 export const store = configureStore({
   reducer: {
     [baseApi.reducerPath]: baseApi.reducer,
+    auth: authReducer,
     ble: bleReducer,
     preferences: preferencesReducer,
   },
@@ -38,5 +40,7 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
+// v0.4.0 — Registers the auth slice: the store now holds a real signed-in
+//          account, not just preferences and device state.
 // v0.3.0 — Scopes the serializable check so saving a capture (Float32Array in
 //          the mutation arg) does not warn, without disabling it app-wide.

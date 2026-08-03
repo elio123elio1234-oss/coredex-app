@@ -266,7 +266,8 @@ export const en = {
   setAccountRole: 'Role',
   roleLabelPatient: 'Patient',
   setAccountSignOut: 'Sign out',
-  setAccountSignOutDesc: 'Available once accounts are connected to the server',
+  setAccountSignOutDesc: 'Ends this session on this phone',
+  setSignOutBody: 'You will need your password — or Face ID — to open your readings again. Nothing is deleted.',
 
   setSecAbout: 'About',
   setSecAboutDesc: 'Version and compliance',
@@ -450,6 +451,166 @@ export const en = {
   chatEmptyBody:
     'Messages with your care team will appear here, on the same thread you see on the web.',
 
+  /* ══ Onboarding: splash, sign-in, registration ══════════════════
+     Keys match the web's `auth*` names wherever the two apps say the
+     same sentence. Everything the signed-out flow puts on screen is
+     here — a hard-coded string in a step is a bug. */
+
+  /* ── Splash ── */
+  authTagline: 'Home ECG · Medical grade',
+
+  /* ── Welcome ── */
+  authWelcomeTitle: 'Clinical-grade ECG,\nrecorded at home.',
+  authWelcomeSub: 'Set up your account and health profile. It takes about two minutes.',
+  authCreateAccount: 'Create account',
+  authSignIn: 'Sign in',
+  authAppleSignIn: 'Sign in with Apple',
+  authGoogleSignIn: 'Sign in with Google',
+  authLegalBefore: 'By continuing you agree to the ',
+  authLegalTerms: 'Terms',
+  authLegalAnd: ' and ',
+  authLegalPrivacy: 'Privacy Notice',
+  authLegalAfter: '. CYPHIX is not a substitute for emergency care.',
+
+  /* ── Sign in ── */
+  authSignInTitle: 'Sign in',
+  authSignInSub: 'Welcome back. Your readings are waiting.',
+  authEmail: 'Email',
+  authEmailPlaceholder: 'name@example.com',
+  authPassword: 'Password',
+  authPasswordPlaceholder: '••••••••',
+  authShow: 'Show',
+  authHide: 'Hide',
+  authForgot: 'Forgot password?',
+  authUseFaceId: 'Use Face ID',
+  authUseTouchId: 'Use Touch ID',
+  authUseBiometrics: 'Unlock with biometrics',
+  authBiometricPrompt: 'Unlock CYPHIX',
+  authBack: 'Back',
+
+  /* ── Reset password ── */
+  authResetTitle: 'Reset password',
+  authResetSub: 'Enter the email on your account. We will send a reset link valid for 30 minutes.',
+  authResetSent: 'If that address is on an account, a link is on its way. Check your inbox and spam folder.',
+  authSendReset: 'Send reset link',
+
+  /* ── Create account ── */
+  authSignUpTitle: 'Create account',
+  authSignUpStep: 'Step 1 of 3 · Credentials',
+  authFullName: 'Full name',
+  authNamePlaceholder: 'Alex Moreau',
+  authPasswordHint: 'At least {n} characters',
+  authStrengthNone: '—',
+  authStrengthWeak: 'Weak',
+  authStrengthFair: 'Fair',
+  authStrengthStrong: 'Strong',
+  authContinue: 'Continue',
+  authSignInInstead: 'Sign in instead',
+
+  /* ── Phone ── */
+  authPhoneTitle: 'Your phone number',
+  authPhoneSub: 'Step 2 of 3 · Used to verify your identity and to alert your emergency contact.',
+  authSendCode: 'Send code',
+  authDelete: 'Delete',
+  authCountryCode: 'Country code {code}. Tap to change.',
+  authPhoneEntered: 'Number entered: {phone}',
+
+  /* ── Code ── */
+  authOtpTitle: 'Enter the 6-digit code',
+  authOtpSub: 'Sent to {phone}.',
+  authOtpEntered: '{n} of {total} digits entered',
+  authResendIn: 'You can ask for a new code in {clock}',
+  authResendNow: 'Send a new code',
+  authVerify: 'Verify',
+  authDemoCode: 'Demo build — no text message is sent. Use this code:',
+
+  /* ── Health profile ── */
+  authStepOf: 'Step {n} of {total}',
+  authSkip: 'Skip',
+  authOptional: 'Optional',
+
+  authSexTitle: 'What is your sex?',
+  authSexSub: 'ECG interpretation thresholds differ by sex. This is recorded as sex assigned at birth.',
+  authSexMale: 'Male',
+  authSexFemale: 'Female',
+  authSexOther: 'Other',
+  authSexUnknown: 'Not stated',
+
+  authHeightTitle: 'Your height',
+  authHeightSub: 'Used with weight to index your ECG voltage criteria.',
+  authHeightValueA11y: '{value} centimetres',
+  authWeightTitle: 'Your weight',
+  authWeightSub: 'Electrode impedance is calibrated against body mass.',
+  authWeightValueA11y: '{value} kilograms',
+  authUnitCm: 'CM',
+  authUnitFt: 'FT',
+  authUnitKg: 'KG',
+  authUnitLb: 'LB',
+  authUnitCmLong: 'cm',
+  authUnitKgLong: 'kg',
+  authUnitLbLong: 'lb',
+
+  authBloodTitle: 'Blood type',
+  authBloodSub: 'Shown on your emergency medical card. Leave it blank if you are not certain — never guess.',
+  authBloodUnknown: 'I don’t know my blood type',
+  authBloodUnknownShort: 'Unknown',
+
+  authEmergencyTitle: 'Emergency contact',
+  authEmergencySub: 'Notified with your location if a reading detects a critical rhythm.',
+  authEcName: 'Name',
+  authEcNamePlaceholder: 'Jordan Moreau',
+  authEcPhone: 'Phone',
+  authEcPhonePlaceholder: '+972 50 000 0000',
+  authEcRelation: 'Relationship',
+  authEcNote: 'Tell them they are your emergency contact before you finish — a call from an app is a poor first introduction.',
+  authRelPartner: 'Partner',
+  authRelParent: 'Parent',
+  authRelSibling: 'Sibling',
+  authRelFriend: 'Friend',
+  authRelDoctor: 'Doctor',
+
+  authPhotoTitle: 'Profile photo',
+  authPhotoSub: 'Helps clinicians confirm they are reviewing the right record.',
+  authPhotoPreviewA11y: 'Your profile picture',
+  authTakePhoto: 'Take photo',
+  authUpload: 'Upload',
+  authPhotoDenied: 'CYPHIX has no access to the camera or your photos. You can allow it in the phone’s settings, or pick a colour below instead.',
+  authAvatarColour: 'Or pick an avatar colour',
+  authAvatarColourN: 'Avatar colour {n}',
+
+  /* ── Review ── */
+  authReviewKicker: 'Review',
+  authReviewTitle: 'Check your details',
+  authReviewComplete: 'Everything is filled in. You can change any of it later in Settings.',
+  authReviewGaps: 'You skipped {list}. You can add it any time in Settings.',
+  authConfirm: 'Confirm and finish',
+  authEdit: 'Edit',
+  authAdd: 'Add',
+  authSkipped: 'Skipped',
+  authNotSet: 'Not set',
+  authDataNote: 'Your health data stays on this device and is shared only with clinicians you authorise.',
+  authSumName: 'Name',
+  authSumPhone: 'Phone',
+  authSumSex: 'Sex',
+  authSumHeight: 'Height',
+  authSumWeight: 'Weight',
+  authSumBlood: 'Blood type',
+  authSumEmergency: 'Emergency contact',
+
+  /* ── Done ── */
+  authSuccessTitle: 'Profile created',
+  authSuccessSub: 'Pair your CYPHIX device to record your first limb-lead ECG.',
+  authPairDevice: 'Pair my device',
+  authLater: 'Later',
+
+  /* ── Failures, by stable code (never a raw server string) ── */
+  authErrEmailTaken: 'That address already has an account.',
+  authErrInvalidCredentials: 'That email and password do not match an account.',
+  authErrWeakPassword: 'That password is too short.',
+  authErrNetwork: 'No connection. Check your network and try again.',
+  authErrUnknown: 'Something went wrong. Please try again.',
+  authErrWrongCode: 'That code does not match. Check it and try again.',
+
   /* ── Shared ── */
   back: 'Back',
   exit: 'Exit',
@@ -458,6 +619,9 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.3.0 — Carries the whole signed-out flow: splash, welcome, sign-in,
+//          reset, registration, the six health steps, review and success —
+//          plus the failure codes, each mapped to one honest sentence.
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.

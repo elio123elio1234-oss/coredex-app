@@ -1,11 +1,24 @@
 /* ==================================================================
    The current principal, and what it may do.
 
-   ★ THE ONE FILE AUTH LANDS IN. There is no sign-in on mobile yet, so
-   `DEMO_USER` below stands in for the authenticated user. Every RBAC gate
-   in the app — the History viewer's tools, delete, export — is REAL code
-   running against it. When `refreshSession` starts returning a real
-   principal, this file reads it from the store and nothing else changes.
+   ★ THE ONE FILE AUTH LANDS IN — and, as of the onboarding flow, the one
+   place where the app KNOWS BETTER and says so.
+
+   There IS a real signed-in account now (`features/auth/authSlice`), and
+   its role is `patient`. This file still answers with `DEMO_USER`, a
+   clinician, ON PURPOSE: every viewer tool in Scan History — calipers,
+   filters, annotations, compare, export — is gated on clinician
+   permissions, so wiring the RBAC principal to the new session would
+   silently strip a finished module down to a read-only trace with no way
+   to switch back. That is a decision about who this product is for, not
+   a wiring detail, and it is not one to make as a side effect of adding
+   a login screen.
+
+   The swap is one line here once "preview as role" exists (the web's
+   demo control). Tracked in PARITY.md. Until then:
+     • WHO the patient is (name, profile) comes from `useAuth()` and is
+       real — that is what the greeting and Settings show.
+     • WHAT they may do comes from here and is the demo clinician.
 
    The stand-in is the `clinician` role deliberately: History is the
    doctor-facing module (CYPHIX UX direction), and demoing it as a patient
@@ -49,4 +62,6 @@ export function usePermissions(): Permissions {
   );
 }
 
-// v1.0.0 — Demo principal + can()/roleAllowed(), mirroring the web auth hooks.
+// v1.1.0 — Unchanged behaviour, now a DELIBERATE divergence: a real session
+//          exists, but the RBAC principal stays the demo clinician so History's
+//          tools remain reachable. See the header and PARITY.md.

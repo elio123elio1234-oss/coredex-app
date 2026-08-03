@@ -21,6 +21,10 @@ export interface AuditActor {
 
 /** The actions this app can take. A closed set, so a typo is a type error. */
 export type AuditAction =
+  /* Who came in and who left. The actor is the account id + role — never
+     the address they typed, and never anything from the password field. */
+  | 'auth:login'
+  | 'auth:logout'
   | 'recording:read'
   | 'recording:create'
   | 'recording:delete'
@@ -108,5 +112,7 @@ export function getAuditTrail(): readonly AuditEntry[] {
   return [...ring];
 }
 
+// v1.1.0 — Adds auth:login / auth:logout to the action set, so who came in
+//          and who left is on the same trail as who read a recording.
 // v1.0.0 — Audit logger + withAudit() wrapper, mirroring the web placeholder
 //          (references only, never PII).

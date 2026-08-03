@@ -1,0 +1,188 @@
+/* ==================================================================
+   Auth slice — the signed-in account + the sign-in lifecycle. A 1:1
+   mirror of the web's `features/auth/authSlice.ts`: same statuses, same
+   thunk names, same error codes, so the two apps fail identically.
+
+   It holds the resolved principal and the registration profile that came
+   back with it, and NOTHING about the onboarding wizard — which step is
+   on screen and what has been typed into it is the wizard's own business
+   (`onboardingModel.ts`), thrown away when it finishes. Half-typed
+   credentials do not belong in a global store.
+
+   ⚠️ A password never enters an action payload. `registerUser` takes one
+   as an ARGUMENT (it must), and RTK puts thunk args in the pending
+   action — so the thunk arg type is deliberately the last place it
+   appears, and nothing reads it back out of the store.
+   ================================================================== */
+
+import { createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit';
+import {
+  AuthError,
+  type AuthErrorCode,
+  type Credentials,
+  type RegistrationInput,
+  type RegistrationProfile,
+  type SessionUser,
+} from '@cyphix/shared';
+import { authService } from '@/services/auth/authService';
+import { logAudit } from '@/services/audit/auditLogger';
+
+/** idle = signed out (show onboarding); restoring = checking the device
+    for a stored session on boot. */
+export type AuthStatus = 'restoring' | 'idle' | 'loading' | 'error';
+
+export interface AuthState {
+  user: SessionUser | null;
+  /** What registration recorded. Empty for an account that skipped it all. */
+  profile: RegistrationProfile;
+  status: AuthStatus;
+  error: AuthErrorCode | null;
+  /**
+   * The account was created THIS session and the patient has not dismissed
+   * the "Profile created" screen yet.
+   *
+   * ★ Without this the success screen could never be seen. The gate swaps
+   * the onboarding flow for the app the instant a user exists — which,
+   * for a registration, is the instant the account is written. The flag
+   * holds the door for exactly as long as the last screen of the flow is
+   * still being read, and `welcomeAcknowledged` is the patient letting go
+   * of it.
+   */
+  justRegistered: boolean;
+}
+
+const initialState: AuthState = {
+  user: null,
+  profile: {},
+  // Boot in "restoring" so the gate shows the splash, never a flash of the
+  // welcome screen, before we know whether an account exists on this device.
+  status: 'restoring',
+  error: null,
+  justRegistered: false,
+};
+
+function auditSignIn(user: SessionUser, detail: string): void {
+  logAudit({
+    actor: { id: user.id, role: user.role },
+    action: 'auth:login',
+    outcome: 'success',
+    detail,
+  });
+}
+
+/** Boot: bring back the stored session if there is one. */
+export const restoreSession = createAsyncThunk('auth/restore', async () => {
+  return authService.restore();
+});
+
+export const loginUser = createAsyncThunk<
+  { user: SessionUser; profile: RegistrationProfile },
+  Credentials,
+  { rejectValue: AuthErrorCode }
+>('auth/login', async (credentials, { rejectWithValue }) => {
+  try {
+    const session = await authService.login(credentials);
+    auditSignIn(session.user, 'login');
+    return { user: session.user, profile: session.profile };
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+export const registerUser = createAsyncThunk<
+  { user: SessionUser; profile: RegistrationProfile },
+  RegistrationInput,
+  { rejectValue: AuthErrorCode }
+>('auth/register', async (input, { rejectWithValue }) => {
+  try {
+    const session = await authService.register(input);
+    auditSignIn(session.user, 'register');
+    return { user: session.user, profile: session.profile };
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+export const logoutUser = createAsyncThunk('auth/logout', async (_arg, { getState }) => {
+  const current = (getState() as { auth: AuthState }).auth.user;
+  await authService.logout();
+  if (current) {
+    logAudit({
+      actor: { id: current.id, role: current.role },
+      action: 'auth:logout',
+      outcome: 'success',
+    });
+  }
+});
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    clearAuthError(state) {
+      state.error = null;
+      if (state.status === 'error') state.status = 'idle';
+    },
+    /** The patient has read "Profile created" and tapped through. */
+    welcomeAcknowledged(state) {
+      state.justRegistered = false;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(restoreSession.pending, (state) => {
+        state.status = 'restoring';
+      })
+      .addCase(restoreSession.fulfilled, (state, action) => {
+        state.user = action.payload?.user ?? null;
+        state.profile = action.payload?.profile ?? {};
+        state.status = 'idle';
+        /* A restored session is one the patient has met before — there is
+           nothing to celebrate and nothing holding the door. */
+        state.justRegistered = false;
+      })
+      .addCase(restoreSession.rejected, (state) => {
+        // A device we cannot read is a device with no session — show the door.
+        state.user = null;
+        state.status = 'idle';
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.profile = {};
+        state.status = 'idle';
+        state.error = null;
+        state.justRegistered = false;
+      })
+      /* Sign-in and registration land the same way — except that
+         registration also latches `justRegistered`, so they cannot share
+         one matcher. RTK requires every addCase BEFORE any addMatcher. */
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.profile = action.payload.profile;
+        state.status = 'idle';
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.profile = action.payload.profile;
+        state.status = 'idle';
+        state.error = null;
+        // Hold the gate on the flow until "Profile created" is dismissed.
+        state.justRegistered = true;
+      })
+      .addMatcher(isAnyOf(loginUser.pending, registerUser.pending), (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addMatcher(isAnyOf(loginUser.rejected, registerUser.rejected), (state, action) => {
+        state.status = 'error';
+        state.error = action.payload ?? 'unknown';
+      });
+  },
+});
+
+export const { clearAuthError, welcomeAcknowledged } = authSlice.actions;
+export default authSlice.reducer;
+
+// v1.0.0 — Session + sign-in lifecycle, mirroring the web auth slice, plus the
+//          `justRegistered` latch that lets the success screen be seen at all.

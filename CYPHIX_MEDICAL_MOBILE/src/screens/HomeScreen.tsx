@@ -21,6 +21,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import HeroBlobButton from '@/components/organisms/HeroBlobButton';
 import PatientShell from '@/components/templates/PatientShell';
 import { useBle } from '@/features/ble/useBle';
+import { useAuth } from '@/features/auth/useAuth';
 import { DEMO_CARD } from '@/features/profile/demoCard';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/theme/useTheme';
@@ -44,9 +45,12 @@ export default function HomeScreen() {
   const { t: tr } = useTranslation();
   const nav = useNavigation<{ navigate: (screen: string) => void }>();
   const ble = useBle();
-  /* Until auth lands this is the demo patient — the same fictitious
-     `mock-0001` the web seeds, so the two greet the same person. */
-  const greetName = firstName(DEMO_CARD.displayName);
+  /* The name the patient gave when they registered. The fictitious demo
+     card is the fallback for a session that carries no display name —
+     greeting someone by the wrong name is worse than greeting them by
+     none, but a blank hello is worse than either. */
+  const { user } = useAuth();
+  const greetName = firstName(user?.displayName ?? DEMO_CARD.displayName);
 
   /* ── Device status, in words ──
      No live BPM here. The web's MeasurePage does append one, but on the
@@ -133,5 +137,7 @@ const styles = StyleSheet.create({
   demoLink: { fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
 });
 
+// v2.2.0 — Greets the account that actually signed in, falling back to the
+//          demo card when a session carries no display name.
 // v2.1.0 — All copy comes from the locale; the greeting uses the shared
 //          `homeGreeting: 'Hello {name}'` placeholder the web app uses.

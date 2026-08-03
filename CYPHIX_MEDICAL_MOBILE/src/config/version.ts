@@ -1,8 +1,33 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.18.2';
+export const APP_VERSION = '0.19.0';
 export const APP_BUILD_LABEL =
-  'The judder was 48 SVG paths rebuilt per frame — one memo fixes both the sheet and the ghost drag; the stuck compare capsule is gone';
+  'The app has a front door: splash, sign-in and a 13-step registration, built from the CYPHIX Onboarding reference';
+
+// v0.19.0 — THE APP HAS A FRONT DOOR. Everything before the tabs, taken from
+//           the "CYPHIX Onboarding" design reference and converted to React
+//           Native: a navy splash whose ECG mark draws itself, a welcome hero,
+//           sign-in (with Face ID / fingerprint where the device really has
+//           one), password reset, and a registration wizard — credentials with
+//           a live strength meter, phone and a six-digit code on an in-page
+//           pad, then six health steps (sex, height, weight, blood type,
+//           emergency contact, photo), a review screen that names what was
+//           skipped, and "Profile created".
+//           The reference's animations are PORTED, not approximated: `scrIn`
+//           (16 px + fade, 320 ms, cubic-bezier(.22,.7,.3,1)) on every step,
+//           `fadeUp` with its `both` fill mode staggering the splash,
+//           `pulseRing` on two offset rings, and `sweep` drawing the trace by
+//           animating strokeDashoffset — all on the UI thread.
+//           What is deliberately NOT from the reference: the font (mobile
+//           ships the system font per root CLAUDE.md §3.1, so the mono labels
+//           keep their treatment and their tabular digits but not IBM Plex
+//           Mono), and the emergency step, which types the number instead of
+//           picking from the address book — a mis-tap in a list of real people
+//           writes a real person into a medical record.
+//           Registration is device-local for now: `authService` is the same
+//           swap point the web has, accounts are held with SHA-256 digests and
+//           the session token goes to the Keychain / Keystore. Sign out is live
+//           in Settings — and is the only way back to the flow once it is done.
 
 // v0.18.2 — The judder was never the animation, and v0.18.1 shortening it was
 //           me guessing. ONE LINE caused it: `palette` was rebuilt inline on

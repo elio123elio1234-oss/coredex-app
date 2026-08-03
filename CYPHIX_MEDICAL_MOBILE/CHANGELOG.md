@@ -1,5 +1,139 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.19.0 — 2026-08-03 — The app gets a front door
+
+> "אנחנו הולכים להתחיל את מסך ההתחברות … תיקח מכאן רק את שלבי ההתחברות בלבד,
+> לא את מסך הבית. תשתמש בפונט שלנו. עיצוב — מהרפרנס. האנימציות — מהרפרנס.
+> זה רק הפתיח למה שכבר קיים, אל תשנה מה שכבר יש."
+
+Everything that happens **before** the tabs, converted from the `CYPHIX
+Onboarding` design reference to React Native. Fourteen screens: splash →
+welcome → sign in / reset password, or welcome → credentials → phone → code →
+six health steps → review → "Profile created". The reference's own home screen
+is deliberately **not** ported — this app already has one.
+
+### Where it sits in the app
+
+`AuthGate` stands in **front** of `RootNavigator`, not inside it. The flow has
+no tabs, no dock and no routes of its own, and until there is an account there
+is nothing for the navigator to be about. Nothing else in the app moved: the
+tabs, the exam, the report and Scan History are byte-identical.
+
+The flow itself is **one screen that swaps its contents** (`OnboardingScreen`),
+which is both what the reference does and what the web's `RegisterWizard` does.
+A native stack push would have read as leaving CYPHIX rather than moving
+through it — and the reference's transition is a 16 px slide, which is a
+content change, not a page change.
+
+### The animations are ported, not approximated
+
+All four of the reference's keyframes, on the UI thread via Reanimated:
+
+| Reference | Here |
+|---|---|
+| `scrIn` — 16 px + fade, 320 ms, `cubic-bezier(.22,.7,.3,1)` | `StepFadeIn`, keyed on the step, and **direction-aware** — going back does not look like going on |
+| `fadeUp` — 10 px + fade, 600 ms, `both` | `FadeUpView`. The `both` fill mode is the point: the element is INVISIBLE during its delay, never flashed and then animated |
+| `pulseRing` — scale .9→1.35, 2 s, staggered .6 s | `PulseRing`, two of them. The 30 % of the cycle where it is invisible is the REST between beats; without it the rings read as a spinner |
+| `sweep` — `stroke-dashoffset` 520→0 over 1.6 s | `EcgSweepMark`, through `useAnimatedProps` — putting the offset in React state would re-render the splash 96 times in 1.6 s |
+
+Plus the two the reference does with CSS transitions: the step rail (400 ms on
+the same bezier) and the password meter (width **and** colour, 300 ms).
+
+### Three things that are deliberately NOT the reference
+
+1. **The font.** The reference sets IBM Plex Mono on every label, digit and
+   keycap. Mobile ships the system font (root `CLAUDE.md` §3.1) — "תשתמש
+   בפונט שלנו". What carries over is the *treatment*: 10.5 pt, caps, `.1em`
+   tracking, and `tabular-nums` everywhere digits change in place, so the
+   64 pt height readout does not shift under the thumb dragging it.
+2. **The emergency contact.** The reference opens on the phone's contact list.
+   Reading the address book needs a permission and a native module — and a
+   mis-tap in a list of real people silently writes a real person into a
+   medical record. It is typed here; the native picker is a tracked follow-up.
+3. **Dark mode**, which the reference does not have at all. The app has a
+   theme switch, so `authTheme.ts` carries a dark translation of the same
+   design rather than flashing white at 2 a.m.
+
+### The bug that would have shipped
+
+"Profile created" was written, styled, animated — and **unreachable**.
+Registration writes the account, so `auth.user` exists one screen before the
+flow ends, and the gate swapped in the app on that frame. The patient would
+have gone from the review screen straight to the tabs, and nobody would ever
+have seen the last screen of the design.
+
+`authSlice.justRegistered` is the latch that holds the door, and
+`welcomeAcknowledged` is the patient letting go of it. Worth stating plainly:
+`tsc`, both `expo export`s and `expo-doctor` were **green** through all of it.
+
+Two more found the same way, both in the arithmetic rather than the logic:
+three 33 % keypad keys plus two 10 pt gaps overflow their row, and `flexWrap`
+answers that by silently giving a two-column dialler; and `paddingEnd`
+resolves against the native layout direction, which this app does not switch —
+so in Hebrew the password text would have run underneath the Show button.
+All three are in PARITY.md's trap table.
+
+### Honest about what is mocked
+
+There is no server, and the flow says so rather than pretending:
+
+- **No SMS.** The code step states it is a demo build and prints the code it
+  will accept. A realistic screen waiting on a text that never arrives would
+  have been the worse lie.
+- **No mail.** Reset answers "if that address is on an account, a link is on
+  its way" — which is both true here and what a real server should say anyway
+  (confirming which addresses exist is an enumeration oracle).
+- **Apple / Google** are drawn and land on the e-mail form. They cannot work
+  until the server holds the client secrets.
+- **Terms / Privacy** are named in the legal line and are not tappable,
+  because no such document exists yet.
+- Accounts live on the device (AsyncStorage, **SHA-256 digests** via
+  `expo-crypto`); the session token goes to the **Keychain / Keystore**.
+  `authService` is the same swap point the web has — one class, one line.
+
+### Face ID, and when it is offered
+
+`expo-local-authentication`, drawn only when the device has the hardware, has
+something enrolled, **and** remembers an account. All three, or the offer could
+not be honoured — and the front door is the last place to bluff.
+
+### What this changes outside the flow (small, and on purpose)
+
+- **Sign out** is live in Settings › Account, behind a confirmation. It was
+  already there as a disabled "Coming soon" row waiting for exactly this — and
+  without it the flow could never be reached a second time on a device that has
+  completed it.
+- **The greeting** on Home is the name the patient typed, falling back to the
+  demo card.
+
+Everything else stays: the Profile tab still renders `DEMO_CARD`, and
+`useCurrentUser` still answers with the demo **clinician**. That second one is
+deliberate and worth being explicit about — a registered account is a
+`patient`, and every Scan History tool is gated on clinician permissions, so
+wiring the session through would silently strip a finished module with no way
+to switch back. WHO the patient is, is now real; WHAT they may do is still the
+stand-in. Both are rows in PARITY.md.
+
+### Shared
+
+`CYPHIX_SHARED/src/auth/contract.ts` is new: the account shape, the
+registration profile, the typed failure codes, `MIN_PASSWORD_LENGTH`, the auth
+route paths, and `passwordStrength()` — so "fair" means the same thing on the
+phone and on the web. ⚠️ The web still carries its own copy in
+`services/auth/authTypes.ts`; until it imports from the package, an edit
+belongs in both.
+
+### Verified / not verified
+
+`tsc --noEmit` clean, `expo export` bundles for **both** platforms,
+`expo-doctor` 18/18. None of that has touched a phone. Unproven and listed in
+PARITY.md: the animations at real frame rates, the pad and the OTP boxes on a
+short screen (both steps scroll for that reason and nobody has watched them do
+it), the slider under a thumb, the photo picker returning a usable square, and
+Face ID — which cannot be tested from Windows at all.
+
+---
+
 ## v0.18.2 — 2026-08-02 — It was never the animation. It was one un-memoised object.
 
 > "you just made the animation faster, but it flickers — it's not the speed it

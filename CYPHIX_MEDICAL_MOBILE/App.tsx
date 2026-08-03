@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
+import { AuthGate } from '@/features/auth/AuthGate';
 import { BleProvider } from '@/features/ble/BleProvider';
 import { PreferencesGate } from '@/features/preferences/PreferencesGate';
 import { I18nProvider } from '@/i18n/I18nProvider';
@@ -33,7 +34,14 @@ export default function App() {
                   not reset mid-recording. */}
               <BleProvider>
                 <StatusBar style="auto" />
-                <RootNavigator />
+                {/* The signed-out flow stands in FRONT of the navigator,
+                    not inside it: the splash, the sign-in and the
+                    registration wizard have no tabs, no dock and no
+                    routes of their own, and the app behind them must not
+                    mount until there is an account to mount it for. */}
+                <AuthGate>
+                  <RootNavigator />
+                </AuthGate>
               </BleProvider>
             </I18nProvider>
           </PreferencesGate>
@@ -47,5 +55,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v2.4.0 — Adds the AuthGate around the navigator: splash → onboarding → app.
 // v2.3.0 — Adds I18nProvider inside the preference gate, so the first paint is
 //          already in the patient's stored language.

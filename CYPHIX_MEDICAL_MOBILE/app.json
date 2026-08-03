@@ -12,6 +12,9 @@
       "bundleIdentifier": "com.cyphix.medical",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "CYPHIX connects to your ECG device over Bluetooth to record heart signals."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -34,7 +37,20 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CYPHIX uses a photo only as your profile picture, so a clinician can confirm they are reading the right record. It stays on this device.",
+          "cameraPermission": "CYPHIX uses the camera only to take your profile picture. It stays on this device."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "CYPHIX uses Face ID so you can open your own health record without typing your password."
+        }
+      ]
     ],
     "experiments": {
       "tsconfigPaths": true

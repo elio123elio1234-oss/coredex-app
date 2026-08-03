@@ -11,13 +11,17 @@
    ── Rows the web has and this does not (all recorded in PARITY.md) ──
    • AI voice-guide key — Gemini Live is web-only today, so a key field
      here would configure nothing.
-   • "Preview as role" / Sign out — mobile auth is still the demo card;
-     a sign-out button that cannot sign anyone out is worse than none.
+   • "Preview as role" — there is still no role to switch between.
    • Clinic & Server — admin-only on the web, and there is no role to
      check against yet.
+   Sign out USED to be in that list. It is live now: the onboarding flow
+   creates a real account on the device, so there is something to sign
+   out of — and without this row the signed-out experience could never be
+   reached a second time.
    Text size is present but DIFFERENT on purpose: see the row's comment.
    ================================================================== */
 
+import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,11 +40,13 @@ import {
   PrivacyIllustration,
 } from '@/components/atoms/Illustration';
 import BackgroundSelectRow from '@/components/molecules/BackgroundSelectRow';
+import ConfirmDialog from '@/components/molecules/ConfirmDialog';
 import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
+import { useAuth } from '@/features/auth/useAuth';
 import { useBle } from '@/features/ble/useBle';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD } from '@/features/profile/demoCard';
@@ -85,6 +91,8 @@ export default function SettingsScreen() {
   const { prefs, setTheme, setBackground, setNotification, setCareMode } = usePreferences();
   const { t: tr, lang, setLang } = useTranslation();
   const ble = useBle();
+  const { user, logout } = useAuth();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const palette = shellPalette(prefs.background, dark);
 
   /* Device connection in WORDS, never colour alone — the same wording the
@@ -302,18 +310,23 @@ export default function SettingsScreen() {
           title={tr('setSecAccount')}
           description={tr('setSecAccountDesc')}
         >
-          <SettingsRow first label={tr('setAccountName')} value={DEMO_CARD.displayName} />
+          <SettingsRow
+            first
+            label={tr('setAccountName')}
+            value={user?.displayName ?? DEMO_CARD.displayName}
+          />
           <SettingsRow
             label={tr('setAccountRole')}
             value={<SettingsChip label={tr('roleLabelPatient')} />}
           />
-          {/* No sign-out until there is something to sign out OF — mobile auth
-              is still the fictitious demo card (web CLAUDE.md §7.4). */}
+          {/* There IS something to sign out of now: the account created by
+              the onboarding flow. Confirmed first — on a device-local
+              account, signing out means the password is needed again (or
+              a face), and a mis-tap here is a locked-out patient. */}
           <SettingsRow
             label={tr('setAccountSignOut')}
             description={tr('setAccountSignOutDesc')}
-            value={<SettingsChip label={tr('setComingSoon')} />}
-            disabled
+            onPress={() => setConfirmSignOut(true)}
           />
         </SettingsSection>
 
@@ -331,6 +344,22 @@ export default function SettingsScreen() {
           <SettingsRow label={tr('setAboutCompliance')} value={tr('setAboutComplianceValue')} />
         </SettingsSection>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmSignOut}
+        title={tr('setAccountSignOut')}
+        subject={user?.displayName}
+        body={tr('setSignOutBody')}
+        confirmLabel={tr('setAccountSignOut')}
+        cancelLabel={tr('back')}
+        onConfirm={() => {
+          setConfirmSignOut(false);
+          /* The gate above the navigator swaps this whole screen for the
+             welcome screen the moment the session goes. */
+          void logout();
+        }}
+        onCancel={() => setConfirmSignOut(false)}
+      />
     </View>
   );
 }
@@ -347,6 +376,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v2.1.0 — Sign out is live (with a confirmation), and the Account section
+//          shows the account that is actually signed in.
 // v2.0.0 — Fully translated, and gains the Language picker at the top of
 //          Appearance (the one setting a patient must be able to find while
 //          unable to read the rest of the screen).

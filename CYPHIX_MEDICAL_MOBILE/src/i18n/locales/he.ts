@@ -263,7 +263,8 @@ export const he: Record<TranslationKey, string> = {
   setAccountRole: 'תפקיד',
   roleLabelPatient: 'מטופל/ת',
   setAccountSignOut: 'התנתקות',
-  setAccountSignOutDesc: 'יהיה זמין כשהחשבונות יחוברו לשרת',
+  setAccountSignOutDesc: 'מסיים את החיבור בטלפון הזה',
+  setSignOutBody: 'כדי לפתוח את המדידות שוב תצטרכו את הסיסמה — או Face ID. שום דבר לא נמחק.',
 
   setSecAbout: 'אודות',
   setSecAboutDesc: 'גרסה ותאימות רגולטורית',
@@ -442,11 +443,171 @@ export const he: Record<TranslationKey, string> = {
   chatTitle: 'צ׳אט',
   chatEmptyBody: 'הודעות עם הצוות המטפל יופיעו כאן, באותו שרשור שאתם רואים בווב.',
 
+  /* ══ הרשמה והתחברות ═════════════════════════════════════════════ */
+
+  /* ── מסך פתיחה ── */
+  authTagline: 'אק״ג מהבית · רמה רפואית',
+
+  /* ── ברוכים הבאים ── */
+  authWelcomeTitle: 'אק״ג ברמה קלינית,\nמוקלט מהבית.',
+  authWelcomeSub: 'נגדיר את החשבון ואת הפרופיל הרפואי. זה לוקח כשתי דקות.',
+  authCreateAccount: 'יצירת חשבון',
+  authSignIn: 'התחברות',
+  authAppleSignIn: 'התחברות עם Apple',
+  authGoogleSignIn: 'התחברות עם Google',
+  authLegalBefore: 'בהמשך אתם מאשרים את ',
+  authLegalTerms: 'תנאי השימוש',
+  authLegalAnd: ' ואת ',
+  authLegalPrivacy: 'הצהרת הפרטיות',
+  authLegalAfter: '. CYPHIX אינה תחליף לטיפול רפואי דחוף.',
+
+  /* ── התחברות ── */
+  authSignInTitle: 'התחברות',
+  authSignInSub: 'טוב לראות אתכם שוב. המדידות שלכם מחכות.',
+  authEmail: 'אימייל',
+  authEmailPlaceholder: 'name@example.com',
+  authPassword: 'סיסמה',
+  authPasswordPlaceholder: '••••••••',
+  authShow: 'הצגה',
+  authHide: 'הסתרה',
+  authForgot: 'שכחתם סיסמה?',
+  authUseFaceId: 'כניסה עם Face ID',
+  authUseTouchId: 'כניסה עם Touch ID',
+  authUseBiometrics: 'כניסה בזיהוי ביומטרי',
+  authBiometricPrompt: 'פתיחת CYPHIX',
+  authBack: 'חזרה',
+
+  /* ── איפוס סיסמה ── */
+  authResetTitle: 'איפוס סיסמה',
+  authResetSub: 'הזינו את כתובת האימייל של החשבון. נשלח קישור לאיפוס שתקף ל‑30 דקות.',
+  authResetSent: 'אם קיים חשבון עם הכתובת הזו, קישור בדרך. בדקו גם בתיקיית הספאם.',
+  authSendReset: 'שליחת קישור לאיפוס',
+
+  /* ── יצירת חשבון ── */
+  authSignUpTitle: 'יצירת חשבון',
+  authSignUpStep: 'שלב 1 מתוך 3 · פרטי כניסה',
+  authFullName: 'שם מלא',
+  authNamePlaceholder: 'ישראל ישראלי',
+  authPasswordHint: 'לפחות {n} תווים',
+  authStrengthNone: '—',
+  authStrengthWeak: 'חלשה',
+  authStrengthFair: 'בינונית',
+  authStrengthStrong: 'חזקה',
+  authContinue: 'המשך',
+  authSignInInstead: 'להתחברות במקום',
+
+  /* ── טלפון ── */
+  authPhoneTitle: 'מספר הטלפון שלכם',
+  authPhoneSub: 'שלב 2 מתוך 3 · משמש לאימות הזהות וליצירת קשר עם איש הקשר לחירום.',
+  authSendCode: 'שליחת קוד',
+  authDelete: 'מחיקה',
+  authCountryCode: 'קידומת {code}. הקישו לשינוי.',
+  authPhoneEntered: 'המספר שהוזן: {phone}',
+
+  /* ── קוד אימות ── */
+  authOtpTitle: 'הזינו את הקוד בן 6 הספרות',
+  authOtpSub: 'נשלח אל {phone}.',
+  authOtpEntered: 'הוזנו {n} מתוך {total} ספרות',
+  authResendIn: 'אפשר לבקש קוד חדש בעוד {clock}',
+  authResendNow: 'שליחת קוד חדש',
+  authVerify: 'אימות',
+  authDemoCode: 'גרסת הדגמה — לא נשלחת הודעת SMS. השתמשו בקוד הזה:',
+
+  /* ── פרופיל רפואי ── */
+  authStepOf: 'שלב {n} מתוך {total}',
+  authSkip: 'דילוג',
+  authOptional: 'רשות',
+
+  authSexTitle: 'מה המין שלכם?',
+  authSexSub: 'ערכי הסף לפענוח אק״ג שונים בין המינים. הנתון נרשם כמין שנקבע בלידה.',
+  authSexMale: 'זכר',
+  authSexFemale: 'נקבה',
+  authSexOther: 'אחר',
+  authSexUnknown: 'לא צוין',
+
+  authHeightTitle: 'הגובה שלכם',
+  authHeightSub: 'משמש יחד עם המשקל לכיול קריטריוני המתח באק״ג.',
+  authHeightValueA11y: '{value} סנטימטרים',
+  authWeightTitle: 'המשקל שלכם',
+  authWeightSub: 'עכבת האלקטרודות מכוילת ביחס למסת הגוף.',
+  authWeightValueA11y: '{value} קילוגרמים',
+  authUnitCm: 'ס״מ',
+  authUnitFt: 'רגל',
+  authUnitKg: 'ק״ג',
+  authUnitLb: 'ליב׳',
+  authUnitCmLong: 'ס״מ',
+  authUnitKgLong: 'ק״ג',
+  authUnitLbLong: 'ליב׳',
+
+  authBloodTitle: 'סוג דם',
+  authBloodSub: 'מוצג בכרטיס החירום שלכם. אם אינכם בטוחים — השאירו ריק, לעולם אל תנחשו.',
+  authBloodUnknown: 'איני יודע/ת את סוג הדם שלי',
+  authBloodUnknownShort: 'לא ידוע',
+
+  authEmergencyTitle: 'איש קשר לחירום',
+  authEmergencySub: 'יקבל התראה עם המיקום שלכם אם מדידה מזהה קצב מסוכן.',
+  authEcName: 'שם',
+  authEcNamePlaceholder: 'דנה ישראלי',
+  authEcPhone: 'טלפון',
+  authEcPhonePlaceholder: '+972 50 000 0000',
+  authEcRelation: 'קרבה',
+  authEcNote: 'עדכנו אותו שהוא איש הקשר שלכם לחירום — שיחה מאפליקציה היא היכרות ראשונה לא מוצלחת.',
+  authRelPartner: 'בן/בת זוג',
+  authRelParent: 'הורה',
+  authRelSibling: 'אח/ות',
+  authRelFriend: 'חבר/ה',
+  authRelDoctor: 'רופא/ה',
+
+  authPhotoTitle: 'תמונת פרופיל',
+  authPhotoSub: 'עוזרת לצוות הרפואי לוודא שהם צופים בתיק הנכון.',
+  authPhotoPreviewA11y: 'תמונת הפרופיל שלכם',
+  authTakePhoto: 'צילום',
+  authUpload: 'העלאה',
+  authPhotoDenied: 'ל‑CYPHIX אין גישה למצלמה או לתמונות. אפשר לאשר בהגדרות הטלפון, או לבחור צבע למטה במקום.',
+  authAvatarColour: 'או בחרו צבע לתמונה',
+  authAvatarColourN: 'צבע {n}',
+
+  /* ── סיכום ── */
+  authReviewKicker: 'סיכום',
+  authReviewTitle: 'בדקו את הפרטים',
+  authReviewComplete: 'הכול מולא. אפשר לשנות כל פרט בהמשך בהגדרות.',
+  authReviewGaps: 'דילגתם על {list}. אפשר להוסיף בכל עת בהגדרות.',
+  authConfirm: 'אישור וסיום',
+  authEdit: 'עריכה',
+  authAdd: 'הוספה',
+  authSkipped: 'דולג',
+  authNotSet: 'לא הוגדר',
+  authDataNote: 'הנתונים הרפואיים נשמרים במכשיר הזה ומשותפים רק עם אנשי צוות רפואי שאתם מאשרים.',
+  authSumName: 'שם',
+  authSumPhone: 'טלפון',
+  authSumSex: 'מין',
+  authSumHeight: 'גובה',
+  authSumWeight: 'משקל',
+  authSumBlood: 'סוג דם',
+  authSumEmergency: 'איש קשר לחירום',
+
+  /* ── סיום ── */
+  authSuccessTitle: 'הפרופיל נוצר',
+  authSuccessSub: 'חברו את מכשיר CYPHIX כדי להקליט את בדיקת הגפיים הראשונה שלכם.',
+  authPairDevice: 'חיבור המכשיר',
+  authLater: 'אחר כך',
+
+  /* ── שגיאות ── */
+  authErrEmailTaken: 'כבר קיים חשבון עם הכתובת הזו.',
+  authErrInvalidCredentials: 'האימייל והסיסמה אינם תואמים לחשבון קיים.',
+  authErrWeakPassword: 'הסיסמה קצרה מדי.',
+  authErrNetwork: 'אין חיבור. בדקו את הרשת ונסו שוב.',
+  authErrUnknown: 'משהו השתבש. נסו שוב.',
+  authErrWrongCode: 'הקוד אינו תואם. בדקו ונסו שוב.',
+
   /* ── משותף ── */
   back: 'חזרה',
   exit: 'יציאה',
 };
 
+// v1.3.0 — Hebrew for the whole signed-out flow. The clinical reasons each
+//          step gives are translated as reasons, not as labels — a patient
+//          declining a question must be able to read what they decline.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.

@@ -8,6 +8,12 @@ export * from './types/recording';
 export * from './ble/protocol';
 export * from './api/contract';
 
+/* Who the user IS, and what registration collects about them. Same
+   caveat as `ecg/` below: the web still holds its own copy under
+   src/services/auth/authTypes.ts, so until it imports from here an edit
+   belongs in both places (tracked in PARITY.md). */
+export * from './auth/contract';
+
 /* ── The frozen signal chain ──────────────────────────────────────
    `ecg/` is the ECG maths, copied VERBATIM from the web app so every
    platform computes bit-identical waveforms (root CLAUDE.md §2.3).
@@ -43,6 +49,6 @@ export * from './ecg/ecgAlign';
 export * from './ecg/ecgExport';
 export * from './ecg/ecgImport';
 
-// v1.3.0 — Adds the Scan History core: stored-recording types, the waveform
-//          codec, fiducial alignment, and the CSV/EDF+ export + CSV import
-//          builders — so History means the same thing on every platform.
+// v1.4.0 — Adds the auth/registration contract (account, registration profile,
+//          typed failures, password strength), so sign-up asks for the same
+//          things and fails the same way on web, iOS and Android.
