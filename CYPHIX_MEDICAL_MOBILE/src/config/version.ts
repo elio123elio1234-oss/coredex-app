@@ -1,7 +1,18 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.20.0';
-export const APP_BUILD_LABEL = 'Signs in to the web app’s server — one account across browser and phone';
+export const APP_VERSION = '0.20.1';
+export const APP_BUILD_LABEL = 'Signs in to the DEPLOYED server — no laptop, no shared Wi-Fi';
+
+// v0.20.1 — "CONNECTION ISSUE" on sign-in, and it was configuration, not code.
+//           v0.20.0 pointed the app at the dev server on the laptop
+//           (http://10.0.0.19:8080), which has to be running and on the same
+//           Wi-Fi — and was not. The app was right: the fetch never landed,
+//           so it said `network`. Now pointed at the deployed API,
+//           https://cyphix-api.onrender.com, verified to be the SAME database
+//           (the demo patient returns an identical user id and
+//           linkedPatientId from both) and to pass the full client sequence.
+//           ⚠️ EXPO_PUBLIC_* is inlined at BUNDLE time: changing .env needs
+//           `npm start` restarted, not just the app reloaded.
 
 // v0.20.0 — The app stopped having accounts of its own. With
 //           EXPO_PUBLIC_API_BASE_URL set, sign-in goes to CYPHIX_SERVER — the

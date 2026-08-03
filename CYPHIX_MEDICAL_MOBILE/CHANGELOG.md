@@ -1,5 +1,47 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.20.1 — 2026-08-03 — "Connection issue" on sign-in: the app was right
+
+Signing in from Expo Go with a real account failed with *"No connection. Check
+your network and try again."* Nothing was wrong with the code — that message is
+`AuthErrorCode: 'network'`, which the client raises only when the `fetch`
+itself never lands. It was telling the truth.
+
+**Cause:** v0.20.0 pointed `.env` at the **dev server on the laptop**
+(`http://10.0.0.19:8080`), and nothing was listening on 8080. That URL needs a
+server running locally *and* the phone on the same Wi-Fi — two conditions that
+are false most of the time, which makes it a bad default however well it is
+documented.
+
+Ruled out along the way, so it does not get re-investigated later:
+
+- the LAN address was still correct (`10.0.0.19`);
+- the API is reachable over that address once running — `/healthz` and a real
+  login both answer;
+- Windows Firewall is **not** the problem: this Wi-Fi is a *Public* profile,
+  but `node.exe` already has inbound Allow rules on it, which is also why
+  Expo Go reaches Metro on 8081;
+- the bundle *had* picked up the env var — in offline mode the mock service
+  never fetches, so a wrong password would have said "invalid credentials",
+  not "no connection".
+
+**Fix:** the app now points at the **deployed API**,
+`https://cyphix-api.onrender.com`. Verified to be the same database, not just a
+lookalike: the demo patient returns an identical `user.id` **and**
+`linkedPatientId` from the deployed instance and from the local server. The
+full client sequence passes against it — login · `/auth/me` · own-patient read
+· foreign patient 403 · rotation · replay 401 · family revoked · logout ·
+re-login · enumeration-safe failures · 400/409 mapping.
+
+Two things worth knowing:
+
+- **`EXPO_PUBLIC_*` is inlined at BUNDLE time.** After editing `.env`, stop
+  `npm start` and start it again — reloading the app is not enough.
+- **The free tier sleeps after ~15 min idle and wakes in ~50 s.** The first
+  sign-in after a long gap is slow; that is the host waking, not the app. It
+  also interacts with `AuthGate`'s 4 s ceiling (see PARITY.md): a cold boot can
+  show the welcome screen and then jump into the app when the refresh lands.
+
 ## v0.20.0 — 2026-08-03 — One account system: the phone signs into the web app's server
 
 The native app no longer has accounts of its own. With `EXPO_PUBLIC_API_BASE_URL`
