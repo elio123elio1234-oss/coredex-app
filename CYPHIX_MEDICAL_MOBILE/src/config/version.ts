@@ -1,7 +1,35 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.24.2';
-export const APP_BUILD_LABEL = 'Selection gets a moment of its own: the tab that lands pops';
+export const APP_VERSION = '0.24.3';
+export const APP_BUILD_LABEL = 'Slide the glass across all five tabs — the web drag gesture PARITY had listed as never ported';
+
+// v0.24.3 — "WHY CAN'T IT BE SLID BETWEEN ALL THE ICONS?" — and the answer is
+//           that it never could be slid at all. The confirmed diagnosis, from
+//           Settings › About reading `Apple Liquid Glass (iOS 26+)`: the
+//           material is live and real, so what was left was the gesture.
+//           v0.24.0 moved the highlight on TOUCH-DOWN, and a `Pressable` owns
+//           its touch from the moment it starts and NEVER re-targets — that is
+//           what a press is. So the only tab a finger could ever reach was the
+//           one it landed on; sliding towards a neighbour did nothing, and the
+//           one tab that appeared to work was simply the one being tapped.
+//           Re-targeting has to be decided by something that can see all five
+//           tabs, so it is now ONE Pan gesture on the bar: slide and the pill
+//           follows continuously through every tab, with a selection tick as
+//           it passes each one (`selectionAsync` — the picker-wheel event, not
+//           an impact, because this is scrubbing), staying swollen the whole
+//           time so the thing under the finger is visibly the thing being
+//           moved. Release commits wherever it ended.
+//           Taps are untouched: the pan needs 6 pt of travel first, so below
+//           that the `Pressable` still owns the touch and behaves exactly as
+//           before — which also keeps every tab a real accessibility button.
+//           `runOnJS(true)` on purpose: every effect of this gesture is a
+//           React state update or a haptic, both JS-thread things anyway, and
+//           running the callbacks there makes ordering against the pressable's
+//           cancellation deterministic instead of a race. It costs nothing per
+//           frame because updates are filtered to actual index changes — at
+//           most four setStates across a full sweep.
+//           This closes the "**Not ported:** the drag-the-pill gesture" note
+//           that has been sitting in PARITY's dock row since v0.2.
 
 // v0.24.2 — From a suggested "custom tab bar button with a spring" pattern.
 //           Most of it this dock already had and has had for releases — it is

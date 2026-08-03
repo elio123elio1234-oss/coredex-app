@@ -1,5 +1,61 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.24.3 — 2026-08-03 — Slide the glass across all five tabs
+
+Two things arrived together from the iPhone.
+
+### The diagnostic answered: the material is real
+
+Settings › About reads **`Apple Liquid Glass (iOS 26+)`**. That settles the
+open question from v0.24.1 — this phone has the real material and it is
+loading. Neither of the two "not in the dock" causes applies, so anything left
+to fix about how the bar feels is in this app, which is where the second report
+points.
+
+### "Why can't it be slid between all the icons?"
+
+Reported as sliding working for the Chat icon only. What was actually happening
+is that it never worked at all: **the highlight moved on touch-down, and a
+`Pressable` owns its touch from the moment it starts and never re-targets** —
+that is what a press *is*. So the only tab a finger could reach was the one it
+**landed on**, and the tab that appeared to be special was simply the one being
+tapped. Sliding towards a neighbour did nothing, for every tab equally.
+
+Re-targeting cannot be decided by a component that can only see its own tab. It
+is now **one `Pan` gesture on the bar**:
+
+- Slide and the pill follows continuously through all five tabs.
+- A **selection tick** as it passes each one — `Haptics.selectionAsync()`, the
+  event a picker wheel reports as it passes a value, not an impact. This is
+  scrubbing, and it is what makes a slide feel like it catches on each tab.
+- The pill stays **swollen** for the whole drag, so the thing under the finger
+  is visibly the thing being moved.
+- Release commits wherever it ended, clamped to the ends of the bar — a finger
+  that has run off the edge is still clearly asking for the tab at that edge.
+
+**Taps are untouched.** The pan requires 6 pt of travel before it takes over,
+so below that the `Pressable` still owns the touch and behaves exactly as it
+did — which also keeps every tab a real accessibility button rather than a
+region of a gesture surface.
+
+`runOnJS(true)` is deliberate: every effect of this gesture is a React state
+update or a haptic, both of which live on the JS thread anyway. Running the
+callbacks there too removes the `runOnJS` hops and, more importantly, makes
+ordering against the pressable's cancellation **deterministic** rather than a
+race — the guard in `handlePressOut` depends on it. It costs nothing per frame
+because updates are filtered to actual index changes: at most four `setState`s
+across a full sweep of the bar, not one per touch event.
+
+`onFinalize` and not `onEnd` for the cleanup, so a drag interrupted by a call
+or by the app backgrounding cannot leave the bar permanently swollen.
+
+### This closes a note that has been open since v0.2
+
+PARITY's dock row has carried "**Not ported:** the drag-the-pill gesture" from
+the beginning — the web dock has it and mobile never got it. Per the
+Cross-Platform Rule that was a real outstanding debt, not a nicety, and the
+report was the user finding it independently.
+
 ## v0.24.2 — 2026-08-03 — Selection gets a moment of its own
 
 Prompted by a suggested pattern: replace the tab button with a custom one that

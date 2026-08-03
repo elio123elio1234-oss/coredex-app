@@ -14,12 +14,18 @@
    ── ★ WHAT MAKES IT FEEL NATIVE, NOT PORTED (v0.24.0) ──
    Glass on iOS is not a LOOK, it is a MATERIAL THAT ANSWERS YOUR FINGER:
 
-   1. **The highlight follows the finger.** Touch down on any tab and the
-      pill travels there immediately; release commits the navigation,
-      slide off and it springs home. The lit icon follows the PILL rather
-      than the navigator (`lit`, not `selected`), which is also what keeps
-      the filled icon's cut-out details on the colour they are cut out
-      against — see `PILL` below.
+   1. **The highlight follows the finger** — including ACROSS the bar.
+      Touch down on any tab and the pill travels there; keep the finger
+      down and slide, and it follows continuously through all five,
+      ticking as it passes each one. Release commits wherever it ended.
+      The lit icon follows the PILL rather than the navigator (`lit`, not
+      `selected`), which is also what keeps the filled icon's cut-out
+      details on the colour they are cut out against — see `PILL` below.
+      ★ The sliding is a Pan on the BAR, not anything on a tab: a
+      `Pressable` owns its touch from the moment it starts and never
+      re-targets, so before v0.24.3 the highlight could only move on a
+      fresh touch-down and a dragged finger reached nothing. Re-targeting
+      has to be decided by something that can see all five.
    2. **Hold and the glass grows.** Touch → the pill swells slightly;
       keep holding past `HOLD_MS` → it swells further with a heavier
       haptic, and the icon and label grow with it. That is the "press and
@@ -75,6 +81,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -155,6 +162,15 @@ const POP = 0.1;
 const POP_RISE_MS = 110;
 const POP_SETTLE_SPRING = { damping: 12, stiffness: 240, mass: 0.7 } as const;
 
+/**
+ * How far the finger must travel before the drag takes over from the tap.
+ *
+ * Below this the touch belongs to the `Pressable` under it and behaves exactly
+ * as it always has. Small enough that "slide it" needs no commitment, large
+ * enough that a tap with a little roll in it is still a tap.
+ */
+const DRAG_MIN_DISTANCE = 6;
+
 export default function BottomDock({ state, navigation }: BottomTabBarProps) {
   const t = useTheme();
   const { t: tr } = useTranslation();
@@ -203,6 +219,11 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
   );
 
   const handlePressOut = useCallback(() => {
+    /* The pan has taken the interaction over — the `Pressable` is only being
+       told its touch was cancelled, which is not a release and must not settle
+       anything. Guarded rather than ordered: activation cancels the pressable
+       and the two callbacks can arrive either way round. */
+    if (dragging.current) return;
     clearTimers();
     setHeld(false);
     settleTimer.current = setTimeout(() => {
@@ -217,6 +238,77 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
     },
     [navigation, state.index, state.routes],
   );
+
+  /* ── The drag ──────────────────────────────────────────────────────────
+     Which tab a point along the bar belongs to. `x` is measured from the
+     wrapper the detector is attached to, which is exactly the bar's outer
+     box, so the item row starts one padding in. Clamped rather than
+     rejected: a finger that has run off the end of the bar is still clearly
+     asking for the tab at that end. */
+  const indexAt = useCallback(
+    (x: number) => {
+      const i = Math.floor((x - BAR_PADDING) / step);
+      return Math.min(DOCK_ITEMS.length - 1, Math.max(0, i));
+    },
+    [step],
+  );
+
+  const dragging = useRef(false);
+  const dragIndex = useRef(0);
+
+  /**
+   * ★ Why this is a Pan on the BAR and not something on each tab.
+   *
+   * A `Pressable` owns a touch from the moment it starts and never re-targets
+   * — that is what a press IS. So the highlight could only ever move on a
+   * fresh touch-down, and sliding a finger along the bar did nothing at all;
+   * whichever tab the finger LANDED on was the only one it could reach.
+   * Re-targeting has to be decided by something that sees the whole bar, and
+   * that is one gesture across all five, not five gestures that each see one.
+   *
+   * `runOnJS(true)`: every effect of this gesture is a React state update or a
+   * haptic, both of which live on the JS thread anyway. Running the callbacks
+   * there too removes the `runOnJS` hops AND makes ordering against the
+   * pressable's cancellation deterministic, which the guard in
+   * `handlePressOut` depends on. It costs nothing per frame because the
+   * update is filtered to actual index changes — at most four setStates
+   * across a full sweep of the bar, not one per touch event.
+   */
+  const drag = Gesture.Pan()
+    .runOnJS(true)
+    .minDistance(DRAG_MIN_DISTANCE)
+    .onStart((e) => {
+      dragging.current = true;
+      clearTimers();
+      dragIndex.current = indexAt(e.x);
+      setPressedIndex(dragIndex.current);
+      /* Held for as long as it is being dragged: the swell is what says the
+         thing under your finger is the thing you are moving. */
+      setHeld(true);
+    })
+    .onUpdate((e) => {
+      const i = indexAt(e.x);
+      if (i === dragIndex.current) return;
+      dragIndex.current = i;
+      setPressedIndex(i);
+      /* The scrubbing tick, not an impact — this is the same event a picker
+         wheel reports as it passes a value, and it is the feedback that makes
+         a slide feel like it is catching on each tab. */
+      Haptics.selectionAsync();
+    })
+    .onEnd((e) => {
+      handlePress(indexAt(e.x));
+    })
+    /* Runs on end AND on cancellation (a call arriving, the app backgrounding
+       mid-drag), so the bar can never be left permanently swollen. */
+    .onFinalize(() => {
+      dragging.current = false;
+      setHeld(false);
+      settleTimer.current = setTimeout(() => {
+        settleTimer.current = null;
+        setPressedIndex(null);
+      }, RELEASE_SETTLE_MS);
+    });
 
   /* Where the highlight is: the finger while there is one, the navigator
      otherwise. Everything visual reads from this and not from state.index. */
@@ -284,76 +376,84 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
       style={[styles.shell, { bottom: dockBottomOffset(insets.bottom, screenH) }]}
       pointerEvents="box-none"
     >
-      <GlassSurface
-        dark={dark}
-        tint={tint}
-        style={[
-          styles.bar,
-          {
-            padding: BAR_PADDING,
-            gap,
-            /* v0.24.0 made this `transparent` on iOS, on the theory that the
-               material lights its own edge. Over a pale flat backdrop it does
-               not do so anything like strongly enough, and a floating object
-               with no edge stops reading as an object. The rim is back on both
-               materials, softer on the glass one. */
-            borderColor: IS_LIQUID_GLASS
-              ? dark
-                ? 'rgba(255,255,255,0.10)'
-                : 'rgba(255,255,255,0.45)'
-              : dark
-                ? 'rgba(255,255,255,0.14)'
-                : 'rgba(200,208,224,0.55)',
-          },
-        ]}
-      >
-        <Animated.View
-          style={[
-            styles.pill,
-            pillStyle,
-            {
-              left: BAR_PADDING,
-              top: BAR_PADDING,
-              width: itemW,
-              height: itemH,
-              backgroundColor: PILL,
-              /* A raised puck, the way a system segmented control's selection
-                 is: its own edge and its own small shadow, so it is a thing
-                 ON the bar rather than a lighter patch OF it. */
-              borderColor: dark ? 'rgba(255,255,255,0.16)' : 'rgba(10,37,64,0.08)',
-              shadowOpacity: dark ? 0.3 : 0.12,
-            },
-          ]}
-          pointerEvents="none"
-        />
+      {/* The detector needs a plain view it can attach a ref to, and one whose
+          box is EXACTLY the bar — `e.x` is measured from it, and that is what
+          `indexAt` divides up. The shell above is full-width and would offset
+          every reading by the margin. */}
+      <GestureDetector gesture={drag}>
+        <View>
+          <GlassSurface
+            dark={dark}
+            tint={tint}
+            style={[
+              styles.bar,
+              {
+                padding: BAR_PADDING,
+                gap,
+                /* v0.24.0 made this `transparent` on iOS, on the theory that the
+                   material lights its own edge. Over a pale flat backdrop it does
+                   not do so anything like strongly enough, and a floating object
+                   with no edge stops reading as an object. The rim is back on both
+                   materials, softer on the glass one. */
+                borderColor: IS_LIQUID_GLASS
+                  ? dark
+                    ? 'rgba(255,255,255,0.10)'
+                    : 'rgba(255,255,255,0.45)'
+                  : dark
+                    ? 'rgba(255,255,255,0.14)'
+                    : 'rgba(200,208,224,0.55)',
+              },
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.pill,
+                pillStyle,
+                {
+                  left: BAR_PADDING,
+                  top: BAR_PADDING,
+                  width: itemW,
+                  height: itemH,
+                  backgroundColor: PILL,
+                  /* A raised puck, the way a system segmented control's selection
+                     is: its own edge and its own small shadow, so it is a thing
+                     ON the bar rather than a lighter patch OF it. */
+                  borderColor: dark ? 'rgba(255,255,255,0.16)' : 'rgba(10,37,64,0.08)',
+                  shadowOpacity: dark ? 0.3 : 0.12,
+                },
+              ]}
+              pointerEvents="none"
+            />
 
-        {/* ★ The dock is NOT reversed under an RTL language. Home is the
-            centre anchor and the other four sit symmetrically around it, so
-            mirroring would move nothing meaningful — while the sliding pill's
-            offset is `lit * step`, which is indexed off `state.routes`.
-            Reversing one and not the other lights the wrong tab. Recorded in
-            PARITY.md. */}
-        {DOCK_ITEMS.map((item, i) => (
-          <DockItem
-            key={item.name}
-            index={i}
-            item={item}
-            label={tr(item.labelKey)}
-            width={itemW}
-            height={itemH}
-            lit={lit === i}
-            selected={state.index === i}
-            held={held && pressedIndex === i}
-            pop={pop}
-            /* .dock-item--home:not(.is-active) { color: var(--brand-navy) } */
-            color={lit === i ? t.textPrimary : item.emphasized ? t.brandNavy : t.textSecondary}
-            cutout={PILL}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            onPress={handlePress}
-          />
-        ))}
-      </GlassSurface>
+            {/* ★ The dock is NOT reversed under an RTL language. Home is the
+                centre anchor and the other four sit symmetrically around it, so
+                mirroring would move nothing meaningful — while the sliding pill's
+                offset is `lit * step`, which is indexed off `state.routes`.
+                Reversing one and not the other lights the wrong tab. Recorded in
+                PARITY.md. */}
+            {DOCK_ITEMS.map((item, i) => (
+              <DockItem
+                key={item.name}
+                index={i}
+                item={item}
+                label={tr(item.labelKey)}
+                width={itemW}
+                height={itemH}
+                lit={lit === i}
+                selected={state.index === i}
+                held={held && pressedIndex === i}
+                pop={pop}
+                /* .dock-item--home:not(.is-active) { color: var(--brand-navy) } */
+                color={lit === i ? t.textPrimary : item.emphasized ? t.brandNavy : t.textSecondary}
+                cutout={PILL}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                onPress={handlePress}
+              />
+            ))}
+          </GlassSurface>
+        </View>
+      </GestureDetector>
     </View>
   );
 }
@@ -384,6 +484,11 @@ const styles = StyleSheet.create({
   },
 });
 
+// v3.6.0 — The pill can be DRAGGED across all five tabs (the web gesture that
+//          PARITY had listed as not ported). One Pan on the bar, because a
+//          Pressable owns its touch and never re-targets — which is why only
+//          the tab a finger LANDED on was ever reachable. Taps are untouched:
+//          the pan needs 6 pt of travel before it takes over.
 // v3.5.0 — Selection gets a moment of its own: the tab that lands pops its
 //          icon + label (timing up, spring back). It is on the CONTENT and not
 //          on the pill so it cannot stack with the hold swell and be clipped
