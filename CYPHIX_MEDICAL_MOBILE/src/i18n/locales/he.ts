@@ -187,6 +187,7 @@ export const he: Record<TranslationKey, string> = {
   profileRecent: 'פעילות אחרונה',
   profileNoneRecorded: 'לא נרשמו',
   profileNoAllergies: 'אין אלרגיות ידועות',
+  profileLoadFailed: 'לא הצלחנו לטעון את הרשומה שלך, ולכן הפרטים למטה עשויים להיות חלקיים. בדקו את החיבור ומשכו למטה כדי לנסות שוב.',
   profileNoMeds: 'לא נרשמו תרופות',
   profileNoRecent: 'אין עדיין הקלטות',
   profileSettingsDesc: 'תצוגה, התראות, מכשיר ופרטיות',
@@ -608,6 +609,8 @@ export const he: Record<TranslationKey, string> = {
 // v1.3.0 — Hebrew for the whole signed-out flow. The clinical reasons each
 //          step gives are translated as reasons, not as labels — a patient
 //          declining a question must be able to read what they decline.
+// v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
+//           sections read as "you have no conditions and no allergies".
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.

@@ -14,6 +14,12 @@ export * from './api/contract';
    belongs in both places (tracked in PARITY.md). */
 export * from './auth/contract';
 
+/* What the app SHOWS about that person: the assembled, minimized medical
+   card the Profile screen draws, and the portrait that follows them
+   across devices. Same caveat — web `types/viewModels.ts` and the
+   server's `types.ts` still declare it too. */
+export * from './types/patient';
+
 /* ── The frozen signal chain ──────────────────────────────────────
    `ecg/` is the ECG maths, copied VERBATIM from the web app so every
    platform computes bit-identical waveforms (root CLAUDE.md §2.3).
@@ -49,6 +55,8 @@ export * from './ecg/ecgAlign';
 export * from './ecg/ecgExport';
 export * from './ecg/ecgImport';
 
+// v1.5.0 — Adds the patient medical-card contract (card, portrait, routes), so
+//          the Profile screen renders the same record on every platform.
 // v1.4.0 — Adds the auth/registration contract (account, registration profile,
 //          typed failures, password strength), so sign-up asks for the same
 //          things and fails the same way on web, iOS and Android.

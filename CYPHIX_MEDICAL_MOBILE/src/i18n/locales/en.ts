@@ -187,6 +187,8 @@ export const en = {
   profileRecent: 'Recent activity',
   profileNoneRecorded: 'None recorded',
   profileNoAllergies: 'No known allergies',
+  /* Shown INSTEAD of letting empty sections imply "you have none of these". */
+  profileLoadFailed: 'Your record could not be loaded, so the details below may be incomplete. Check your connection and pull to try again.',
   profileNoMeds: 'No medications recorded',
   profileNoRecent: 'No recordings yet',
   profileSettingsDesc: 'Appearance, notifications, device and privacy',
@@ -622,6 +624,8 @@ export type TranslationKey = keyof typeof en;
 // v1.3.0 — Carries the whole signed-out flow: splash, welcome, sign-in,
 //          reset, registration, the six health steps, review and success —
 //          plus the failure codes, each mapped to one honest sentence.
+// v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
+//           sections read as "you have no conditions and no allergies".
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.

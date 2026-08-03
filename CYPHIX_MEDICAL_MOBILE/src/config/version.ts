@@ -1,7 +1,23 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.20.1';
-export const APP_BUILD_LABEL = 'Signs in to the DEPLOYED server — no laptop, no shared Wi-Fi';
+export const APP_VERSION = '0.21.0';
+export const APP_BUILD_LABEL = 'Profile shows YOUR record — name, age, card and portrait from the server';
+
+// v0.21.0 — Sign-in was connected; the Profile tab was not. It read the
+//           hard-coded fictitious DEMO_CARD, so a signed-in patient was
+//           looking at "Test Patient Alpha". Now `usePatientCard` fetches
+//           GET /patients/:id/card for the account's OWN linkedPatientId,
+//           plus the portrait from /photo — which is why a picture set in
+//           the browser now appears on the phone (the avatar had never
+//           rendered a photo at all before, in any mode).
+//           ★ A real account whose card fails does NOT fall back to the
+//           demo record: printing a fictitious blood type and medication
+//           list under a real person's name is the worst failure this
+//           screen has. It shows a name-only card, says the record could
+//           not be loaded — empty sections otherwise read as "you have no
+//           conditions and no allergies" — and offers pull-to-refresh.
+//           Still missing and named in PARITY: no way to SET the portrait
+//           from the phone, and a clinician has no active patient yet.
 
 // v0.20.1 — "CONNECTION ISSUE" on sign-in, and it was configuration, not code.
 //           v0.20.0 pointed the app at the dev server on the laptop

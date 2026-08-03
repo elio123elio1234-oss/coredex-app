@@ -14,7 +14,17 @@
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import BrandLogo from '@/components/atoms/BrandLogo';
@@ -34,9 +44,10 @@ import {
 import { SHOW_SHELL_WORDMARK } from '@/config/featureFlags';
 import ConfirmDialog from '@/components/molecules/ConfirmDialog';
 import { dockFootprint } from '@/navigation/dockMetrics';
+import type { CodedItem } from '@cyphix/shared';
 import { useAuth } from '@/features/auth/useAuth';
 import { usePreferences } from '@/features/preferences/usePreferences';
-import { DEMO_CARD, type CodedItem } from '@/features/profile/demoCard';
+import { usePatientCard } from '@/features/profile/usePatientCard';
 import type { TranslationKey } from '@/i18n/config';
 import { useTranslation } from '@/i18n/useTranslation';
 import { shellPalette } from '@/theme/shellTheme';
@@ -194,14 +205,18 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const palette = shellPalette(prefs.background, useIsDark());
-  const card = DEMO_CARD;
+  /* WHOSE record this is, and what is in it — one hook, three cases
+     (server card / demo card / name-only when it will not load). The
+     screen deliberately does not know which it got. */
+  const { card, photo, isLoading, isFetching, isError, isDemo, refetch } = usePatientCard();
   const sexLabel = tr(SEX_KEY[card.gender ?? 'unknown'] ?? 'sexUnknown');
 
-  const initials = card.displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('');
+  const initials =
+    card.displayName
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('') || '·';
 
   return (
     <View style={styles.root}>
@@ -225,13 +240,33 @@ export default function ProfileScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
+        /* Only where there is a server to ask. Offline the card is a
+           constant, and a refresh control that cannot refresh anything is
+           the same broken promise as a button that does nothing. */
+        refreshControl={
+          isDemo ? undefined : (
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={t.textTertiary} />
+          )
+        }
       >
         {/* ── Header: portrait + identity + care team ── */}
         <View style={[styles.header, rtl && styles.rowReverse]}>
           <View
             style={[styles.avatar, { backgroundColor: t.accentSoft, borderColor: t.surface }]}
           >
-            <Text style={[styles.avatarText, { color: t.brandNavy }]}>{initials}</Text>
+            {/* The portrait comes from the server (it follows the person
+                across devices). Initials are not a placeholder for a
+                failed image — they are the equal alternative for someone
+                who chose not to add one. */}
+            {photo ? (
+              <Image
+                source={{ uri: photo }}
+                style={styles.avatarImage}
+                accessibilityIgnoresInvertColors
+              />
+            ) : (
+              <Text style={[styles.avatarText, { color: t.brandNavy }]}>{initials}</Text>
+            )}
           </View>
           <View style={styles.identity}>
             <Text
@@ -240,8 +275,11 @@ export default function ProfileScreen() {
               {card.displayName}
             </Text>
             <Text style={[styles.meta, { color: t.textSecondary, textAlign: rtl ? 'right' : 'left' }]}>
-              {card.ageYears} · {sexLabel}
-              {card.mrn ? ` · ${card.mrn}` : ''}
+              {/* Built from what is actually known: an absent age must not
+                  print "undefined · Unknown" over someone's own record. */}
+              {[card.ageYears != null ? String(card.ageYears) : null, sexLabel, card.mrn]
+                .filter(Boolean)
+                .join(' · ')}
             </Text>
             {card.careTeam && (
               <Text
@@ -251,7 +289,24 @@ export default function ProfileScreen() {
               </Text>
             )}
           </View>
+          {isLoading && <ActivityIndicator color={t.textTertiary} />}
         </View>
+
+        {/* A card that did not load must SAY so. Empty sections would
+            otherwise read as "you have no conditions, no allergies, no
+            medications", which is a different and dangerous claim. */}
+        {isError && (
+          <View style={[styles.notice, { backgroundColor: t.surface, borderColor: t.border }]}>
+            <Text
+              style={[
+                styles.noticeText,
+                { color: t.textSecondary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('profileLoadFailed')}
+            </Text>
+          </View>
+        )}
 
         <Section title={tr('profileDetails')} art={DetailsIllustration}>
           <Row label={tr('profileAge')} value={String(card.ageYears ?? '—')} />
@@ -464,8 +519,14 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
+    /* The clip must belong to the view that owns the radius, or Android
+       renders a square photo inside a round border (mobile CLAUDE.md §1). */
+    overflow: 'hidden',
   },
   avatarText: { fontSize: 22, fontWeight: '800' },
+  avatarImage: { width: '100%', height: '100%' },
+  notice: { borderRadius: RADIUS.lg, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12 },
+  noticeText: { fontSize: 13.5, lineHeight: 19 },
   identity: { flex: 1 },
   name: { fontSize: 22, fontWeight: '800' },
   meta: { fontSize: 14, marginTop: 2 },
@@ -526,5 +587,8 @@ const styles = StyleSheet.create({
 
 // v1.4.0 — Sign out lives here now, at the bottom under the Settings card:
 //          Settings-only was one screen further than anybody looks.
+// v2.0.0 — Renders the SIGNED-IN patient's real record (usePatientCard) with the
+//          server portrait, a loading state, an explicit "could not load" notice
+//          and pull-to-refresh — instead of the hard-coded fictitious DEMO_CARD.
 // v1.3.0 — The floating wordmark (and the padding that cleared it) follow
 //          SHOW_SHELL_WORDMARK, so the card starts at the top of the screen.

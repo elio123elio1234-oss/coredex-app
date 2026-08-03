@@ -1,5 +1,76 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.21.0 — 2026-08-03 — The Profile tab shows YOUR record, not the demo patient's
+
+> "אם חיברת את השרת - מצוין אבל למה בטאב של PROFILE אני לא רואה את התמונה
+> שלי את השם שלי את הגיל שלי וכו וכו?"
+
+Because sign-in was connected and the Profile screen was not. It read
+`DEMO_CARD` — a hard-coded fictitious patient — with one line,
+`const card = DEMO_CARD;`. v0.20.0 named that as pending in `PARITY.md` and
+left it, which is why a signed-in patient was looking at "Test Patient Alpha".
+
+### What it does now
+
+`usePatientCard` → `GET /patients/:id/card` for the signed-in account's own
+`linkedPatientId`: name, age, sex, MRN, phone, blood type, height, weight, BMI,
+conditions, allergies, medications, family history, emergency contact and care
+team. The card is assembled and minimized **server-side** — the same one call
+the web makes — so the phone and the browser cannot end up disagreeing about
+what "age" or "BMI" means, and no client ever receives a raw clinical resource
+to pick through.
+
+The portrait is a second call, `GET /patients/:id/photo`, because it is up to
+1.5 MB against a card of a few hundred bytes and it changes far less often. It
+lives inside the encrypted health profile server-side, so **a photo set in the
+browser now appears on the phone**. Worth saying plainly: the avatar had never
+rendered a photo at all before this, in any mode — it was always initials.
+
+### The failure case, which is the part worth reading
+
+A real account whose card does not load does **not** fall back to `DEMO_CARD`.
+That shortcut would print "A+", "Lisinopril 10 mg" and "Atrial fibrillation"
+under a real person's own name, on the one screen whose entire job is to be
+their medical record — and someone could act on it. Instead: a name-only card
+from the session, an explicit "your record could not be loaded" notice, and
+pull-to-refresh. The notice exists because empty sections silently read as
+*"you have no conditions and no allergies"*, which is a different and far more
+dangerous claim than "we could not reach the server".
+
+(The pull-to-refresh is real, and was added because the first draft of that
+sentence said "pull to try again" on a screen that had no such gesture. A
+message that promises an interaction the screen does not have is the same
+broken promise as a button that does nothing.)
+
+`DEMO_CARD` is now the OFFLINE card only, and says so in its own header.
+
+### Shared, not copied
+
+`PatientCardModel` + `CodedItem` / `MedicationItem` / `EmergencyContact` /
+`CareContact` / `PatientPhoto` and the patient route paths now live in
+`@cyphix/shared` (root CLAUDE.md §2.1). The web and the server still declare
+their own copies; migrating them is tracked in `PARITY.md`.
+
+### Verified
+
+Probed the deployed API with the demo patient: `/card` returns every field the
+screen draws — age 68, sex, MRN, phone, A+, 174 cm, 79 kg, BMI 26.1, and one
+each of conditions / allergies / medications / family history, plus the
+emergency contact and the care team. `/photo` returns `null` for that account,
+which is exactly the "initials" path. Typecheck, both exports and expo-doctor
+pass. Unverified on a handset, so the rows stay `🔬`.
+
+### Still missing, and named
+
+**You can see a portrait on the phone but not set one from it.**
+`setPatientPhoto` is wired; the entry point is not — no picker on the Profile
+avatar, and the onboarding photo step still keeps its file URI on the device
+(it always did, and the avatar never showed it either). Doing it properly needs
+a resize to fit the server's 1.5 MB cap, which on mobile means a new dependency
+(`expo-image-manipulator`) rather than the web's canvas. Also still pending: a
+clinician has no single active patient, so their Profile tab still shows the
+demo card until there is a patient picker.
+
 ## v0.20.1 — 2026-08-03 — "Connection issue" on sign-in: the app was right
 
 Signing in from Expo Go with a real account failed with *"No connection. Check
