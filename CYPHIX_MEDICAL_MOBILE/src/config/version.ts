@@ -1,7 +1,32 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.24.1';
-export const APP_BUILD_LABEL = 'The current tab is marked again — an indicator may not depend on the material behind it';
+export const APP_VERSION = '0.24.2';
+export const APP_BUILD_LABEL = 'Selection gets a moment of its own: the tab that lands pops';
+
+// v0.24.2 — From a suggested "custom tab bar button with a spring" pattern.
+//           Most of it this dock already had and has had for releases — it is
+//           wired with `tabBar={}` (RootNavigator:96), which replaces the WHOLE
+//           bar, so `tabBarButton` is never consulted by React Navigation at
+//           all; `DockItem` IS the custom button, and the spring, the growing
+//           backdrop and the haptics are all in. But one thing in it was real
+//           and missing: **selection had no moment of its own.** The pill slid
+//           and the icon filled — both STATES, not events — so committing a tab
+//           felt like the bar catching up rather than like the tap doing
+//           something. The tab that lands now pops its icon and label: timing
+//           up (110 ms, identical every time), spring back (the only part that
+//           should feel physical). Not on first paint — an app that pops its
+//           tab bar while opening is announcing something nobody did.
+//           ★ On the CONTENT, not on the pill, and that is arithmetic not
+//           taste: the pill's scale already carries the press swell, and a hold
+//           released on the OUTERMOST tab would put 1.13 and 1.10 on one
+//           transform — wide enough to be cut by the bar's rounded cap. Content
+//           pops inside its own item box, where nothing can clip it.
+//           NOT taken from the suggestion: a per-tab translucent halo at 20 %
+//           white. That is exactly the bug v0.24.1 was spent on — a highlight
+//           defined relative to the material under it disappears the moment the
+//           material changes. And not a persistent 1.15 scale on the selected
+//           tab: at 68.9 pt of item width a permanently enlarged label is a
+//           truncated label in every language, and Hebrew truncates first.
 
 // v0.24.1 — v0.24.0 ERASED THE CURRENT-TAB INDICATOR, and the cause is worth
 //           more than the fix. The pill was a TRANSLUCENT white (0.85 / 0.16).

@@ -75,7 +75,13 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlassSurface, { IS_LIQUID_GLASS } from '@/components/atoms/GlassSurface';
 import DockItem from '@/components/molecules/DockItem';
@@ -127,6 +133,27 @@ const HOLD_MS = 220;
  * springing home, which reads as deliberate rather than twitchy.
  */
 const RELEASE_SETTLE_MS = 140;
+
+/**
+ * The pop the newly selected tab's icon + label make when the selection
+ * actually lands — up fast, then a spring back that overshoots slightly.
+ *
+ * Selection had no moment of its own: the pill slid and the icon filled, both
+ * of which are states rather than events, so committing a tab felt like the
+ * bar catching up rather than like the tap doing something. This is what Apple
+ * Music's bar has and this one did not.
+ *
+ * ★ It is on the CONTENT, not on the pill, and that is arithmetic rather than
+ * taste. The pill's scale is already carrying the press swell, and a hold
+ * released on the OUTERMOST tab would put `HOLD_SWELL` and this on the same
+ * transform (1.13 × 1.10) — wide enough to be cut by the bar's rounded cap.
+ * The content pops inside its own item box, where nothing can clip it.
+ */
+const POP = 0.1;
+/** Up on a timing, not a spring: the rise wants to be immediate and identical
+    every time. Only the settle should feel physical. */
+const POP_RISE_MS = 110;
+const POP_SETTLE_SPRING = { damping: 12, stiffness: 240, mass: 0.7 } as const;
 
 export default function BottomDock({ state, navigation }: BottomTabBarProps) {
   const t = useTheme();
@@ -212,6 +239,24 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { scale: 1 + swell.value }],
   }));
+
+  /* The pop the newly selected tab makes. Owned here rather than in the item
+     because it is a property of the SELECTION CHANGING, which only the dock
+     can see; `DockItem` just applies it if the change was to itself. */
+  const pop = useSharedValue(0);
+  const mounted = useRef(false);
+  useEffect(() => {
+    /* Not on first paint: an app that pops its tab bar as it opens is
+       announcing something the patient did not do. */
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    pop.value = withSequence(
+      withTiming(POP, { duration: POP_RISE_MS }),
+      withSpring(0, POP_SETTLE_SPRING),
+    );
+  }, [state.index, pop]);
 
   /* ★ ONE colour for the pill AND for the cut-outs in the icon sitting on it.
      Solid, so the indicator survives any change to the material behind it —
@@ -299,6 +344,7 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
             lit={lit === i}
             selected={state.index === i}
             held={held && pressedIndex === i}
+            pop={pop}
             /* .dock-item--home:not(.is-active) { color: var(--brand-navy) } */
             color={lit === i ? t.textPrimary : item.emphasized ? t.brandNavy : t.textSecondary}
             cutout={PILL}
@@ -338,6 +384,10 @@ const styles = StyleSheet.create({
   },
 });
 
+// v3.5.0 — Selection gets a moment of its own: the tab that lands pops its
+//          icon + label (timing up, spring back). It is on the CONTENT and not
+//          on the pill so it cannot stack with the hold swell and be clipped
+//          by the bar's rounded cap.
 // v3.4.0 — The pill is SOLID, and is the same constant the icon cut-outs use.
 //          It was translucent, i.e. visible only by being brighter than the
 //          bar — so glassing the bar erased the current tab entirely.

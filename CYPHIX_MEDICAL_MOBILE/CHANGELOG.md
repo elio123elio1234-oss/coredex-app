@@ -1,5 +1,59 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.24.2 — 2026-08-03 — Selection gets a moment of its own
+
+Prompted by a suggested pattern: replace the tab button with a custom one that
+springs the icon and fades a backdrop in behind it, wired through
+`options.tabBarButton`.
+
+### What of it was already here
+
+Most of it, and for several releases. Worth writing down precisely, because
+"add a custom tab bar button" is advice for a project using the **default** tab
+bar, and this one has not used it since v0.2:
+
+- `RootNavigator` passes `tabBar={(props) => <BottomDock {...props} />}`, which
+  replaces the entire bar. **`options.tabBarButton` is consumed only by React
+  Navigation's own `BottomTabBar`** — set it here and nothing reads it.
+  `DockItem` *is* the custom button.
+- The spring on press is there (Reanimated, UI thread — the project standard
+  per mobile `CLAUDE.md` §3.1, rather than the `Animated` API).
+- The backdrop that grows behind the icon is there: it is the pill, and since
+  v0.24.0 it swells on touch and swells further on a hold.
+- Haptics, both weights, are there.
+
+### What of it was real, and is now in
+
+**Selection had no moment of its own.** The pill slid and the icon filled —
+both of those are *states*, not events — so committing a tab felt like the bar
+catching up with the router rather than like the tap having done something.
+That is the difference the suggestion was pointing at, and it was a fair hit.
+
+The tab that lands now **pops**: its icon and label rise 10 % on a 110 ms
+timing and spring back. Up on a timing and not a spring because the rise should
+be immediate and identical every time; only the settle should feel physical.
+Not on first paint — an app that pops its tab bar while it opens is announcing
+something the patient did not do.
+
+**The pop is on the content, not on the pill**, and that is arithmetic rather
+than taste. The pill's scale already carries the press swell, so a hold
+released on the *outermost* tab would put `HOLD_SWELL` and the pop on one
+transform (1.13 × 1.10) — wide enough to be cut by the bar's rounded cap. The
+content pops inside its own item box, where nothing can clip it.
+
+### What was deliberately not taken
+
+- **A per-tab halo at `rgba(255,255,255,0.2)`.** That is precisely the bug
+  v0.24.1 was spent on: a highlight defined relative to the material under it
+  vanishes the moment the material changes, and 20 % white on a light glass bar
+  starts out invisible. The trap table has a row for it now.
+- **A persistent 1.15 scale on the selected tab.** At 68.9 pt of item width a
+  permanently enlarged label is a truncated label in every language, and Hebrew
+  truncates first. The pop gives the same read without costing a word.
+- **`BlurView` with no `experimentalBlurMethod`**, as the snippet's
+  `tabBarBackground` used: on Android that does not blur *at all* — it draws a
+  flat translucent rectangle. `GlassSurface` exists because of that.
+
 ## v0.24.1 — 2026-08-03 — An indicator may not depend on the material behind it
 
 Reported from the iPhone against v0.24.0: the current tab is no longer marked

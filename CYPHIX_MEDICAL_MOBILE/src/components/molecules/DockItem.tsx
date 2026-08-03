@@ -24,7 +24,11 @@
 
 import { memo } from 'react';
 import { StyleSheet, Text, Pressable } from 'react-native';
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  type SharedValue,
+} from 'react-native-reanimated';
 import type { DockConfigItem } from '@/navigation/dockConfig';
 import { HOME_ICON, ICON, ITEM_GAP, LABEL_LINE, LABEL_SIZE } from '@/navigation/dockMetrics';
 
@@ -54,6 +58,11 @@ export interface DockItemProps {
   selected: boolean;
   /** Held long enough that the glass has swollen under it. */
   held: boolean;
+  /** The dock's selection-landed pop, shared by all five tabs and applied by
+      whichever one is `selected` when it runs. A `SharedValue` and not a
+      prop change on purpose: it is driven from the UI thread and its
+      identity never changes, so it costs the `memo` below nothing. */
+  pop: SharedValue<number>;
   /** Icon outline + label colour. */
   color: string;
   /** Colour the filled icon's inner details are cut out in. */
@@ -72,15 +81,26 @@ function DockItem({
   lit,
   selected,
   held,
+  pop,
   color,
   cutout,
   onPressIn,
   onPressOut,
   onPress,
 }: DockItemProps) {
+  /* Two scale entries rather than one sum: the hold is an ANIMATION assigned
+     to the property (`withSpring` resolves it per frame) and the pop is a
+     plain read of a shared value. They cannot be added together in one
+     expression — but two transforms multiply, which is the same result and
+     keeps a hold released onto a new tab reading as one continuous motion. */
   const contentStyle = useAnimatedStyle(
-    () => ({ transform: [{ scale: withSpring(held ? HELD_CONTENT_SCALE : 1, CONTENT_SPRING) }] }),
-    [held],
+    () => ({
+      transform: [
+        { scale: withSpring(held ? HELD_CONTENT_SCALE : 1, CONTENT_SPRING) },
+        { scale: 1 + (selected ? pop.value : 0) },
+      ],
+    }),
+    [held, selected],
   );
 
   return (
@@ -122,5 +142,8 @@ const styles = StyleSheet.create({
    that is five SVG re-renders per press for the one tab that changed. */
 export default memo(DockItem);
 
+// v1.1.0 — Applies the dock's selection-landed pop when the tab that landed is
+//          this one. Selection had no moment of its own before: the pill slid
+//          and the icon filled, both states rather than events.
 // v1.0.0 — One dock tab, extracted so the four tabs a press did not touch can
 //          skip the re-render that previewing the highlight now causes.
