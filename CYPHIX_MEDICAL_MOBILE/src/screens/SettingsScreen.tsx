@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Pressable } from 'react-native';
+import { GLASS_MATERIAL } from '@/components/atoms/GlassSurface';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import SettingsChip from '@/components/atoms/SettingsChip';
 import {
@@ -341,6 +342,13 @@ export default function SettingsScreen() {
               it stays in English on purpose so a bug report quotes the same
               string the changelog does. */}
           <SettingsRow label={tr('setAboutBuild')} value={APP_BUILD_LABEL} />
+          {/* Which frosted material this phone actually resolved. "It doesn't
+              look like glass" has three causes that look identical — no
+              Liquid Glass on this iOS, no `expo-glass-effect` in this client,
+              or a design problem — and only the phone can say which. English
+              for the same reason as the build label: a bug report should quote
+              the string the changelog uses. */}
+          <SettingsRow label={tr('setAboutMaterial')} value={GLASS_MATERIAL} />
           <SettingsRow label={tr('setAboutCompliance')} value={tr('setAboutComplianceValue')} />
         </SettingsSection>
       </ScrollView>
@@ -376,6 +384,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v2.2.0 — About names the frosted material this phone actually resolved.
+//          "It doesn't look like glass" has three indistinguishable causes and
+//          only the device can say which one it is.
 // v2.1.0 — Sign out is live (with a confirmation), and the Account section
 //          shows the account that is actually signed in.
 // v2.0.0 — Fully translated, and gains the Language picker at the top of

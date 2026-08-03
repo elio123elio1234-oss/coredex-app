@@ -1,5 +1,73 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.24.1 — 2026-08-03 — An indicator may not depend on the material behind it
+
+Reported from the iPhone against v0.24.0: the current tab is no longer marked
+at all, and the bar does not do the glass effect iOS has to offer — "like Apple
+Music's bottom bar".
+
+### What v0.24.0 broke, and why it is the more useful half of this entry
+
+The pill was a **translucent** white — `rgba(255,255,255,0.85)` on light,
+`rgba(255,255,255,0.16)` on dark. It was never visible in its own right. It was
+visible *because it was brighter than the bar under it*.
+
+The same release then made the bar glassier — tint 55 % → 32 %, rim removed —
+to look more like the system's. So the pill lost the only thing it had been
+contrasting against, and **the dock's own dressing destroyed the one thing the
+dock exists to show.** Typecheck, both bundles and `expo-doctor` all passed
+while it did; none of them can see contrast.
+
+The pill is now a **solid** colour, and it is *the same constant* the active
+icon's inner details are cut out in. Those two were always required to match —
+the cut-outs sit directly on the pill — and while they were merely *similar*
+(a translucent pill against a fixed cut-out colour) they drifted apart with
+every change to the bar behind them. Now they are one value and cannot. It also
+gets its own hairline and a small shadow, so it reads as a puck **on** the bar
+rather than a lighter patch **of** it — which is what a system segmented
+control does.
+
+The rule this leaves behind: **an indicator may not be defined relative to the
+material it sits on.** Anything that says "you are here" has to be legible on
+its own terms, because the surface under it is the part most likely to be
+restyled.
+
+### `isInteractive` is off the bar
+
+v0.24.0 put Apple's `UIGlassEffect.isInteractive` on the dock's `GlassSurface`.
+It was flagged in that release as the one prop unverifiable from this machine,
+and it is the one applied against its grain: Apple's interactive glass is for a
+**button-sized control inside a glass container**, not for a whole bar. With
+"no glass effect" reported and no way to look, it goes out.
+
+Nothing was lost — the hold-and-swell is Reanimated and never depended on it.
+`GlassSurface` keeps the capability, documented, with no caller.
+
+The rim comes back too, softer on the glass path than on the blur path.
+Removing it rested on "the material lights its own edge"; over a pale flat
+backdrop it does not do so nearly strongly enough, and a floating object with
+no edge stops reading as an object.
+
+### ⚠️ Two causes of "it doesn't look like glass" are not in the dock at all
+
+**1. This phone may have no Liquid Glass.** It requires iOS 26+ *and*
+`expo-glass-effect` present in the running client. Miss either and
+`GlassSurface` falls back to `UIBlurEffect`, which is flat by design and will
+never look like iOS 26's material no matter what is tuned here.
+
+That is unanswerable from Windows, and guessing at it costs a release each
+time — so **Settings › About now names the material that actually resolved**:
+`Apple Liquid Glass (iOS 26+)`, `UIBlurEffect — no Liquid Glass on this
+client`, or `BlurView (dimezisBlurView)` on Android. One look at that row
+settles which of the three possible problems this is.
+
+**2. A material needs something behind it.** Apple Music's tab bar looks like
+glass because artwork and lists scroll *under* it. This dock floats over a soft,
+flat backdrop — and glass with nothing to refract renders as a plain
+translucent plate however it is tinted. That is not a dock bug; it is the same
+lesson as the blur inside a `Modal` (v0.18.0), and closing it properly means
+letting screen content pass under the dock, which is its own change.
+
 ## v0.24.0 — 2026-08-03 — The dock stops being a picture of glass
 
 The request was: on the iPhone, make the bottom bar Apple's native glass — and

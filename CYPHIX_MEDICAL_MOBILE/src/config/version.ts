@@ -1,7 +1,43 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.24.0';
-export const APP_BUILD_LABEL = 'The dock answers your finger: Apple interactive glass, a highlight that follows the touch, hold and it swells';
+export const APP_VERSION = '0.24.1';
+export const APP_BUILD_LABEL = 'The current tab is marked again — an indicator may not depend on the material behind it';
+
+// v0.24.1 — v0.24.0 ERASED THE CURRENT-TAB INDICATOR, and the cause is worth
+//           more than the fix. The pill was a TRANSLUCENT white (0.85 / 0.16).
+//           It was never visible in its own right — it was visible *because it
+//           was brighter than the bar*. So when the same release made the bar
+//           glassier (tint 55 % → 32 %, rim removed) to look more like the
+//           system's, the pill lost the only thing it was contrasting against
+//           and the dock stopped showing which tab you were on. The dock's own
+//           dressing destroyed the one thing it exists to show, and every
+//           check available on this machine passed while it did.
+//           The pill is now a SOLID colour, and it is THE SAME CONSTANT the
+//           active icon's inner details are cut out in. Those two were always
+//           required to match — the cut-outs sit directly on the pill — and
+//           while they were merely similar they drifted with every change to
+//           the bar. Now they cannot. Plus its own hairline and small shadow,
+//           so it reads as a puck ON the bar rather than a lighter patch OF
+//           it, which is what a system segmented control does.
+//           ★ `isInteractive` IS OFF THE BAR. Reported as "no glass effect
+//           like iOS has to offer". It was the one prop flagged as
+//           unverifiable from Windows, and it was applied against its grain:
+//           Apple's interactive glass is for a button-sized control inside a
+//           glass container, not for a whole bar. The hold-and-swell is
+//           Reanimated and never depended on it, so nothing was lost.
+//           The rim is back too — softer on the glass path. A floating object
+//           with no edge stops reading as an object over a pale backdrop.
+//           ⚠️ TWO CAUSES OF "IT DOESN'T LOOK LIKE GLASS" ARE NOT IN THE DOCK.
+//           (1) The phone may have no Liquid Glass at all: it needs iOS 26+
+//           AND `expo-glass-effect` inside the running client. Settings ›
+//           About now NAMES the material that resolved, because from a
+//           Windows machine that question is otherwise unanswerable and
+//           guessing at it costs a release each time.
+//           (2) A material needs something BEHIND it. Apple Music's bar looks
+//           like glass because artwork and lists scroll under it; this dock
+//           floats over a soft flat backdrop, and glass with nothing to
+//           refract renders as a plain translucent plate however it is tuned.
+//           Same lesson as the blur inside a `Modal` (v0.18.0).
 
 // v0.24.0 — THE BOTTOM DOCK STOPS BEING A PICTURE OF GLASS. It was already
 //           Apple's Liquid Glass on iOS 26 and still did not feel like the

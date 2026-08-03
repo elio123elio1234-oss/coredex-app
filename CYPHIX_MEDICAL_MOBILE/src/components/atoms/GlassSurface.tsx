@@ -75,6 +75,29 @@ const glass: GlassModule | null = (() => {
 /** True when the surface below is Apple's real Liquid Glass. */
 export const IS_LIQUID_GLASS = glass !== null;
 
+/**
+ * Which material actually resolved, in words, for the About section.
+ *
+ * ── WHY A DIAGNOSTIC EARNS A ROW IN SETTINGS ──
+ * "It does not look like glass" has three completely different causes and
+ * they are indistinguishable by looking: the phone is on iOS 25 or older
+ * (Liquid Glass does not exist), the running client does not contain
+ * `expo-glass-effect` (Expo Go, or a dev build made before it was added),
+ * or the material IS live and something about the design is wrong. The
+ * first two are not fixable in this file and the third is not fixable
+ * anywhere else — so the first thing to establish is which one it is.
+ * From a Windows machine that question is otherwise unanswerable, and
+ * guessing at it costs a release each time.
+ */
+export const GLASS_MATERIAL: string =
+  Platform.OS === 'ios'
+    ? glass
+      ? 'Apple Liquid Glass (iOS 26+)'
+      : 'UIBlurEffect — no Liquid Glass on this client'
+    : Platform.OS === 'android'
+      ? 'BlurView (dimezisBlurView)'
+      : 'none';
+
 interface Props {
   children: ReactNode;
   style?: ViewStyle | ViewStyle[];
@@ -133,9 +156,15 @@ export default function GlassSurface({ children, style, dark, tint, interactive 
   );
 }
 
+// v1.3.0 — `GLASS_MATERIAL` names the material that actually resolved, so
+//          "it doesn't look like glass" can be told apart from "this phone
+//          has no Liquid Glass" without owning a Mac. Surfaced in Settings ›
+//          About.
 // v1.2.0 — Optional `interactive`: Apple's own `isInteractive` glass, which
 //          responds to touches inside it. Opt-in, because a surface you only
-//          read should not light up when a finger crosses it.
+//          read should not light up when a finger crosses it. ⚠️ No caller
+//          today — the dock tried it and it went out again in v0.24.1; see
+//          the changelog before wiring it to anything.
 // v1.1.0 — The tint reaches Liquid Glass too (`tintColor`), and the material
 //          follows the APP's theme rather than the phone's (`colorScheme`).
 //          Untinted "regular" glass over a light page is clear, which is why

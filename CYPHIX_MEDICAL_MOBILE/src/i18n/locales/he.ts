@@ -279,6 +279,7 @@ export const he: Record<TranslationKey, string> = {
   setSecAboutDesc: 'גרסה ותאימות רגולטורית',
   setAboutVersion: 'גרסת אפליקציה',
   setAboutBuild: 'הגרסה הזו',
+  setAboutMaterial: 'חומר המשטחים',
   setAboutCompliance: 'תאימות רגולטורית',
   setAboutComplianceValue: 'HIPAA · GDPR · חוק הגנת הפרטיות',
 
@@ -619,6 +620,7 @@ export const he: Record<TranslationKey, string> = {
 //          declining a question must be able to read what they decline.
 // v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
 //           sections read as "you have no conditions and no allergies".
+// v1.12.0 — setAboutMaterial, matching en.ts key for key.
 // v1.11.0 — Profile-photo sheet copy, matching en.ts key for key.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s

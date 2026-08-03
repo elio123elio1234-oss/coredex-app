@@ -287,6 +287,7 @@ export const en = {
   setSecAboutDesc: 'Version and compliance',
   setAboutVersion: 'App version',
   setAboutBuild: 'This build',
+  setAboutMaterial: 'Surface material',
   setAboutCompliance: 'Compliance',
   setAboutComplianceValue: 'HIPAA · GDPR · Israeli Privacy Law',
 
@@ -638,6 +639,9 @@ export type TranslationKey = keyof typeof en;
 //          plus the failure codes, each mapped to one honest sentence.
 // v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
 //           sections read as "you have no conditions and no allergies".
+// v1.12.0 — setAboutMaterial: the label for the resolved-glass diagnostic. Its
+//           VALUE stays English, like the build label — a bug report should
+//           quote the same string the changelog does.
 // v1.11.0 — Profile-photo sheet copy. The sheet says the picture is saved to
 //           your record, because that is a different decision from a device.
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
