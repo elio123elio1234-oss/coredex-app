@@ -1,7 +1,51 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.23.0';
-export const APP_BUILD_LABEL = 'Real hardware on iPhone · a frozen trace stops calling itself live · the app has its own icon';
+export const APP_VERSION = '0.24.0';
+export const APP_BUILD_LABEL = 'The dock answers your finger: Apple interactive glass, a highlight that follows the touch, hold and it swells';
+
+// v0.24.0 — THE BOTTOM DOCK STOPS BEING A PICTURE OF GLASS. It was already
+//           Apple's Liquid Glass on iOS 26 and still did not feel like the
+//           system's tab bar, and the reason is that glass on iOS is not a
+//           LOOK — it is a material that answers your finger. Three things
+//           were missing; all three are in.
+//           (1) THE MATERIAL RESPONDS. `GlassSurface` gains an opt-in
+//           `interactive`, which is Apple's own `UIGlassEffect.isInteractive`:
+//           the glass brightens and its specular highlight tracks the touch.
+//           Opt-in on purpose — a sheet you only READ that lights up because
+//           a finger crossed it is noise. The dock is the one surface in the
+//           app that IS the control, so it is the one caller.
+//           (2) THE HIGHLIGHT FOLLOWS THE FINGER. Touch any tab and the pill
+//           travels there at once; release commits, slide off and it springs
+//           home. The lit icon now follows the PILL rather than the navigator
+//           — which is not cosmetic: the filled icon's inner details are cut
+//           out in the PILL's colour, so an icon left lit after the pill has
+//           moved away would have its cut-outs sitting on glass. Screen
+//           readers still hear the navigator's truth, not the preview.
+//           (3) HOLD AND THE GLASS GROWS — the thing that was actually asked
+//           for. Touch swells the pill 5 %, holding past 220 ms swells it 13 %
+//           with a heavier haptic and grows the icon and label with it.
+//           220 ms, not `delayLongPress`'s 500: that default is a threshold
+//           for long-press MENUS and is far too slow to read as the surface
+//           reacting to being held. And the swell is Reanimated, so ANDROID
+//           GETS THE GESTURE even though only iOS 26 gets the material — the
+//           material may differ per platform, the interaction may not.
+//           ★ The pill is deliberately NOT a `GlassView` itself.
+//           `UIGlassContainerEffect` MERGES nearby glass into one shape — that
+//           is what the container is for — so glass-on-glass would dissolve
+//           the pill into the bar and the selection indicator would stop
+//           existing. Apple's own tab bar is one glass bar with a solid-ish
+//           capsule riding on it, which is exactly what this is.
+//           On iOS the bar also drops the hand-drawn 1 px rim (the material
+//           lights its own edge; a second one is the tell that it is fake) and
+//           takes a 32 % tint instead of the web's milky 55 % plate. The
+//           border WIDTH stays, so `dockMetrics.DOCK_BAR_HEIGHT` is still
+//           honest. Android keeps the web's values — an untinted BlurView over
+//           a light page really is invisible (the v0.19.2 trap).
+//           🔬 Unverified on a handset: the swell geometry is arithmetic
+//           against the bar's `overflow: hidden` (60.0 pt inside a 65.1 pt
+//           inner box), and `isInteractive` on a whole BAR rather than on a
+//           button is the one judgement call here — if the entire bar bulges
+//           instead of the tab, it is one prop to remove.
 
 // v0.23.0 — The release that makes the REAL signal reachable on an iPhone,
 //           plus the two gaps found while checking that it could be.

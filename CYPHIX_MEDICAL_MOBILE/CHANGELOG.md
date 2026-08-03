@@ -1,5 +1,121 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.24.0 — 2026-08-03 — The dock stops being a picture of glass
+
+The request was: on the iPhone, make the bottom bar Apple's native glass — and
+make it behave like the system does when you pick something, where holding an
+element makes the glass grow, the way WhatsApp does it.
+
+### The finding: the bar was already Liquid Glass, and that was never the point
+
+`GlassSurface` has resolved to `expo-glass-effect`'s `GlassView` on iOS 26 since
+v0.19.2, so the dock has been rendering Apple's real material for several
+releases. It still did not feel like the system's tab bar, and holding a tab did
+nothing at all.
+
+The reason is that **glass on iOS is not a look, it is a material that answers
+your finger.** A `UIVisualEffectView` that never reacts to a touch is a
+photograph of glass, and the eye reads the difference immediately even when it
+cannot name it. Three separate things were missing, and none of them is a tint.
+
+### 1. The material itself responds — `UIGlassEffect.isInteractive`
+
+`GlassSurface` gains an optional `interactive` prop that maps to Apple's own
+`isInteractive`. With it on, the glass brightens and its specular highlight
+tracks the touch inside it. This is the system behaviour, not an approximation
+of it — there is nothing to hand-animate.
+
+It is **opt-in, defaulting off**, and that is deliberate: a sheet or a report
+bar is a surface you look *past*, and one that lights up because a finger
+crossed it on the way somewhere else is noise. The dock is the one surface in
+the app that *is* the control, so it is the one caller. On the BlurView
+fallback the prop is a no-op — that material has no touch model to hook.
+
+### 2. The highlight follows the finger, not the router
+
+Touch down on any tab and the pill travels there immediately; releasing commits
+the navigation, sliding off the bar springs it home after 140 ms.
+
+The lit icon now follows the **pill** (`lit`) rather than the navigator
+(`selected`), and that is not cosmetic. A filled icon's inner details are cut
+out in *the pill's colour* so they read against it — that is how the whole icon
+set works. Had the pill travelled under a finger while the filled icon stayed
+on the old tab, that icon's cut-outs would have been sitting on glass instead of
+on the pill, which on the dark theme is a visibly broken shape. Following the
+pill makes the two structurally unable to disagree.
+
+Accessibility keeps the router's truth: `accessibilityState.selected` still
+reports what is actually selected. A preview under someone's thumb has not
+selected anything, and announcing that it has would be a lie.
+
+### 3. Hold, and the glass grows — the part that was actually asked for
+
+Touch swells the pill by 5 %. Keep holding past **220 ms** and it swells to
+13 % with a heavier haptic, and the icon and label grow with it (7 %, slightly
+less and slightly slower, so the surface leads and the content follows — the
+order the eye reads as one object moving rather than two).
+
+Two decisions worth writing down:
+
+- **It is not wired to `onLongPress`.** React Native does not fire `onPress`
+  after `onLongPress` has fired, so that wiring would produce a hold that grows
+  the glass and then navigates nowhere — a tab bar ignoring the very gesture it
+  just animated. The hold is timed by the dock instead, and releasing selects
+  the tab no matter how long you held it.
+- **220 ms, not `delayLongPress`'s 500 ms.** That default is the threshold for
+  a *different* gesture (long-press menus). At half a second the growth reads as
+  something announced after the finger rather than caused by it.
+
+The swell is Reanimated, on the UI thread, so **Android gets the gesture too**
+even though only iOS 26 gets the material. The material may differ per platform;
+the interaction may not.
+
+### ★ Why the pill is not itself a `GlassView`
+
+The obvious implementation — make the sliding highlight a second piece of glass
+— is wrong, and it would have looked correct in every check available on this
+machine. `UIGlassContainerEffect` **merges** glass elements that come near each
+other into one continuous shape; that is what a glass container is *for*. A
+glass pill inside a glass bar dissolves into the bar, and the selection
+indicator stops existing.
+
+Apple's own tab bar does what this one now does: **one** glass bar, with a
+solid-ish capsule riding on it.
+
+### Dressing, per material
+
+On the Liquid Glass path the bar drops the hand-drawn 1 px rim — the material
+lights its own edge, and a second edge over it is the tell that it is not really
+glass — and takes a 32 % tint instead of the web's milky 55 % plate, which is
+what was making it read as a white plastic bar rather than as glass. The border
+*width* stays, so the bar is still exactly the height `dockMetrics` promises.
+
+Android and older iOS keep the web's values unchanged. That is the v0.19.2 trap
+in the other direction: an untinted blur over a light page is very nearly
+invisible, so the two materials genuinely need different numbers to look like
+the same design.
+
+### Structure
+
+`DockItem` is now its own molecule, wrapped in `memo`. The dock re-renders on
+every touch-down, hold and release now that the highlight is previewed in state,
+and without a memo boundary that is five SVG re-renders per press for the one
+tab that changed.
+
+### 🔬 What a device still has to confirm
+
+Typecheck, both bundles and `expo-doctor` all pass, and none of them can see
+any of this. Specifically unverified:
+
+- **`isInteractive` on a whole bar** rather than on a button-sized control is
+  the one judgement call here. If the entire bar bulges toward the touch instead
+  of the tab, it is one prop to remove.
+- **The swell against `overflow: hidden`** is arithmetic, not observation: at
+  13 % the pill grows to 60.0 pt inside a 65.1 pt inner box, and horizontally to
+  ~4.5 pt short of the rounded cap on the outermost tabs. It should press
+  against the container without being cut by it.
+- Whether the pill travelling on touch-down reads as responsive or as jumpy.
+
 ## v0.23.0 — 2026-08-03 — The road to a real signal on an iPhone, and two things found while checking it
 
 ### 0. The finding that reframes the request: the pipeline was never the problem

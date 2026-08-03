@@ -51,6 +51,7 @@ type GlassModule = {
       glassEffectStyle?: 'clear' | 'regular' | 'none';
       tintColor?: string;
       colorScheme?: 'auto' | 'light' | 'dark';
+      isInteractive?: boolean;
     } & {
       style?: ViewStyle | ViewStyle[];
       children?: ReactNode;
@@ -81,15 +82,28 @@ interface Props {
   /** The colour the material carries. Honoured by BOTH implementations —
       see the header for what happened when it was not. */
   tint: string;
+  /**
+   * iOS 26 only: Apple's own touch response on the material
+   * (`UIGlassEffect.isInteractive`). The glass brightens and its specular
+   * highlight tracks the finger while a touch is inside it — the thing that
+   * makes a system control feel like glass rather than like a picture of it.
+   *
+   * Left off by default. A surface you only READ (a sheet, a report bar)
+   * that lights up because a finger passed over it is noise; this is for
+   * surfaces that are themselves the control. No-op on the BlurView
+   * fallback, which has no touch model at all.
+   */
+  interactive?: boolean;
 }
 
-export default function GlassSurface({ children, style, dark, tint }: Props) {
+export default function GlassSurface({ children, style, dark, tint, interactive }: Props) {
   if (glass) {
     const { GlassView } = glass;
     return (
       <GlassView
         glassEffectStyle="regular"
         tintColor={tint}
+        isInteractive={interactive ?? false}
         /* The app's own theme, not the phone's. Left on 'auto' the glass
            follows the OS while every token around it follows the patient's
            Settings choice — the same half-dark app `useIsDark` exists to
@@ -119,6 +133,9 @@ export default function GlassSurface({ children, style, dark, tint }: Props) {
   );
 }
 
+// v1.2.0 — Optional `interactive`: Apple's own `isInteractive` glass, which
+//          responds to touches inside it. Opt-in, because a surface you only
+//          read should not light up when a finger crosses it.
 // v1.1.0 — The tint reaches Liquid Glass too (`tintColor`), and the material
 //          follows the APP's theme rather than the phone's (`colorScheme`).
 //          Untinted "regular" glass over a light page is clear, which is why
