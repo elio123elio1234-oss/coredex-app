@@ -1166,7 +1166,7 @@ export default function StudyViewerScreen() {
       {/* ── The glass header, over everything ── */}
       <GlassSurface
         dark={dark}
-        fallbackTint={dark ? 'rgba(19, 27, 44, 0.72)' : 'rgba(255, 255, 255, 0.74)'}
+        tint={dark ? 'rgba(19, 27, 44, 0.72)' : 'rgba(255, 255, 255, 0.74)'}
         style={[
           styles.header,
           {

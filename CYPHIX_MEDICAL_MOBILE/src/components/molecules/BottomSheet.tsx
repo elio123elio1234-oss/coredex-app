@@ -69,7 +69,7 @@ export default function BottomSheet({
     <OverlayLayer visible={visible} onRequestClose={onClose} closeLabel={closeLabel} enter="slide">
       <GlassSurface
         dark={dark}
-        fallbackTint={dark ? 'rgba(19, 27, 44, 0.80)' : 'rgba(255, 255, 255, 0.82)'}
+        tint={dark ? 'rgba(19, 27, 44, 0.80)' : 'rgba(255, 255, 255, 0.82)'}
         style={[
           styles.panel,
           {

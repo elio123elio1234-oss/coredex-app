@@ -1,5 +1,84 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.19.2 — 2026-08-03 — An iPhone next to a Galaxy found a one-line bug in every glass surface
+
+> "באייפון כשלוחצים על SIGN OUT זה מופיע ישירות על המסך (עם רקע שקוף), זה קורה
+> רק באייפון — בגלאקסי זה עם רקע לבן יפה. למה זה קורה?"
+
+Because of one line, and the answer is worth writing down: **the two phones
+were running different code paths, and only one of them was ever given the
+colour.**
+
+### The bug
+
+`GlassSurface` resolves to the best material the device actually has:
+
+```
+iOS 26+  → expo-glass-effect  <GlassView glassEffectStyle="regular">
+otherwise → expo-blur         <BlurView> + a tinted underlay
+```
+
+The tint was a prop called `fallbackTint`, and the name was the bug: it was
+passed **only to the BlurView branch**, documented as "ignored by Liquid Glass,
+which tints itself".
+
+It does not tint itself — not enough. `glassEffectStyle="regular"` with no
+`tintColor` over a **light** page is very nearly clear. So on the iPhone the
+panel was genuinely there, genuinely rendering, and genuinely invisible: title,
+body and both buttons floating over the profile page. The Galaxy took the
+BlurView branch, got `rgba(255,255,255,0.88)` painted underneath, and looked
+exactly as intended.
+
+Nothing about this was specific to the dialog. **Every** surface built from
+that atom had it — the History sheets, the action sheet, the bottom dock, the
+report's action bar — none of which had ever been looked at on an iPhone. One
+line fixes all of them.
+
+While in there: the same call now passes `colorScheme` (which
+`expo-glass-effect` documents as "use this when your app has its own theme
+toggle"). Left on `auto` the glass follows the *phone's* appearance while every
+token around it follows the patient's Settings choice — the exact half-dark app
+`useIsDark` exists to prevent.
+
+### The dialog is solid now, and stays solid
+
+Even with the tint fixed, `ConfirmDialog` no longer uses a material at all.
+
+A material is for a surface you look **past**. This is the one surface in the
+app you must look **at**, immediately before something irreversible — and its
+legibility should not depend on which iOS version is running, on what happens
+to be behind it, or on whether a blur implementation is available. It is a
+white (or `#161F31`) card over the dimmed page, on both platforms. That is also
+what the Galaxy was already showing, which is the version that got called
+"יפה".
+
+### Typed names capitalise themselves
+
+"elio" → "Elio". The field already had `autoCapitalize="words"`, and that only
+sets the **keyboard's shift state** — a suggestion a third-party keyboard, a
+paste or a correction can all ignore, which is how a lower-case name reaches
+the field in the first place. So the value is normalised instead, in the
+reducer rather than in the field, so every route into the draft gets it and a
+future screen cannot forget.
+
+What it deliberately does *not* do: it never lower-cases anything, so
+"McDonald" stays "McDonald" and "ELIO" stays "ELIO". Boundaries are spaces and
+hyphens ("jean-pierre" → "Jean-Pierre") but **not apostrophes** — "O'Brien" and
+"d'Angelo" disagree, and guessing wrong at someone's own name while they type
+it is worse than leaving it alone. Hebrew and Arabic have no letter case, so
+there is nothing there for it to do. The emergency contact's name gets the same
+treatment.
+
+### Verified / not verified
+
+`tsc` clean, both platforms bundle, `expo-doctor` 18/18. The capitalisation is
+checked against ten real-shaped names. **The glass fix is inferred from the
+symptom and the API, not observed** — the machine this is written on cannot
+run iOS at all. It wants one look at the sign-out dialog and one at a History
+sheet on the iPhone.
+
+---
+
 ## v0.19.1 — 2026-08-03 — Four from the first look
 
 > "תוסיף LOG OUT בPROFILE … רציתי רק בCYPHIX כמו שהיה ברפרנס … העיגול בתוכו יש

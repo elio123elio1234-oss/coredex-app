@@ -159,6 +159,32 @@ export type OnboardingAction =
   | { type: 'unskip'; step: ProfileStep }
   | { type: 'reset' };
 
+/**
+ * Capitalise the first letter of every word, and change NOTHING else.
+ *
+ * `autoCapitalize="words"` only sets the keyboard's shift state — it is a
+ * suggestion the OS makes and a third-party keyboard, a paste, or a
+ * correction can all ignore it, which is how "elio" reaches the field.
+ * This is the value being normalised rather than the keyboard being asked
+ * nicely, so what is stored matches what is shown.
+ *
+ * ── What it deliberately does not do ──
+ * It never lower-cases anything: "McDonald" stays "McDonald" and "ELIO"
+ * stays "ELIO". Only the character after a space or a hyphen is touched,
+ * so "jean-pierre" → "Jean-Pierre". Apostrophes are NOT boundaries —
+ * "O'Brien" and "d'Angelo" disagree about that, and guessing wrong at
+ * someone's own name while they type it is worse than leaving it.
+ *
+ * The range is Latin only, and that is not a gap: Hebrew and Arabic have
+ * no letter case at all, so there is nothing here for them to do.
+ */
+export function capitalizeName(value: string): string {
+  return value.replace(
+    /(^|[\s\-‐-―])([a-zß-ÿ])/g,
+    (_match, boundary: string, letter: string) => boundary + letter.toUpperCase(),
+  );
+}
+
 /** A keypad press. `del` removes the last digit; anything else appends
     until the field is full — the pad cannot produce an invalid value. */
 function applyKey(current: string, value: string, max: number): string {
@@ -173,10 +199,15 @@ export function onboardingReducer(
 ): OnboardingDraft {
   switch (action.type) {
     case 'patch': {
-      const next = { ...state, ...action.patch };
-      /* Filling in a step un-skips it: the review screen must not keep
-         calling a value "skipped" while showing it. */
-      return next;
+      const patch = { ...action.patch };
+      /* Names are normalised HERE rather than in the field that collects
+         them, so every route into the draft gets the same treatment and a
+         future screen cannot forget. */
+      if (patch.fullName !== undefined) patch.fullName = capitalizeName(patch.fullName);
+      if (patch.emergencyName !== undefined) {
+        patch.emergencyName = capitalizeName(patch.emergencyName);
+      }
+      return { ...state, ...patch };
     }
     case 'key': {
       const max = action.field === 'otp' ? OTP_LENGTH : PHONE_MAX_DIGITS;
@@ -300,4 +331,6 @@ export function initialsOf(fullName: string): string {
     .toUpperCase();
 }
 
+// v1.1.0 — Names are capitalised as they are typed (`capitalizeName`), in the
+//          reducer rather than in a field, so every route into the draft gets it.
 // v1.0.0 — The onboarding wizard as pure state: step order, draft, gating.

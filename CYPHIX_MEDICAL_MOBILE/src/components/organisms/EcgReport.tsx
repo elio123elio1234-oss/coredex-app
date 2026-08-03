@@ -337,7 +337,7 @@ export default function EcgReport({ report, save, onRecordAgain, onFinish }: Pro
           silently draws a flat rectangle). */}
       <GlassSurface
         dark={dark}
-        fallbackTint={dark ? 'rgba(19, 27, 44, 0.72)' : 'rgba(255, 255, 255, 0.72)'}
+        tint={dark ? 'rgba(19, 27, 44, 0.72)' : 'rgba(255, 255, 255, 0.72)'}
         style={[
           styles.actions,
           {

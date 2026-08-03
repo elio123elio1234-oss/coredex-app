@@ -18,6 +18,20 @@
    So: Liquid Glass where it exists, a genuinely blurring UIBlurEffect /
    BlurView everywhere else.
 
+   ── ★ THE TINT IS NOT OPTIONAL, AND NOT ONLY FOR THE FALLBACK ──
+   This prop used to be called `fallbackTint` and was passed ONLY to the
+   BlurView branch, on the reasoning that "Liquid Glass tints itself".
+   It does not tint itself enough: `glassEffectStyle="regular"` with no
+   `tintColor` over a LIGHT page is very nearly clear, so on iOS 26 every
+   surface built from this atom read as having no background at all —
+   text and buttons floating on the page — while the same component on
+   Android showed the intended near-white panel. Reported from an iPhone
+   against the sign-out dialog; the cause is shared by every sheet, the
+   dock and the report bar, so it is fixed here rather than there.
+
+   The tint therefore goes to BOTH materials. Alpha is preserved on both
+   paths, so a 0.55 dock stays glassy and a 0.82 sheet stays readable.
+
    ── THE GUARDED REQUIRE IS LOAD-BEARING ──
    `expo-glass-effect`'s iOS entry calls `requireNativeViewManager` at
    MODULE SCOPE, and `isLiquidGlassAvailable()` calls
@@ -33,7 +47,11 @@ import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 
 type GlassModule = {
   GlassView: React.ComponentType<
-    { glassEffectStyle?: 'clear' | 'regular' | 'none'; tintColor?: string } & {
+    {
+      glassEffectStyle?: 'clear' | 'regular' | 'none';
+      tintColor?: string;
+      colorScheme?: 'auto' | 'light' | 'dark';
+    } & {
       style?: ViewStyle | ViewStyle[];
       children?: ReactNode;
     }
@@ -60,15 +78,25 @@ interface Props {
   children: ReactNode;
   style?: ViewStyle | ViewStyle[];
   dark: boolean;
-  /** Tint under the material. Ignored by Liquid Glass, which tints itself. */
-  fallbackTint: string;
+  /** The colour the material carries. Honoured by BOTH implementations —
+      see the header for what happened when it was not. */
+  tint: string;
 }
 
-export default function GlassSurface({ children, style, dark, fallbackTint }: Props) {
+export default function GlassSurface({ children, style, dark, tint }: Props) {
   if (glass) {
     const { GlassView } = glass;
     return (
-      <GlassView glassEffectStyle="regular" style={style}>
+      <GlassView
+        glassEffectStyle="regular"
+        tintColor={tint}
+        /* The app's own theme, not the phone's. Left on 'auto' the glass
+           follows the OS while every token around it follows the patient's
+           Settings choice — the same half-dark app `useIsDark` exists to
+           prevent. */
+        colorScheme={dark ? 'dark' : 'light'}
+        style={style}
+      >
         {children}
       </GlassView>
     );
@@ -85,13 +113,14 @@ export default function GlassSurface({ children, style, dark, fallbackTint }: Pr
     >
       {/* expo-blur's own tint is coarse; this is the surface colour the web
           gets from `color-mix(in srgb, var(--surface) 55%, transparent)`. */}
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: fallbackTint }]}
-        pointerEvents="none"
-      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} pointerEvents="none" />
       {children}
     </BlurView>
   );
 }
 
-// v1.0.0 — Liquid Glass on iOS 26+, real Android blur via dimezisBlurView.
+// v1.1.0 — The tint reaches Liquid Glass too (`tintColor`), and the material
+//          follows the APP's theme rather than the phone's (`colorScheme`).
+//          Untinted "regular" glass over a light page is clear, which is why
+//          iOS 26 showed every sheet and dialog as having no background at all
+//          while the same code on Android was correct.

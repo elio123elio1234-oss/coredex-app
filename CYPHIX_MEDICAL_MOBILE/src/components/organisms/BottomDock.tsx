@@ -78,7 +78,7 @@ export default function BottomDock({ state, navigation }: BottomTabBarProps) {
       <GlassSurface
         dark={dark}
         /* color-mix(in srgb, var(--surface) 55%, transparent) — 44% on dark. */
-        fallbackTint={dark ? 'rgba(19,27,44,0.44)' : 'rgba(255,255,255,0.55)'}
+        tint={dark ? 'rgba(19,27,44,0.44)' : 'rgba(255,255,255,0.55)'}
         style={[
           styles.bar,
           {

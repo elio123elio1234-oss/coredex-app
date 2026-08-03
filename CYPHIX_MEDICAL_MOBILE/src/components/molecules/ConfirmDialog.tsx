@@ -11,14 +11,27 @@
    The subject (which study) is shown in its own line above the body, so the
    reader confirms a specific recording rather than the idea of one.
 
-   Presented through `OverlayLayer`, not `Modal` — the page has to be really
-   behind it for the blur to sample, and a Modal is portrait-only by default,
-   which crashes the app when this is raised from full screen. See that file.
+   Presented through `OverlayLayer`, not `Modal` — a Modal is portrait-only by
+   default, which crashes the app when this is raised from full screen. See
+   that file.
+
+   ── ★ THE CARD IS SOLID, AND EVERY OTHER SURFACE IN THE APP IS NOT ──
+   This used to be a `GlassSurface`. On an iPhone running iOS 26 it appeared
+   with NO BACKGROUND AT ALL — the title, the body and both buttons floating
+   over the page — while the same component on a Galaxy drew the intended
+   near-white panel. The root cause was in the atom (untinted Liquid Glass is
+   nearly clear over a light page, and the tint was being passed only to the
+   Android/older-iOS branch) and is fixed there.
+
+   It is still solid here, on purpose. A material is for a surface you look
+   PAST; this is the one surface in the app you must look AT, immediately
+   before something irreversible. Its legibility should not depend on what is
+   behind it, on which iOS version is running, or on whether a blur
+   implementation is available — so it does not.
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import GlassSurface from '@/components/atoms/GlassSurface';
 import OverlayLayer from '@/components/atoms/OverlayLayer';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
@@ -57,12 +70,13 @@ export default function ConfirmDialog({
        you are about to delete stays recognisable underneath, which is the whole
        point of confirming against a specific record. */
     <OverlayLayer visible={visible} onRequestClose={onCancel} closeLabel={cancelLabel} enter="fade">
-      <GlassSurface
-        dark={dark}
-        fallbackTint={dark ? 'rgba(19, 27, 44, 0.86)' : 'rgba(255, 255, 255, 0.88)'}
+      <View
         style={[
           styles.card,
-          { borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)' },
+          {
+            backgroundColor: dark ? '#161F31' : '#FFFFFF',
+            borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)',
+          },
         ]}
       >
         <Text style={[styles.title, { color: t.textPrimary }]}>{title}</Text>
@@ -106,7 +120,7 @@ export default function ConfirmDialog({
             <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{confirmLabel}</Text>
           </Pressable>
         </View>
-      </GlassSurface>
+      </View>
     </OverlayLayer>
   );
 }
@@ -133,6 +147,10 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 15.5, fontWeight: '700' },
 });
 
+// v2.1.0 — The card is a SOLID surface. As glass it rendered with no background
+//          at all on iOS 26 (untinted Liquid Glass over a light page is clear),
+//          and the one thing that must be readable before an irreversible
+//          action should not depend on a material being available.
 // v2.0.0 — Presented through OverlayLayer instead of Modal: only in tree does
 //          the blur have the page to sample, and only without a Modal can this
 //          be raised from landscape full screen without killing the app.

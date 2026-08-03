@@ -1,8 +1,27 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.19.1';
+export const APP_VERSION = '0.19.2';
 export const APP_BUILD_LABEL =
-  'Four from the first look: sign out on Profile, the text-only wordmark, the fake ECG mark gone, and a photograph behind the welcome';
+  'The invisible dialog on iOS was untinted Liquid Glass — every sheet had it; and typed names now capitalise themselves';
+
+// v0.19.2 — Two from an iPhone next to a Galaxy.
+//           THE SIGN-OUT DIALOG HAD NO BACKGROUND ON iOS AND A PROPER PANEL
+//           ON ANDROID, from ONE line in `GlassSurface`: the tint was passed
+//           only to the BlurView branch, on the reasoning that Liquid Glass
+//           "tints itself". It does not — `glassEffectStyle="regular"` with no
+//           `tintColor` over a light page is very nearly CLEAR, so on iOS 26
+//           the panel was really there and really invisible. The tint now
+//           reaches both materials, which fixes every sheet, the dock and the
+//           report bar at once — none of which had been looked at on an iPhone
+//           yet. The same call now passes `colorScheme` too, so the glass
+//           follows the patient's theme choice instead of the phone's.
+//           ConfirmDialog is SOLID regardless: a material is for a surface you
+//           look past, and this is the one surface you must look at, right
+//           before something irreversible.
+//           And: a typed name capitalises itself ("elio" → "Elio").
+//           `autoCapitalize` only suggests a shift state to the keyboard; the
+//           VALUE is normalised now. It never lower-cases, so "McDonald"
+//           survives, and it splits on spaces and hyphens but not apostrophes.
 
 // v0.19.1 — Four corrections from the first look at v0.19.0, all of them the
 //           kind only a person can see.
