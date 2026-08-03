@@ -1,5 +1,75 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.22.0 — 2026-08-03 — You can set your portrait from the phone, and the welcome photo stops arriving late
+
+Two things, one asked for and one reported.
+
+### 1. The portrait can be changed from the phone
+
+v0.21.0 could *show* a portrait but not set one, which is half a feature. Now
+the avatar is a button — with a camera badge, because a tappable circle with no
+affordance is a circle nobody taps — opening **take a photo / choose from
+library / remove**. It saves to the **record, not the device**, so a picture
+taken on the phone shows up in the browser, and the sheet's copy says so: a
+patient deciding whether to put their face on a medical record deserves to know
+where it goes.
+
+The photo the **sign-up wizard** collects is now uploaded too, right after the
+account exists — it could not travel in the registration body, which has no
+patient id yet. That upload is deliberately best-effort: the account and the
+session are already created by the time it runs, so a failed picture must never
+be reported as "sign-up failed". The patient lands with initials and a working
+picker, which is the only reason swallowing that error is acceptable here.
+
+**One new dependency: `expo-image-manipulator`.** The server caps the portrait
+data-URL at 1 500 000 characters, and a square crop off a 12 MP sensor is
+several times that once base64 adds a third on top — so uploading what the
+picker returns would fail on exactly the good cameras. The image is resized to
+**512 px** on-device first (~40 KB, about 3 % of the cap). The picker's own
+`quality` option could not do this: it lowers JPEG quality, never the pixel
+count, which is the expensive part. The web does the equivalent on a canvas;
+React Native has none.
+
+Three failures, kept apart because they need different answers: the OS
+**refused** (a decision, not an error — the message says where to change it),
+the image could not be **encoded**, and the **upload** failed (the optimistic
+cache patch rolls back, so the old portrait returns instead of the new one
+appearing to have stuck). Changing it is audited as `patient:update` — the
+reference, never the image.
+
+Verified against the deployed API: PUT a portrait → 200, GET returns it
+**byte-identical**, remove → 200, GET → null, and the demo account is left
+exactly as it was found. A 1.6 M-character upload really is refused with 400,
+which is the check that makes the resize load-bearing rather than tidy.
+
+### 2. "The screen is blue and only then the picture comes up"
+
+Correct, and it was not the file — 1400 × 1066, 176 KB is modest. It was the
+**timing**: nothing asked for the image until `WelcomeStep` mounted, so the
+fetch *and* the decode happened while the patient was already looking at the
+screen. In **Expo Go**, where it was noticed, it is worse: a `require`d asset is
+not bundled into the client, it is pulled from the Metro dev server over Wi-Fi
+on first use — so the very first screen of the app pays a network round trip for
+its own background.
+
+Two changes, no new dependency:
+
+- **`prefetchHero()` runs inside the boot splash**, which is 1.7 s of held time
+  the app already spends. By the time the welcome screen mounts, the image is in
+  the loader's cache. (`resolveAssetSource` + `Image.prefetch` are React
+  Native's own; in a production build, where the asset is local and this is
+  unnecessary, the rejection is caught and ignored.)
+- **The photo fades in over the navy in 260 ms** when it is not already there,
+  so a slow load reads as a deliberate arrival rather than a glitch. The hero's
+  layers are explicit now (image / scrim / copy) instead of an `ImageBackground`
+  — fading the container would have taken the gradient and the headline with it.
+  The wordmark and the title never wait for the picture; they sit on the scrim,
+  which is drawn over navy whether there is a photograph behind it or not.
+
+Typecheck, both exports and expo-doctor pass. Neither change has been seen on a
+handset yet — the PARITY rows stay `🔬`, and the fade in particular is the kind
+of thing only a device can confirm.
+
 ## v0.21.0 — 2026-08-03 — The Profile tab shows YOUR record, not the demo patient's
 
 > "אם חיברת את השרת - מצוין אבל למה בטאב של PROFILE אני לא רואה את התמונה

@@ -188,6 +188,14 @@ export const he: Record<TranslationKey, string> = {
   profileNoneRecorded: 'לא נרשמו',
   profileNoAllergies: 'אין אלרגיות ידועות',
   profileLoadFailed: 'לא הצלחנו לטעון את הרשומה שלך, ולכן הפרטים למטה עשויים להיות חלקיים. בדקו את החיבור ומשכו למטה כדי לנסות שוב.',
+  profilePhotoTitle: 'תמונת פרופיל',
+  profilePhotoChange: 'שינוי תמונת הפרופיל',
+  profilePhotoTake: 'צילום תמונה',
+  profilePhotoChoose: 'בחירה מהגלריה',
+  profilePhotoRemove: 'הסרת התמונה',
+  profilePhotoDenied:
+    'ל-CYPHIX אין הרשאה למצלמה או לתמונות שלך. אפשר להפעיל אותה בהגדרות הטלפון.',
+  profilePhotoFailed: 'לא הצלחנו לשמור את התמונה. הקישו כדי לסגור ולנסות שוב.',
   profileNoMeds: 'לא נרשמו תרופות',
   profileNoRecent: 'אין עדיין הקלטות',
   profileSettingsDesc: 'תצוגה, התראות, מכשיר ופרטיות',
@@ -611,6 +619,7 @@ export const he: Record<TranslationKey, string> = {
 //          declining a question must be able to read what they decline.
 // v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
 //           sections read as "you have no conditions and no allergies".
+// v1.11.0 — Profile-photo sheet copy, matching en.ts key for key.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.

@@ -1,7 +1,25 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.21.0';
-export const APP_BUILD_LABEL = 'Profile shows YOUR record — name, age, card and portrait from the server';
+export const APP_VERSION = '0.22.0';
+export const APP_BUILD_LABEL = 'Set your photo from the phone · the welcome picture no longer arrives late';
+
+// v0.22.0 — Two things. (1) The portrait can now be SET from the phone: the
+//           avatar is a button with a camera badge — a tappable circle with
+//           no affordance is a circle nobody taps — opening take / choose /
+//           remove, saved to the RECORD so it shows in the browser too. The
+//           sign-up wizard's photo is uploaded as well, best-effort, because
+//           a failed picture must never be reported as a failed sign-up.
+//           `expo-image-manipulator` is the one new dependency: the server
+//           caps the data-URL at 1.5 M chars and a 12 MP square crop is
+//           several times that, so it is resized to 512 px before encoding.
+//           The picker's `quality` could not do it — it lowers JPEG quality,
+//           never the pixel count.
+//           (2) "The screen is blue and only then the picture comes up" —
+//           not the file, the TIMING: nothing fetched the welcome photo
+//           until that screen mounted, and in Expo Go a required asset is
+//           pulled from Metro over Wi-Fi on first use. It is now warmed
+//           during the splash the app already holds, and fades in over the
+//           navy if it is still not ready.
 
 // v0.21.0 — Sign-in was connected; the Profile tab was not. It read the
 //           hard-coded fictitious DEMO_CARD, so a signed-in patient was

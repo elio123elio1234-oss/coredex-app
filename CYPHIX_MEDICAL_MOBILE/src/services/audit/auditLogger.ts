@@ -25,6 +25,10 @@ export type AuditAction =
      the address they typed, and never anything from the password field. */
   | 'auth:login'
   | 'auth:logout'
+  /* A change to the medical record itself — today only the portrait, which
+     IS part of the record (it is stored inside the encrypted health
+     profile, not beside it). Logged as a reference, never the image. */
+  | 'patient:update'
   | 'recording:read'
   | 'recording:create'
   | 'recording:delete'
@@ -114,5 +118,8 @@ export function getAuditTrail(): readonly AuditEntry[] {
 
 // v1.1.0 — Adds auth:login / auth:logout to the action set, so who came in
 //          and who left is on the same trail as who read a recording.
+// v1.1.0 — Adds patient:update — the portrait is part of the medical record
+//          (it lives inside the encrypted health profile), so changing it is
+//          an audited event. The reference is logged, never the image.
 // v1.0.0 — Audit logger + withAudit() wrapper, mirroring the web placeholder
 //          (references only, never PII).

@@ -189,6 +189,18 @@ export const en = {
   profileNoAllergies: 'No known allergies',
   /* Shown INSTEAD of letting empty sections imply "you have none of these". */
   profileLoadFailed: 'Your record could not be loaded, so the details below may be incomplete. Check your connection and pull to try again.',
+  /* ── The portrait ──
+     It is saved to your record, not to this phone, which is why the sheet
+     says so: a patient deciding whether to add a photo to a medical record
+     deserves to know where it goes. */
+  profilePhotoTitle: 'Profile photo',
+  profilePhotoChange: 'Change profile photo',
+  profilePhotoTake: 'Take a photo',
+  profilePhotoChoose: 'Choose from library',
+  profilePhotoRemove: 'Remove photo',
+  profilePhotoDenied:
+    'CYPHIX does not have permission to use the camera or your photos. You can turn it on in your phone’s Settings.',
+  profilePhotoFailed: 'That photo could not be saved. Tap to dismiss and try again.',
   profileNoMeds: 'No medications recorded',
   profileNoRecent: 'No recordings yet',
   profileSettingsDesc: 'Appearance, notifications, device and privacy',
@@ -626,6 +638,8 @@ export type TranslationKey = keyof typeof en;
 //          plus the failure codes, each mapped to one honest sentence.
 // v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
 //           sections read as "you have no conditions and no allergies".
+// v1.11.0 — Profile-photo sheet copy. The sheet says the picture is saved to
+//           your record, because that is a different decision from a device.
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.

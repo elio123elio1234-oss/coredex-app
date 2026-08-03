@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Image,
@@ -48,6 +49,8 @@ import type { CodedItem } from '@cyphix/shared';
 import { useAuth } from '@/features/auth/useAuth';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { usePatientCard } from '@/features/profile/usePatientCard';
+import { usePortrait } from '@/features/profile/usePortrait';
+import ActionSheet from '@/components/molecules/ActionSheet';
 import type { TranslationKey } from '@/i18n/config';
 import { useTranslation } from '@/i18n/useTranslation';
 import { shellPalette } from '@/theme/shellTheme';
@@ -208,7 +211,12 @@ export default function ProfileScreen() {
   /* WHOSE record this is, and what is in it — one hook, three cases
      (server card / demo card / name-only when it will not load). The
      screen deliberately does not know which it got. */
-  const { card, photo, isLoading, isFetching, isError, isDemo, refetch } = usePatientCard();
+  const { card, photo, isLoading, isFetching, isError, isDemo, patientId, refetch } =
+    usePatientCard();
+  const portrait = usePortrait(patientId);
+  const [portraitSheet, setPortraitSheet] = useState(false);
+  /** There must be a real record to write the picture into. */
+  const canEditPortrait = patientId !== null;
   const sexLabel = tr(SEX_KEY[card.gender ?? 'unknown'] ?? 'sexUnknown');
 
   const initials =
@@ -251,7 +259,22 @@ export default function ProfileScreen() {
       >
         {/* ── Header: portrait + identity + care team ── */}
         <View style={[styles.header, rtl && styles.rowReverse]}>
-          <View
+          {/* Tappable ONLY where there is a record to write to. Offline the
+              card is a fixture, and a picker that saved nowhere would be a
+              control that appears to work. */}
+          <Pressable
+            onPress={
+              canEditPortrait
+                ? () => {
+                    void Haptics.selectionAsync();
+                    portrait.clearStatus();
+                    setPortraitSheet(true);
+                  }
+                : undefined
+            }
+            disabled={!canEditPortrait || portrait.busy}
+            accessibilityRole={canEditPortrait ? 'button' : 'image'}
+            accessibilityLabel={canEditPortrait ? tr('profilePhotoChange') : undefined}
             style={[styles.avatar, { backgroundColor: t.accentSoft, borderColor: t.surface }]}
           >
             {/* The portrait comes from the server (it follows the person
@@ -267,7 +290,19 @@ export default function ProfileScreen() {
             ) : (
               <Text style={[styles.avatarText, { color: t.brandNavy }]}>{initials}</Text>
             )}
-          </View>
+            {/* An affordance, not decoration: a circle that happens to be
+                tappable is a circle nobody taps. It doubles as the busy
+                indicator, so the wait appears exactly where the action was. */}
+            {canEditPortrait && (
+              <View style={[styles.avatarBadge, { backgroundColor: t.brandNavy, borderColor: t.surface }]}>
+                {portrait.busy ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="camera" size={13} color="#FFFFFF" />
+                )}
+              </View>
+            )}
+          </Pressable>
           <View style={styles.identity}>
             <Text
               style={[styles.name, { color: t.textPrimary, textAlign: rtl ? 'right' : 'left' }]}
@@ -291,6 +326,25 @@ export default function ProfileScreen() {
           </View>
           {isLoading && <ActivityIndicator color={t.textTertiary} />}
         </View>
+
+        {/* The portrait's own failures, said where the portrait is. A
+            refusal is not an error — the patient declined a permission,
+            and the sentence explains where to change their mind. */}
+        {(portrait.status === 'denied' || portrait.status === 'failed') && (
+          <Pressable
+            onPress={portrait.clearStatus}
+            style={[styles.notice, { backgroundColor: t.surface, borderColor: t.border }]}
+          >
+            <Text
+              style={[
+                styles.noticeText,
+                { color: t.textSecondary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr(portrait.status === 'denied' ? 'profilePhotoDenied' : 'profilePhotoFailed')}
+            </Text>
+          </Pressable>
+        )}
 
         {/* A card that did not load must SAY so. Empty sections would
             otherwise read as "you have no conditions, no allergies, no
@@ -486,6 +540,49 @@ export default function ProfileScreen() {
         </Pressable>
       </ScrollView>
 
+      {/* Remove is offered only when there IS one to remove — a "Remove
+          photo" row over initials is an action with nothing to act on. */}
+      <ActionSheet
+        visible={portraitSheet}
+        title={tr('profilePhotoTitle')}
+        cancelLabel={tr('back')}
+        onClose={() => setPortraitSheet(false)}
+        items={[
+          {
+            id: 'take',
+            label: tr('profilePhotoTake'),
+            icon: 'camera-outline',
+            onSelect: () => {
+              setPortraitSheet(false);
+              portrait.take();
+            },
+          },
+          {
+            id: 'pick',
+            label: tr('profilePhotoChoose'),
+            icon: 'images-outline',
+            onSelect: () => {
+              setPortraitSheet(false);
+              portrait.pick();
+            },
+          },
+          ...(photo
+            ? [
+                {
+                  id: 'remove',
+                  label: tr('profilePhotoRemove'),
+                  icon: 'trash-outline' as const,
+                  danger: true,
+                  onSelect: () => {
+                    setPortraitSheet(false);
+                    portrait.remove();
+                  },
+                },
+              ]
+            : []),
+        ]}
+      />
+
       <ConfirmDialog
         visible={confirmSignOut}
         title={tr('setAccountSignOut')}
@@ -525,6 +622,20 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 22, fontWeight: '800' },
   avatarImage: { width: '100%', height: '100%' },
+  /* Sits ON the ring, bottom-end — the place every phone OS puts it. The
+     avatar clips its children, so this is positioned inside the circle's
+     edge rather than hanging off it. */
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   notice: { borderRadius: RADIUS.lg, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12 },
   noticeText: { fontSize: 13.5, lineHeight: 19 },
   identity: { flex: 1 },
@@ -590,5 +701,8 @@ const styles = StyleSheet.create({
 // v2.0.0 — Renders the SIGNED-IN patient's real record (usePatientCard) with the
 //          server portrait, a loading state, an explicit "could not load" notice
 //          and pull-to-refresh — instead of the hard-coded fictitious DEMO_CARD.
+// v2.1.0 — The portrait can be SET from the phone: the avatar is a button with
+//          a camera badge, opening take / choose / remove, saving to the record
+//          (not the device) and saying which of the three failures happened.
 // v1.3.0 — The floating wordmark (and the padding that cleared it) follow
 //          SHOW_SHELL_WORDMARK, so the card starts at the top of the screen.

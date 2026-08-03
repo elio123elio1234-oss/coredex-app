@@ -33,6 +33,7 @@
 import {
   AUTH_ROUTES,
   AuthError,
+  PATIENT_ROUTES,
   type AuthErrorCode,
   type AuthSession,
   type AuthTokens,
@@ -41,6 +42,7 @@ import {
   type SessionUser,
 } from '@cyphix/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toPortraitDataUrl } from '@/services/media/photoPicker';
 import {
   apiRoot,
   clearSession,
@@ -98,6 +100,33 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/**
+ * Upload the portrait the wizard collected, once the account exists.
+ *
+ * Deliberately best-effort and NEVER able to fail a registration: the
+ * account is already created and the session already established by the
+ * time this runs, so throwing here would report "sign-up failed" for a
+ * picture. If it does not land, the patient has an account with initials
+ * and a working picker on the Profile screen — which is a recoverable
+ * state, and the only reason it is acceptable to swallow this.
+ */
+async function uploadPortrait(patientId: string, photoUri: string): Promise<void> {
+  try {
+    const dataUrl = await toPortraitDataUrl(photoUri);
+    if (!dataUrl) return;
+    await fetch(`${apiRoot()}${PATIENT_ROUTES.photo(patientId)}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${getAccessToken() ?? ''}`,
+      },
+      body: JSON.stringify({ photo: dataUrl }),
+    });
+  } catch {
+    /* see above — an account without a portrait is a working account */
+  }
+}
+
 async function remember(user: SessionUser): Promise<void> {
   try {
     const record: RememberedAccount = { id: user.id, displayName: user.displayName };
@@ -149,12 +178,12 @@ export class HttpAuthService implements MobileAuthService {
        of record.
 
        Mapped field by field rather than spread, for two honest reasons:
-       `photoUri` and `avatarTone` are DEVICE state (the image never
-       leaves the phone in this stage — server-side portraits are
-       PUT /patients/:id/photo, a separate feature), and "unknown" blood
-       type is the patient declining to say, which must arrive as an
-       absent field and not as the literal string "unknown" printed on an
-       emergency card. */
+       `photoUri` is a local file path that means nothing on a server (the
+       picture follows separately, below, once there is a patient id to
+       attach it to) and `avatarTone` is a rendering choice this device
+       made; and "unknown" blood type is the patient declining to say,
+       which must arrive as an absent field and not as the literal string
+       "unknown" printed on an emergency card. */
     const tokens = await post<AuthTokens>(AUTH_ROUTES.register, {
       email: email.trim().toLowerCase(),
       password,
@@ -173,6 +202,13 @@ export class HttpAuthService implements MobileAuthService {
     });
     await storeSession(tokens);
     await remember(tokens.user);
+    /* The picture the photo step collected. It could not be sent with the
+       registration body — there was no patient id to attach it to until
+       this reply — and it is the only part of the profile that is not a
+       field on the form. */
+    if (profile.photoUri && tokens.user.linkedPatientId) {
+      await uploadPortrait(tokens.user.linkedPatientId, profile.photoUri);
+    }
     return { user: tokens.user, token: tokens.accessToken, profile };
   }
 
@@ -242,5 +278,8 @@ export class HttpAuthService implements MobileAuthService {
   }
 }
 
+// v1.1.0 — Uploads the portrait the sign-up wizard collected, once the account
+//          exists (it needs a patient id, which only the reply carries). Never
+//          able to fail a registration — see uploadPortrait.
 // v1.0.0 — Sign-in/registration against CYPHIX_SERVER: one account across web,
 //          iOS and Android, with the not-yet-server-backed steps kept honest.
