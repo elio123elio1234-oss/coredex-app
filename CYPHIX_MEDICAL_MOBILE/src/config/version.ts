@@ -1,7 +1,43 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.22.0';
-export const APP_BUILD_LABEL = 'Set your photo from the phone · the welcome picture no longer arrives late';
+export const APP_VERSION = '0.23.0';
+export const APP_BUILD_LABEL = 'Real hardware on iPhone · a frozen trace stops calling itself live · the app has its own icon';
+
+// v0.23.0 — The release that makes the REAL signal reachable on an iPhone,
+//           plus the two gaps found while checking that it could be.
+//           ★ Nothing was wrong with the ECG pipeline. The reason only a demo
+//           signal was ever seen is that Expo Go contains no `cyphix-ble`, so
+//           `requireOptionalNativeModule` returns null and `bleClient` falls
+//           back to the simulator — exactly as designed. Reaching the hardware
+//           needs a development build, which needs Xcode, which needs a Mac.
+//           `IPHONE_SETUP.md` is that path written out end to end, for an
+//           Intel MacBook and a FREE Apple ID, with the macOS 14.5 / Xcode
+//           16.1 compatibility gate first — it is the one check that can cost
+//           an evening, and it cannot be worked around.
+//           (1) A STALENESS WATCHDOG. A BLE link stays "connected" while
+//           delivering nothing: the phone locks, the app backgrounds, the
+//           device slips. The last waveform just sits there, and a screen that
+//           keeps calling it live is showing a frozen trace as a patient's
+//           heart. After STREAM_STALE_MS (600 ms — six missed flushes of the
+//           frozen 10 Hz cadence, so it is derived, not chosen by feel)
+//           `isStreaming` goes false. AppState marks it on the way OUT to the
+//           background, because a suspended app's timers do not run to notice
+//           later, and only a real arriving batch clears it — saying "live
+//           again" before a sample has landed is the same lie. An in-flight
+//           capture is DISCARDED rather than run out against silence: ten
+//           seconds of wall clock is not ten seconds of ECG, and a strip
+//           padded with silence reads as asystole.
+//           (2) ANDROID BLE PERMISSIONS WERE NEVER REQUESTED. The Kotlin
+//           module is `@SuppressLint("MissingPermission")` and documents that
+//           the UI must have asked already. Nothing asked. A manifest entry is
+//           not a grant, and an unpermitted `startScan` returns no results and
+//           throws no error — indistinguishable from "the device isn't here".
+//           PARITY had Android as ✅; that was wrong and is corrected.
+//           (3) The icon was still Expo's blue placeholder. It is now the
+//           CYPHIX mark on white, rasterised by `scripts/make-icons.js` from
+//           `BrandLogo`'s OWN path data — a hand-traced lookalike drifts from
+//           the logo the first time either is touched.
+
 
 // v0.22.0 — Two things. (1) The portrait can now be SET from the phone: the
 //           avatar is a button with a camera badge — a tappable circle with

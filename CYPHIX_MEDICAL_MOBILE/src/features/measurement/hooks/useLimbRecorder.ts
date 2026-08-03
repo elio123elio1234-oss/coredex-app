@@ -148,6 +148,22 @@ export function useLimbRecorder({
   useEffect(() => {
     if (phase !== 'recording') return;
     const iv = setInterval(() => {
+      /* ⚠️ The stream went silent mid-capture — phone locked, app
+         backgrounded, device slipped off. DISCARD the partial rather than
+         letting the timer run out and commit it (web CLAUDE.md §6.0.4:
+         "device stops streaming → discard partial"). Ten seconds of wall
+         clock is not ten seconds of ECG, and a strip padded with silence
+         is a strip a clinician would read as asystole. Returning to `idle`
+         lets the page re-arm on its own once samples come back. */
+      if (bleRef.current.isStale) {
+        recordingRef.current = false;
+        rawRef.current = { I: [], II: [] };
+        clearInterval(iv);
+        setProgress(0);
+        setPhase('idle');
+        return;
+      }
+
       const elapsed = (Date.now() - startAtRef.current) / 1000;
       setProgress(Math.min(100, (elapsed / durationSec) * 100));
       hrRef.current = liveHrRef.current || bleRef.current.heartRate || hrRef.current;
@@ -181,4 +197,5 @@ export function useLimbRecorder({
   return { phase, progress, report, start, reset };
 }
 
-// v2.1.0 — Also returns the raw measured channels so Scan History can persist them unfiltered.
+// v2.2.0 — Discards an in-flight capture when the stream goes stale, instead
+//          of running the timer out and committing padded silence.

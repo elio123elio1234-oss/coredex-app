@@ -1,5 +1,111 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.23.0 — 2026-08-03 — The road to a real signal on an iPhone, and two things found while checking it
+
+### 0. The finding that reframes the request: the pipeline was never the problem
+
+The report was "there is only a demo signal, never the real one from the
+hardware". The reasonable reading is that something in the ECG path is broken.
+It is not. Every piece exists and is correct — the Swift/CoreBluetooth module,
+the Kotlin one, the frozen packet contract, the raw ring buffer, the live
+display filter, the analysis on raw. Checked against the firmware too: it
+advertises the service UUID the native scan filters on, and sends 16 samples ×
+9 bytes (int32 µV) at 20 Hz with MTU 185 — exactly what the modules decode.
+
+The real cause is one line, working as designed:
+
+```ts
+export const CyphixBleNative = requireOptionalNativeModule('CyphixBle'); // null in Expo Go
+```
+
+**Expo Go cannot contain this app's native code.** It is a pre-built app from
+the App Store carrying only the modules Expo shipped in it, so `cyphix-ble` is
+absent, the handle is null, and `bleClient` falls back to `EcgSimulator` — the
+documented fallback (mobile CLAUDE.md §4). No amount of work inside the app can
+change that. Reaching the hardware requires a **development build**, which
+requires Xcode, which requires a Mac. That is the whole story.
+
+So the deliverable is the path, not a patch: **`IPHONE_SETUP.md`**, written end
+to end for a Windows developer, an **Intel** MacBook and a **free** Apple ID.
+The compatibility gate is deliberately §1, before anything is installed: Expo
+SDK 54 / RN 0.81 needs Xcode 16.1+, which needs macOS 14.5+, and Apple does not
+let a newer Xcode onto an older macOS. An Intel Mac from 2018 or later is fine;
+2017 and earlier is a dead end with no workaround inside the project, so the
+alternatives are named honestly instead — including that the EAS cloud-build
+escape hatch needs the **paid** account, so it is not a free substitute.
+
+It also documents the two things most likely to waste an evening: `.env` is
+git-ignored and therefore does **not** arrive with the clone, and a Debug build
+is tethered to Metro — hardware testing away from the desk wants
+`--configuration Release`.
+
+### 1. A frozen trace stopped being called live
+
+Checking whether the link could be trusted surfaced a real gap against root
+CLAUDE.md §3.2, which requires exactly this and had no implementation.
+
+A BLE link stays `connected` while delivering nothing — the phone locks, the
+app backgrounds, the device slips off the patient, the ESP32 browns out. In
+every case the last waveform stays on screen. A screen that keeps calling that
+live is presenting a frozen trace as a patient's heart.
+
+`STREAM_STALE_MS` is **derived, not chosen**: the firmware notifies every 50 ms
+and the native bridges flush at 10 Hz, so a healthy link delivers something
+every ~100 ms; 600 ms is six missed flushes. It lives in `CYPHIX_SHARED` beside
+the cadence it comes from, so web and mobile cannot drift.
+
+Three details that are the difference between a watchdog and a decoration:
+
+- **AppState marks stale on the way OUT.** A suspended app's timers do not run,
+  so the interval cannot be relied on to notice afterwards.
+- **Only a real arriving batch clears it.** Announcing "live again" on
+  foreground, before a sample has landed, is the same lie in the other
+  direction.
+- **`isStreaming` now means samples are arriving**, not that the link is up —
+  and an in-flight capture is **discarded**. Ten seconds of wall clock is not
+  ten seconds of ECG; a strip padded with silence reads as asystole.
+
+### 2. Android BLE permissions were never requested — and PARITY said ✅
+
+`CyphixBleModule.kt` is annotated `@SuppressLint("MissingPermission")` and its
+header states the UI must have obtained the runtime grants before `connect()`.
+Nothing ever did.
+
+A manifest declaration is not a grant. Since Android 6 the user must be asked at
+runtime, and an unpermitted `startScan` **returns no results and throws no
+error** — which on screen is indistinguishable from "the device isn't here".
+The request now runs in `bleClient.connect()` via React Native's own
+`PermissionsAndroid` (no new native dependency), splitting on API 31: `BLUETOOTH_SCAN` +
+`BLUETOOTH_CONNECT` from Android 12, `ACCESS_FINE_LOCATION` below it. A refusal
+says which thing was refused, because "Bluetooth error" sends someone to check a
+battery for a problem that is in Settings.
+
+The PARITY row claiming Android ✅ was wrong and is corrected to 🔬.
+
+### 3. The app has its own icon
+
+It was still Expo's blue placeholder — the one with the construction guides.
+It is now the CYPHIX mark on white, with the Android adaptive and themed layers
+and the favicon regenerated to match.
+
+`scripts/make-icons.js` renders them from **`BrandLogo`'s own path data**,
+copied verbatim, rather than from a redrawn lookalike that would drift from the
+logo the first time either was touched. The counter-dot is punched through as
+real transparency on the layers that need it (the themed Android icon is tinted
+by the system, so a filled dot would tint too), while `icon.png` is fully
+opaque, since iOS rejects an alpha channel.
+
+Two sizing decisions worth keeping: the square icon fills 60 % — iOS masks to a
+squircle and an organic mark needs real air — and the Android foreground fills
+only 42 %, because an adaptive icon's outer third is croppable and only the
+inner 66 % is guaranteed visible.
+
+> **Not verified on a device.** Per root CLAUDE.md §6.4, typecheck and bundle
+> prove the code is well-formed, not that it works. The Swift module has still
+> never run against the hardware — that is what `IPHONE_SETUP.md` exists to
+> make possible, and every row here stays 🔬 in `PARITY.md` until someone has
+> held the phone.
+
 ## v0.22.0 — 2026-08-03 — You can set your portrait from the phone, and the welcome photo stops arriving late
 
 Two things, one asked for and one reported.

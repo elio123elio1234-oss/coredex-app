@@ -18,6 +18,7 @@ export function useBle() {
   const deviceName = useAppSelector((s) => s.ble.deviceName);
   const heartRate = useAppSelector((s) => s.ble.heartRate);
   const railed = useAppSelector((s) => s.ble.railed);
+  const stale = useAppSelector((s) => s.ble.stale);
   const error = useAppSelector((s) => s.ble.error);
 
   const connect = useCallback(async () => {
@@ -46,8 +47,20 @@ export function useBle() {
       heartRate,
       railed,
       error,
-      /** True once samples are flowing — the gate for recording. */
-      isStreaming: status === 'streaming',
+      /**
+       * The link is up but nothing is coming through it — phone locked, app
+       * backgrounded, device dropped. The trace on screen is frozen.
+       */
+      isStale: stale,
+      /**
+       * True once samples are ACTUALLY flowing — the gate for recording.
+       *
+       * ⚠️ `status === 'streaming'` alone is not that gate. Status describes
+       * the LINK; it stays 'streaming' while a locked phone delivers nothing,
+       * so a recording begun on it would be committed against silence and a
+       * frozen waveform would keep being drawn as live (root CLAUDE.md §3.2).
+       */
+      isStreaming: status === 'streaming' && !stale,
       isConnected: status === 'streaming' || status === 'connected',
       /** False in Expo Go: no native module, so only the simulator can run. */
       isSupported: BleClient.isSupported,
@@ -60,8 +73,9 @@ export function useBle() {
       getBuffer,
       SAMPLE_RATE,
     }),
-    [status, deviceName, heartRate, railed, error, client, connect, connectSimulator, disconnect, subscribe, getBuffer],
+    [status, deviceName, heartRate, railed, stale, error, client, connect, connectSimulator, disconnect, subscribe, getBuffer],
   );
 }
 
-// v1.0.0 — Web-parity BLE hook surface.
+// v1.1.0 — `isStreaming` now means samples are really arriving, not just that
+//          the link is up; adds `isStale` for screens that must say so.

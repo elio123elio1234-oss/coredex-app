@@ -15,6 +15,12 @@ export interface BleState {
   heartRate: number;
   /** Leads clamped at the BLE int16 rail — surfaced, never hidden. */
   railed: { I: boolean; II: boolean };
+  /**
+   * The link is up but no samples are arriving (phone locked, app
+   * backgrounded, device dropped). Consumers treat this as NOT streaming:
+   * a frozen waveform must never be presented as live (root CLAUDE.md §3.2).
+   */
+  stale: boolean;
   error: string | null;
 }
 
@@ -23,6 +29,7 @@ const initialState: BleState = {
   deviceName: null,
   heartRate: 0,
   railed: { I: false, II: false },
+  stale: false,
   error: null,
 };
 
@@ -38,6 +45,7 @@ const bleSlice = createSlice({
         state.deviceName = null;
         state.heartRate = 0;
         state.railed = { I: false, II: false };
+        state.stale = false;
       }
     },
     deviceNamed(state, action: PayloadAction<string>) {
@@ -49,10 +57,17 @@ const bleSlice = createSlice({
     railed(state, action: PayloadAction<{ I: boolean; II: boolean }>) {
       state.railed = action.payload;
     },
+    staleChanged(state, action: PayloadAction<boolean>) {
+      state.stale = action.payload;
+      // A stale stream has no current heart rate. Leaving the last number on
+      // screen beside a frozen trace is the most convincing part of the lie.
+      if (action.payload) state.heartRate = 0;
+    },
   },
 });
 
-export const { statusChanged, deviceNamed, heartRateUpdated, railed } = bleSlice.actions;
+export const { statusChanged, deviceNamed, heartRateUpdated, railed, staleChanged } =
+  bleSlice.actions;
 export default bleSlice.reducer;
 
-// v1.0.0 — Web-parity BLE UI state (status/name/HR/rail); samples stay off Redux.
+// v1.1.0 — Adds `stale`: link up but nothing arriving. Samples stay off Redux.

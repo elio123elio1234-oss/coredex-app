@@ -8,7 +8,7 @@
 import { createContext, useEffect, useRef, type ReactNode } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { BleClient } from '@/services/ble/bleClient';
-import { deviceNamed, heartRateUpdated, railed, statusChanged } from './bleSlice';
+import { deviceNamed, heartRateUpdated, railed, staleChanged, statusChanged } from './bleSlice';
 
 export const BleContext = createContext<BleClient | null>(null);
 
@@ -22,6 +22,7 @@ export function BleProvider({ children }: { children: ReactNode }) {
       onDeviceNameChange: (name) => dispatch(deviceNamed(name)),
       onHeartRate: (bpm) => dispatch(heartRateUpdated(bpm)),
       onSignalRail: (r) => dispatch(railed(r)),
+      onStaleChange: (s) => dispatch(staleChanged(s)),
     });
   }
 
@@ -35,4 +36,4 @@ export function BleProvider({ children }: { children: ReactNode }) {
   return <BleContext.Provider value={ref.current}>{children}</BleContext.Provider>;
 }
 
-// v1.0.0 — App-lifetime BleClient so a connection survives navigation.
+// v1.1.0 — Also carries the client's staleness signal into Redux.

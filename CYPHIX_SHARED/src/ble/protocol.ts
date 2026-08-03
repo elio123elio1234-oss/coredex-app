@@ -38,6 +38,23 @@ export const RAIL_MARGIN_UV = 8;
 /** Sustained for this long ⇒ saturation, not a transient artefact. */
 export const RAIL_SAMPLES_TO_LATCH = SAMPLE_RATE / 2;
 
+/**
+ * How long a gap in arriving samples means the stream is STALE, not just
+ * jittery. Derived from the frozen cadence, not picked by feel: the firmware
+ * notifies every 16 samples (50 ms at 320 Hz) and the native bridges flush to
+ * JS at 10 Hz, so a healthy link delivers something at least every ~100 ms.
+ * 600 ms is six missed flushes — far outside normal jitter, far inside the
+ * time a person would keep believing a frozen trace.
+ *
+ * ⚠️ THE FAILURE THIS EXISTS FOR (root CLAUDE.md §3.2): when the phone locks
+ * or the app backgrounds, iOS stops delivering CoreBluetooth notifications,
+ * but the last waveform stays on screen. Without a watchdog that is a frozen
+ * trace being presented as a live patient signal — the exact reading error a
+ * monitor must never allow. Consumers treat stale as NOT streaming, so an
+ * in-flight recording is discarded rather than completed against silence.
+ */
+export const STREAM_STALE_MS = 600;
+
 /** One decoded ECG sample. Leads in MILLIVOLTS, LOD bits raw from hardware. */
 export interface EcgSample {
   leadI: number;
@@ -109,4 +126,5 @@ export function droppedBetween(prevSeq: number, seq: number): number {
   return (seq - prevSeq - 1 + 256) % 256;
 }
 
-// v1.0.0 — Frozen ESP32 BLE contract + platform-neutral packet parser.
+// v1.1.0 — Adds STREAM_STALE_MS: the gap after which a live trace must stop
+//          being called live (root CLAUDE.md §3.2). Wire contract unchanged.
