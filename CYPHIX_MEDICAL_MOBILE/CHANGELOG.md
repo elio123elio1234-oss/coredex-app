@@ -1,5 +1,84 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.19.1 — 2026-08-03 — Four from the first look
+
+> "תוסיף LOG OUT בPROFILE … רציתי רק בCYPHIX כמו שהיה ברפרנס … העיגול בתוכו יש
+> אות ECG ירוק — תעיף את זה, זה לא הלוגו שלי … במקום הרקע הכחול בוא ננסה לשים
+> את התמונה הזאת"
+
+All four are things no compiler could have flagged: where a control lives,
+which lockup belongs over a headline, what is and is not the brand, and what
+a hero should be a picture of.
+
+### 1. Sign out is on Profile
+
+It shipped in Settings only — which is Profile → Settings → scroll, one screen
+further than anybody looks for it. It is now the last thing on the Profile tab,
+under the Settings card, as a quiet centred row rather than a second
+illustrated card: it is not a place to go, it is a way to leave, and it must
+not compete with what is above it. The row shows *whose* session is about to
+end. The confirmation is the same one Settings raises, and Settings keeps its
+row — two doors to one action is correct here.
+
+### 2. The welcome hero carries the text-only wordmark
+
+`BrandLogo` is the full lockup: mark + CYPHIX + "MEDICAL". Directly above
+"Clinical-grade ECG, recorded at home." that second line of type argues with
+the headline it is introducing, which is exactly why the reference uses the
+word alone there.
+
+New atom `CyphixWordmark`, path data verbatim from the brand file
+(`Logo - cyphix/plain svg/cyphix((txtonly).svg`). One thing worth writing down:
+that file is an **A4 Inkscape page** — a `viewBox` of `0 0 210 297` with the
+word sitting in the middle of it. Dropped in as-is the wordmark renders as a
+speck surrounded by empty sheet. The viewBox here is the glyphs' measured
+bounding box (`47.77 85.38 62.48 12.79`, aspect 4.886).
+
+`BrandLogo` is unchanged and still the mark everywhere else — splash, reports,
+the shell.
+
+### 3. The pulsing ECG mark is gone
+
+The reference opens on a ring pulsing around a stylised ECG trace that draws
+itself. It was ported faithfully in v0.19.0 and it is out now, at the user's
+instruction: **it is not the CYPHIX identity**. A mark that behaves like a logo
+without being one is worse than no mark — it teaches people the wrong thing to
+recognise. `EcgSweepMark` is deleted rather than left unused.
+
+The splash is now the wordmark and the tagline, fading up on navy. `PulseRing`
+survives on "Profile created", where it rings a checkmark and is a
+confirmation rather than a logo — say the word if that should go too.
+
+### 4. The welcome hero is a photograph
+
+Instead of flat navy: the device on an older person's wrist, being pressed by
+their other hand, at home. It says what the product is faster than the
+sentence under it does.
+
+The scrim is structural, not decoration. The photo is warm and **light**, and
+white type over it would be unreadable exactly where the eye lands — so a navy
+gradient sits between them: `0.45` at the very top (so the light status-bar
+glyphs stay legible), clearing to `0.10` where the picture is the subject, then
+`0.72 → 0.97` under the type. The headline is therefore always on navy
+whatever the image is doing underneath.
+
+The asset is resampled to 1400 px wide and saved as JPEG q84 —
+**7.0 MB → 176 KB**. A 2354 px source in the bundle is 7 MB every user
+downloads to draw a 390 pt panel.
+
+One thing to watch on a device: the rounding is on the *wrapper*, not the
+`ImageBackground`. A native image view ignores a parent's `borderRadius` on
+Android unless the clip belongs to the view that owns `overflow: hidden`.
+
+### Verified / not verified
+
+`tsc` clean, both platforms bundle, `expo-doctor` 18/18 — and, as with
+v0.19.0, none of that has touched a phone. The scrim in particular is a
+judgement made against a thumbnail: it wants a real screen and, ideally, a
+real pair of eyes in daylight.
+
+---
+
 ## v0.19.0 — 2026-08-03 — The app gets a front door
 
 > "אנחנו הולכים להתחיל את מסך ההתחברות … תיקח מכאן רק את שלבי ההתחברות בלבד,

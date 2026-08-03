@@ -1,8 +1,29 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.19.0';
+export const APP_VERSION = '0.19.1';
 export const APP_BUILD_LABEL =
-  'The app has a front door: splash, sign-in and a 13-step registration, built from the CYPHIX Onboarding reference';
+  'Four from the first look: sign out on Profile, the text-only wordmark, the fake ECG mark gone, and a photograph behind the welcome';
+
+// v0.19.1 — Four corrections from the first look at v0.19.0, all of them the
+//           kind only a person can see.
+//           1. SIGN OUT IS ON PROFILE, at the bottom, under Settings — where
+//              every app a patient already uses puts it. It was in Settings
+//              only, which is one screen further than anybody looks.
+//           2. The welcome hero carries the TEXT-ONLY wordmark ("CYPHIX",
+//              no mark, no "MEDICAL"), as the reference does: a second line
+//              of type directly over a headline argues with it.
+//              `CyphixWordmark` is the brand file's own path, cropped to the
+//              glyphs — the A4 page it was drawn on would have rendered the
+//              word as a speck.
+//           3. THE PULSING ECG MARK ON THE SPLASH IS GONE. It came from the
+//              reference and it is not the CYPHIX identity — a thing that
+//              behaves like a logo but is not one is worse than no thing.
+//              The wordmark carries the splash alone now.
+//           4. The navy panel behind "Clinical-grade ECG, recorded at home"
+//              is a PHOTOGRAPH of the device being used. A navy gradient
+//              scrim sits between the picture and the type, clear at the top
+//              and opaque at the bottom, so white text is always on navy
+//              whatever the image does underneath.
 
 // v0.19.0 — THE APP HAS A FRONT DOOR. Everything before the tabs, taken from
 //           the "CYPHIX Onboarding" design reference and converted to React

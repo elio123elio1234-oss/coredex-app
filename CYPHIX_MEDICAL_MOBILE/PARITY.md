@@ -62,8 +62,10 @@ company.
 
 | Feature | Web | iOS | Android | Notes |
 |---|---|---|---|---|
-| **Splash** | ⏳ (web boots straight into its gate) | 🔬 | 🔬 | Navy screen, two offset `pulseRing`s, an ECG mark that DRAWS itself (`sweep` → animated `strokeDashoffset`), wordmark at 350 ms, tagline at 700 ms — all on the UI thread. Held for 1 700 ms **minimum**, with the session check running inside that window, and 4 000 ms **maximum**, after which the app opens signed out rather than staring at a logo. It carries the version, so "is my build actually on the phone?" is answered on the first screen anyone sees |
-| **Welcome** | ✅ (`AuthPage` choice mode) | 🔬 | 🔬 | Navy→`#16305C` gradient hero over Create account / Sign in / two platform marks. **Divergence:** the web's is a centred wordmark card; this is the reference's hero, and for mobile the reference is the spec |
+| **Splash** | ⏳ (web boots straight into its gate) | 🔬 | 🔬 | Navy screen: the CYPHIX lockup fading up, then the tagline. **v0.19.1 removed the reference's pulsing ECG mark** — two rings around a stylised trace that drew itself — at the user's instruction: it is not the CYPHIX identity, and a mark that behaves like a logo without being one teaches people the wrong thing to recognise. `EcgSweepMark` is deleted, not left unused. Held for 1 700 ms **minimum**, with the session check running inside that window, and 4 000 ms **maximum**, after which the app opens signed out rather than staring at a logo. It carries the version, so "is my build actually on the phone?" is answered on the first screen anyone sees |
+| **Welcome** | ✅ (`AuthPage` choice mode) | 🔬 | 🔬 | A PHOTOGRAPH of the device in use (v0.19.1, replacing the reference's flat navy panel) over Create account / Sign in / two platform marks. **Divergence:** the web's is a centred wordmark card |
+| ↳ Welcome — the scrim | — | 🔬 | 🔬 | Structural, not decoration: the photo is warm and LIGHT, so a navy gradient sits between it and the type — `0.45` at the very top (light status-bar glyphs stay legible), clearing to `0.10` where the picture is the subject, then `0.72 → 0.97` under the words. The headline is always on navy whatever the image does underneath. ⚠️ The 34 pt rounding is on the WRAPPER: a native image view ignores a parent's `borderRadius` on Android unless the clip belongs to the view that owns `overflow` |
+| ↳ Welcome — the lockup | ✅ full wordmark | 🔬 | 🔬 | v0.19.1: the **text-only** `CyphixWordmark` (no mark, no "MEDICAL"), as the reference has it — a second line of type directly over a headline argues with it. Path verbatim from the brand file; ⚠️ that file is an **A4 Inkscape page**, so the viewBox here is the glyphs' measured bounding box or the word renders as a speck on an empty sheet. `BrandLogo` stays the full lockup everywhere else |
 | ↳ Apple / Google sign-in | ⏳ | ⏳ | ⏳ | **Drawn, not wired** — both land on the e-mail form. Neither can work until the server holds the client secrets and an OAuth redirect exists. Recorded rather than hidden, because the buttons ARE in the design |
 | ↳ Terms / Privacy Notice | ✅ (routes exist) | 🟡 | 🟡 | The sentence names both documents and they are deliberately **not tappable**: no such document exists in this app yet, and a link that opens nothing is worse than a name. They become links the day there is something to open |
 | **Sign in** | ✅ `LoginForm` | 🔬 | 🔬 | E-mail + password with Show/Hide, "Forgot password?", and one honest line per `AuthErrorCode`. Same enumeration-safe rule as the web: no-such-account and wrong-password share one message |
@@ -84,7 +86,7 @@ company.
 | Auth service (the swap point) | ✅ `MockAuthService` → `HttpAuthService` | 🟡 | 🟡 | Mobile twin done: same contract (now in `@cyphix/shared`), same method names, same error codes. Device-local for now — accounts in AsyncStorage with **SHA-256 digests** (`expo-crypto`), session token in the **Keychain / Keystore**. ⚠️ The web still defines the contract in its own `services/auth/authTypes.ts`; migrating it onto the shared package is the follow-up, and until then an edit belongs in both |
 | ↳ RBAC principal | ✅ real | ⏳ | ⏳ | **Deliberate, and the one place the app knowingly disagrees with itself.** A registered account is a `patient`; `useCurrentUser` still answers with the demo CLINICIAN, because every History viewer tool is gated on clinician permissions and wiring the session through would strip a finished module with no way to switch back. WHO the patient is (name, profile) is real; WHAT they may do is still the stand-in. Lands with "preview as role" |
 | ↳ Medical card ← registration | ✅ | ⏳ | ⏳ | The health profile is captured, persisted and returned with the session, but the Profile tab still renders `DEMO_CARD`. Feeding sex / height / weight / blood / emergency contact into the card is the next step |
-| Sign out | ✅ | 🔬 | 🔬 | Live in Settings › Account, behind a confirmation. Without it the signed-out flow could never be reached a second time on a device that has completed it |
+| Sign out | ✅ | 🔬 | 🔬 | v0.19.1: on the **Profile tab**, last thing under the Settings card — where every app a patient already uses puts it. Settings › Account keeps its row too; two doors to one action is right here. Both confirm first, because on a device-local account this costs the password (or a face). Without it the signed-out flow could never be reached a second time on a device that has completed it |
 
 ## Platform capabilities
 
@@ -195,6 +197,10 @@ recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
   If the packet format ever changes, all three must change together —
   consider a shared test vector fixture before clinical use.
 
+- **The welcome scrim (v0.19.1) was judged against a thumbnail.** Whether
+  white type is comfortable over that photograph at those four gradient stops
+  is a daylight-and-a-real-screen question, not a code question.
+
 - **The whole onboarding flow (v0.19.0) is unverified on any device.** It
   typechecks, both platforms bundle and `expo-doctor` passes — which, per root
   `CLAUDE.md` §6.4 and the Scan History history below, proves only that it is
@@ -240,6 +246,10 @@ recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
      EcgReviewStrip memo. Three traps recorded — unstable props to a memo,
      re-deriving a signal for what was a transform, and an invisible touch
      surface gated on mode alone. -->
+<!-- v0.10.1 — Four from the first look at the flow: sign out moves onto the
+     Profile tab, the welcome hero takes the text-only wordmark and a
+     photograph, and the reference's pulsing ECG mark is deleted (it is not
+     the CYPHIX identity). -->
 <!-- v0.10.0 — The signed-out flow: splash, sign-in, biometric unlock, reset,
      and a 13-step registration built from the CYPHIX Onboarding reference.
      Three deliberate divergences recorded (system font instead of IBM Plex

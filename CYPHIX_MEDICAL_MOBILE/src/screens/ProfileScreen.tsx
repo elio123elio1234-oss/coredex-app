@@ -11,6 +11,7 @@
    document, and the web's profile scrolls too.
    ================================================================== */
 
+import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -31,7 +32,9 @@ import {
   type IllustrationProps,
 } from '@/components/atoms/Illustration';
 import { SHOW_SHELL_WORDMARK } from '@/config/featureFlags';
+import ConfirmDialog from '@/components/molecules/ConfirmDialog';
 import { dockFootprint } from '@/navigation/dockMetrics';
+import { useAuth } from '@/features/auth/useAuth';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD, type CodedItem } from '@/features/profile/demoCard';
 import type { TranslationKey } from '@/i18n/config';
@@ -188,6 +191,8 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
   const { prefs } = usePreferences();
+  const { user, logout } = useAuth();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const palette = shellPalette(prefs.background, useIsDark());
   const card = DEMO_CARD;
   const sexLabel = tr(SEX_KEY[card.gender ?? 'unknown'] ?? 'sexUnknown');
@@ -398,7 +403,49 @@ export default function ProfileScreen() {
               the reading direction. */}
           <ForwardChevron color={t.textTertiary} flip={rtl} />
         </Pressable>
+
+        {/* ── Sign out ──
+            The last thing on the last screen, which is where every app a
+            patient already uses puts it. It is a plain row rather than a
+            second illustrated card: it is not a place to go, it is a way
+            to leave, and it must not compete with Settings above it.
+            Confirmed first — on a device-local account this costs the
+            password (or a face), and a mis-tap here is a locked-out
+            patient. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tr('setAccountSignOut')}
+          accessibilityHint={tr('setAccountSignOutDesc')}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            setConfirmSignOut(true);
+          }}
+          style={({ pressed }) => [styles.signOut, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={[styles.signOutLabel, { color: t.danger }]}>
+            {tr('setAccountSignOut')}
+          </Text>
+          <Text style={[styles.signOutDesc, { color: t.textTertiary }]}>
+            {user?.displayName ?? tr('setAccountSignOutDesc')}
+          </Text>
+        </Pressable>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmSignOut}
+        title={tr('setAccountSignOut')}
+        subject={user?.displayName}
+        body={tr('setSignOutBody')}
+        confirmLabel={tr('setAccountSignOut')}
+        cancelLabel={tr('back')}
+        onConfirm={() => {
+          setConfirmSignOut(false);
+          /* The gate above the navigator swaps the whole app for the
+             welcome screen the moment the session goes. */
+          void logout();
+        }}
+        onCancel={() => setConfirmSignOut(false)}
+      />
     </View>
   );
 }
@@ -470,7 +517,14 @@ const styles = StyleSheet.create({
   settingsText: { flex: 1, gap: 3 },
   settingsTitle: { fontSize: 16.5, fontWeight: '800' },
   settingsDesc: { fontSize: 12.5, lineHeight: 18 },
+  /* Centred and unboxed: the row is deliberately quieter than every card
+     above it, and the whole width is still the tap target. */
+  signOut: { alignItems: 'center', paddingVertical: 18, marginTop: 4, gap: 3 },
+  signOutLabel: { fontSize: 15.5, fontWeight: '700' },
+  signOutDesc: { fontSize: 12.5 },
 });
 
+// v1.4.0 — Sign out lives here now, at the bottom under the Settings card:
+//          Settings-only was one screen further than anybody looks.
 // v1.3.0 — The floating wordmark (and the padding that cleared it) follow
 //          SHOW_SHELL_WORDMARK, so the card starts at the top of the screen.
