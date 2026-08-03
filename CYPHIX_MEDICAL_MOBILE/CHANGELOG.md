@@ -1,5 +1,69 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.19.3 — 2026-08-03 — The splash is the logo, on white, at the size it should have been
+
+> "כשיש את הלוגו המלא נטען עם המסך הכחול שהוספת הוא ממש קטן … תנסה למקסם את
+> הגודל שלו שייראה נורמלי … ותשים את זה על מסך לבן בבקשה"
+
+Three changes, one screen.
+
+### The lockup
+
+`CyphixLogo` — mark + "CYPHIX", no "MEDICAL" — from the brand file
+`cyphix - logo+cyphix only white backround.svg`. That makes three lockups in
+the app, and they are **not** interchangeable:
+
+| | what it is | where |
+|---|---|---|
+| `BrandLogo` | mark + CYPHIX + "MEDICAL" | the full signature — reports, the shell |
+| `CyphixLogo` | mark + CYPHIX | a screen that **is** the logo — the splash |
+| `CyphixWordmark` | the word alone | over a headline — the welcome hero |
+
+Same note as last time, because it is the same trap: the source is an **A4
+Inkscape page**, so the viewBox here is the measured union of the mark, the
+white dot and the lettering (`60.34 85.26 85.05 20.52`, aspect 4.144) rather
+than the page. And the mark's `innerShadow` filter is dropped — react-native-svg
+has no equivalent, and `BrandLogo` already drops the same one.
+
+### The size
+
+It was 210 pt wide (≈36 pt tall) on every screen, which is where "ממש קטן"
+comes from: a fixed point size is a guess that is right on exactly one device.
+
+It is now **82 % of the window's width**, capped at 460 so a tablet does not get
+a billboard:
+
+```
+iPhone SE  320 →  262 × 63 pt
+iPhone 15  390 →  320 × 77 pt
+Pixel      412 →  338 × 82 pt
+tablet     768 →  460 × 111 pt
+```
+
+It is the only thing on the screen. It should look like it.
+
+### White
+
+As asked. Dark mode keeps the app's own dark surface with the light lockup:
+an opening frame of white at 2 a.m., on a phone whose owner has set the app
+dark, is exactly the flash `PreferencesGate` exists to prevent. One line if you
+want it white always.
+
+One loose end worth knowing about: `app.json` has **no** native splash
+configured, so a standalone build shows Expo's default before this screen
+appears. In Expo Go it does not matter (Expo Go shows its own). When the first
+real build happens, pointing `expo-splash-screen` at a white background with
+this mark would make the native → JS handoff seamless instead of a change of
+screen.
+
+### Verified / not verified
+
+`tsc` clean, both platforms bundle, `expo-doctor` 18/18, and the sizes above
+are computed rather than eyeballed. Whether 82 % is *right* is a
+look-at-it-on-the-phone question — it is one number in one file.
+
+---
+
 ## v0.19.2 — 2026-08-03 — An iPhone next to a Galaxy found a one-line bug in every glass surface
 
 > "באייפון כשלוחצים על SIGN OUT זה מופיע ישירות על המסך (עם רקע שקוף), זה קורה

@@ -1,8 +1,23 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.19.2';
+export const APP_VERSION = '0.19.3';
 export const APP_BUILD_LABEL =
-  'The invisible dialog on iOS was untinted Liquid Glass — every sheet had it; and typed names now capitalise themselves';
+  'The splash is the mark + CYPHIX lockup, sized from the screen, on white';
+
+// v0.19.3 — The splash was a small logo on navy; it is now the LOCKUP on
+//           WHITE, as large as the screen sensibly allows.
+//           `CyphixLogo` is the third lockup in the app and they are not
+//           interchangeable: `BrandLogo` is mark + CYPHIX + "MEDICAL" (the
+//           full signature, for documents), `CyphixLogo` is mark + CYPHIX
+//           (the identity alone, for a screen that IS the logo), and
+//           `CyphixWordmark` is the word alone (for over a headline).
+//           The size is measured, not typed: 82 % of the window's width,
+//           capped at 460 — a fixed point size is a guess that is wrong on
+//           every screen but one, which is exactly how the old 210 pt looked
+//           deliberate in a mock-up and small on a real phone. It is now
+//           ~320 pt wide on a standard iPhone instead of 210.
+//           Dark mode keeps the app's dark surface rather than flashing
+//           white at 2 a.m. — the same reason `PreferencesGate` exists.
 
 // v0.19.2 — Two from an iPhone next to a Galaxy.
 //           THE SIGN-OUT DIALOG HAD NO BACKGROUND ON iOS AND A PROPER PANEL
