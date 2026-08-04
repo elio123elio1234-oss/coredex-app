@@ -1,7 +1,36 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.24.3';
-export const APP_BUILD_LABEL = 'Slide the glass across all five tabs — the web drag gesture PARITY had listed as never ported';
+export const APP_VERSION = '0.25.0';
+export const APP_BUILD_LABEL = 'The home orb stops being a picture with a caption and becomes a button';
+
+// v0.25.0 — "It isn't that pretty, and it isn't clear it's a button to press."
+//           Both halves of that are the same defect. The connected orb was a
+//           NAVY SHAPE WITH A CAPTION UNDER IT, and a caption under a picture
+//           is a caption: the composition named the action somewhere the eye
+//           does not go looking for a control, and put decoration — the white
+//           morphing core, read as a heart — where the action should be.
+//           So the middle now carries the action:
+//           • the white morphing core is GONE. The grey idle core it grew out
+//             of now expands ~55 % as it dissolves, so the dot reads as
+//             opening INTO the label rather than being swapped for it.
+//           • a play glyph + the button's own words sit inside the blob, in
+//             white on the brand navy, arriving at 45 % of the 1.2 s fill —
+//             colour first, words second, because two things changing at once
+//             read as one blurry event.
+//           • the blob casts a real navy drop shadow. A shape printed flat on
+//             the page is an illustration; a shape ABOVE the page is a button,
+//             and that is the oldest signal there is. Cast in navy, not black:
+//             a grey shadow under a navy shape reads as dirt.
+//           • the caption below COLLAPSES as the words move inside, so the
+//             action is never named twice — animated, so nothing snaps.
+//           The DISCONNECTED state is deliberately untouched at the user's
+//           instruction: same grey blob, same white disc, same core, same
+//           caption. The connect transition is now the whole change.
+//           ⚠️ The Skia canvas is deliberately BIGGER than the orb
+//           (BOX = ORB + 2·PAD): a drop shadow is drawn into the canvas's own
+//           pixels, so a canvas cut to the blob's size clips it away. The orb
+//           box carries `marginVertical: -PAD` so the extra pixels cost the
+//           layout nothing and every gap around it is what it was.
 
 // v0.24.3 — "WHY CAN'T IT BE SLID BETWEEN ALL THE ICONS?" — and the answer is
 //           that it never could be slid at all. The confirmed diagnosis, from

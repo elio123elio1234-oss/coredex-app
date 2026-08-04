@@ -1,5 +1,57 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.25.0 — 2026-08-04 — The home orb becomes a button
+
+Reported as two complaints — *"it isn't that pretty"* and *"it isn't clear
+that it's a button to press"* — which are one defect.
+
+### What was actually wrong
+
+The connected orb was **a navy shape with a caption underneath it**, and a
+caption under a picture is a caption. The composition named the action in the
+one place the eye does not look for a control, and put **decoration** where the
+action should have been: the white morphing core, which reads as a heart.
+Everything about it animated beautifully and none of it said *press me*.
+
+### The middle now carries the action
+
+- **The white morphing core is gone.** The grey idle core it grew out of does
+  not simply vanish either — it expands ~55 % about its own centre as it
+  dissolves, so the dot in the middle reads as **opening into** the label
+  rather than being swapped for it.
+- **A play glyph and the button's own words sit inside the blob**, white on the
+  brand navy. They arrive at **45 %** of the 1.2 s fill, not at 0: colour
+  first, words second, because two things changing at once read as one blurry
+  event. The glyph is drawn with borders, not typed as `▶` — that character
+  arrives as a colour emoji on iOS.
+- **The blob casts a real navy drop shadow.** A shape printed flat on the page
+  is an illustration; a shape sitting *above* the page is a button, and that is
+  the oldest affordance there is. Cast in the brand navy rather than black — a
+  grey shadow under a navy shape reads as dirt.
+- **The caption below collapses** as the words move inside, animated in step
+  with the fill, so the action is never named twice and nothing snaps.
+- The press is now a **shared value**: 96 % on touch-down, springing back on
+  release instead of snapping, and with no React re-render to do it.
+
+### What was deliberately left alone
+
+The **disconnected** state, at the user's instruction: same grey blob, same
+white disc, same grey core, same caption underneath. The whole change lives in
+the connect transition and the state it lands in. A green "ready" treatment was
+offered and declined — the brand is navy, and the connection is already stated
+in words below.
+
+### ⚠️ The canvas is bigger than the orb, on purpose
+
+`BOX = ORB + 2·PAD`. A Skia drop shadow is drawn into the canvas's **own**
+pixels, so a canvas cut to the blob's exact size clips the shadow off and the
+lift silently does not exist. `PAD` is the room the shadow needs; the orb box
+carries `marginVertical: -PAD`, so those pixels cost the layout nothing and
+every gap around the orb is exactly what it was before.
+
+Typechecks, and both the iOS and Android bundles export. Nothing here has been
+seen on a phone yet — it stays `🔬` in `PARITY.md` until it has.
+
 ## v0.24.3 — 2026-08-03 — Slide the glass across all five tabs
 
 Two things arrived together from the iPhone.

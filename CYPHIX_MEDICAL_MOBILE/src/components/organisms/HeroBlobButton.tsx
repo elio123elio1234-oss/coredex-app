@@ -2,32 +2,61 @@
    HeroBlobButton (organism) — the patient home's single focal control,
    ported from the web organism of the same name.
 
-   Everything visual comes from `.hero-orb` in ecg.css:
+   ── WHAT THE CONNECTED STATE LOOKS LIKE, AND WHY (v5.0.0) ──
+   The web fills the blob with navy and morphs a white "core" in its
+   middle, with the action's name in text UNDER the shape. On a phone
+   that composition failed as a control: the white core reads as a
+   heart-ish blob of decoration, and a caption below a picture is a
+   caption — nothing on screen says the shape is the thing you press.
+
+   So on connect the middle now carries the ACTION, not an ornament:
+
+     • the white morphing core is gone. The grey idle core it used to
+       come from now grows ~55 % as it dissolves, so the dot in the
+       middle reads as OPENING INTO the label rather than being swapped
+     • a play glyph + the button's own words sit inside the blob, in
+       white on the brand navy, arriving at 45 % of the fill so you
+       read "it filled with colour" THEN "it says Start Test"
+     • the blob casts a real navy drop shadow, so it sits ABOVE the
+       page instead of being printed on it — the cheapest and oldest
+       signal that a thing can be pressed
+     • the caption below collapses as the label moves inside, so the
+       words exist in exactly one place at a time
+
+   The DISCONNECTED state is deliberately untouched (user's call): same
+   grey blob, same white disc, same core, same caption underneath.
+
+   Everything else still comes from `.hero-orb` in ecg.css:
 
      • the blob outline is the CSS elliptical border-radius drawn as a
        real path (blobShape.ts), morphing on the verbatim
        @keyframes morphingBlob, 8 s ease-in-out
      • the fills are the CSS gradients: #e5e5ea→#f2f2f7 disconnected,
        #1e3f66→#0A2540 connected, both at 135°
-     • the core morphs between the two clip-paths of @keyframes
-       morphingCore, with its translate + scale, alternating
      • particles emit outward with the same distances (90–150 px),
        durations (1.5–3.5 s) and ~20% green mix — and, like the web's
        negative `animation-delay`, they start ALREADY IN FLIGHT
 
-   ── WHY IT IS SMOOTH NOW ──
+   ── WHY IT IS SMOOTH ──
    v3 drove the morph from `setInterval` + `setState` at 25 Hz: a React
    re-render and a JS-thread path rebuild EVERY frame, with 65 separately
    animated particle views competing for the same thread. That is what
    made it judder. Now two Reanimated clocks run on the UI thread and
    every shape is a `useDerivedValue` — React renders this component once
-   and then never again for the duration of the animation.
+   and then never again for the duration of the animation. The press
+   scale is a shared value for the same reason.
 
    ── LAYERING (load-bearing, do not "simplify") ──
    The tap target is an EMPTY Pressable laid OVER the Skia canvas, not a
    Pressable wrapped AROUND it. A Skia <Canvas/> is a native view that can
    claim the touch, and when it does an enclosing Pressable never fires —
    a button that looks alive and does nothing.
+
+   ⚠️ The canvas is BIGGER than the orb (BOX = ORB + 2·PAD). A drop
+   shadow is drawn by Skia into the canvas's own pixels, so a canvas cut
+   to the blob's exact size clips the shadow off. PAD is the room the
+   shadow needs; the orb box carries `marginVertical: -PAD` so the extra
+   pixels cost the layout nothing.
 
    Presentational: no BLE/auth logic here.
    ================================================================== */
@@ -37,6 +66,7 @@ import {
   Group,
   LinearGradient as SkGradient,
   Path,
+  Shadow,
   vec,
 } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
@@ -51,22 +81,20 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme/useTheme';
-import {
-  blobPathAt,
-  CORE_BOX,
-  CORE_SCALE,
-  coreOffsetAt,
-  corePathAt,
-  coreShapeAt,
-} from './blobShape';
+import { blobPathAt, CORE_BOX, CORE_SCALE, corePathAt } from './blobShape';
 
 /** .hero-orb { width: 150px; height: 150px } */
 const ORB = 150;
 /** .hero-blob { width: 120px; height: 120px } */
 const BLOB = 120;
+/** Breathing room around the orb so the drop shadow is not clipped. */
+const PAD = 44;
+/** The Skia canvas: the orb plus the shadow's room on every side. */
+const BOX = ORB + PAD * 2;
 /** .connected-blob { transform: scale(1.25) } */
 const CONNECTED_SCALE = 1.25;
 /** Both blob and core run an 8 s cycle. */
@@ -81,6 +109,16 @@ const BREATHE_MS = 1500;
 const HALO_COUNT = 70;
 const HALO_MS = 1800;
 const HALO_MAX_DELAY = 400;
+
+/**
+ * How far into the 1.2 s fill the label starts arriving.
+ *
+ * Not 0: two things changing at once read as one blurry event. The colour
+ * lands first, the words follow — which is also the order you'd say it in.
+ */
+const LABEL_START = 0.45;
+/** The caption slot under the orb: 26 px line + its 8 px gap to the status. */
+const TITLE_SLOT = 40;
 
 /**
  * The particle clock's period.
@@ -222,7 +260,7 @@ export default function HeroBlobButton({
 }: Props) {
   const t = useTheme();
   const dots = useMemo(makeDots, []);
-  const [pressed, setPressed] = useState(false);
+  const dim = disabled ? 0.55 : 1;
 
   /* ── Two UI-thread clocks. Nothing below ever re-renders React. ── */
   const morph = useSharedValue(0); // 0→1 across the 8 s blob cycle
@@ -250,32 +288,13 @@ export default function HeroBlobButton({
   );
 
   /* ── The core ──
-     ⚠️ THE BUG THIS FIXES: v0.5 ping-ponged the 8 s clock here, so the core
-     completed circle→blob→circle TWICE per cycle — exactly twice the web's
-     speed, which is what "too fast" was. The CSS is
-     `morphingCore 8s ease-in-out infinite alternate`, and its keyframes
-     ALREADY return to the circle at 100 % (0 % circle → 40–60 % blob →
-     100 % circle). `alternate` replays a symmetric curve backwards and so
-     changes nothing visible. One pass per 8 s clock — no ping-pong. */
-  const corePath = useDerivedValue(
-    () => corePathAt(connected ? coreShapeAt(morph.value).shape : 0),
-    [connected],
-  );
-
+     Only the IDLE core survives: a static circle, the 0 % frame of
+     `@keyframes morphingCore`. The connected state's white morphing core
+     is deliberately gone — the middle of a button belongs to its label.
+     It does not simply vanish: it grows as it fades (below), so the dot
+     reads as opening into the words rather than being replaced by them. */
+  const corePath = useMemo(() => corePathAt(0), []);
   const coreSide = CORE_BOX * CORE_SCALE;
-  const coreTransform = useDerivedValue(() => {
-    const { shape, scale } = connected
-      ? coreShapeAt(morph.value)
-      : { shape: 0, scale: 1 };
-    const { tx, ty } = coreOffsetAt(shape);
-    return [
-      { translateX: (BLOB - coreSide) / 2 + tx * CORE_SCALE },
-      { translateY: (BLOB - coreSide) / 2 + ty * CORE_SCALE },
-      { scale: CORE_SCALE * scale },
-    ];
-  }, [connected, coreSide]);
-
-  const blobOffset = (ORB - BLOB) / 2;
 
   /* ── The 1.2 s connect transition + the 1.5 s breathe ──
      `.hero-blob { transition: all 1.2s cubic-bezier(.25,1,.5,1) }` and
@@ -283,6 +302,7 @@ export default function HeroBlobButton({
      gradient and the white disc all CROSS-FADE. v0.5 snapped between them. */
   const conn = useSharedValue(connected ? 1 : 0);
   const breathe = useSharedValue(1);
+  const press = useSharedValue(1);
   const [halo, setHalo] = useState<HaloDot[] | null>(null);
 
   useEffect(() => {
@@ -308,21 +328,53 @@ export default function HeroBlobButton({
   const blobTransform = useDerivedValue(() => {
     const s = (1 + (CONNECTED_SCALE - 1) * conn.value) * breathe.value;
     return [
-      { translateX: ORB / 2 },
-      { translateY: ORB / 2 },
+      { translateX: BOX / 2 },
+      { translateY: BOX / 2 },
       { scale: s },
-      { translateX: -ORB / 2 },
-      { translateY: -ORB / 2 },
+      { translateX: -BOX / 2 },
+      { translateY: -BOX / 2 },
     ];
   }, []);
 
+  /* The idle core grows ~55 % about its own centre while it dissolves. */
+  const coreTransform = useDerivedValue(() => {
+    const g = 1 + 0.55 * conn.value;
+    const side = coreSide * g;
+    return [
+      { translateX: (BLOB - side) / 2 },
+      { translateY: (BLOB - side) / 2 },
+      { scale: CORE_SCALE * g },
+    ];
+  }, [coreSide]);
+
   const connectedOpacity = useDerivedValue(() => conn.value, []);
   const disconnectedOpacity = useDerivedValue(() => 1 - conn.value, []);
-  /* .premium-start-btn.is-active { background: rgba(255,255,255,0) } */
-  const discStyle = useAnimatedStyle(() => ({ opacity: 1 - conn.value }));
 
-  /* .premium-start-btn:active { transform: scale(.96) } */
-  const visual = { transform: [{ scale: pressed ? 0.96 : 1 }], opacity: disabled ? 0.55 : 1 };
+  /* .premium-start-btn:active { transform: scale(.96) } — on the UI thread,
+     and springing back rather than snapping, so the press has a release. */
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: press.value }],
+    opacity: dim,
+  }));
+  /* .premium-start-btn.is-active { background: rgba(255,255,255,0) } */
+  const discStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: press.value }],
+    opacity: (1 - conn.value) * dim,
+  }));
+  /* The label rises the last 8 px into place as it arrives. */
+  const faceStyle = useAnimatedStyle(() => {
+    const p = Math.min(1, Math.max(0, (conn.value - LABEL_START) / (1 - LABEL_START)));
+    return {
+      opacity: p * dim,
+      transform: [{ scale: press.value }, { translateY: (1 - p) * 8 }],
+    };
+  });
+  /* The caption collapses as its words move inside the button, so the
+     action is never named twice — and nothing jumps when it goes. */
+  const titleSlotStyle = useAnimatedStyle(() => ({
+    height: TITLE_SLOT * (1 - conn.value),
+    opacity: Math.max(0, 1 - conn.value * 2),
+  }));
 
   const handlePress = () => {
     if (disabled) return;
@@ -330,11 +382,13 @@ export default function HeroBlobButton({
     onPress();
   };
 
+  const blobOffset = PAD + (ORB - BLOB) / 2;
+
   return (
     <View style={styles.wrap}>
       <View style={styles.orb}>
         {/* ── layer 1: the white disc, fading out over 1.2 s (not snapping) ── */}
-        <Animated.View style={[styles.idleDisc, visual, discStyle]} pointerEvents="none" />
+        <Animated.View style={[styles.idleDisc, discStyle]} pointerEvents="none" />
 
         {/* ── layer 2: emitted particles ── */}
         {!connected && (
@@ -355,8 +409,8 @@ export default function HeroBlobButton({
         )}
 
         {/* ── layer 3: the blob + core. NON-INTERACTIVE by construction. ── */}
-        <View style={[styles.canvasWrap, visual]} pointerEvents="none">
-          <Canvas style={{ width: ORB, height: ORB }}>
+        <Animated.View style={[styles.canvasWrap, pressStyle]} pointerEvents="none">
+          <Canvas style={{ width: BOX, height: BOX }}>
             <Group transform={blobTransform}>
               <Group transform={[{ translateX: blobOffset }, { translateY: blobOffset }]}>
                 {/* The two gradients CROSS-FADE over 1.2 s, the way the CSS
@@ -379,22 +433,28 @@ export default function HeroBlobButton({
                       end={vec(BLOB, BLOB)}
                       colors={['#1e3f66', '#0A2540']}
                     />
+                    {/* The lift. Cast in the brand navy rather than black:
+                        a grey shadow under a navy shape reads as dirt. */}
+                    <Shadow dx={0} dy={12} blur={10} color="rgba(10, 37, 64, 0.30)" />
                   </Path>
                 </Group>
 
                 {/* .core-scaler { transform: scale(4.5) } around a 12×12 path. */}
-                <Group transform={coreTransform}>
-                  <Group opacity={disconnectedOpacity}>
-                    <Path path={corePath} color="#d1d1d6" />
-                  </Group>
-                  <Group opacity={connectedOpacity}>
-                    <Path path={corePath} color="#FFFFFF" />
-                  </Group>
+                <Group opacity={disconnectedOpacity} transform={coreTransform}>
+                  <Path path={corePath} color="#d1d1d6" />
                 </Group>
               </Group>
             </Group>
           </Canvas>
-        </View>
+        </Animated.View>
+
+        {/* ── layer 3b: THE BUTTON FACE — the action, inside the shape ── */}
+        <Animated.View style={[styles.face, faceStyle]} pointerEvents="none">
+          <View style={styles.play} />
+          <Text style={styles.faceLabel} numberOfLines={2}>
+            {title}
+          </Text>
+        </Animated.View>
 
         {/* ── layer 4: THE TAP TARGET. Empty, on top, owns every touch. ── */}
         <Pressable
@@ -403,8 +463,12 @@ export default function HeroBlobButton({
           accessibilityHint={subtitle}
           accessibilityState={{ disabled: !!disabled }}
           disabled={disabled}
-          onPressIn={() => setPressed(true)}
-          onPressOut={() => setPressed(false)}
+          onPressIn={() => {
+            press.value = withTiming(0.96, { duration: 90, easing: Easing.out(Easing.quad) });
+          }}
+          onPressOut={() => {
+            press.value = withSpring(1, { damping: 14, stiffness: 220, mass: 0.6 });
+          }}
           onPress={handlePress}
           hitSlop={16}
           style={styles.hit}
@@ -412,7 +476,11 @@ export default function HeroBlobButton({
       </View>
 
       <View style={styles.status}>
-        <Text style={[styles.title, { color: t.textPrimary }]}>{title}</Text>
+        <Animated.View style={[styles.titleSlot, titleSlotStyle]}>
+          <Text style={[styles.title, { color: t.textPrimary }]} numberOfLines={1}>
+            {title}
+          </Text>
+        </Animated.View>
         <Text style={[styles.sub, { color: t.textSecondary }]}>{subtitle}</Text>
       </View>
     </View>
@@ -422,7 +490,16 @@ export default function HeroBlobButton({
 const styles = StyleSheet.create({
   /* .hero-orb-wrap { gap: clamp(22px, 5vh, 44px) } */
   wrap: { alignItems: 'center', gap: 30 },
-  orb: { width: ORB, height: ORB, alignItems: 'center', justifyContent: 'center' },
+  /* The box is BOX wide so Skia has room to draw the shadow; the negative
+     margin gives those pixels back to the layout, so the gap above and
+     below stays exactly what it was before the shadow existed. */
+  orb: {
+    width: BOX,
+    height: BOX,
+    marginVertical: -PAD,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   particleOrigin: {
     position: 'absolute',
     top: '50%',
@@ -442,9 +519,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.9,
     shadowRadius: 3,
   },
-  /* .premium-start-btn — white, soft shadow. Sits under the blob. */
+  /* .premium-start-btn — white, soft shadow. Sits under the blob, and is
+     inset by PAD because the box around it is the shadow's room. */
   idleDisc: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: PAD,
+    left: PAD,
+    width: ORB,
+    height: ORB,
     borderRadius: ORB / 2,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000000',
@@ -460,16 +542,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 15,
   },
+  /* The face is the ORB, not the box: centred on the blob, not on the
+     shadow's padding. */
+  face: {
+    position: 'absolute',
+    top: PAD,
+    left: PAD,
+    width: ORB,
+    height: ORB,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    zIndex: 20,
+  },
+  /* A play triangle drawn with borders — no icon font, no asset, and it
+     cannot arrive as a colour emoji the way "▶" does on iOS. */
+  play: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftWidth: 13,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#FFFFFF',
+    borderStyle: 'solid',
+    marginBottom: 10,
+  },
+  faceLabel: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    lineHeight: 24,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
   hit: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: PAD,
+    left: PAD,
+    width: ORB,
+    height: ORB,
     borderRadius: ORB / 2,
     zIndex: 30,
   },
   /* .hero-orb-title / .hero-orb-sub */
   status: { alignItems: 'center' },
-  title: { fontSize: 26, fontWeight: '800', textAlign: 'center' },
-  sub: { fontSize: 16, fontWeight: '500', marginTop: 8, textAlign: 'center' },
+  titleSlot: { height: TITLE_SLOT, overflow: 'hidden', justifyContent: 'flex-start' },
+  title: { fontSize: 26, lineHeight: 32, fontWeight: '800', textAlign: 'center' },
+  sub: { fontSize: 16, fontWeight: '500', textAlign: 'center' },
 });
 
+// v5.0.0 — The connected orb IS the button: white morphing core out, play
+//          glyph + label in, navy drop shadow for lift, caption collapses.
 // v4.0.0 — Morph + particles moved onto the UI thread (Reanimated clocks +
 //          Skia useDerivedValue). No React re-render per frame → no stutter.
