@@ -10,8 +10,19 @@ import { AuthGate } from '@/features/auth/AuthGate';
 import { BleProvider } from '@/features/ble/BleProvider';
 import { PreferencesGate } from '@/features/preferences/PreferencesGate';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { preloadAppImages } from '@/services/media/imagePreload';
 import { store } from '@/store/store';
 import RootNavigator from '@/navigation/RootNavigator';
+
+/* ★ Module scope, on purpose — the one side effect allowed in this file.
+   Every photograph the app ships is fetched and decoded starting HERE,
+   before the first render, so the work happens while `PreferencesGate`
+   is reading storage and the splash is holding. Put it in a component
+   and it starts one gate too late; put it in the screen that draws the
+   image and it starts while the patient is already looking at it, which
+   is the bug this exists to close (services/media/imagePreload.ts).
+   Nothing waits for it: it returns immediately. */
+preloadAppImages();
 
 export default function App() {
   /* No orientation call here. `app.json` allows every orientation so the exam
@@ -55,6 +66,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v2.5.0 — Starts the bundled-image warm-up at module scope, before the first
+//          render, so no photograph is first asked for on the screen showing it.
 // v2.4.0 — Adds the AuthGate around the navigator: splash → onboarding → app.
 // v2.3.0 — Adds I18nProvider inside the preference gate, so the first paint is
 //          already in the patient's stored language.

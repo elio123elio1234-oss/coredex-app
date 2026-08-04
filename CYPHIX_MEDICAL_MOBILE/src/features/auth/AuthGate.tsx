@@ -22,7 +22,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import BootSplash from '@/components/organisms/Auth/BootSplash';
 import OnboardingScreen from '@/screens/OnboardingScreen';
-import { prefetchHero } from '@/services/media/heroImage';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { restoreSession } from './authSlice';
 
@@ -45,10 +44,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void dispatch(restoreSession());
-    /* The splash is 1.7 s of held time the app already spends. Fetching
-       the welcome photograph inside it is what stops that screen from
-       being navy for a moment and then filling in — see heroImage.ts. */
-    prefetchHero();
+    /* The photographs are NOT warmed from here any more. This effect runs
+       behind `PreferencesGate`'s storage read, and by then part of the
+       1.7 s splash — the dead time the fetches are meant to hide inside —
+       is already spent. `App.tsx` starts them at module scope instead;
+       see services/media/imagePreload.ts. */
     const splash = setTimeout(() => setSplashDone(true), SPLASH_MS);
     const ceiling = setTimeout(() => setGaveUp(true), RESTORE_TIMEOUT_MS);
     return () => {
@@ -63,6 +63,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return user && !justRegistered ? <>{children}</> : <OnboardingScreen />;
 }
 
+// v1.2.0 — Hands the image warm-up to App.tsx: this effect runs behind
+//          PreferencesGate, i.e. later than the images can be asked for.
 // v1.1.0 — Warms the welcome photograph inside the splash it already holds,
 //          so the first screen is not navy for a beat before its background.
 // v1.0.0 — Splash → onboarding → app, with a floor and a ceiling on the wait.

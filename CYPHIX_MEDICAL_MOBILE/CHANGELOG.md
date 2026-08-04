@@ -1,5 +1,56 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.26.0 — 2026-08-04 — The photographs are warmed at launch, not on the screen that shows them
+
+Reported from the phone: the picture on the **sign-in** screen takes a couple of
+seconds to appear, and so do the **START TEST** guide photographs — *"they should
+be part of the build itself, they should take 0 seconds."*
+
+**They are part of the build — in a Release build.** `require()`d assets are
+embedded in the binary (verified: the four `.jpg` files show up in
+`expo export`'s asset list). But in **Expo Go and in a Debug dev build they are
+not in the app at all**: `Image.resolveAssetSource` hands back
+`http://<dev-machine>:8081/assets/...`, and React Native fetches it over Wi‑Fi
+the first time the `<Image>` is rendered — queued behind Metro serving a 5.7 MB
+JS bundle. A 36 KB photograph then takes seconds, and it looks like the app is
+slow rather than like the dev server is.
+
+So the first thing to know is *which build shows this*. If it disappears in
+`--configuration Release`, nothing was ever wrong with the assets.
+
+That said, the warm-up we already had was genuinely half-done:
+
+- **v0.22.0 warmed the welcome photograph and nothing else**, because that is
+  the one that had been reported. The three measurement guides had no preload
+  at all — their first fetch happened at the exact moment the patient tapped
+  START TEST. Same bug, one screen deeper.
+- **It started too late.** `prefetchHero()` ran from `AuthGate`'s effect, which
+  mounts *behind* `PreferencesGate` — the gate that holds the tree until it has
+  read stored preferences off the device. Part of the 1.7 s splash the fetch is
+  meant to hide inside was already spent before it began.
+
+Both are closed:
+
+- New `services/media/imagePreload.ts` — **one registry** of every bundled
+  photograph (hero + the two prep steps + the circular touch guide), warmed
+  together. Adding an image to the app can no longer silently skip its warm-up:
+  it is in that list or it is not preloaded, and that is visible in one place.
+- Started at **`App.tsx` module scope**, before the first render, so the
+  fetches are in flight while preferences are being read and the whole splash
+  is available to absorb them. Nothing waits for it.
+- Each image is prefetched **independently**. A single `try`/`catch` around a
+  sequence of `await`s — which is what the old hero-only version was — lets one
+  rejection abandon every image after it, and in a Release build a local
+  `file://` asset *can* reject.
+
+`heroImage.ts` is now only the asset; `AuthGate` no longer warms anything.
+No new dependency: `resolveAssetSource` + `Image.prefetch` are React Native's
+own. No screen's rendering changed.
+
+Typechecks; both bundles export, with all four photographs embedded. Whether it
+*feels* instant is a device question — 🔬 in `PARITY.md` until someone opens it
+on the phone.
+
 ## v0.25.3 — 2026-08-04 — The camera badge sits on the portrait, not inside it
 
 Reported from the phone: on the **Profile** tab, the camera badge on the bottom

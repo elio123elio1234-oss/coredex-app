@@ -1,7 +1,27 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.25.3';
-export const APP_BUILD_LABEL = 'The camera badge stops being cropped by the portrait it sits on';
+export const APP_VERSION = '0.26.0';
+export const APP_BUILD_LABEL = 'Every photograph is warmed at launch, not on the screen that shows it';
+
+// v0.26.0 — Reported from the phone: the sign-in photograph and the START TEST
+//           guide pictures arrive seconds late, "and they should be part of
+//           the build". They ARE part of the build — but only in Release. In
+//           Expo Go and in a Debug dev build a `require`d asset is not in the
+//           app at all: `resolveAssetSource` returns an http URL on the dev
+//           machine and RN fetches it over Wi-Fi the first time the <Image>
+//           renders, queued behind Metro serving a 5.7 MB JS bundle. v0.22.0
+//           warmed the welcome photograph inside the splash and stopped there,
+//           because that was the one that had been reported — so the three
+//           measurement guides were still first requested at the exact tap
+//           that shows them. There is now ONE registry of every bundled
+//           photograph (services/media/imagePreload.ts), warmed together, and
+//           started at App.tsx MODULE scope rather than from an effect:
+//           AuthGate mounts behind PreferencesGate's storage read, so by the
+//           time it ran, part of the 1.7 s of splash the fetches are meant to
+//           hide inside was already spent. Each image is prefetched
+//           independently — a single try/catch around a sequence of awaits
+//           would let one rejection abandon every image after it. No new
+//           dependency and no change to any screen's rendering.
 
 // v0.25.3 — Reported from the phone: on Profile, the camera badge on the
 //           portrait is cut off by the circle of the picture itself, and it
