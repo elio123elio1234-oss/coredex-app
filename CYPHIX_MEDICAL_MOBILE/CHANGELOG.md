@@ -1,5 +1,45 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.27.0 — 2026-08-04 — No Mac: EAS builds the native module in the cloud
+
+The borrowed MacBook is Intel on a macOS below 14.5, so it cannot run the
+Xcode 16.1 that Expo SDK 54 / RN 0.81 require, and Apple provides no way to put
+a newer Xcode on an older macOS. A paid Apple Developer account was bought
+instead, which promotes v0.23.0 §9.3's escape hatch to the main road.
+
+**The question asked was "how do we do this with Expo Go" — and the answer is
+that it cannot be done there, ever.** Expo Go is a prebuilt App Store binary
+carrying only Expo's own native modules. `modules/cyphix-ble` is not in it and
+cannot be added to it, so `requireOptionalNativeModule('CyphixBle')` returns
+null and `bleClient` falls back to `EcgSimulator` by construction. That single
+fact is why only a demo signal was ever seen — nothing in the ECG path was
+broken.
+
+`eas.json` (new) has Expo compile the Swift module on their macOS runners,
+driven entirely from Windows. What the $99 actually buys is the **signing
+credentials**: EAS builds for free accounts too, but installing on a physical
+iPhone needs ad-hoc or App Store provisioning that Apple issues only to Program
+members.
+
+Three profiles, because they trade differently:
+
+- **production** → TestFlight. ~30 min a round, but no UDID registration, and
+  the build is valid a **year** rather than the free tier's 7 days.
+- **preview** → straight onto the phone by QR. The fast loop for hardware work.
+- **development** → dev client + Metro, for stepping through JS against real BLE.
+
+`appVersionSource: remote` with `autoIncrement` is deliberate: TestFlight
+refuses a build number it has already seen, and discovering that after a
+20-minute cloud build is an expensive way to discover it.
+
+Also: `app.json`'s `version` was still the `0.1.0` scaffold value. It is the
+string App Store Connect displays, so it now tracks `version.ts`.
+
+> Still unverified on hardware. The Swift module has never executed once. The
+> four checks that separate a real trace from a convincing one are in
+> `IPHONE_SETUP.md` §6.3 — the decisive one is taking your fingers off the
+> electrodes: a demo keeps beating.
+
 ## v0.26.0 — 2026-08-04 — The photographs are warmed at launch, not on the screen that shows them
 
 Reported from the phone: the picture on the **sign-in** screen takes a couple of

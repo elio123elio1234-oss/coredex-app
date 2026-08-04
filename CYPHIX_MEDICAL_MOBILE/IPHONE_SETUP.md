@@ -34,7 +34,115 @@ Development build  → יש Swift/CoreBluetooth → חומרה אמיתית  ←
 
 ---
 
+---
+
+# ★ המסלול הפעיל: EAS Build — בלי מקבוק בכלל
+
+> **זה המסלול שלך מעכשיו.** המקבוק (Intel, macOS ישן מדי) לא יכול לבנות
+> SDK 54, ובמקום זה שולם מנוי Apple Developer. **הפרקים 1–5 למטה
+> (התקנת Xcode, prebuild, חתימה ידנית) כבר לא רלוונטיים** — הם נשמרים
+> למקרה שיהיה מקבוק מתאים בעתיד.
+
+## E.0 ⛔ Expo Go לא יכולה לעשות את זה — לעולם
+
+שאלת "איך עושים את זה עם Expo Go". התשובה היא שאי אפשר, וזו לא מגבלה
+שאפשר לעקוף:
+
+Expo Go היא אפליקציה מוכנה מה‑App Store. יש בה רק קוד נייטיבי ש‑Expo
+הידרה מראש. המודול שלנו — `modules/cyphix-ble`, Swift/CoreBluetooth —
+**לא נמצא בה ולא יכול להיכנס אליה**. לכן `requireOptionalNativeModule`
+מחזיר `null` ו‑`bleClient` נופל לסימולטור.
+
+**Expo Go = סימולטור. תמיד. בלי יוצא מן הכלל.**
+
+מה שהמנוי פתח לך: **EAS Build** — Expo מקמפלים את ה‑Swift על מקים
+בענן שלהם, ואתה מקבל אפליקציה אמיתית. הבנייה קורית מ‑Windows.
+
+> למה בכל זאת היה צריך לשלם: EAS יודע לבנות גם לחשבון חינמי, אבל
+> **התקנה על אייפון פיזי** דורשת אישורי חתימה (ad‑hoc או App Store)
+> ש‑Apple מנפיקה רק לחברי Developer Program.
+
+## E.1 מה להתקין על Windows (5 דקות, פעם אחת)
+
+```powershell
+npm install -g eas-cli
+eas login          # החשבון של Expo (להירשם חינם ב-expo.dev אם אין)
+```
+
+## E.2 לחבר את הפרויקט ל-EAS (פעם אחת)
+
+```powershell
+cd "c:\Users\elio1\Desktop\Coredex_App\CYPHIX_MEDICAL_MOBILE"
+eas init
+```
+
+זה יוצר פרויקט ב‑Expo וכותב `extra.eas.projectId` לתוך `app.json`.
+`eas.json` כבר קיים ומוכן — אל תריץ `eas build:configure`, הוא ידרוס אותו.
+
+## E.3 לבנות ולהעלות ל-TestFlight
+
+```powershell
+eas build --platform ios --profile production
+```
+
+בבנייה הראשונה הוא ישאל שאלות — **ענה כך:**
+
+| שאלה | תשובה |
+|---|---|
+| `Do you want to log in to your Apple account?` | **Yes** — התחבר עם ה‑Apple ID שקנית איתו |
+| `Generate a new Apple Distribution Certificate?` | **Yes** |
+| `Generate a new Apple Provisioning Profile?` | **Yes** |
+| `Would you like to create a project on App Store Connect?` | **Yes** |
+
+תן ל‑EAS לנהל את האישורים לבד. **הבנייה לוקחת 15–25 דקות** בענן; אפשר
+לסגור את הטרמינל ולעקוב בקישור שהוא מדפיס.
+
+כשזה נגמר:
+
+```powershell
+eas submit --platform ios --latest
+```
+
+זה מעלה ל‑App Store Connect. ואז **עוד 5–15 דקות עיבוד אצל Apple**
+לפני שזה מופיע ב‑TestFlight — זה נורמלי, לא תקוע.
+
+## E.4 להתקין על האייפון
+
+1. פתח **App Store Connect** בדפדפן → My Apps → CYPHIX Medical → לשונית
+   **TestFlight**.
+2. אם מבקשים ממך למלא **Export Compliance** — ענה **לא** להצפנה.
+   (`usesNonExemptEncryption: false` כבר מוגדר ב‑`app.json`, אז זה
+   לרוב לא יישאל בכלל.)
+3. **Internal Testing** → הוסף את עצמך כבודק (ה‑Apple ID שלך).
+4. פתח **TestFlight** באייפון → האפליקציה תופיע → **Install**.
+
+זהו. אפליקציה אמיתית, עם המודול הנייטיבי, **תקפה שנה** — לא 7 ימים.
+
+## E.5 המסלול המהיר לאיטרציות (אופציונלי)
+
+TestFlight זה ~30 דקות לסבב. אם אתה מתקן משהו ורוצה לבדוק מהר, פרופיל
+`preview` מתקין ישירות בסריקת QR בלי Apple באמצע:
+
+```powershell
+eas device:create                                   # פעם אחת - לרשום את האייפון
+eas build --platform ios --profile preview          # ואז: לסרוק את ה-QR
+```
+
+## E.6 מתי צריך לבנות מחדש
+
+| שינית | צריך build חדש? |
+|---|---|
+| מסכים, לוגיקה, הפייפליין (TS/JS) | **לא** — `eas update --branch production` דוחף בשניות |
+| `modules/cyphix-ble/**` (Swift/Kotlin) | **כן** |
+| `app.json` (הרשאות, אייקון, שם) | **כן** |
+| ספרייה חדשה עם קוד נייטיבי | **כן** |
+
+---
+
 ## 1. ⛔ בדיקת התאמה — עשה את זה **לפני** שאתה נוסע למקבוק
+
+> ⚠️ **הפרקים 1–5 הם המסלול הישן עם מקבוק.** עבור אליהם רק אם יום אחד
+> יהיה מק עם macOS 14.5+. אחרת — המסלול שלך הוא ★ למעלה.
 
 זה השלב שיכול לחסוך לך ערב שלם. **אל תדלג עליו.**
 

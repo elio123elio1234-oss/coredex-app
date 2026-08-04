@@ -2,7 +2,7 @@
   "expo": {
     "name": "CYPHIX Medical",
     "slug": "cyphix-medical",
-    "version": "0.1.0",
+    "version": "0.27.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "cyphix",

@@ -1,0 +1,56 @@
+{
+  "//": [
+    "EAS Build — how a build containing modules/cyphix-ble is produced WITHOUT",
+    "a Mac. Expo compiles the Swift/CoreBluetooth module on their macOS runners.",
+    "",
+    "This is the whole reason a paid Apple Developer account was needed: EAS can",
+    "build for a free account, but INSTALLING on a physical iPhone needs signing",
+    "credentials (ad-hoc provisioning or App Store distribution) that Apple only",
+    "issues to Developer Program members.",
+    "",
+    "Which profile:",
+    "  production → TestFlight. Slower per round (App Store Connect processing),",
+    "               but no UDID registration and it survives 1 year, not 7 days.",
+    "  preview    → straight onto the phone by QR. Fastest loop for hardware work;",
+    "               needs the iPhone's UDID registered once (eas device:create).",
+    "  development→ dev client + Metro, for stepping through JS against real BLE.",
+    "",
+    "⚠️ appVersion/buildNumber: TestFlight REFUSES a build number it has already",
+    "seen, so it is auto-incremented remotely rather than by hand — a rejected",
+    "upload after a 20-minute build is a bad way to learn that."
+  ],
+  "cli": {
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
+      },
+      "autoIncrement": true,
+      "channel": "preview"
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "autoIncrement": true,
+      "channel": "production"
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

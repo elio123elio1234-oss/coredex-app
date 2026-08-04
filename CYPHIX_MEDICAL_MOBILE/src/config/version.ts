@@ -1,7 +1,32 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.26.0';
-export const APP_BUILD_LABEL = 'Every photograph is warmed at launch, not on the screen that shows it';
+export const APP_VERSION = '0.27.0';
+export const APP_BUILD_LABEL = 'The real hardware signal is reachable — EAS builds the native module in the cloud, no Mac';
+
+// v0.27.0 — The route to a REAL BLE signal on an iPhone, rebuilt around the
+//           fact that the borrowed MacBook is Intel on a macOS too old for
+//           Xcode 16.1 (SDK 54 / RN 0.81), which Apple gives no way around.
+//           A paid Apple Developer account was bought instead, and that turns
+//           §9.3's escape hatch into the main road: `eas.json` (new) has EAS
+//           compile modules/cyphix-ble on Expo's macOS runners, driven from
+//           Windows. ★ The asked question was "how do we do this with Expo
+//           Go" — and the answer is that it CANNOT: Expo Go is a prebuilt App
+//           Store binary containing only Expo's own native modules, so
+//           `requireOptionalNativeModule('CyphixBle')` is null there by
+//           construction and bleClient falls back to the simulator forever.
+//           That is why only a demo signal was ever seen; nothing in the ECG
+//           path was broken. The paid tier specifically buys the SIGNING
+//           credentials — EAS builds for free accounts too, but installing on
+//           a physical iPhone needs ad-hoc or App Store provisioning that
+//           Apple issues only to Program members.
+//           Three profiles: `production` → TestFlight (valid a YEAR, not the
+//           free tier's 7 days), `preview` → straight to the phone by QR for
+//           fast hardware iteration, `development` → dev client + Metro.
+//           `appVersionSource: remote` + `autoIncrement` because TestFlight
+//           refuses a build number it has already seen, and learning that
+//           after a 20-minute cloud build is an expensive way to learn it.
+//           app.json `version` was still the 0.1.0 scaffold — it is the
+//           string App Store Connect shows, so it now tracks this file.
 
 // v0.26.0 — Reported from the phone: the sign-in photograph and the START TEST
 //           guide pictures arrive seconds late, "and they should be part of
