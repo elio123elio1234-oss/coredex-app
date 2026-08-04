@@ -121,6 +121,21 @@ const LABEL_START = 0.45;
 const TITLE_SLOT = 40;
 
 /**
+ * How much of the CSS blob's departure from a circle survives once the
+ * button is live (see `blobPathAt`).
+ *
+ * The 75 % keyframe has a corner that is small in BOTH axes at the top-left
+ * (35 % × 42 %) sitting next to one that bulges (65 % × 60 %) — so the top of
+ * the blob leaves ~7 px outside a circle and comes ~8 px inside it one corner
+ * later, and stops reading as round. Half the excursion keeps the morph
+ * plainly alive while every corner stays "almost a circle".
+ *
+ * It is reached over the connect transition rather than applied flat, so the
+ * IDLE shape stays the exact CSS one — the blob rounds out as it fills.
+ */
+const BLOB_EXCURSION = 0.5;
+
+/**
  * The particle clock's period.
  *
  * Every dot's duration below is an exact divisor of this, so when the clock
@@ -266,24 +281,40 @@ export default function HeroBlobButton({
   const morph = useSharedValue(0); // 0→1 across the 8 s blob cycle
   const emit = useSharedValue(0); // 0→EMIT_LOOP_MS, particle time in ms
 
+  /* ── The 1.2 s connect transition + the 1.5 s breathe ──
+     `.hero-blob { transition: all 1.2s cubic-bezier(.25,1,.5,1) }` and
+     `.premium-start-btn { transition: background 1.2s }`: the scale, the
+     gradient and the white disc all CROSS-FADE. v0.5 snapped between them.
+     Declared up here because the blob's own outline reads `conn` too. */
+  const conn = useSharedValue(connected ? 1 : 0);
+  const breathe = useSharedValue(1);
+  const press = useSharedValue(1);
+  const [halo, setHalo] = useState<HaloDot[] | null>(null);
+
   useEffect(() => {
-    morph.value = 0;
-    morph.value = withRepeat(
-      withTiming(1, { duration: CYCLE_MS, easing: Easing.linear }),
-      -1,
-      false,
-    );
+    /* Only the particle clock free-runs. The morph clock is started BY the
+       connect (below), because where it happens to be at that moment is
+       what the blob's shape jumps to. */
     emit.value = 0;
     emit.value = withRepeat(
       withTiming(EMIT_LOOP_MS, { duration: EMIT_LOOP_MS, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [morph, emit]);
+  }, [emit]);
 
-  /* ── The blob outline, as the real CSS border-radius shape ── */
+  /* ── The blob outline, as the real CSS border-radius shape ──
+     `excursion` eases 1 → BLOB_EXCURSION with the fill, so the shape starts
+     as the exact idle blob and rounds out as it becomes a button. */
   const blobPath = useDerivedValue(
-    () => blobPathAt(BLOB, BLOB, morph.value, connected),
+    () =>
+      blobPathAt(
+        BLOB,
+        BLOB,
+        morph.value,
+        connected,
+        1 - (1 - BLOB_EXCURSION) * conn.value,
+      ),
     [connected],
   );
 
@@ -296,15 +327,6 @@ export default function HeroBlobButton({
   const corePath = useMemo(() => corePathAt(0), []);
   const coreSide = CORE_BOX * CORE_SCALE;
 
-  /* ── The 1.2 s connect transition + the 1.5 s breathe ──
-     `.hero-blob { transition: all 1.2s cubic-bezier(.25,1,.5,1) }` and
-     `.premium-start-btn { transition: background 1.2s }`: the scale, the
-     gradient and the white disc all CROSS-FADE. v0.5 snapped between them. */
-  const conn = useSharedValue(connected ? 1 : 0);
-  const breathe = useSharedValue(1);
-  const press = useSharedValue(1);
-  const [halo, setHalo] = useState<HaloDot[] | null>(null);
-
   useEffect(() => {
     conn.value = withTiming(connected ? 1 : 0, {
       duration: CONNECT_MS,
@@ -314,6 +336,19 @@ export default function HeroBlobButton({
       setHalo(null);
       return;
     }
+    /* ★ The morph starts HERE, at zero — not on mount.
+       The idle blob is the 0 % keyframe held still, and the morph clock used
+       to free-run behind it. So the instant the device connected, the outline
+       jumped from the rest shape to wherever the clock had drifted to — and
+       if that was near the 75 % keyframe, the top-left corner appeared out of
+       nowhere already deep in its tightest excursion. Starting the clock with
+       the connect makes the morph BEGIN at the shape already on screen. */
+    morph.value = 0;
+    morph.value = withRepeat(
+      withTiming(1, { duration: CYCLE_MS, easing: Easing.linear }),
+      -1,
+      false,
+    );
     // @keyframes breatheIn: 1 → .92 @40% → 1
     breathe.value = withSequence(
       withTiming(0.92, { duration: BREATHE_MS * 0.4, easing: Easing.bezier(0.4, 0, 0.2, 1) }),
@@ -322,7 +357,7 @@ export default function HeroBlobButton({
     setHalo(makeHalo());
     const timer = setTimeout(() => setHalo(null), HALO_MS + HALO_MAX_DELAY + 200);
     return () => clearTimeout(timer);
-  }, [connected, conn, breathe]);
+  }, [connected, conn, breathe, morph]);
 
   /* .connected-blob { transform: scale(1.25) }, eased over 1.2 s. */
   const blobTransform = useDerivedValue(() => {
@@ -593,6 +628,8 @@ const styles = StyleSheet.create({
   sub: { fontSize: 16, fontWeight: '500', textAlign: 'center' },
 });
 
+// v5.0.1 — The morph no longer opens on a corner: the clock starts WITH the
+//          connect (it used to free-run and jump), and half the excursion.
 // v5.0.0 — The connected orb IS the button: white morphing core out, play
 //          glyph + label in, navy drop shadow for lift, caption collapses.
 // v4.0.0 — Morph + particles moved onto the UI thread (Reanimated clocks +

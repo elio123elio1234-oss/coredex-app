@@ -1,7 +1,33 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.25.0';
-export const APP_BUILD_LABEL = 'The home orb stops being a picture with a caption and becomes a button';
+export const APP_VERSION = '0.25.1';
+export const APP_BUILD_LABEL = 'The home orb morph no longer opens on a corner — it starts round and stays round';
+
+// v0.25.1 — "Right at the start, the vertex at the upper left goes out of
+//           proportion." Measured, and it is exactly there: sampling the
+//           outline across the whole 8 s cycle, the single worst point is the
+//           TOP-LEFT corner at the 75 % keyframe — 7.6 px OUTSIDE a circle of
+//           the same box, while the top-right corner of that same frame is
+//           7.8 px INSIDE it. A 15.3 px swing across the top of a 150 px blob
+//           is the top visibly ceasing to be round. It is the only keyframe
+//           whose corner is small in BOTH axes (35 % × 42 %).
+//           TWO causes, both fixed:
+//           1. The morph clock FREE-RAN from mount while the idle blob was
+//              the 0 % frame held still. So at the instant of connect the
+//              outline jumped from the rest shape to wherever the clock had
+//              drifted — and if that was near 75 %, the corner arrived out of
+//              nowhere already at its tightest. The clock now starts WITH the
+//              connect, at zero, so the morph begins at the shape on screen.
+//           2. `blobPathAt` takes an `excursion`: every radius is pulled
+//              toward 50 % by it. Safe per radius because each opposite pair
+//              in every keyframe sums to exactly 100 — which is what keeps a
+//              border-radius shape free of straight edges — so scaling a
+//              complementary pair by the same factor keeps the sum at 100.
+//              At 0.5 the worst deviation drops to 3.7 px out / 3.9 px in:
+//              always almost a circle, never a perfect one.
+//           The excursion is REACHED over the 1.2 s fill rather than applied
+//           flat, so the idle shape stays the exact CSS one and the blob
+//           rounds out as it becomes a button.
 
 // v0.25.0 — "It isn't that pretty, and it isn't clear it's a button to press."
 //           Both halves of that are the same defect. The connected orb was a

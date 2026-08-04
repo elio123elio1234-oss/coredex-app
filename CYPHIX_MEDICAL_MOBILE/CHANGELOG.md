@@ -1,5 +1,44 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.25.1 — 2026-08-04 — The morph stops opening on a corner
+
+Reported from the phone: *"right at the start, the vertex at the upper left of
+the circle goes out of proportion — it should always be almost a circle."*
+
+### Measured, not guessed
+
+Sampling the outline across the whole 8 s cycle and comparing every point to a
+circle of the same box, the single worst point is the **top-left corner at the
+75 % keyframe: 7.6 px outside** the circle — while the **top-right corner of
+that same frame is 7.8 px inside** it. A **15.3 px swing across the top of a
+150 px blob** is the top visibly ceasing to be round. It is also the only
+keyframe with a corner that is small in **both** axes (35 % × 42 %), sitting
+next to one that bulges in both (65 % × 60 %).
+
+### Two causes, both fixed
+
+**1. The morph clock free-ran from mount.** The idle blob is the 0 % keyframe
+held still, so nothing showed it — but the clock was running behind it the
+whole time. At the instant of connect the outline jumped from the rest shape
+to **wherever the clock had drifted to**, and if that was near 75 % the corner
+arrived out of nowhere, already at its tightest. That is the "right at the
+start". The clock now starts **with the connect, at zero**, so the morph begins
+at the shape already on screen and flows from it.
+
+**2. The 75 % keyframe was too far out to begin with.** `blobPathAt` now takes
+an `excursion`: every radius is pulled toward 50 % by it. This is safe to do
+per radius because **each opposite pair in every keyframe sums to exactly
+100** — which is precisely what keeps a border-radius shape free of straight
+edges — so scaling a complementary pair by the same factor keeps the sum at
+100. At **0.5** the worst deviation drops to **3.7 px out / 3.9 px in**: always
+almost a circle, never a perfect one.
+
+The excursion is **reached over the 1.2 s fill** rather than applied flat, so
+the idle shape stays the exact CSS one and the blob rounds out as it becomes a
+button.
+
+Typechecks; both bundles export. `🔬` until it has been seen on the phone.
+
 ## v0.25.0 — 2026-08-04 — The home orb becomes a button
 
 Reported as two complaints — *"it isn't that pretty"* and *"it isn't clear
