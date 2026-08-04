@@ -76,33 +76,22 @@ export function easeInOut(t: number): number {
  * Radii are percentages: the first four of the WIDTH, the last four of the
  * HEIGHT — exactly how the CSS shorthand reads them.
  *
- * `excursion` is how much of the CSS's departure from a plain ellipse
- * survives: `1` is the keyframes verbatim, `0` is a perfect ellipse. Every
- * radius is pulled toward 50 % by it —
+ * ── ⚠️ THE 75 % KEYFRAME IS THE EXTREME, AND IT STAYS ──
+ * Measured over the whole cycle, the outline's furthest departure from a
+ * circle is the top-left corner of the 75 % frame — 7.6 px outside on a
+ * 150 px blob, with that same frame's top-right corner 7.8 px inside. It is
+ * the only frame whose corner is small in BOTH axes (35 % × 42 %) next to
+ * one that bulges in both (65 % × 60 %).
  *
- *     r' = 50 + (r − 50) × excursion
- *
- * — which is safe to do per radius because **each opposite pair in every
- * keyframe sums to exactly 100** (43+57, 41+59, 54+46, 43+57, …). That is
- * what keeps a border-radius shape free of straight edges, and pulling a
- * complementary pair toward 50 by the same factor keeps the sum at 100.
- *
- * ── WHY THIS EXISTS ──
- * The 75 % keyframe is the only one with a corner that is small in BOTH
- * axes (top-left, 35 % × 42 %) while its neighbour bulges (top-right,
- * 65 % × 60 %). At the diagonal that puts the outline ~7 px outside a
- * circle on one corner and ~8 px inside it on the next, and the top of the
- * blob visibly stops being round — reported as a vertex going out of
- * proportion at the upper left. Halving the excursion keeps the morph
- * clearly alive while never letting any corner leave "almost a circle".
+ * v2.1.0 added an `excursion` knob that pulled every radius toward 50 % to
+ * flatten exactly that, and it was **removed the same day**: those shapes
+ * are what the design is FOR, and rounding them off cost the blob the thing
+ * that makes it worth drawing. The corner ever looking wrong was a TIMING
+ * bug, not a geometry one — the caller must start its progress clock at 0
+ * when the blob starts morphing, or the shape jumps into mid-cycle. See
+ * `HeroBlobButton`.
  */
-export function blobPathAt(
-  w: number,
-  h: number,
-  progress: number,
-  morphing: boolean,
-  excursion = 1,
-): SkPath {
+export function blobPathAt(w: number, h: number, progress: number, morphing: boolean): SkPath {
   'worklet';
   const segments = KF_COUNT - 1;
   let i = 0;
@@ -117,10 +106,7 @@ export function blobPathAt(
   const b = (i + 1) * 8;
 
   // Horizontal radii scale with width, vertical radii with height.
-  const r = (k: number, size: number) => {
-    const pct = KF[a + k] + (KF[b + k] - KF[a + k]) * f;
-    return (50 + (pct - 50) * excursion) * size * 0.01;
-  };
+  const r = (k: number, size: number) => (KF[a + k] + (KF[b + k] - KF[a + k]) * f) * size * 0.01;
   const TLh = r(0, w), TRh = r(1, w), BRh = r(2, w), BLh = r(3, w);
   const TLv = r(4, h), TRv = r(5, h), BRv = r(6, h), BLv = r(7, h);
 
@@ -208,7 +194,8 @@ export function coreOffsetAt(shape: number): { tx: number; ty: number } {
   return { tx: 2 * shape, ty: 3 * shape };
 }
 
-// v2.1.0 — `excursion` pulls every radius toward 50 %, so the 75 % keyframe's
-//          tight top-left corner can be tamed without editing the CSS table.
+// v2.1.1 — `excursion` is GONE, one release after it arrived. It rounded off
+//          the 75 % keyframe, and that keyframe is one of the shapes the
+//          design is FOR. The corner was a timing bug, not a geometry one.
 // v2.0.0 — All builders are worklets returning SkPath, so the morph runs on the
 //          UI thread instead of a 25 Hz setInterval + setState (the stutter).

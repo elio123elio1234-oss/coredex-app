@@ -121,21 +121,6 @@ const LABEL_START = 0.45;
 const TITLE_SLOT = 40;
 
 /**
- * How much of the CSS blob's departure from a circle survives once the
- * button is live (see `blobPathAt`).
- *
- * The 75 % keyframe has a corner that is small in BOTH axes at the top-left
- * (35 % × 42 %) sitting next to one that bulges (65 % × 60 %) — so the top of
- * the blob leaves ~7 px outside a circle and comes ~8 px inside it one corner
- * later, and stops reading as round. Half the excursion keeps the morph
- * plainly alive while every corner stays "almost a circle".
- *
- * It is reached over the connect transition rather than applied flat, so the
- * IDLE shape stays the exact CSS one — the blob rounds out as it fills.
- */
-const BLOB_EXCURSION = 0.5;
-
-/**
  * The particle clock's period.
  *
  * Every dot's duration below is an exact divisor of this, so when the clock
@@ -284,8 +269,7 @@ export default function HeroBlobButton({
   /* ── The 1.2 s connect transition + the 1.5 s breathe ──
      `.hero-blob { transition: all 1.2s cubic-bezier(.25,1,.5,1) }` and
      `.premium-start-btn { transition: background 1.2s }`: the scale, the
-     gradient and the white disc all CROSS-FADE. v0.5 snapped between them.
-     Declared up here because the blob's own outline reads `conn` too. */
+     gradient and the white disc all CROSS-FADE. v0.5 snapped between them. */
   const conn = useSharedValue(connected ? 1 : 0);
   const breathe = useSharedValue(1);
   const press = useSharedValue(1);
@@ -304,17 +288,12 @@ export default function HeroBlobButton({
   }, [emit]);
 
   /* ── The blob outline, as the real CSS border-radius shape ──
-     `excursion` eases 1 → BLOB_EXCURSION with the fill, so the shape starts
-     as the exact idle blob and rounds out as it becomes a button. */
+     The keyframes are the CSS's, verbatim and untamed: v0.25.1 briefly pulled
+     every radius toward 50 % to soften the 75 % frame's tight top-left corner,
+     and gave up the best shapes in the set to do it. The corner was never the
+     problem — arriving at it without being led there was (see the clock). */
   const blobPath = useDerivedValue(
-    () =>
-      blobPathAt(
-        BLOB,
-        BLOB,
-        morph.value,
-        connected,
-        1 - (1 - BLOB_EXCURSION) * conn.value,
-      ),
+    () => blobPathAt(BLOB, BLOB, morph.value, connected),
     [connected],
   );
 
@@ -628,6 +607,8 @@ const styles = StyleSheet.create({
   sub: { fontSize: 16, fontWeight: '500', textAlign: 'center' },
 });
 
+// v5.0.2 — The keyframes are back, whole. Only the clock fix was ever wanted:
+//          the morph is LED into the 75 % corner instead of landing on it.
 // v5.0.1 — The morph no longer opens on a corner: the clock starts WITH the
 //          connect (it used to free-run and jump), and half the excursion.
 // v5.0.0 — The connected orb IS the button: white morphing core out, play

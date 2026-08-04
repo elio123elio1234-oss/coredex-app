@@ -1,5 +1,34 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.25.2 — 2026-08-04 — The shapes come back; only the timing was wrong
+
+**Corrects v0.25.1, which overreached.** Asked to remove the moment where the
+corner leaned out at the upper left, it did that *and* pulled every radius
+toward 50 % — trading away one of the best shapes in the set to fix a moment.
+Reported plainly: *"you gave up one of the nicest shapes there were; I only
+asked to get rid of the start."* Correct, and the entry below said the quiet
+part itself — it called the 75 % frame the extreme and then removed the
+extreme.
+
+- The `excursion` knob is **gone** from `blobShape.ts`. The keyframes are the
+  CSS's again, whole and untamed, and the 75 % frame's tight top-left corner is
+  back on purpose.
+- What stays is the half of v0.25.1 that was the actual bug: **the morph clock
+  free-ran from mount** while the idle blob was the 0 % frame held still, so
+  connecting *jumped* the outline to wherever the clock had drifted — landing
+  straight on that corner whenever the timing fell that way. The clock now
+  starts with the connect, at zero, so the cycle is walked in order and the eye
+  is **led into** that corner about six seconds later instead of being dropped
+  onto it.
+
+The lesson, written down because it is an easy one to repeat: **an extreme that
+is arrived at wrongly is a timing bug.** Sanding the extreme down makes the
+symptom go away and takes the design with it.
+
+`blobShape.ts` is now byte-identical to v0.25.0 outside its comments, and the
+only behavioural change in `HeroBlobButton.tsx` since then is which effect
+starts the clock. Typechecks; both bundles export.
+
 ## v0.25.1 — 2026-08-04 — The morph stops opening on a corner
 
 Reported from the phone: *"right at the start, the vertex at the upper left of

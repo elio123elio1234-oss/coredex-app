@@ -1,7 +1,27 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.25.1';
-export const APP_BUILD_LABEL = 'The home orb morph no longer opens on a corner — it starts round and stays round';
+export const APP_VERSION = '0.25.2';
+export const APP_BUILD_LABEL = 'The blob keeps every one of its shapes — only the timing needed fixing';
+
+// v0.25.2 — Corrects v0.25.1, which overreached. Asked to remove the moment
+//           the corner leaned out at the upper left, it ALSO pulled every
+//           radius toward 50 % — and that traded away one of the best shapes
+//           in the set to fix a moment. "You gave up one of the nicest shapes;
+//           I only asked to get rid of the start."
+//           The `excursion` knob is gone from `blobShape.ts` and the keyframes
+//           are the CSS's again, whole and untamed. The 75 % frame's tight
+//           top-left corner is BACK, deliberately.
+//           What stays is the half of v0.25.1 that was the actual bug: the
+//           morph clock free-ran from mount while the idle blob was the 0 %
+//           frame held still, so connecting JUMPED the outline to wherever the
+//           clock had drifted — landing straight on that corner if the timing
+//           fell that way. The clock now starts with the connect, at zero, so
+//           the cycle is walked in order and the eye is LED into that corner
+//           six seconds later instead of being dropped on it.
+//           The lesson, written down because it is easy to repeat: an
+//           extreme that is arrived at wrongly is a timing bug. Sanding the
+//           extreme down makes the symptom go away and takes the design with
+//           it.
 
 // v0.25.1 — "Right at the start, the vertex at the upper left goes out of
 //           proportion." Measured, and it is exactly there: sampling the
