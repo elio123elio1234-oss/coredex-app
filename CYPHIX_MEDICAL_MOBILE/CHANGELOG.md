@@ -1,5 +1,38 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.25.3 — 2026-08-04 — The camera badge sits on the portrait, not inside it
+
+Reported from the phone: on the **Profile** tab, the camera badge on the bottom
+corner of the portrait is *cut off by the circle of the picture itself*, and it
+should be above it.
+
+It was, exactly — and the cause is one style doing two jobs. `styles.avatar`
+carried `borderRadius: 34` + `overflow: 'hidden'`, which it genuinely needs (or
+Android renders a square photo inside a round border), **and** it was the
+`Pressable` the badge lived inside. A round mask crops every child it contains,
+and the badge sits at the corner of the square — precisely the region the circle
+excludes.
+
+The old comment above it admitted this and shipped the workaround anyway:
+*"the avatar clips its children, so this is positioned inside the circle's
+edge rather than hanging off it."* Pulling the badge inward until only its own
+corner was lost is not the same as not losing it.
+
+- The round mask is now its **own inner view**, and the badge is its **sibling**
+  — painted after the circle, so it rides on top of it whole.
+- The `Pressable` stays **68×68** and no longer clips. Deliberately the same
+  size, not larger: the badge then still lands inside its parent's own bounds,
+  which Android needs — a child drawn outside its parent is not reliably
+  rendered — and the square's corner is outside the *circle* while staying
+  inside the *square*.
+
+Nothing else moved: same tap target, same RTL side (`right: 0`, which Yoga
+already flips in RTL — hence bottom-left in Hebrew), same busy indicator in the
+same place.
+
+Typechecks; both bundles export. Unverified on a handset — this is a pixel
+change, so it stays 🔬 in `PARITY.md` until someone looks at it.
+
 ## v0.25.2 — 2026-08-04 — The shapes come back; only the timing was wrong
 
 **Corrects v0.25.1, which overreached.** Asked to remove the moment where the

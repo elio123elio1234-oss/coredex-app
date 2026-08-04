@@ -275,21 +275,26 @@ export default function ProfileScreen() {
             disabled={!canEditPortrait || portrait.busy}
             accessibilityRole={canEditPortrait ? 'button' : 'image'}
             accessibilityLabel={canEditPortrait ? tr('profilePhotoChange') : undefined}
-            style={[styles.avatar, { backgroundColor: t.accentSoft, borderColor: t.surface }]}
+            style={styles.avatarWrap}
           >
-            {/* The portrait comes from the server (it follows the person
-                across devices). Initials are not a placeholder for a
-                failed image — they are the equal alternative for someone
-                who chose not to add one. */}
-            {photo ? (
-              <Image
-                source={{ uri: photo }}
-                style={styles.avatarImage}
-                accessibilityIgnoresInvertColors
-              />
-            ) : (
-              <Text style={[styles.avatarText, { color: t.brandNavy }]}>{initials}</Text>
-            )}
+            {/* The clip lives on this inner view, not on the Pressable: a
+                round mask crops whatever it contains, and the badge below
+                is a sibling of the mask rather than something inside it. */}
+            <View style={[styles.avatar, { backgroundColor: t.accentSoft, borderColor: t.surface }]}>
+              {/* The portrait comes from the server (it follows the person
+                  across devices). Initials are not a placeholder for a
+                  failed image — they are the equal alternative for someone
+                  who chose not to add one. */}
+              {photo ? (
+                <Image
+                  source={{ uri: photo }}
+                  style={styles.avatarImage}
+                  accessibilityIgnoresInvertColors
+                />
+              ) : (
+                <Text style={[styles.avatarText, { color: t.brandNavy }]}>{initials}</Text>
+              )}
+            </View>
             {/* An affordance, not decoration: a circle that happens to be
                 tappable is a circle nobody taps. It doubles as the busy
                 indicator, so the wait appears exactly where the action was. */}
@@ -609,6 +614,11 @@ const styles = StyleSheet.create({
   brand: { position: 'absolute', left: 20, zIndex: 20 },
   page: { paddingHorizontal: 20, gap: 18 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  /* The tap target and the round mask are two views on purpose. This one
+     does NOT clip, so the badge can overhang the portrait's edge; it stays
+     68×68 so the badge still lands inside its own bounds, which Android
+     needs — a child drawn outside its parent is not reliably rendered. */
+  avatarWrap: { width: 68, height: 68 },
   avatar: {
     width: 68,
     height: 68,
@@ -622,9 +632,9 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 22, fontWeight: '800' },
   avatarImage: { width: '100%', height: '100%' },
-  /* Sits ON the ring, bottom-end — the place every phone OS puts it. The
-     avatar clips its children, so this is positioned inside the circle's
-     edge rather than hanging off it. */
+  /* Sits ON the ring, bottom-end — the place every phone OS puts it. It is
+     a sibling of the mask, so it is painted after it and rides on top of
+     the circle instead of being cropped by it. */
   avatarBadge: {
     position: 'absolute',
     bottom: 0,
@@ -706,3 +716,7 @@ const styles = StyleSheet.create({
 //          (not the device) and saying which of the three failures happened.
 // v1.3.0 — The floating wordmark (and the padding that cleared it) follow
 //          SHOW_SHELL_WORDMARK, so the card starts at the top of the screen.
+// v2.1.1 — The camera badge was being CROPPED by the portrait's own circle:
+//          one view owned the round clip AND was the Pressable the badge sat
+//          in. The mask is its own inner view now and the badge is a sibling,
+//          so it is drawn on top of the circle instead of inside it.

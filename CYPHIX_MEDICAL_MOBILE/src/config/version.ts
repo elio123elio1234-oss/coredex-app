@@ -1,7 +1,27 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.25.2';
-export const APP_BUILD_LABEL = 'The blob keeps every one of its shapes — only the timing needed fixing';
+export const APP_VERSION = '0.25.3';
+export const APP_BUILD_LABEL = 'The camera badge stops being cropped by the portrait it sits on';
+
+// v0.25.3 — Reported from the phone: on Profile, the camera badge on the
+//           portrait is cut off by the circle of the picture itself, and it
+//           should be ABOVE it. It was, exactly, and the cause is one style
+//           doing two jobs: `styles.avatar` carried `borderRadius: 34` +
+//           `overflow: 'hidden'` — which it needs, or Android draws a square
+//           photo inside a round border — AND it was the Pressable the badge
+//           lived inside. A round mask crops every child, and the badge is a
+//           child at the corner of the square, which is precisely the region
+//           the circle excludes. The comment above it even said so, and
+//           "positioned inside the circle's edge" was the workaround, not a
+//           fix: the badge was pulled in until only its own corner was lost.
+//           The mask is now its own inner view and the badge is its SIBLING,
+//           so it is painted after the circle and rides on top of it whole.
+//           The Pressable stays 68×68 and no longer clips — deliberately the
+//           same size, so the badge still lands inside its parent's bounds:
+//           a child drawn outside its parent is not reliably rendered on
+//           Android, and the square's corner is outside the circle but inside
+//           the square. Nothing about the tap target, the RTL side or the
+//           busy indicator changed.
 
 // v0.25.2 — Corrects v0.25.1, which overreached. Asked to remove the moment
 //           the corner leaned out at the upper left, it ALSO pulled every
