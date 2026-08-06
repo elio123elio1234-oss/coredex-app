@@ -195,7 +195,30 @@ Rule of thumb: `app.json`'s `version` changes when the **binary** changes.
 `app.json`, the new binary starts a new runtime, and later OTA updates target
 that one.
 
-### 5A.3 Never hand `eas init` an `--id`
+### 5A.3 ⚠️ `.env` DOES NOT REACH AN EAS BUILD
+
+`EXPO_PUBLIC_*` is inlined at **bundle** time, and for `eas build` the bundling
+happens on Expo's runner — not on this machine. EAS archives the project
+**respecting `.gitignore`**, and `.env` is git-ignored (correctly). So the
+cloud build sees `EXPO_PUBLIC_API_BASE_URL` as undefined, `ENV.hasBackend`
+comes out `false`, and the app ships in **fully offline mode with device-local
+mock accounts** — which on the phone looks like "the server isn't connected" or
+"it's stuck in demo mode". No error is raised: an empty base URL is a supported
+configuration, so nothing complains.
+
+Public env values therefore live in **`eas.json` → `build.<profile>.env`**,
+which is committed and always travels. `EXPO_PUBLIC_API_BASE_URL` is a public
+endpoint, not a secret; a genuine secret goes in `eas secret:create`, never in
+this file, and never in an `EXPO_PUBLIC_*` name (that prefix is compiled into
+the client bundle and is readable by anyone holding the app).
+
+`.env` stays for local `npm start` / `eas update`, which bundle **here** and do
+read it. That asymmetry is worth knowing on its own: **an OTA update carries
+the local `.env` even when the installed binary was built without it**, so
+`eas update --auto` can repair a mis-built binary's configuration without a
+rebuild.
+
+### 5A.4 Never hand `eas init` an `--id`
 
 `--id` links to an **existing** project. Passing one owned by another account
 fails with `Entity not authorized: AppEntity[...]` *after* it has already
@@ -203,7 +226,7 @@ written the foreign `projectId` into `app.json` — so the id must be removed
 before retrying. Plain `eas init` creates a project owned by whoever is logged
 in, which is what is wanted.
 
-### 5A.4 `eas.json` takes no comments
+### 5A.5 `eas.json` takes no comments
 
 It is validated against a strict schema that rejects unknown keys, so the
 `"//"` convention used elsewhere in this repo breaks it (`"//" is not
