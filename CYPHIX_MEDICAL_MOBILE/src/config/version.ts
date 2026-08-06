@@ -1,7 +1,30 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.27.4';
-export const APP_BUILD_LABEL = 'OTA reaches the phone — published to the channel the build listens on';
+export const APP_VERSION = '0.28.0';
+export const APP_BUILD_LABEL = 'Settings → Account can preview any role, for debugging';
+
+// v0.28.0 — "Preview as role" ported from the web's Settings page, which had
+//           been listed as NOT ported because there was no real role to switch
+//           away from until connected mode landed a real principal.
+//           `auth.debugRole` is applied in ONE place — `useCurrentUser`, where
+//           the principal is resolved — so every `can()` and every gate in the
+//           app follows it without knowing it exists.
+//           ★ It grants NOTHING, and the row says so on screen. The server
+//           authorises against the session's REAL role, so previewing `admin`
+//           on a patient account draws the admin affordances and each request
+//           behind them returns 403. That is the honest demonstration and the
+//           reason this is safe to ship rather than hide behind a build flag.
+//           Two deliberate limits: `id` and `linkedPatientId` are never
+//           swapped — doing so would make the app read and write a DIFFERENT
+//           PATIENT'S record, which is not a preview but a data-integrity bug —
+//           and the override is cleared on sign-out, so a preview cannot
+//           outlive the account it was chosen on and silently apply to whoever
+//           signs in next. `guest` is not offered: it is the signed-out
+//           principal, and previewing it from a screen that only exists behind
+//           sign-in would draw a shell with no way out. Tapping the active
+//           role clears the override, so there is always a way back without
+//           knowing which role was real — and while a preview is on, the
+//           actual role is printed beneath the picker.
 
 // v0.27.4 — Sign-in kept failing with credentials that work in the browser,
 //           because the phone was still offline: the OTA carrying the API URL

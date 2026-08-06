@@ -11,9 +11,14 @@
    ── Rows the web has and this does not (all recorded in PARITY.md) ──
    • AI voice-guide key — Gemini Live is web-only today, so a key field
      here would configure nothing.
-   • "Preview as role" — there is still no role to switch between.
    • Clinic & Server — admin-only on the web, and there is no role to
      check against yet.
+   "Preview as role" USED to be in that list and is live now (Account
+   section): connected mode has a real principal, so there is finally a
+   role to switch away from. It re-draws the app only — the server still
+   authorises against the session's real role, so previewing `admin` on a
+   patient account renders the admin buttons and every request behind them
+   returns 403. That is the demonstration, not a defect.
    Sign out USED to be in that list. It is live now: the onboarding flow
    creates a real account on the device, so there is something to sign
    out of — and without this row the signed-out experience could never be
@@ -53,6 +58,9 @@ import { usePreferences } from '@/features/preferences/usePreferences';
 import { DEMO_CARD } from '@/features/profile/demoCard';
 import type { CareMode, ThemeChoice } from '@/features/preferences/preferencesSlice';
 import { useTranslation } from '@/i18n/useTranslation';
+import { debugRoleSet } from '@/features/auth/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import type { Role } from '@/types/rbac';
 import type { TranslationKey } from '@/i18n/config';
 import { shellPalette } from '@/theme/shellTheme';
 import { useIsDark, useTheme } from '@/theme/useTheme';
@@ -84,6 +92,19 @@ function BackChevron({ color }: { color: string }) {
   );
 }
 
+/* The roles worth previewing. `guest` is deliberately absent: it is the
+   signed-OUT principal, and previewing it from a settings screen that only
+   exists behind sign-in would render a shell nothing can navigate out of. */
+const DEBUG_ROLES: readonly Role[] = ['patient', 'clinician', 'technician', 'admin'];
+
+const ROLE_LABEL_KEY: Record<Role, TranslationKey> = {
+  patient: 'roleLabelPatient',
+  clinician: 'roleLabelClinician',
+  technician: 'roleLabelTechnician',
+  admin: 'roleLabelAdmin',
+  guest: 'roleLabelPatient',
+};
+
 export default function SettingsScreen() {
   const t = useTheme();
   const dark = useIsDark();
@@ -93,6 +114,13 @@ export default function SettingsScreen() {
   const { t: tr, lang, setLang } = useTranslation();
   const ble = useBle();
   const { user, logout } = useAuth();
+  const dispatch = useAppDispatch();
+  const debugRole = useAppSelector((st) => st.auth.debugRole);
+  const sessionRole = useAppSelector((st) => st.auth.user?.role);
+  /* What the account REALLY is, shown beneath the picker while a preview is
+     active — otherwise there is no way to tell a previewed role from a real
+     one, which is how a demo becomes a false belief about an account. */
+  const realRole: Role = sessionRole ?? 'clinician';
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const palette = shellPalette(prefs.background, dark);
 
@@ -318,8 +346,51 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             label={tr('setAccountRole')}
-            value={<SettingsChip label={tr('roleLabelPatient')} />}
+            value={<SettingsChip label={tr(ROLE_LABEL_KEY[user?.role ?? 'patient'])} />}
           />
+          {/* DEBUG — "Preview as role", the web's Settings row ported.
+              It re-draws the app as the chosen role and grants NOTHING: the
+              server authorises against the session's real role, so previewing
+              `admin` on a patient account renders the admin buttons and each
+              request behind them returns 403. That is the point — it shows
+              which UI a role gets, on a device, without keeping four test
+              accounts. The description says so on screen, because a switch
+              labelled only "Admin" invites the opposite conclusion. */}
+          <SettingsRow
+            label={tr('setDevRole')}
+            description={tr('setDevRoleDesc')}
+            control={
+              <View style={styles.roleRow}>
+                {DEBUG_ROLES.map((r) => (
+                  <Pressable
+                    key={r}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: user?.role === r }}
+                    accessibilityLabel={tr(ROLE_LABEL_KEY[r])}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      /* Tapping the role already shown clears the override, so
+                         there is always a way back to the real principal
+                         without knowing which one it was. */
+                      dispatch(debugRoleSet(debugRole === r ? null : r));
+                    }}
+                    style={styles.roleChipHit}
+                  >
+                    <SettingsChip
+                      label={tr(ROLE_LABEL_KEY[r])}
+                      tone={user?.role === r ? 'ok' : undefined}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            }
+          />
+          {debugRole && (
+            <SettingsRow
+              label={tr('setDevRoleReal')}
+              value={<SettingsChip label={tr(ROLE_LABEL_KEY[realRole])} />}
+            />
+          )}
           {/* There IS something to sign out of now: the account created by
               the onboarding flow. Confirmed first — on a device-local
               account, signing out means the password is needed again (or
@@ -373,6 +444,10 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' },
+  // 44 pt of touch on a chip that is drawn smaller — the chip is the label,
+  // the Pressable is the target.
+  roleChipHit: { minHeight: 44, justifyContent: 'center' },
   root: { flex: 1 },
   topBar: { paddingHorizontal: 12, paddingBottom: 4 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 6 },

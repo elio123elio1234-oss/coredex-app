@@ -15,7 +15,7 @@
    appears, and nothing reads it back out of the store.
    ================================================================== */
 
-import { createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, isAnyOf, type PayloadAction } from '@reduxjs/toolkit';
 import {
   AuthError,
   type AuthErrorCode,
@@ -27,6 +27,7 @@ import {
 import { authService } from '@/services/auth/authService';
 import { sessionExpired } from '@/services/auth/authEvents';
 import { logAudit } from '@/services/audit/auditLogger';
+import type { Role } from '@/types/rbac';
 
 /** idle = signed out (show onboarding); restoring = checking the device
     for a stored session on boot. */
@@ -38,6 +39,18 @@ export interface AuthState {
   profile: RegistrationProfile;
   status: AuthStatus;
   error: AuthErrorCode | null;
+  /**
+   * DEBUG ONLY — draw the app as if the signed-in account held this role.
+   * `null` (default) means the real principal is used untouched.
+   *
+   * ★ This grants NOTHING. The server authorises every request against the
+   * session's real role, so previewing `admin` on a patient account draws the
+   * admin buttons and each one comes back 403. That is exactly what it is for:
+   * seeing which UI a role gets, on a device, without maintaining four test
+   * accounts. It is a rendering switch, never an authorisation one — do not
+   * let it reach `tokenStore`, a request header, or any audit entry.
+   */
+  debugRole: Role | null;
   /**
    * The account was created THIS session and the patient has not dismissed
    * the "Profile created" screen yet.
@@ -60,6 +73,7 @@ const initialState: AuthState = {
   status: 'restoring',
   error: null,
   justRegistered: false,
+  debugRole: null,
 };
 
 function auditSignIn(user: SessionUser, detail: string): void {
@@ -124,6 +138,13 @@ const authSlice = createSlice({
       state.error = null;
       if (state.status === 'error') state.status = 'idle';
     },
+    /**
+     * DEBUG: render the app as `role`, or `null` to go back to the real one.
+     * Rendering only — the server still decides what is allowed.
+     */
+    debugRoleSet(state, action: PayloadAction<Role | null>) {
+      state.debugRole = action.payload;
+    },
     /** The patient has read "Profile created" and tapped through. */
     welcomeAcknowledged(state) {
       state.justRegistered = false;
@@ -153,6 +174,10 @@ const authSlice = createSlice({
         state.status = 'idle';
         state.error = null;
         state.justRegistered = false;
+        /* A preview must not outlive the account it was previewed on: the
+           next person to sign in would silently get someone else's chosen
+           role drawn over their own. */
+        state.debugRole = null;
       })
       /* The HTTP layer exhausted its refresh (token revoked, expired, or
          replay detected server-side). Same landing as a sign-out, and
@@ -193,7 +218,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthError, welcomeAcknowledged } = authSlice.actions;
+export const { clearAuthError, debugRoleSet, welcomeAcknowledged } = authSlice.actions;
 export default authSlice.reducer;
 
 // v1.1.0 — Handles sessionExpired from the HTTP layer (refresh exhausted → the

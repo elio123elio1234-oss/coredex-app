@@ -42,20 +42,39 @@ export const DEMO_USER: AuthUser = {
 
 export function useCurrentUser(): AuthUser | null {
   const sessionUser = useAppSelector((s) => s.auth.user);
+  const debugRole = useAppSelector((s) => s.auth.debugRole);
 
   return useMemo(() => {
-    if (!ENV.hasBackend) return DEMO_USER;
-    if (!sessionUser) return null;
-    /* Projected, not spread: the slice's user is the server's answer and
-       may grow fields the RBAC layer has no business seeing (data
-       minimization, web CLAUDE.md §7.3). */
-    return {
-      id: sessionUser.id,
-      displayName: sessionUser.displayName,
-      role: sessionUser.role,
-      linkedPatientId: sessionUser.linkedPatientId,
-    };
-  }, [sessionUser]);
+    const base: AuthUser | null = !ENV.hasBackend
+      ? DEMO_USER
+      : sessionUser
+        ? /* Projected, not spread: the slice's user is the server's answer and
+             may grow fields the RBAC layer has no business seeing (data
+             minimization, web CLAUDE.md §7.3). */
+          {
+            id: sessionUser.id,
+            displayName: sessionUser.displayName,
+            role: sessionUser.role,
+            linkedPatientId: sessionUser.linkedPatientId,
+          }
+        : null;
+
+    /* DEBUG role preview (Settings → Account). Applied HERE, at the one place
+       the principal is resolved, so every `can()` and every `<RoleGate>` in the
+       app follows it without knowing it exists.
+
+       ★ It changes what is DRAWN, never what is permitted. The server
+       authorises against the session's real role, so previewing `admin` on a
+       patient account renders the admin affordances and each request behind
+       them returns 403 — which is the honest demonstration, and the reason
+       this is safe to ship. `id` and `linkedPatientId` are deliberately left
+       alone: swapping those would make the app read and write a DIFFERENT
+       PATIENT'S record, which is not a preview, it is a data-integrity bug. */
+    if (base && debugRole && debugRole !== base.role) {
+      return { ...base, role: debugRole };
+    }
+    return base;
+  }, [sessionUser, debugRole]);
 }
 
 export interface Permissions {
@@ -76,6 +95,6 @@ export function usePermissions(): Permissions {
   );
 }
 
-// v2.0.0 — Connected mode uses the REAL signed-in principal (role + linked
-//          patient) so the client and the server agree on who is asking; the
-//          demo clinician survives only as the offline stand-in.
+// v2.1.0 — Honours the debug role preview from Settings. Rendering only: the
+//          identity (id / linkedPatientId) is never swapped, and the server
+//          still authorises every request against the real role.
