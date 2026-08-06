@@ -1,7 +1,24 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.27.0';
-export const APP_BUILD_LABEL = 'The real hardware signal is reachable — EAS builds the native module in the cloud, no Mac';
+export const APP_VERSION = '0.27.4';
+export const APP_BUILD_LABEL = 'OTA reaches the phone — published to the channel the build listens on';
+
+// v0.27.4 — Sign-in kept failing with credentials that work in the browser,
+//           because the phone was still offline: the OTA carrying the API URL
+//           never arrived. `eas update --auto` derives the branch from the
+//           GIT BRANCH (`master`), and a new branch auto-links to a channel of
+//           the SAME NAME — but the installed build was made with the
+//           `production` profile and listens on channel `production`. So the
+//           update published successfully to a channel nothing subscribes to.
+//           No error, no delivery. `--auto` is only correct when branch names
+//           already match channel names; here the branch must be named
+//           explicitly (`--branch production`), and CLAUDE.md §5A.1 said
+//           `--auto` — that was wrong and is corrected.
+//           This bump exists to be VISIBLE: with the badge unchanged there was
+//           no way to tell a failed delivery from a delivered-but-broken app,
+//           which is exactly the confusion that cost this round. Version.ts is
+//           bumped, app.json's version deliberately is NOT (§5A.2 — that would
+//           change runtimeVersion and orphan the update all over again).
 
 // v0.27.0 — The route to a REAL BLE signal on an iPhone, rebuilt around the
 //           fact that the borrowed MacBook is Intel on a macOS too old for

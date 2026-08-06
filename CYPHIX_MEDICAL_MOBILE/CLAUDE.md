@@ -165,10 +165,25 @@ cloud macOS runners compile `modules/cyphix-ble`. Config: `eas.json`,
 
 | Changed | Command | Time |
 |---|---|---|
-| TS / JS / TSX only — screens, hooks, services, the DSP, copy, styles | `eas update --auto` | ~1 min |
+| TS / JS / TSX only — screens, hooks, services, the DSP, copy, styles | `eas update --branch production` | ~1 min |
 | `modules/**` (Swift/Kotlin), `app.json`, a new lib with native code, Expo SDK bump | `eas build --platform ios --profile production` → `eas submit --platform ios --latest` | ~30 min |
 
-After `eas update --auto`: **fully close the app on the phone and reopen it.**
+> ⚠️ **Name the branch. Do NOT use `--auto`.** `--auto` takes the branch name
+> from the **git branch** — `master` here — and a new branch auto-links to a
+> channel of the *same name*. The installed build was made with the
+> `production` profile and listens on channel **`production`**, so an `--auto`
+> update publishes successfully to a channel nothing subscribes to: no error,
+> no delivery, and on the phone it looks like the app simply ignored the fix.
+> `--auto` is only safe once branch names and channel names already agree.
+>
+> **Always bump `version.ts` with an OTA**, so the badge on screen answers
+> "did it land?". Without that, a failed delivery and a delivered-but-still-broken
+> app are indistinguishable — which is precisely what went wrong here.
+
+Verify with `eas channel:view production` (it names the branch actually linked)
+after publishing.
+
+After `eas update --branch production`: **fully close the app on the phone and reopen it.**
 `expo-updates` fetches on launch and applies on the *next* launch, so the first
 reopen may still show the old bundle — reopen twice before concluding anything.
 
