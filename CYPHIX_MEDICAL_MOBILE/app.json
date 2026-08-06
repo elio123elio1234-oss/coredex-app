@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CYPHIX Medical",
-    "slug": "cyphix-medical",
+    "slug": "elio-el-hassrouny",
     "version": "0.27.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -28,7 +28,10 @@
       "permissions": [
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -54,6 +57,18 @@
     ],
     "experiments": {
       "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "62bcc2fb-960e-476a-be5a-b5eaedade918"
+      }
+    },
+    "owner": "elioes-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/62bcc2fb-960e-476a-be5a-b5eaedade918"
     }
   }
 }

@@ -146,6 +146,69 @@ showing simulated data **must** surface the `SIMULATED` badge
 - Reanimated for animation; native stack for transitions.
 - Patient screens fit **without scrolling**; History stays doctor-dense.
 
+## 5A. ★ SHIPPING TO THE iPHONE — OTA by default, rebuild only when forced ★
+
+The app is on the phone via **EAS Build → TestFlight** (paid Apple Developer
+account). There is **no Mac** in this loop: the borrowed MacBook is Intel on a
+macOS below 14.5 and cannot run the Xcode 16.1 that SDK 54 requires, so Expo's
+cloud macOS runners compile `modules/cyphix-ble`. Config: `eas.json`,
+`extra.eas.projectId` + `owner` + `updates.url` in `app.json`.
+
+> **Expo Go is not part of this and never can be.** It is a prebuilt App Store
+> binary carrying only Expo's own native modules, so
+> `requireOptionalNativeModule('CyphixBle')` is null there *by construction*
+> and `bleClient` falls back to the simulator. Anything that must touch real
+> hardware requires a build from `eas`. (This is the whole reason "there is
+> only a demo signal" was never a defect.)
+
+### 5A.1 Which path does this change take?
+
+| Changed | Command | Time |
+|---|---|---|
+| TS / JS / TSX only — screens, hooks, services, the DSP, copy, styles | `eas update --auto` | ~1 min |
+| `modules/**` (Swift/Kotlin), `app.json`, a new lib with native code, Expo SDK bump | `eas build --platform ios --profile production` → `eas submit --platform ios --latest` | ~30 min |
+
+After `eas update --auto`: **fully close the app on the phone and reopen it.**
+`expo-updates` fetches on launch and applies on the *next* launch, so the first
+reopen may still show the old bundle — reopen twice before concluding anything.
+
+### 5A.2 ⚠️ THE OTA TRAP — `runtimeVersion` is tied to `app.json` `version`
+
+`app.json` sets `"runtimeVersion": { "policy": "appVersion" }`. An update is
+only delivered to an installed build whose **runtimeVersion matches exactly**.
+
+That collides head-on with §6.1's "bump the version on every change":
+
+> **Bumping `app.json`'s `version` and then running `eas update` publishes the
+> update to a runtime that no installed build has. It reaches nobody, silently,
+> with no error — and reads exactly like "OTA doesn't work".**
+
+So the two version numbers are **not** bumped together:
+
+| File | What it is | Bump on an OTA change? |
+|---|---|---|
+| `src/config/version.ts` (`APP_VERSION`) | the **visible badge** — how the user tells their change is live | ✅ **always** |
+| `app.json` `version` | the **runtimeVersion** + the App Store Connect string | ❌ **only when doing a native rebuild** |
+
+Rule of thumb: `app.json`'s `version` changes when the **binary** changes.
+`version.ts` changes when the **code** changes. When a native rebuild does bump
+`app.json`, the new binary starts a new runtime, and later OTA updates target
+that one.
+
+### 5A.3 Never hand `eas init` an `--id`
+
+`--id` links to an **existing** project. Passing one owned by another account
+fails with `Entity not authorized: AppEntity[...]` *after* it has already
+written the foreign `projectId` into `app.json` — so the id must be removed
+before retrying. Plain `eas init` creates a project owned by whoever is logged
+in, which is what is wanted.
+
+### 5A.4 `eas.json` takes no comments
+
+It is validated against a strict schema that rejects unknown keys, so the
+`"//"` convention used elsewhere in this repo breaks it (`"//" is not
+allowed`). Rationale for the build profiles lives in `IPHONE_SETUP.md` §E.
+
 ## 6. Definition of Done (mobile)
 
 - [ ] `npx tsc --noEmit` clean.
