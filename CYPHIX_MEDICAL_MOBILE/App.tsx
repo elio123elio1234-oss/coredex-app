@@ -9,6 +9,7 @@ import { Provider } from 'react-redux';
 import { AuthGate } from '@/features/auth/AuthGate';
 import { BleProvider } from '@/features/ble/BleProvider';
 import { PreferencesGate } from '@/features/preferences/PreferencesGate';
+import { SyncProvider } from '@/features/sync/SyncProvider';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { preloadAppImages } from '@/services/media/imagePreload';
 import { store } from '@/store/store';
@@ -51,7 +52,13 @@ export default function App() {
                     routes of their own, and the app behind them must not
                     mount until there is an account to mount it for. */}
                 <AuthGate>
-                  <RootNavigator />
+                  {/* INSIDE the gate: every question the sync engine asks
+                      is scoped to an account, so it must not exist before
+                      there is one. It renders nothing — it decides when
+                      the device asks the server what changed. */}
+                  <SyncProvider>
+                    <RootNavigator />
+                  </SyncProvider>
                 </AuthGate>
               </BleProvider>
             </I18nProvider>
@@ -66,6 +73,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v2.6.0 — Mounts SyncProvider inside the AuthGate: the device now keeps its own
+//          copy of the record and asks the server only what changed.
 // v2.5.0 — Starts the bundled-image warm-up at module scope, before the first
 //          render, so no photograph is first asked for on the screen showing it.
 // v2.4.0 — Adds the AuthGate around the navigator: splash → onboarding → app.

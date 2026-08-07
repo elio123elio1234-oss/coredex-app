@@ -1,5 +1,115 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.29.0 — 2026-08-07 — Offline-first: open from the device, then ask what changed
+
+Until this version the app was **online-first**, and that was the wrong shape
+for what it holds. Every screen waited for the network to re-send data the
+phone had already been given; in a lift, a basement or a tunnel it had nothing
+to show at all. And an ECG recording is **immutable** — the trace measured last
+Tuesday is byte-for-byte the same trace in ten years — so asking for it again
+on every cold start was pure waste for the entire life of the device.
+
+The relationship is now inverted. The phone keeps its own durable copy and
+renders from it immediately; the network's only job is to answer one cheap
+question: *what changed?*
+
+### Two mechanisms, not one
+
+Both are defined in `CYPHIX_SHARED/src/api/sync.ts` — protocol, not client
+policy, because a server that answers `304` and a client that treats `304` as
+an error would produce an app that shows a blank profile **only when everything
+is working correctly**.
+
+- **Collections (recordings) → a cursor delta.** `GET /recordings/sync?since=`
+  returns rows changed since the cursor plus **tombstones** for rows deleted
+  since it. The usual answer is `{ changed: [], deletedIds: [] }`.
+- **Single documents (medical card, portrait) → ETag + `If-None-Match` → 304.**
+  The portrait is up to 1.5 MB of base64 and by far the largest thing the app
+  downloads. A revalidation is now a couple of hundred bytes, and because its
+  validator is built from the row's `updated_at` rather than from the payload,
+  the server does not even decrypt the picture to answer.
+
+### Why the reading and the refreshing are two different things
+
+`offlineBaseQuery` **reads**: cache-first, and it never judges freshness.
+`syncEngine` **refreshes**: on sign-in, on foreground, on pull-to-refresh. The
+order inside a sync is what makes them safe together — pull the delta, write it
+to disk, *then* invalidate the RTK Query tag. The refetch that invalidation
+causes is answered from the mirror that was just written, so there is no race
+between "the tag says stale" and "the disk still says old", and no loop,
+because an empty delta invalidates nothing.
+
+There is no polling and no timer. A phone in a pocket has nothing to learn, and
+the moment the screen comes back is the moment the answer starts mattering
+again — which is the foreground event, for free.
+
+### Where the bytes live
+
+Heavy payloads are **files** under the documents directory (safe from the
+system's low-storage sweep); metadata, cursors and small documents are
+AsyncStorage. Waveforms are fetched **lazily** — only when a study is actually
+opened — and then kept forever, because they cannot change.
+
+**Deliberately not `expo-sqlite`.** It is a native module, and a native module
+cannot reach an installed build over the air; it would need a new EAS build
+first (root `CLAUDE.md` §5, and the v0.27.x channel trap that cost a day). This
+had to be deliverable as an OTA. The access pattern here is get-by-key plus one
+small index, which is what a key-value store is for; the day History needs real
+queries — date ranges, search across notes — that argument flips, and the API
+is shaped so SQLite can replace `deviceCache` without anything above it moving.
+
+### One account owns the cache
+
+`claimCacheFor` runs **inside the boot splash, before the app can render**, and
+if the signed-in account changed it wipes the cached documents, the mirror and
+the sync cursors *together*. Clearing two of those three would be worse than
+clearing none: a cursor that outlives its data tells the next sync "you are up
+to date" about records that are gone, and the device stays quietly short of
+history forever.
+
+Doing this in the sync engine alone was not enough, and the first draft got it
+wrong: the engine runs from an effect *inside* the app, by which point History
+has already mounted and asked the mirror for a list. One frame of the previous
+patient's record is one frame too many.
+
+Signing out does **not** clear anything. Same person, same device, and what
+actually grants access — the tokens — is cleared regardless and lives in the
+secure enclave, not here.
+
+### What did NOT change
+
+Writes. They still go to the server and still fail when it cannot be reached;
+there is no offline write queue, and that is a tracked row in `PARITY.md`
+rather than a silence. What is new is *write-through*: a mutation's response is
+the updated record, so it lands on the disk immediately instead of waiting for
+the next sync to discover a change this device just made.
+
+No endpoint definition, hook or screen was rewritten. The only screen edit in
+this release is History's pull-to-refresh, which now runs a sync instead of
+refetching one query — so it also picks up studies deleted elsewhere and notes
+written in the browser.
+
+### Server side
+
+- Migration `0002_recording_sync.sql` adds `recordings.updated_at`, backfilled
+  from `COALESCE(deleted_at, created_at)` — **not** from the column default.
+  Stamping every existing row with the migration's clock would tell every
+  already-synced device that its whole history changed at deploy time.
+- Every mutating route now touches it, **including the annotation routes**,
+  which touch the *parent* recording: a device only ever asks about recordings,
+  so a note that did not move its study is a note no phone would ever see.
+
+⚠️ **This needs a deploy before the phone benefits, and the migration runs on
+boot.** Until then the mobile app degrades to what it did before: `/sync`
+answers 404, the sync reports an error, and every read falls through to the
+network. Nothing breaks; nothing is cached either.
+
+### Verified
+
+`tsc --noEmit` clean on mobile, web and server, and `expo export` bundles. Per
+root §6.4 that means **well-formed, not working** — none of it has run on a
+phone against a deployed server yet, so every row below stays `🔬`.
+
 ## v0.27.0 — 2026-08-04 — No Mac: EAS builds the native module in the cloud
 
 The borrowed MacBook is Intel on a macOS below 14.5, so it cannot run the

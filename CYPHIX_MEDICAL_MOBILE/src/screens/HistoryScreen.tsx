@@ -31,6 +31,7 @@ import PatientShell from '@/components/templates/PatientShell';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
+import { useSync } from '@/features/sync/useSync';
 import { useTranslation } from '@/i18n/useTranslation';
 import { logAudit } from '@/services/audit/auditLogger';
 import {
@@ -48,6 +49,7 @@ export default function HistoryScreen() {
   const user = useCurrentUser();
   const { can } = usePermissions();
   const features = useViewerFeatures();
+  const sync = useSync();
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -246,8 +248,15 @@ export default function HistoryScreen() {
             accessibilityLabel={tr('histListLabel')}
             refreshControl={
               <RefreshControl
-                refreshing={list.isFetching && !list.isLoading}
-                onRefresh={() => void list.refetch()}
+                /* Pull-to-refresh runs the SYNC, not a refetch of this
+                   query. Refetching would re-read one page of the list;
+                   a sync also carries the studies deleted elsewhere and
+                   the notes added on the web, and it ends by invalidating
+                   the tag — so this list updates as a consequence. When
+                   there is no backend there is nothing to sync and the
+                   old refetch is still the honest gesture. */
+                refreshing={sync.phase === 'syncing' || (list.isFetching && !list.isLoading)}
+                onRefresh={() => void (sync.enabled ? sync.refresh() : list.refetch())}
                 tintColor={t.textSecondary}
               />
             }
@@ -290,5 +299,7 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.1.0 — Pull-to-refresh runs the SYNC rather than refetching this one query,
+//          so it also picks up studies deleted and notes written elsewhere.
 // v1.0.0 — The History list: cached summaries as cards, pull to refresh, CSV
 //          import, and a tap into the study viewer.

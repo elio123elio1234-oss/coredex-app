@@ -8,6 +8,12 @@ export * from './types/recording';
 export * from './ble/protocol';
 export * from './api/contract';
 
+/* How a device that already HAS the data asks what changed, rather than
+   asking for the data again: collection deltas + ETag/304 for single
+   documents. Protocol, not policy — the server answers it and every
+   client speaks it, so "unchanged" means the same thing everywhere. */
+export * from './api/sync';
+
 /* Who the user IS, and what registration collects about them. Same
    caveat as `ecg/` below: the web still holds its own copy under
    src/services/auth/authTypes.ts, so until it imports from here an edit
@@ -55,6 +61,8 @@ export * from './ecg/ecgAlign';
 export * from './ecg/ecgExport';
 export * from './ecg/ecgImport';
 
+// v1.6.0 — Adds the sync contract (api/sync.ts): delta envelope + cursor rules
+//          + the 304 convention, so offline-first means one thing platform-wide.
 // v1.5.0 — Adds the patient medical-card contract (card, portrait, routes), so
 //          the Profile screen renders the same record on every platform.
 // v1.4.0 — Adds the auth/registration contract (account, registration profile,

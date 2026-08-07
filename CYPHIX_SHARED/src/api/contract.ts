@@ -15,6 +15,17 @@ export interface ApiRequest {
   url: string;
   method?: ApiMethod;
   body?: unknown;
+  /**
+   * Per-request headers, MERGED over the ones the transport always sends.
+   *
+   * Deliberately narrow in purpose: `Authorization` is the transport's job
+   * and an endpoint must never set it. What this is for is the conditional
+   * GET — `If-None-Match: <etag>`, so a client that already holds a
+   * document can be told "unchanged" instead of being sent it again
+   * (see `api/sync.ts`). An endpoint that needs anything else here is
+   * probably describing transport policy in the wrong place.
+   */
+  headers?: Record<string, string>;
 }
 
 /** The normalized error every baseQuery returns ({ status, message }). */
@@ -62,5 +73,8 @@ export interface AuthTokens {
   user: SessionUser;
 }
 
+// v1.2.0 — ApiRequest carries optional per-request headers, so a client can
+//          make a conditional GET (If-None-Match) without bypassing the
+//          transport's auth and refresh policy.
 // v1.1.0 — SessionUser carries linkedPatientId (the cross-platform identity
 //          link) + the AuthTokens envelope every platform's auth client stores.

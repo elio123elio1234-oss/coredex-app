@@ -1,7 +1,45 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.28.0';
-export const APP_BUILD_LABEL = 'Settings → Account can preview any role, for debugging';
+export const APP_VERSION = '0.29.0';
+export const APP_BUILD_LABEL = 'Offline-first: the app opens from the device, then asks what changed';
+
+// v0.29.0 — The app was online-first: every screen waited for the network to
+//           re-send data the phone had already been given, and in a lift or a
+//           basement it had nothing to show at all. An ECG recording is
+//           IMMUTABLE — the trace measured last Tuesday is the same trace
+//           forever — so re-downloading it was pure waste, every cold start,
+//           for the life of the device.
+//           Inverted. The phone now keeps its own durable copy and renders
+//           from it at once; the network's only job is to answer "what
+//           changed?". Two mechanisms, chosen per resource and both defined in
+//           `@cyphix/shared` `api/sync.ts` so the server and every client
+//           agree on what "unchanged" means: a CURSOR DELTA for recordings
+//           (changed rows + tombstones, usually an empty answer), and
+//           ETag → 304 for the medical card and the portrait (the portrait is
+//           the largest thing the app downloads; a revalidation is now ~200
+//           bytes and the server does not even decrypt it).
+//           The split that makes it safe: `offlineBaseQuery` READS from the
+//           device and never judges freshness; `syncEngine` REFRESHES on
+//           sign-in, on foreground and on pull-to-refresh, writes to disk
+//           FIRST and only then invalidates the RTK tag — so the refetch it
+//           causes reads the new state instead of racing it. No polling, no
+//           timers: a phone in a pocket has nothing to learn.
+//           Heavy payloads (waveforms, portrait) are FILES under the documents
+//           directory; metadata and cursors are AsyncStorage. Deliberately no
+//           `expo-sqlite`: a native module cannot reach an installed build
+//           over the air (root §5, and the v0.27.x channel trap), and this had
+//           to be an OTA. The API is written so SQLite can replace it the day
+//           History needs real queries.
+//           ★ One account per device's cache. `claimCacheFor` runs inside the
+//           boot splash, BEFORE the app can render, and wipes documents,
+//           mirror and cursors together if the signed-in account changed —
+//           a shared phone must not show one patient a single frame of
+//           another's record. Signing out keeps the cache: same person, same
+//           device, and the tokens (what actually grants access) are cleared
+//           regardless.
+//           Writes are unchanged: they still go to the server and still fail
+//           when it cannot be reached. There is no offline write queue — see
+//           PARITY.md, where it is a tracked row rather than a silence.
 
 // v0.28.0 — "Preview as role" ported from the web's Settings page, which had
 //           been listed as NOT ported because there was no real role to switch

@@ -137,6 +137,31 @@ company.
 | Report geometry (mm grid + path) | ✅ own copy | 🔬 | 🔬 | **Now shared** in `CYPHIX_SHARED/src/ecg/ecgPath.ts` + `ecgGrid.ts`, consumed by mobile. An interval measured off the web sheet and off the phone must land on one ruler. ⚠️ The web still imports its own copies under `src/services/ecg/` and imports NOTHING from `@cyphix/shared` (verified) — until it migrates, edit both |
 | Preference persistence | ✅ (`localStorage`) | 🔬 | 🔬 | `preferencesSlice` + AsyncStorage, hydrated before first paint. **Tokens stay in SecureStore** — non-secret settings must not be joined to them |
 
+## Offline-first data layer (v0.29.0)
+
+The one row that governs this whole table: **the sync CONTRACT is shared and
+the server implements it once, so nothing here is a mobile-only protocol.**
+What is mobile-only is the device-side storage — and that is the deliberate
+divergence, spelled out row by row below.
+
+| Feature | Web | iOS | Android | Notes |
+|---|---|---|---|---|
+| Sync contract (delta envelope, cursor rules, 304 convention) | ✅ shared | ✅ shared | ✅ shared | `CYPHIX_SHARED/src/api/sync.ts`. Lives there and not in a client because "what does *unchanged* look like" is a protocol question — a server answering `304` and a client treating it as an error would produce an app that shows a blank profile **only when everything works** |
+| `GET /recordings/sync` (changed + tombstones, paged) | ✅ server | ✅ server | ✅ server | Server-side, so all three platforms can use it. Cursor is the **DB clock**, never the app server's or the device's. Migration `0002` adds `recordings.updated_at`, backfilled from `COALESCE(deleted_at, created_at)` so the first delta after deploy is not "everything changed" |
+| ETag → 304 on card + portrait | ✅ server (browser HTTP cache uses it for free) | ✅ server | ✅ server | Portrait's validator comes from `health_profiles.updated_at`, not a hash of the payload — hashing would mean decrypting 1.5 MB to discover nothing changed |
+| Device mirror of Scan History (metadata index) | ⏳ **pending** | 🔬 | 🔬 | **The divergence.** Web has no equivalent and does not need one yet: a browser tab is not in a tunnel, and the ETag work above already saves it the payloads. An IndexedDB mirror for web is a separate, tracked item — not "we forgot" |
+| Waveform files, fetched lazily, kept forever | ⏳ pending | 🔬 | 🔬 | Immutability is the licence: a trace does not change after it was measured. Only fetched when a study is actually **opened** — pre-fetching an account's whole history would be the app's biggest download on behalf of a screen nobody opened |
+| Cache-first reads (`offlineBaseQuery`) | ⏳ pending | 🔬 | 🔬 | Wraps `httpBaseQuery`; caching is **opt-in per route**, listed in one table in that file. The alternative (cache all, exempt the dangerous ones) fails open, and failing open about a medical record is not a trade worth making |
+| Last-known-good when the network is gone | ⏳ pending | 🔬 | 🔬 | Only for status `0` / `503` / `504`. A `403`, `404` or `500` is the server saying something true, and papering over it with old data hides a real fault behind a screen that looks fine |
+| Sync triggers: sign-in · foreground · pull-to-refresh | ⏳ pending | 🔬 | 🔬 | **No polling and no timer, on purpose.** A phone in a pocket has nothing to learn; the moment the screen returns is the moment the answer matters, and that is the foreground event for free. Throttled to 60 s for automatic runs; manual refresh bypasses it |
+| Write-through on mutations | ⏳ pending | 🔬 | 🔬 | Every recording mutation answers with the whole updated record, so it lands on disk before the request finishes settling instead of waiting for the next sync to discover a change this device made |
+| Cache wiped on account change, kept on sign-out | — | 🔬 | 🔬 | `claimCacheFor`, run **inside the boot splash before the app renders**. Documents, mirror and cursors are wiped *together* — a cursor that outlives its data claims the device is up to date about records it no longer has. Sign-out keeps everything: same person, same device, and the tokens are cleared regardless |
+| **Offline write queue (outbox)** | ⏳ pending | ⏳ **pending** | ⏳ **pending** | **Deliberately NOT in v0.29.0.** A capture saved with no signal still fails, exactly as before. It is the obvious next step — a BLE scan in a basement is a real scenario — but it needs conflict rules, a retry policy and a visible "not yet saved" state, and shipping half of it would be worse than shipping none. Named here so it cannot be mistaken for an oversight |
+| Sync of a patient's card the clinician is *viewing* | ⏳ pending | ⏳ pending | ⏳ pending | The engine revalidates the **signed-in patient's own** card and portrait. Another patient's card is cached on first read and revalidated only on explicit refresh. Fine while the app is patient-facing; must be closed before the clinician flows ship |
+| PHI at rest on the device: encryption | ✅ server-side (per-patient keys) | ⏳ **pending** | ⏳ **pending** | The mirror stores decrypted metadata and waveforms in the app sandbox. iOS file protection and the Android sandbox are the only guards today. `expo-secure-store` is for small secrets, not megabytes — this wants a key in the enclave and payload encryption around `deviceCache` |
+| PHI at rest: excluded from iCloud / Google backup | — | ⏳ **pending** | ⏳ pending | Files live in the documents directory (so the OS cannot sweep them), which on iOS **is** backed up. `expo-file-system`'s current API exposes no backup-exclusion flag; needs a config plugin or a native call |
+| Local DB engine | — | 🔬 AsyncStorage + files | 🔬 AsyncStorage + files | **Not SQLite, and the reason is delivery, not preference.** `expo-sqlite` is a native module and cannot reach an installed build over the air — it needs a fresh EAS build first (root §5; the v0.27.x channel trap). This had to be an OTA. The access pattern is get-by-key plus one index, which is what a KV store is for. The day History needs date ranges or note search, that flips, and `deviceCache`'s API is shaped so SQLite replaces it without anything above moving |
+
 ## Settings rows (where mobile differs from the web page, and why)
 
 | Row | Web | iOS | Android | Notes |
@@ -237,6 +262,27 @@ recording (was ~52 pt at v0.8.0 — **+71 %**), 311–425 pt wide.
   exertion, a held breath, and backgrounding the app (the trace must **stop**
   and mark itself not-live — that is the v0.23.0 watchdog). Until someone has
   done those, "the hardware works on iOS" is unproven.
+- **The v0.29.0 offline layer has never run against a deployed server.** It
+  typechecks on all three projects and bundles, which per root §6.4 proves it
+  is well-formed and nothing more. `/recordings/sync` and the two ETag routes
+  need `CYPHIX_SERVER` deployed (migration `0002` applies on boot) before the
+  phone benefits at all — until then the sync reports an error and every read
+  falls through to the network, which is the old behaviour, not a break.
+  The five things a device has to demonstrate, none of them provable here:
+  1. **Second launch is instant and offline.** Aeroplane mode, cold start —
+     History lists, a previously opened study draws its trace, the portrait is
+     there. Anything that spins is a route that was not actually cached.
+  2. **The delta is really empty.** Foreground twice in a row with nothing
+     changed and watch the server log: the second one must be one small
+     request, not a page of recordings and not a 1.5 MB portrait.
+  3. **A note written in the browser reaches the phone** on the next
+     foreground — that is the annotation routes touching the *parent*
+     recording's `updated_at`, which is the easiest thing in this change to
+     get wrong and the hardest to notice.
+  4. **A study deleted on the web disappears from the phone** — the tombstone
+     path. Absence is the one thing a delta cannot express implicitly.
+  5. **Signing in as a different account shows nothing of the first**, not
+     even for one frame, on a device that already holds a full mirror.
 - The staleness watchdog is verified only by construction. A real screen lock,
   a real walk out of BLE range and a real ESP32 brown-out have not been tried,
   and those are the events it exists for.

@@ -22,6 +22,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import BootSplash from '@/components/organisms/Auth/BootSplash';
 import OnboardingScreen from '@/screens/OnboardingScreen';
+import { claimCacheFor } from '@/services/db/cacheOwner';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { restoreSession } from './authSlice';
 
@@ -41,6 +42,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const justRegistered = useAppSelector((s) => s.auth.justRegistered);
   const [splashDone, setSplashDone] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
+  /**
+   * The account the DEVICE'S CACHED DATA has been confirmed to belong to.
+   *
+   * ★ This gate is the last point before the app can read anything off the
+   * disk, so it is where the ownership check has to happen. The sync engine
+   * checks too, but it runs from an effect INSIDE the app — by then History
+   * has already mounted and asked the mirror for a list, and if the
+   * previous user's record were still there it would have rendered it.
+   * One frame is one frame too many for that.
+   */
+  const [cacheOwner, setCacheOwner] = useState<string | null>(null);
 
   useEffect(() => {
     void dispatch(restoreSession());
@@ -57,12 +69,38 @@ export function AuthGate({ children }: { children: ReactNode }) {
     };
   }, [dispatch]);
 
+  /* Runs the instant an account resolves — on boot inside the splash it is
+     already holding, and on a mid-session sign-in before the app appears.
+     A wipe only happens when the account actually changed, so for the
+     common case this is one AsyncStorage read. */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void claimCacheFor(user.id).then(() => {
+      if (!cancelled) setCacheOwner(user.id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const stillChecking = status === 'restoring' && !gaveUp;
   if (!splashDone || stillChecking) return <BootSplash />;
 
-  return user && !justRegistered ? <>{children}</> : <OnboardingScreen />;
+  const signedIn = user && !justRegistered;
+  /* Holding the splash rather than rendering the app: see `cacheOwner`.
+     Not gated by the ceiling above, because "give up and show the app
+     anyway" would mean showing it over data whose owner is unverified —
+     and `claimCacheFor` cannot hang on anything but a storage read it
+     already handles the failure of. */
+  if (signedIn && cacheOwner !== user.id) return <BootSplash />;
+
+  return signedIn ? <>{children}</> : <OnboardingScreen />;
 }
 
+// v1.3.0 — Confirms who the device's cached data belongs to before letting the
+//          app render over it: a different account is wiped inside the splash,
+//          not after History has already drawn the previous patient's list.
 // v1.2.0 — Hands the image warm-up to App.tsx: this effect runs behind
 //          PreferencesGate, i.e. later than the images can be asked for.
 // v1.1.0 — Warms the welcome photograph inside the splash it already holds,
