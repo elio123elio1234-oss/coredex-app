@@ -464,10 +464,30 @@ export const en = {
   vfExportRaw: 'Export raw data',
   vfDelete: 'Delete recordings',
 
-  /* ── Tests / Chat tabs ── */
+  /* ── Tests tab — the test PICKER, same copy as the web TestsPage.
+        (Finished recordings live in History; this tab is "which test am
+        I doing?", not "what have I done?".) ── */
   testsTitle: 'My Tests',
-  testsEmptyTitle: 'No tests yet',
-  testsEmptyBody: 'Finish a measurement from the home screen and it will appear here.',
+  testsChooseIntro: 'Pick the test you want to do.',
+  testsConnectHint: 'Connect your watch to start a test.',
+  testsScheduledBadge: 'Scheduled',
+  testsSoonBadge: 'Coming soon',
+  measureLimbTitle: '6 Limb Leads',
+  measure12Title: 'Full 12 Leads',
+  testsLimbSub: '6 leads · arms & legs',
+  tests12Sub: '12 leads · full',
+  testsWatchHow: 'Watch how',
+  testsVideoSoon: 'Explainer video coming soon',
+  testsExplainLimb:
+    'Put the watch on your wrist and rest that hand on your leg, then touch the crown with your other hand. This reads the leads from your arms and legs.',
+  testsExplain12: 'The full test: the arm-and-leg leads first, then the six chest points.',
+  /* The chest half of the 12-lead test needs the camera guidance that only
+     the web app has today — see PARITY.md. Said plainly, because a circle
+     that does nothing when tapped is worse than one that says why. */
+  tests12MobileNote: 'The chest part is on the web app for now.',
+  testsPrevTest: 'Previous test',
+  testsNextTest: 'Next test',
+  close: 'Close',
   chatTitle: 'Chat',
   chatEmptyBody:
     'Messages with your care team will appear here, on the same thread you see on the web.',
@@ -645,6 +665,10 @@ export type TranslationKey = keyof typeof en;
 //          plus the failure codes, each mapped to one honest sentence.
 // v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
 //           sections read as "you have no conditions and no allergies".
+// v1.13.0 — Tests-tab picker copy, taken verbatim from the web locale wherever
+//           the two apps say the same sentence. `testsEmptyTitle`/`Body` are
+//           GONE: the tab is no longer a results list (History is), so a key
+//           saying "no tests yet" had nothing left to describe.
 // v1.12.0 — setAboutMaterial: the label for the resolved-glass diagnostic. Its
 //           VALUE stays English, like the build label — a bug report should
 //           quote the same string the changelog does.

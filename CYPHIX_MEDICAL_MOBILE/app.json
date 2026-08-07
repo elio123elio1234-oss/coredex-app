@@ -2,7 +2,7 @@
   "expo": {
     "name": "CYPHIX Medical",
     "slug": "elio-el-hassrouny",
-    "version": "0.27.0",
+    "version": "0.30.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "cyphix",
@@ -53,7 +53,8 @@
         {
           "faceIDPermission": "CYPHIX uses Face ID so you can open your own health record without typing your password."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "tsconfigPaths": true

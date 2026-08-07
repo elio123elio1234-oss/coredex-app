@@ -452,10 +452,25 @@ export const he: Record<TranslationKey, string> = {
   vfExportRaw: 'ייצוא נתונים גולמיים',
   vfDelete: 'מחיקת הקלטות',
 
-  /* ── בדיקות / צ׳אט ── */
+  /* ── בדיקות — מסך בחירת הבדיקה, אותו נוסח כמו בווב ── */
   testsTitle: 'הבדיקות שלי',
-  testsEmptyTitle: 'אין עדיין בדיקות',
-  testsEmptyBody: 'סיימו מדידה ממסך הבית והיא תופיע כאן.',
+  testsChooseIntro: 'בחרו את הבדיקה שתרצו לבצע.',
+  testsConnectHint: 'חברו את השעון כדי להתחיל בדיקה.',
+  testsScheduledBadge: 'נקבע לך',
+  testsSoonBadge: 'בקרוב',
+  measureLimbTitle: '6 לידים של גפיים',
+  measure12Title: '12 לידים מלא',
+  testsLimbSub: '6 לידים · ידיים ורגליים',
+  tests12Sub: '12 לידים · מלא',
+  testsWatchHow: 'צפו בהסבר',
+  testsVideoSoon: 'סרטון הסבר בקרוב',
+  testsExplainLimb:
+    'הניחו את השעון על פרק כף היד, הניחו את אותה יד על הרגל, וגעו בכתר עם היד השנייה. כך נמדדים הלידים מהידיים והרגליים.',
+  testsExplain12: 'הבדיקה המלאה: קודם הלידים של הידיים והרגליים, ואז שש נקודות החזה.',
+  tests12MobileNote: 'חלק החזה זמין בינתיים באפליקציית הווב.',
+  testsPrevTest: 'הבדיקה הקודמת',
+  testsNextTest: 'הבדיקה הבאה',
+  close: 'סגירה',
   chatTitle: 'צ׳אט',
   chatEmptyBody: 'הודעות עם הצוות המטפל יופיעו כאן, באותו שרשור שאתם רואים בווב.',
 
@@ -626,6 +641,9 @@ export const he: Record<TranslationKey, string> = {
 //          declining a question must be able to read what they decline.
 // v1.10.0 — profileLoadFailed: a card that did not load must say so, or empty
 //           sections read as "you have no conditions and no allergies".
+// v1.13.0 — Tests-tab picker copy, matching en.ts key for key. The 12-lead
+//           "coming soon" line is written as a place the test DOES work, not
+//           as an apology.
 // v1.12.0 — setAboutMaterial, matching en.ts key for key.
 // v1.11.0 — Profile-photo sheet copy, matching en.ts key for key.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the

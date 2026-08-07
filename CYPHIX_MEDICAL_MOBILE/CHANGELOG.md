@@ -1,5 +1,94 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.30.0 — 2026-08-07 — My Tests: one big circle per test, swipe or arrow between them
+
+The Tests tab has been a placeholder since v0.2 — a card saying results would
+turn up here one day. It was also the wrong job: finished recordings already
+live in **History**. On the web, `/tests` answers a different and more useful
+question — *which test am I doing?* — and that is what this tab now is.
+
+### The web's grid does not survive a phone, and the fix is not a smaller grid
+
+The web lays its choices out as `grid-template-columns: repeat(3, 1fr)`. Ported
+literally onto a 390 pt screen each photograph becomes a ~112 pt thumbnail, and
+that quietly destroys the design's whole premise: **the photograph is the
+interface.** An older patient recognises "the watch on the wrist, hand on the
+leg" long before they read the words "6 Limb Leads". A thumbnail is not a
+photograph, it is an icon — and if these were going to be icons, the web would
+have used icons (it tried; see that page's own header comment).
+
+So the phone gives **one circle the whole width** — `min(58 vw, 34 vh, 264)`,
+roughly 2.5× the web's phone size — and pages between the tests. Two ways in,
+deliberately, because the two failure modes are opposite: a patient who does not
+know to swipe never discovers the second test, and a patient with unsteady hands
+cannot swipe reliably. So: **swipe, or tap an arrow.** The dots underneath are
+the only standing evidence that a second test exists at all, which is the cost
+of one card owning the screen and is why they render even while both arrows are
+dimmed.
+
+### Two tests, not three
+
+At the user's instruction the phone offers **6 limb leads** or **the full 12**.
+The web's third choice — chest-only — is dropped: it is not really a third way
+to measure so much as half of the 12-lead test, and three near-identical circles
+make the choice slower rather than richer.
+
+### 12-lead is shown, and says honestly that it cannot start yet
+
+The full test's chest half needs the guided camera protocol — the ONNX pose
+model and the V1→V6 state machine — which exists only in the web app. The
+circle is therefore present with its half-limb/half-chest artwork, badged
+*Coming soon*, and says where the test does work.
+
+It is deliberately **not** wired to the limb exam the way the web route is
+(`navigate(type === 'chest' ? '/measure/chest' : '/measure/limb')` sends
+`12lead` to the limb page). Recording six leads under a label that says twelve
+is the one outcome worse than not offering the test at all — root `CLAUDE.md`
+§2.3 is about every platform giving the *same* answer, not about every platform
+having *a* button. Its "Watch how" stays enabled, because reading what a test
+involves is exactly what someone does while waiting to be able to do it.
+
+### The explainer clips actually play now
+
+`ExplainerVideoSheet` is `expo-video` inside this app's own `BottomSheet` — a
+sheet rather than the web's centred full-screen card, because that is what a
+phone does with something you opened from the page you were reading and will
+dismiss back to. The 6-limb tutorial is the web's own `6limb-tutorial.mp4`,
+bundled. A test with no clip yet shows its still behind a "coming soon" badge,
+exactly as the web does, and will play with no other change the moment a file is
+listed in `MEASUREMENT_GUIDE_VIDEO`.
+
+Two things worth knowing about that player:
+
+- **`allowsFullscreen` is off on purpose.** iOS presents fullscreen video with
+  AVPlayerViewController, which manages its **own** orientation — and every
+  route in this app but the exam is declared `portrait_up` on the stack.
+  Handing a second party the orientation API is precisely the bug post-mortem'd
+  at the top of `RootNavigator`. The sheet is sized generously instead.
+- **The player is only alive while the sheet is open.** `useVideoPlayer` is a
+  hook and runs on every render of the component whether or not the sheet is
+  showing; it is fed `null` while closed so a 2.7 MB clip is not decoded behind
+  the Tests tab from the moment the app launches.
+
+### ⚠️ This release is a REBUILD, not an OTA
+
+`expo-video` is a native module, so §5A.1 puts this on the build path:
+`eas build` → `eas submit`, not `eas update`. Accordingly `app.json`'s `version`
+was bumped to **0.30.0** alongside `version.ts` — the one situation in which
+those two numbers move together (§5A.2). They had drifted apart (0.27.0 vs
+0.29.0) exactly as intended by OTA-only releases; this realigns them, and the
+new binary starts runtime **0.30.0**. Every OTA after this one must be published
+while `app.json` still reads 0.30.0, or it targets a runtime no installed build
+has and reaches nobody, with no error.
+
+### Not verified on a device
+
+Typecheck, both bundles and `expo-doctor` are clean, which per §6.4 means the
+code is well-formed and nothing more. A carousel is exactly the kind of feature
+those checks cannot judge — page snapping, whether the arrows really land on the
+circle's centre, whether the clip plays and at what size. Every row added to
+`PARITY.md` is `🔬`.
+
 ## v0.29.0 — 2026-08-07 — Offline-first: open from the device, then ask what changed
 
 Until this version the app was **online-first**, and that was the wrong shape

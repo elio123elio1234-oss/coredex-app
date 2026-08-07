@@ -1,8 +1,19 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.29.0';
-export const APP_BUILD_LABEL = 'Offline-first: the app opens from the device, then asks what changed';
+export const APP_VERSION = '0.30.0';
+export const APP_BUILD_LABEL = 'My Tests: one big circle per test, swipe or arrow between them';
 
+// v0.30.0 — The Tests tab stopped being a placeholder and became the web's test
+//           PICKER. One circle owns the screen instead of the web's 3-up grid,
+//           because the photograph is the interface here and a thumbnail is not
+//           a photograph. Two tests, at the user's instruction: 6 limb leads or
+//           the full 12.
+//           ⚠️ THIS RELEASE IS A NATIVE REBUILD, NOT AN OTA. `expo-video` was
+//           added for the explainer clips, and `app.json`'s version was bumped
+//           to 0.30.0 WITH this file — which is the ONLY situation in which the
+//           two move together (mobile CLAUDE.md §5A.2). Every OTA after this one
+//           must be published while app.json still reads 0.30.0, or it targets a
+//           runtime no installed build has and reaches nobody, silently.
 // v0.29.0 — The app was online-first: every screen waited for the network to
 //           re-send data the phone had already been given, and in a lift or a
 //           basement it had nothing to show at all. An ECG recording is
