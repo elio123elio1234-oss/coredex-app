@@ -52,6 +52,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "ship": "powershell -ExecutionPolicy Bypass -File ./scripts/ship.ps1",
+    "ship:ota": "powershell -ExecutionPolicy Bypass -File ./scripts/ship.ps1 -Path ota",
+    "ship:rebuild": "powershell -ExecutionPolicy Bypass -File ./scripts/ship.ps1 -Path rebuild",
     "prebuild": "expo prebuild"
   },
   "private": true
