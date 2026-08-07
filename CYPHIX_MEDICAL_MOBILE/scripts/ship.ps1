@@ -34,12 +34,39 @@
 # ==================================================================
 
 param(
-    # 'auto' inspects git; 'ota' and 'rebuild' force a path.
+    # 'auto' asks EAS what is installed; 'ota' and 'rebuild' force a path.
     [ValidateSet('auto', 'ota', 'rebuild')]
-    [string]$Path = 'auto'
+    [string]$Path = 'auto',
+
+    # Run everything EXCEPT the publish: the version gate, the git check,
+    # tsc, both bundles, expo-doctor - then say which path it would take
+    # and stop. Exists because this script's own bugs have twice only been
+    # reachable by running it for real, and "for real" otherwise means a
+    # 40-minute build or an update published to nobody.
+    [switch]$DryRun
 )
 
-$ErrorActionPreference = 'Stop'
+# ---------------------------------------------------------------
+#  ** DO NOT SET $ErrorActionPreference = 'Stop' IN THIS SCRIPT **
+# ---------------------------------------------------------------
+#  v1.2.0 did, and it killed the script on a version notice.
+#
+#  In Windows PowerShell 5.1, ANY line a native .exe writes to stderr is
+#  wrapped in an ErrorRecord (NativeCommandError) - and under 'Stop' that
+#  is a TERMINATING error, whether or not the program actually failed.
+#  eas-cli writes "eas-cli@X is now available" to stderr. expo-doctor
+#  writes "env: load .env". Neither is a failure, and both would stop the
+#  run dead with a wall of red that names node.exe rather than the real
+#  cause.
+#
+#  Redirecting (2>$null) is NOT the fix - 5.1 still raises the record
+#  before the redirection discards it. The fix is to stop treating a
+#  program's chatter as an exception. Every external call here is checked
+#  by its real exit code (Assert-Ok), which is the only honest signal a
+#  native command gives, so nothing is lost by this.
+#
+#  Cmdlet failures are guarded explicitly instead - see Read-Or-Die.
+$ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
@@ -55,10 +82,20 @@ function Assert-Ok([string]$what) {
     if ($LASTEXITCODE -ne 0) { throw "$what failed (exit $LASTEXITCODE). Read the output above." }
 }
 
+# Without a global 'Stop', a missing file would otherwise return $null and
+# fail later as something confusing. Fail where the problem actually is.
+function Read-Or-Die([string]$file) {
+    if (-not (Test-Path $file)) { throw "Cannot find $file - is this being run from the mobile project?" }
+    return Get-Content $file -Raw
+}
+
 # ---- Who are we shipping? ----------------------------------------
-$appJson = Get-Content "$root\app.json" -Raw | ConvertFrom-Json
+$appJson = Read-Or-Die "$root\app.json" | ConvertFrom-Json
 $nativeVersion = $appJson.expo.version
-$badge = (Select-String -Path "$root\src\config\version.ts" -Pattern "APP_VERSION\s*=\s*'([^']+)'").Matches[0].Groups[1].Value
+$versionTs = Read-Or-Die "$root\src\config\version.ts"
+$badgeMatch = [regex]::Match($versionTs, "APP_VERSION\s*=\s*'([^']+)'")
+if (-not $badgeMatch.Success) { throw "Could not read APP_VERSION out of src/config/version.ts." }
+$badge = $badgeMatch.Groups[1].Value
 
 Say "CYPHIX Medical - badge v$badge  |  native runtime v$nativeVersion"
 
@@ -66,7 +103,10 @@ Say "CYPHIX Medical - badge v$badge  |  native runtime v$nativeVersion"
 # Ask EAS what the newest finished production build is. This is the only
 # authoritative answer, and both decisions below hang off it.
 Say "Asking EAS what the newest finished production build is..."
-$raw = npx eas-cli build:list --platform ios --profile production --status finished --limit 1 --json --non-interactive 2>$null
+# stderr is deliberately NOT redirected: 2>$null does not prevent 5.1 from
+# raising the record, and eas-cli's notices are worth seeing anyway. Only
+# stdout lands in $raw, which is where the JSON is.
+$raw = npx eas-cli build:list --platform ios --profile production --status finished --limit 1 --json --non-interactive
 Assert-Ok "eas build:list"
 
 # eas-cli prints upgrade notices around its JSON, so start at the first
@@ -119,7 +159,7 @@ if ($Path -eq 'auto') {
         $Path = 'rebuild'
     }
     elseif ($builtFrom) {
-        $touched = git diff --name-only $builtFrom HEAD 2>$null
+        $touched = git diff --name-only $builtFrom HEAD
         $native = $touched | Where-Object {
             $_ -match 'CYPHIX_MEDICAL_MOBILE/(modules/|app\.json|package\.json|eas\.json)'
         }
@@ -153,6 +193,12 @@ npx expo-doctor
 Assert-Ok "expo-doctor"
 
 # ---- Ship --------------------------------------------------------
+if ($DryRun) {
+    Say "DRY RUN - everything above passed. Path would be: $($Path.ToUpper())" 'Green'
+    Write-Host "  Nothing was published. Run without -DryRun to ship." -ForegroundColor DarkGray
+    exit 0
+}
+
 if ($Path -eq 'rebuild') {
     Say "REBUILD path: compiling on Expo's Macs, then submitting to TestFlight." 'Green'
     Write-Host "  This takes ~30-40 minutes. It is safe to walk away." -ForegroundColor DarkGray
@@ -186,6 +232,16 @@ else {
     Write-Host "  The badge should then read v$badge." -ForegroundColor DarkGray
 }
 
+# v1.3.0 - Dropped $ErrorActionPreference = 'Stop', which killed the run on a
+#          version notice. In 5.1 ANY stderr line from a native .exe becomes a
+#          TERMINATING error under 'Stop' - so eas-cli's "a new version is
+#          available" and expo-doctor's "env: load .env" both stopped the
+#          script dead, blaming node.exe. 2>$null does not help; 5.1 raises the
+#          record before the redirection discards it. Exit codes were already
+#          being checked properly (Assert-Ok), so nothing is lost. ** This was
+#          missed because it was verified by running the eas command ALONE,
+#          where the preference is the default 'Continue' - the logic was
+#          tested, the environment it runs in was not.
 # v1.2.0 - The OTA/rebuild decision is CHECKED against EAS, not guessed from
 #          git. v1.1.0 read `git diff HEAD~1 HEAD` and so shipped the exact
 #          failure this script exists to prevent: the native change was two
