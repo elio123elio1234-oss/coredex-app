@@ -177,6 +177,19 @@ if ($Path -eq 'ota' -and $installedRuntime -ne $nativeVersion) {
     throw "Refusing to publish an OTA: app.json is $nativeVersion but the installed build runs $installedRuntime. It would reach nobody. Run 'npm run ship:rebuild'."
 }
 
+# ---- Can the submit step run unattended? -------------------------
+# Checked HERE, before a 40-minute build, not after one. `--auto-submit
+# --non-interactive` needs `ascAppId` in eas.json's submit profile; without
+# it eas-cli has no way to ask which App Store Connect app this is and
+# gives up - which is a miserable thing to discover once the build is done.
+$easJson = Read-Or-Die "$root\eas.json" | ConvertFrom-Json
+$ascAppId = $easJson.submit.production.ascAppId
+if ($Path -eq 'rebuild' -and -not $ascAppId) {
+    Write-Host "  NOTE: eas.json has no submit.production.ascAppId." -ForegroundColor Yellow
+    Write-Host "  The submit step will therefore ask you ONCE which App Store Connect" -ForegroundColor Yellow
+    Write-Host "  app this is. Put the id in eas.json afterwards and it never asks again." -ForegroundColor Yellow
+}
+
 # ---- The checks that are cheaper than a bad build ----------------
 Say "Typechecking..."
 npx tsc --noEmit
@@ -204,8 +217,20 @@ if ($Path -eq 'rebuild') {
     Write-Host "  This takes ~30-40 minutes. It is safe to walk away." -ForegroundColor DarkGray
     Write-Host "  Runtime for this binary will be $nativeVersion." -ForegroundColor DarkGray
 
-    npx eas-cli build --platform ios --profile production --auto-submit --non-interactive
+    # ** Build and submit are two commands, not `--auto-submit`. **
+    # With --auto-submit the submission config is resolved by the same
+    # invocation, so a missing ascAppId fails the WHOLE command - after the
+    # build has been queued, reporting "build command failed" for something
+    # that is not a build problem at all. Split, the build stands on its own
+    # and the submit can be retried, or answered by hand, without rebuilding.
+    npx eas-cli build --platform ios --profile production --non-interactive
     Assert-Ok "eas build"
+
+    # Deliberately NOT --non-interactive: if eas.json carries an ascAppId this
+    # runs unattended anyway, and if it does not, one question beats a failure.
+    Say "Submitting to App Store Connect..."
+    npx eas-cli submit --platform ios --latest
+    Assert-Ok "eas submit"
 
     Say "Built and sent to App Store Connect." 'Green'
     Write-Host "  TestFlight processing takes another 5-15 minutes; you get an email." -ForegroundColor DarkGray
@@ -232,6 +257,15 @@ else {
     Write-Host "  The badge should then read v$badge." -ForegroundColor DarkGray
 }
 
+# v1.4.0 - Build and submit are two commands instead of --auto-submit, and the
+#          submit profile is checked BEFORE the build rather than after it.
+#          `--auto-submit --non-interactive` needs eas.json to carry an
+#          ascAppId; without one eas-cli cannot ask which App Store Connect app
+#          this is, so it failed the whole invocation and reported "build
+#          command failed" - for something that was not a build problem, after
+#          the build had already been queued and was compiling fine. Split, the
+#          build stands on its own and the submit is retryable without a
+#          rebuild.
 # v1.3.0 - Dropped $ErrorActionPreference = 'Stop', which killed the run on a
 #          version notice. In 5.1 ANY stderr line from a native .exe becomes a
 #          TERMINATING error under 'Stop' - so eas-cli's "a new version is
