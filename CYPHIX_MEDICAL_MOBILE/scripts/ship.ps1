@@ -62,22 +62,79 @@ $badge = (Select-String -Path "$root\src\config\version.ts" -Pattern "APP_VERSIO
 
 Say "CYPHIX Medical - badge v$badge  |  native runtime v$nativeVersion"
 
+# ---- What is actually INSTALLED? ---------------------------------
+# Ask EAS what the newest finished production build is. This is the only
+# authoritative answer, and both decisions below hang off it.
+Say "Asking EAS what the newest finished production build is..."
+$raw = npx eas-cli build:list --platform ios --profile production --status finished --limit 1 --json --non-interactive 2>$null
+Assert-Ok "eas build:list"
+
+# eas-cli prints upgrade notices around its JSON, so start at the first
+# line that actually opens an array rather than trusting the whole stream.
+$lines = @($raw)
+$start = ($lines | Select-String -Pattern '^\s*\[' | Select-Object -First 1).LineNumber
+if (-not $start) { throw "Could not read a build list from EAS. Run 'npx eas-cli build:list' by hand." }
+$builds = ($lines[($start - 1)..($lines.Count - 1)] -join "`n") | ConvertFrom-Json
+
+if ($builds.Count -eq 0) {
+    Write-Host "  No finished production build exists yet - nothing can receive an OTA." -ForegroundColor Yellow
+    $installedRuntime = $null
+}
+else {
+    $installedRuntime = $builds[0].runtimeVersion
+    $builtFrom = $builds[0].gitCommitHash
+    Write-Host "  Newest build: runtime $installedRuntime (built from $($builtFrom.Substring(0,7)))" -ForegroundColor DarkGray
+}
+
 # ---- Which path? -------------------------------------------------
-# Native means: the Swift/Kotlin modules, the app config, or the
-# dependency list (a new library with native code is the usual case).
+#
+# ** THE RULE, AND WHY IT IS NOT A GUESS FROM GIT **
+#
+# v1.1.0 decided this from `git diff HEAD~1 HEAD`, and that shipped the
+# exact failure this script exists to prevent. The native change
+# (expo-video + the app.json version bump) was TWO commits back; the last
+# commit was a fix to this script itself, touching only scripts/. So it
+# concluded "JS only" and published an OTA for runtime 0.30.0 to a fleet
+# running runtime 0.27.0 - which reached nobody, silently.
+#
+# "The last commit" was never the right question. It is not the same as
+# "what has not shipped yet", and it never was. The right question is the
+# invariant itself (CLAUDE.md 5A.2):
+#
+#   An OTA is deliverable ONLY IF app.json's version equals the runtime
+#   version of the build people are actually running.
+#
+# That is checked against EAS, not inferred - so no commit boundary, no
+# rebase and no branch can fool it. The git check is kept underneath as a
+# SECOND trigger (native files changed since the installed build's own
+# commit), because the two catch different mistakes: the version gate
+# catches a bumped app.json, the diff catches native code added without
+# one.
 if ($Path -eq 'auto') {
-    $touched = git diff --name-only HEAD~1 HEAD 2>$null
-    $native = $touched | Where-Object {
-        $_ -match 'CYPHIX_MEDICAL_MOBILE/(modules/|app\.json|package\.json|eas\.json)'
-    }
-    if ($native) {
-        Write-Host "  Native surface changed in the last commit:" -ForegroundColor Yellow
-        $native | ForEach-Object { Write-Host "    $_" -ForegroundColor Yellow }
+    $Path = 'ota'
+
+    if ($installedRuntime -ne $nativeVersion) {
+        Write-Host "  REBUILD REQUIRED: app.json says $nativeVersion, the installed build runs $installedRuntime." -ForegroundColor Yellow
+        Write-Host "  An OTA published now would target a runtime nothing is running." -ForegroundColor Yellow
         $Path = 'rebuild'
     }
-    else {
-        $Path = 'ota'
+    elseif ($builtFrom) {
+        $touched = git diff --name-only $builtFrom HEAD 2>$null
+        $native = $touched | Where-Object {
+            $_ -match 'CYPHIX_MEDICAL_MOBILE/(modules/|app\.json|package\.json|eas\.json)'
+        }
+        if ($native) {
+            Write-Host "  REBUILD REQUIRED: native surface changed since the installed build:" -ForegroundColor Yellow
+            $native | ForEach-Object { Write-Host "    $_" -ForegroundColor Yellow }
+            $Path = 'rebuild'
+        }
     }
+}
+
+# A forced -Path ota is still not allowed to publish into a void. Refusing
+# is the whole point: the failure it prevents is invisible on the phone.
+if ($Path -eq 'ota' -and $installedRuntime -ne $nativeVersion) {
+    throw "Refusing to publish an OTA: app.json is $nativeVersion but the installed build runs $installedRuntime. It would reach nobody. Run 'npm run ship:rebuild'."
 }
 
 # ---- The checks that are cheaper than a bad build ----------------
@@ -129,6 +186,15 @@ else {
     Write-Host "  The badge should then read v$badge." -ForegroundColor DarkGray
 }
 
+# v1.2.0 - The OTA/rebuild decision is CHECKED against EAS, not guessed from
+#          git. v1.1.0 read `git diff HEAD~1 HEAD` and so shipped the exact
+#          failure this script exists to prevent: the native change was two
+#          commits back, the last commit touched only scripts/, and it
+#          published an OTA for runtime 0.30.0 to a fleet running 0.27.0 -
+#          delivered to nobody, with no error. "The last commit" is not "what
+#          has not shipped yet". It now compares app.json's version with the
+#          runtime of the newest finished production build, and REFUSES to
+#          publish an OTA into a void even when the path is forced.
 # v1.1.0 - Rewritten PURE ASCII. v1.0.0 could not be parsed at all on Windows
 #          PowerShell 5.1: a .ps1 with no BOM is read as the ANSI codepage, so
 #          the em dashes in its error strings became three characters each, one
