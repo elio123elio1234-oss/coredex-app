@@ -386,8 +386,7 @@ export const en = {
   insMatEnrolling: 'Baseline forming',
   insMatEstablished: 'Baseline established',
   insEnrollLabel: 'Studies enrolled',
-  insEnrollHint:
-    '{n} more clean studies and the baseline is set. Early studies shape it the most.',
+  insEnrollHint: '{n} more clean studies and the baseline is set.',
   insBuiltFrom: '{n} studies',
   insUpdated: 'Updated {date}',
   /* The ring's own caption — it names what the number in the middle IS,
@@ -414,18 +413,15 @@ export const en = {
      header. A caption promising a narrowing range would promise the one
      thing the maths will not do. */
   insBuiltMeaning:
-    'One study shows only its own beat-to-beat noise. The shaded range fills out as studies are added — that is the app learning how much you actually vary.',
+    'One study shows only its own beat-to-beat noise. The shaded range fills out as studies are added.',
 
   /* Beats left out of one study's average. */
   insRejectedTitle: '{n} beats not averaged in',
-  insRejectedBody:
-    'A beat leaves the average for its timing — it came early, so it started somewhere other than the usual place — or for its shape. Both are ordinary findings in a healthy recording. The heavy line is the beat that was used.',
+  insRejectedBody: 'Heavy line: the beat that was used. Both reasons are ordinary.',
   insRejPremature: 'Came early',
   insRejDissimilar: 'Different shape',
   insRejTruncated: 'Cut off by the end of the recording',
   insRejMatch: '{n}% match',
-  insCoverageBody:
-    'Studies behind each lead. V1–V6 fill in on their own when a 12-lead test is recorded.',
 
   insLatestTitle: 'Latest study',
   insMatch: '{n}% match',
@@ -434,11 +430,10 @@ export const en = {
      number nobody can interpret is worse than no number: it worries
      without informing. Says what was compared and what it is not. */
   insDeviationMeaning:
-    'Each figure is this study measured against your own earlier ones — not against a normal range. A difference is something to look at with your doctor, not a result.',
+    'Measured against your own earlier studies, not a normal range. A difference is something to look at with your doctor.',
 
   insFlaggedTitle: 'Early studies that disagree',
-  insFlaggedBody:
-    'The first studies weigh most, so one recorded with a loose electrode would bend the baseline everything else is compared against. Open these and check them.',
+  insFlaggedBody: 'The first studies shape the baseline most. Open these and check them.',
 
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',

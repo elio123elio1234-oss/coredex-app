@@ -10,23 +10,37 @@
                   ┊    ╰───╯
                   ┊ ← the caliper, under the finger
 
-   ══ WHY IT IS DRAWN ON REAL PAPER ══
-   The temptation with a feature called "ECG ID" is to invent a signature
-   look — a glowing line on a dark field. That would be a picture of a
-   heartbeat rather than a heartbeat, and this is the one screen where a
-   cardiologist might actually want to measure something: the whole claim
-   is that the median beat shows detail no single beat does. So it is the
-   same millimetre paper and the same `buildEcgGrid`/`buildEcgPath` as the
-   report (`EcgStripSvg`).
+   ══ THE GEOMETRY IS THE REPORT'S. THE SURFACE IS NOT. ══
+   Same millimetre grid, same `buildEcgGrid`/`buildEcgPath`, same standard
+   scales as the report — because the whole claim of a median beat is that
+   it shows detail no single beat does, and detail you cannot measure is
+   decoration.
 
-   ══ THE PAPER IS QUIETER THAN THE REPORT'S, ON PURPOSE ══
-   The report is a document: its grid is the ruler and is meant to be
-   read. Here the grid is CONTEXT for one curve, and at report weight it
-   dominated the card — reported from the phone as looking "like a drawing
-   on the screen" rather than like data. The grid is therefore dimmed, the
-   sheet has no border of its own (it sits inside the card's), and the
-   trace is heavier. Nothing about the geometry changed: a small square is
-   still a small square, and the scale is still printed on the sheet.
+   But it is NOT drawn on the report's white sheet. `EcgStripSvg`'s header
+   is emphatic that CYPHIX's report paper is white with a blue grid and is
+   not to be re-invented — and that rule is about the REPORT, which is a
+   document: a printable page, on paper, with its own edges. This is an
+   instrument panel on a screen. Boxed on white paper inside a white card
+   on a grey page it was reported as "a drawing on the screen rather than
+   information about my heart", and that reading was right: three nested
+   rectangles announce a picture pasted into a layout.
+
+   So the trace is drawn straight onto the app's own background, full
+   bleed, with the grid as a faint tint of the brand. Nothing measurable
+   changed — a small square is still 20 ms, the scale is still printed —
+   but the ECG stops being a picture ON the screen and becomes the screen.
+
+   ══ ★ THE BOX NEVER RESIZES ══
+   The height and the gain were derived per lead from that lead's own
+   amplitude. Every lead therefore drew a different-sized rectangle, and
+   dragging the builder resized it under the finger — reported, exactly
+   right, as feeling unstable.
+
+   Both are now handed IN by the caller, chosen once from the tallest lead
+   in the whole identity, which is what a real 12-lead sheet does: one
+   gain, one channel height, every lead on it. A small lead then draws as
+   a small trace in the same box — which is true, and is information. A
+   lead scaled to fill its own box is the picture that lies.
 
    ══ 50 mm/s, AND WHY THAT IS NOT A LIBERTY ══
    One beat is 700 ms. At the 25 mm/s of a rhythm strip that is 17.5 mm of
@@ -41,10 +55,11 @@
    QRS measured by eye off that reads ~30 % narrow (`EcgStripSvg` header).
 
    The gain drops to 5 mm/mV — also standard, also printed — only when a
-   complex is too tall for the sheet at 10. Clipping the R wave to protect
-   the layout would be the one change that makes this trace lie.
+   complex is too tall for the sheet at 10 (`pickGain`). Clipping the R
+   wave to protect the layout would be the one change that makes this
+   trace lie.
 
-   ══ THE CALIPER'S READOUT IS NOT ON THE PAPER ══
+   ══ THE CALIPER'S READOUT IS NOT ON THE SHEET ══
    It is handed up to the caller and drawn in the chrome. History's
    calipers learned this the hard way in v0.16.0: a readout floating on
    the trace covers the deflections whose position it reports.
@@ -62,9 +77,29 @@ import {
   CORRIDOR_BAND_SIGMA,
   STANDARD_MM_PER_MV,
 } from '@cyphix/shared';
-import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
-import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
+
+/* ── The SCREEN palette ───────────────────────────────────────────
+   Not `ECG_PAPER_*`. Those are the report's, they carry a white sheet,
+   and a white sheet is what turned this panel into a picture pasted onto
+   a page (see the header). Here the ground is the app's own background
+   and only the marks are drawn, as a faint tint of the brand.
+
+   The TRACE colours are the report's, deliberately unchanged: navy in
+   light, green in dark. That is the brand's ECG and a reader should meet
+   the same trace everywhere; it is the paper under it that had to go. */
+export const SCREEN_LIGHT = {
+  gridMinor: 'rgba(13, 32, 65, 0.07)',
+  gridMajor: 'rgba(13, 32, 65, 0.15)',
+  trace: '#0A2540',
+  marker: 'rgba(13, 32, 65, 0.34)',
+};
+export const SCREEN_DARK = {
+  gridMinor: 'rgba(159, 180, 216, 0.10)',
+  gridMajor: 'rgba(159, 180, 216, 0.19)',
+  trace: '#4ADE80',
+  marker: 'rgba(159, 180, 216, 0.42)',
+};
 
 /** What the caliper is sitting on right now. Null when it is parked. */
 export interface CaliperReading {
@@ -90,7 +125,13 @@ interface Props {
   overlay?: Float32Array | null;
   /** Rendered width in points; the mm sheet scales into it. */
   width: number;
-  /** Lead name printed on the paper. */
+  /**
+   * ★ Gain and channel height, chosen ONCE by the caller for every lead —
+   * see the header. Passing them in is what stops the box resizing.
+   */
+  mmPerMv: number;
+  heightMm?: number;
+  /** Lead name printed on the sheet. */
   label: string;
   /** Extra note appended to the scale caption. */
   caption?: string;
@@ -100,17 +141,38 @@ interface Props {
 
 /** Detail sweep speed — the second clinical standard. See the header. */
 export const SIGNATURE_MM_PER_SEC = 50;
-/** Half-standard gain, used only when a complex will not fit at 10 mm/mV. */
-const HALF_MM_PER_MV = 5;
 
 /** Leading margin so the P wave does not start on the sheet edge. */
 const LEAD_IN_MM = 3;
 /** Trailing margin so the T wave does not run into it either. */
 const TAIL_MM = 2;
-/** Never draw a sheet shorter than this, however small the beat. */
-const MIN_HEIGHT_MM = 20;
-/** …nor taller than this, or the card owns the screen. */
-const MAX_HEIGHT_MM = 30;
+/** One channel height for every lead, always. See the header. */
+export const SIGNATURE_HEIGHT_MM = 26;
+/** Space kept clear of the sheet edges so a tall R is not shaved by it. */
+const HEADROOM_MM = 5;
+
+/**
+ * The standard gains, largest first. Only these three: a gain a clinician
+ * has not spent a career reading is a gain nobody can measure against.
+ */
+const STANDARD_GAINS = [STANDARD_MM_PER_MV, 5, 2.5] as const;
+
+/**
+ * The largest STANDARD gain at which `peakMv` still fits the channel.
+ *
+ * Called once per identity with the tallest lead's peak, so switching
+ * leads or dragging the builder cannot change the scale under the reader.
+ * Falls through to the smallest gain rather than inventing a fitted one —
+ * an off-standard scale is how a QRS comes to be measured ~30 % narrow
+ * (`ecgPath.ts`).
+ */
+export function pickGain(peakMv: number, heightMm = SIGNATURE_HEIGHT_MM): number {
+  const usable = heightMm - HEADROOM_MM;
+  for (const gain of STANDARD_GAINS) {
+    if (2 * peakMv * gain <= usable) return gain;
+  }
+  return STANDARD_GAINS[STANDARD_GAINS.length - 1];
+}
 
 /**
  * The caliper ticks once per small square — 20 ms at 50 mm/s.
@@ -168,13 +230,15 @@ export default function BeatSignature({
   rIndex,
   overlay,
   width,
+  mmPerMv,
+  heightMm = SIGNATURE_HEIGHT_MM,
   label,
   caption,
   onCaliper,
 }: Props) {
   const t = useTheme();
   const dark = useIsDark();
-  const c = dark ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
+  const c = dark ? SCREEN_DARK : SCREEN_LIGHT;
 
   const mmPerSec = SIGNATURE_MM_PER_SEC;
 
@@ -186,25 +250,6 @@ export default function BeatSignature({
   const geometry = useMemo(() => {
     const durationSec = baseline.length / sampleRate;
     const widthMm = LEAD_IN_MM + durationSec * mmPerSec + TAIL_MM;
-
-    /* ★ Sized from the CORRIDOR'S outer edge, not from the trace — the
-       corridor is the part a reader is judging, and one clipped into
-       looking narrow would understate exactly the thing it exists to
-       show. The overlay counts too, or comparing would crop the study. */
-    let peak = 0;
-    for (let i = 0; i < baseline.length; i++) {
-      const band = (tolerance[i] ?? 0) * CORRIDOR_BAND_SIGMA;
-      peak = Math.max(peak, Math.abs(baseline[i]) + band);
-    }
-    if (overlay) for (let i = 0; i < overlay.length; i++) peak = Math.max(peak, Math.abs(overlay[i]));
-
-    /* Standard gain first; half-standard ONLY if the complex would not fit.
-       The sheet grows before the gain shrinks, and both are printed. */
-    const needed = (gain: number) => Math.ceil(2 * peak * gain + 6);
-    const mmPerMv =
-      needed(STANDARD_MM_PER_MV) <= MAX_HEIGHT_MM ? STANDARD_MM_PER_MV : HALF_MM_PER_MV;
-
-    const heightMm = Math.min(MAX_HEIGHT_MM, Math.max(MIN_HEIGHT_MM, needed(mmPerMv)));
     const baselineMm = heightMm / 2;
     const clipMm = baselineMm - 0.6;
 
@@ -220,9 +265,7 @@ export default function BeatSignature({
 
     return {
       widthMm,
-      heightMm,
       baselineMm,
-      mmPerMv,
       clipMm,
       grid: buildEcgGrid(widthMm, heightMm),
       corridor: buildCorridor(baseline, tolerance, {
@@ -237,11 +280,11 @@ export default function BeatSignature({
       ghost: overlay ? buildEcgPath(overlay, pathOpts) : '',
       rX: LEAD_IN_MM + (rIndex / sampleRate) * mmPerSec,
     };
-  }, [baseline, tolerance, overlay, sampleRate, rIndex, mmPerSec]);
+  }, [baseline, tolerance, overlay, sampleRate, rIndex, mmPerSec, mmPerMv, heightMm]);
 
   // Uniform scale — the grid squares must stay SQUARE or every interval
   // measured off this sheet is wrong.
-  const height = (width * geometry.heightMm) / geometry.widthMm;
+  const height = (width * heightMm) / geometry.widthMm;
   const pxPerMm = width / geometry.widthMm;
 
   /** Screen x (points) → sample index, clamped to the drawn beat. */
@@ -318,21 +361,19 @@ export default function BeatSignature({
     cursor === null
       ? null
       : geometry.baselineMm -
-        Math.max(
-          -geometry.clipMm,
-          Math.min(geometry.clipMm, baseline[cursor] * geometry.mmPerMv),
-        );
+        Math.max(-geometry.clipMm, Math.min(geometry.clipMm, baseline[cursor] * mmPerMv));
 
   const sheet = (
-    <View style={[styles.sheet, { width, height, backgroundColor: c.paper }]}>
+    /* No background fill and no rounded corners: the sheet IS the page
+       here. A `backgroundColor` would put the rectangle straight back. */
+    <View style={{ width, height }}>
       <Svg
         width={width}
         height={height}
-        viewBox={`0 0 ${geometry.widthMm} ${geometry.heightMm}`}
+        viewBox={`0 0 ${geometry.widthMm} ${heightMm}`}
         preserveAspectRatio="xMidYMid meet"
         accessibilityLabel={`ECG ID · lead ${label}`}
       >
-        <Rect width={geometry.widthMm} height={geometry.heightMm} fill={c.paper} />
 
         {/* Dimmed against the report's grid — context, not the subject. */}
         <Path d={geometry.grid.minor} fill="none" stroke={c.gridMinor} strokeWidth={0.07} opacity={0.55} />
@@ -350,7 +391,7 @@ export default function BeatSignature({
           x1={geometry.rX}
           y1={0.8}
           x2={geometry.rX}
-          y2={geometry.heightMm - 0.8}
+          y2={heightMm - 0.8}
           stroke={c.marker}
           strokeWidth={0.1}
           strokeDasharray="0.5 1"
@@ -387,7 +428,7 @@ export default function BeatSignature({
               x1={cursorX}
               y1={0}
               x2={cursorX}
-              y2={geometry.heightMm}
+              y2={heightMm}
               stroke={t.accentLive}
               strokeWidth={0.18}
             />
@@ -403,7 +444,7 @@ export default function BeatSignature({
           rather than replacing it. A sheet whose speed and gain are not
           stated cannot be measured, and this one is not on the defaults. */}
       <Text style={[styles.scale, { color: t.textTertiary }]} allowFontScaling={false}>
-        {mmPerSec} mm/s · {geometry.mmPerMv} mm/mV{caption ? ` · ${caption}` : ''}
+        {mmPerSec} mm/s · {mmPerMv} mm/mV{caption ? ` · ${caption}` : ''}
       </Text>
     </View>
   );
@@ -413,34 +454,42 @@ export default function BeatSignature({
 }
 
 const styles = StyleSheet.create({
-  /* No border: the sheet sits inside the card's own edge, and two nested
-     hairlines a few points apart is what made this read as a pasted-in
-     picture rather than as part of the card. */
-  sheet: { borderRadius: RADIUS.sm, overflow: 'hidden' },
+  /* Inset from the sheet EDGE rather than from a card's padding: this
+     thing is now full-bleed, so 16 pt of margin is what keeps the lead
+     name and the scale off the screen's own edge. */
   label: {
     position: 'absolute',
-    top: 6,
-    left: 8,
+    top: 2,
+    left: 16,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.6,
-    opacity: 0.75,
+    opacity: 0.8,
   },
   scale: {
     position: 'absolute',
-    bottom: 5,
-    right: 8,
+    bottom: 2,
+    right: 16,
     fontSize: 8.5,
     fontVariant: ['tabular-nums'],
   },
 });
 
+// v3.0.0 — Two changes from device feedback, both about it not feeling native:
+//          • the sheet no longer has a size of its own. Height and gain are
+//            handed in, chosen once from the tallest lead in the identity, so
+//            switching leads and dragging the builder stop resizing the box
+//            under the finger. One gain, one channel height, every lead — what
+//            a real 12-lead sheet does;
+//          • the white paper is gone. The trace is drawn straight onto the
+//            app's background with the grid as a faint brand tint. The report
+//            keeps its paper (it is a document); this is an instrument panel,
+//            and a white rectangle inside a white card on a grey page reads as
+//            a picture pasted into a layout.
 // v2.0.0 — A draggable caliper: tap or drag anywhere on the sheet and a line
 //          follows the finger, ticking once per small square, reporting time
 //          from R / baseline mV / corridor width UP to the caller so the readout
-//          is drawn in the chrome and never over the trace. The paper is dimmed
-//          and loses its own border — at report weight the grid dominated the
-//          card and the whole thing read as a drawing rather than as data.
+//          is drawn in the chrome and never over the trace.
 // v1.0.0 — The ECG ID on real millimetre paper at 50 mm/s (the clinical DETAIL
 //          speed, not a fitted one), gain dropping to half-standard only when a
 //          complex will not fit and saying so, the patient's own ±2σ corridor as

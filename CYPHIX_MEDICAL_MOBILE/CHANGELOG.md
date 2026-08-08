@@ -1,5 +1,68 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.33.0 — 2026-08-08 — Insights has no cards: the ECG runs edge to edge on the page itself
+
+Three separate reports from the phone, one cause underneath all of them: the
+ECG was drawn **inside** things instead of being the thing.
+
+### The box resized, and that is why it felt unstable
+
+Height and gain were each derived per lead from that lead's own amplitude. So
+every lead drew a different-sized rectangle, and dragging the builder resized
+it under the finger while you were using it. Reported exactly as it behaves.
+
+Both are now chosen **once**, from the tallest lead in the whole identity, and
+handed into the sheet — one gain, one channel height, every lead. That is what
+a real 12-lead sheet does, and it is not only a layout fix: a small lead now
+draws as a small trace in the same box, which is **true**, and is information.
+A lead scaled to fill its own box is the picture that lies about it.
+
+The gain is still one of the three standard values (10, 5, 2.5 mm/mV) and is
+still printed on the sheet. A *fitted* gain would be the same mistake the web
+report made with its 17.1 mm/s sweep speed.
+
+### The white rectangles are gone
+
+White ECG paper, inside a white card, on a grey page. Three nested rectangles —
+which is precisely how you announce "this is a picture pasted into a layout".
+Web dashboards look like that. Instruments do not, and the report of it not
+feeling native was right.
+
+There are no cards in Insights now. A section is a small-caps label, its
+content, and a full-bleed hairline. The trace is drawn straight onto the app's
+own background with the grid as a faint tint of the brand navy.
+
+**The report keeps its paper**, and that is not an inconsistency: `EcgStripSvg`
+is a *document* — a printable page, on paper, with real edges, whose grid is
+the ruler a clinician measures against. This is a panel on a screen. Same
+geometry, same `buildEcgGrid`/`buildEcgPath`, same standard scales; different
+surface.
+
+### The ECG got the width, and the text got out of its way
+
+The signature runs **edge to edge**. The bleed is *measured* — screen width
+minus content width — rather than a hard-coded `-20`, because the shell's
+padding is `max(safe-area, 20)` and changes with the notch and the orientation;
+a hard-coded inset leaves a hairline of page down one edge on exactly the
+devices nobody tests on.
+
+And the prose behind it was cut to one line per section. `insCoverageBody` was
+deleted outright — the dimmed, empty V1–V6 cells already say what it said. What
+survived is what the screen genuinely cannot say without words: **what a
+difference IS** (a number nobody can interpret is worse than no number), and
+the disclaimer.
+
+### Smaller things
+
+- The baseline figures are a plain row of numbers rather than bordered tiles —
+  they are five *numbers*, not five controls, and a grid of boxes was the same
+  everything-is-a-rectangle problem one level down.
+- The compare toggle lost its button chrome; it is a visibility switch for the
+  trace beside it, not something competing with the trace.
+- `RejectedBeats` now draws at the identity's gain rather than one fitted to
+  itself, so every trace in Insights is on one scale and a beat twice as tall
+  is drawn twice as tall — which is the whole point of that picture.
+
 ## v0.32.0 — 2026-08-08 — ECG ID: drag the beat to measure it, drag the track to build it
 
 v0.31.0 shipped the maths and a page to put it on. Seen on the phone, the page

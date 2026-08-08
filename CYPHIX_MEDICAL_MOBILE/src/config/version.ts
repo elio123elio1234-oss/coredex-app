@@ -1,7 +1,34 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.32.0';
-export const APP_BUILD_LABEL = 'ECG ID: drag the beat to measure it, drag the track to build it';
+export const APP_VERSION = '0.33.0';
+export const APP_BUILD_LABEL = 'Insights has no cards: the ECG runs edge to edge on the page itself';
+
+// v0.33.0 — Three reports, one cause: it was still drawn INSIDE things.
+//           • THE BOX RESIZED. Height and gain were derived per lead from that
+//             lead's own amplitude, so every lead drew a different rectangle
+//             and dragging the builder resized it under the finger. Both are
+//             now chosen ONCE from the tallest lead in the identity and handed
+//             in — one gain, one channel height, every lead, which is what a
+//             real 12-lead sheet does. A small lead now draws as a small trace
+//             in the same box: true, and information. A lead scaled to fill its
+//             own box is the picture that lies.
+//           • THE WHITE RECTANGLES ARE GONE. White ECG paper, inside a white
+//             card, on a grey page — three nested rectangles, which is how you
+//             announce a picture pasted into a layout. Sections are now a
+//             small-caps label, their content and a full-bleed hairline; the
+//             trace is drawn on the app's own background with the grid as a
+//             faint brand tint. The REPORT keeps its paper: that is a document
+//             with real edges, this is an instrument panel on a screen.
+//           • THE ECG GOT THE WIDTH. It runs edge to edge now — the bleed is
+//             MEASURED (screen width − content width) rather than hard-coded,
+//             so it cannot drift from the shell's padding on a device nobody
+//             tests on. And the prose behind it was cut to one line per
+//             section; what survived is what the screen cannot say without
+//             words: what a difference IS, and the disclaimer.
+//           Also: baseline figures are a plain row rather than bordered tiles
+//           (five numbers, not five controls), and the compare toggle lost its
+//           button chrome.
+//           Still an OTA: TypeScript only, app.json stays 0.30.0.
 
 // v0.32.0 — Insights reworked on device feedback. It looked, correctly, like a
 //           landing page rather than an ECG system, and it was static.

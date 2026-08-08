@@ -32,10 +32,12 @@
 import { useMemo } from 'react';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { StyleSheet, Text, View } from 'react-native';
-import { buildEcgPath, STANDARD_MM_PER_MV, type RejectedBeat } from '@cyphix/shared';
-import { SIGNATURE_MM_PER_SEC } from '@/components/molecules/BeatSignature';
-import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
-import { RADIUS } from '@/theme/tokens';
+import { buildEcgPath, type RejectedBeat } from '@cyphix/shared';
+import {
+  SCREEN_DARK,
+  SCREEN_LIGHT,
+  SIGNATURE_MM_PER_SEC,
+} from '@/components/molecules/BeatSignature';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -44,6 +46,8 @@ interface Props {
   rejected: readonly RejectedBeat[];
   sampleRate: number;
   width: number;
+  /** The identity's one gain, so this sheet is on the same scale as the rest. */
+  mmPerMv: number;
   /** Localised: reason word per kind, plus the "n% match" pattern. */
   labels: {
     premature: string;
@@ -63,31 +67,24 @@ export default function RejectedBeats({
   rejected,
   sampleRate,
   width,
+  mmPerMv,
   labels,
   rtl,
 }: Props) {
   const t = useTheme();
-  const c = useIsDark() ? ECG_PAPER_DARK : ECG_PAPER_LIGHT;
+  const c = useIsDark() ? SCREEN_DARK : SCREEN_LIGHT;
 
   const geometry = useMemo(() => {
     const durationSec = accepted.length / sampleRate;
     const widthMm = LEAD_IN_MM + durationSec * SIGNATURE_MM_PER_SEC + TAIL_MM;
-
-    /* One gain for ALL the traces, chosen from the tallest of them. A
-       rejected beat rescaled to fit its own extremes would be drawn to the
-       same height as the accepted one, and "it is twice as tall" is
-       precisely the thing this picture exists to show. */
-    let peak = 0;
-    const scan = (a: Float32Array) => {
-      for (let i = 0; i < a.length; i++) peak = Math.max(peak, Math.abs(a[i]));
-    };
-    scan(accepted);
-    for (const r of rejected) scan(r.samples);
-
     const baselineMm = HEIGHT_MM / 2;
     const clipMm = baselineMm - 0.5;
-    const mmPerMv = Math.min(STANDARD_MM_PER_MV, peak > 0 ? clipMm / peak : STANDARD_MM_PER_MV);
 
+    /* ★ The identity's OWN gain, handed in — not one fitted to these
+       traces. Every sheet in Insights is then on one scale, and a rejected
+       beat that is twice as tall as the accepted one is DRAWN twice as
+       tall, which is precisely what this picture exists to show. A sheet
+       that rescales to its own extremes would draw them the same. */
     const opts = {
       sampleRate,
       mmPerSec: SIGNATURE_MM_PER_SEC,
@@ -100,11 +97,10 @@ export default function RejectedBeats({
 
     return {
       widthMm,
-      mmPerMv,
       accepted: buildEcgPath(accepted, opts),
       rejected: rejected.map((r) => buildEcgPath(r.samples, opts)),
     };
-  }, [accepted, rejected, sampleRate]);
+  }, [accepted, rejected, sampleRate, mmPerMv]);
 
   const height = (width * HEIGHT_MM) / geometry.widthMm;
   const align = rtl ? ('right' as const) : ('left' as const);
@@ -118,18 +114,17 @@ export default function RejectedBeats({
 
   return (
     <View style={styles.root}>
-      <View style={[styles.sheet, { width, height, backgroundColor: c.paper }]}>
+      <View style={{ width, height }}>
         <Svg
           width={width}
           height={height}
           viewBox={`0 0 ${geometry.widthMm} ${HEIGHT_MM}`}
           preserveAspectRatio="xMidYMid meet"
         >
-          <Rect width={geometry.widthMm} height={HEIGHT_MM} fill={c.paper} />
-
-          {/* No grid here on purpose. Nothing on this sheet is measured —
-              it is a shape comparison, and a ruler under it would invite
-              readings the gain (fitted, not standard) does not support. */}
+          {/* No grid: this is a shape comparison, and the eye compares two
+              curves better without a ruler competing with them. The gain
+              is the identity's, so anything measured here would still be
+              honest — it simply is not the question being asked. */}
           {geometry.rejected.map((d, i) => (
             <Path
               key={i}
@@ -173,7 +168,6 @@ export default function RejectedBeats({
 
 const styles = StyleSheet.create({
   root: { gap: 8 },
-  sheet: { borderRadius: RADIUS.sm, overflow: 'hidden' },
   rows: { gap: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowRtl: { flexDirection: 'row-reverse' },
@@ -182,6 +176,9 @@ const styles = StyleSheet.create({
   match: { fontSize: 11, fontVariant: ['tabular-nums'] },
 });
 
+// v1.1.0 — On the screen rather than on a white sheet, and on the IDENTITY'S
+//          gain rather than one fitted here, so every trace in Insights is at
+//          one scale and "twice as tall" is drawn twice as tall.
 // v1.0.0 — The discarded beats drawn on the accepted beat's own axes and gain,
 //          each with why it went and how well it matched — so the beat-selection
 //          decision is checkable instead of asserted.
