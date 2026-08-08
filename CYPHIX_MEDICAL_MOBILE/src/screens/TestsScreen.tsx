@@ -40,6 +40,7 @@ import PatientShell from '@/components/templates/PatientShell';
 import { MEASUREMENT_GUIDE_IMAGE, MEASUREMENT_GUIDE_VIDEO } from '@/config/measurementGuides';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { useBle } from '@/features/ble/useBle';
+import { useReminders } from '@/features/reminders/useReminders';
 import { useTranslation } from '@/i18n/useTranslation';
 import {
   HISTORY_PAGE_SIZE,
@@ -53,10 +54,11 @@ type OfferedTest = Extract<MeasurementType, 'limb' | '12lead'>;
 
 export default function TestsScreen() {
   const t = useTheme();
-  const { t: tr } = useTranslation();
+  const { t: tr, lang } = useTranslation();
   const { width, height } = useWindowDimensions();
   const nav = useNavigation<{ navigate: (screen: string) => void }>();
   const ble = useBle();
+  const reminders = useReminders();
   const user = useCurrentUser();
   const { can } = usePermissions();
   const [explain, setExplain] = useState<OfferedTest | null>(null);
@@ -86,6 +88,22 @@ export default function TestsScreen() {
     else void ble.connect();
   };
 
+  /* ★ "Scheduled" was a static word. It is now the patient's actual next
+     reminder, because this circle is where someone looks to ask "when am
+     I meant to do this?" — and a badge that says the same thing whether
+     or not anything is scheduled answers nothing. With no schedule set it
+     falls back to the plain word, which is still true: this is the test
+     the app schedules. */
+  const scheduledBadge = reminders.next
+    ? tr('testsNextAt', {
+        when: reminders.next.toLocaleString(lang, {
+          weekday: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      })
+    : tr('testsScheduledBadge');
+
   const pages = [
     <MeasureChoiceCircle
       key="limb"
@@ -102,7 +120,7 @@ export default function TestsScreen() {
       }
       label={tr('measureLimbTitle')}
       sublabel={tr('testsLimbSub')}
-      badge={tr('testsScheduledBadge')}
+      badge={scheduledBadge}
       onSelect={startLimb}
       firstTime={isFirstTime('limb')}
       explainLabel={tr('testsWatchHow')}

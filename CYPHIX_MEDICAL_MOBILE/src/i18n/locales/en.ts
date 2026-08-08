@@ -369,6 +369,34 @@ export const en = {
          app is not licensed to make. "Open the study" is a UI action and
          is fine.
      `insDisclaimer` is part of the screen, not boilerplate. */
+  /* ── Measurement reminders ──
+     ★ Copy rule for this block: it says WHEN the patient asked to be
+     reminded and never how often anyone should measure. No "recommended",
+     no "you should", no streak language. How often to take an ECG is a
+     clinical instruction and this app does not give those. */
+  remTitle: 'Reminders',
+  remClose: 'Close reminders',
+  remEnable: 'Remind me to measure',
+  remEnableDesc: 'A notification at the times you choose, every day.',
+  remHowMany: 'How many times a day',
+  remDone: 'Done',
+  remNextAt: 'Next {when}',
+  remPerDay: '{n}× a day',
+  remDenied:
+    'Notifications are switched off for CYPHIX in your phone’s settings, so these reminders will not appear.',
+  /* Named by part of the day, chosen from the TIME — so a reminder moved
+     to 07:30 reads "Morning", not "Reminder 2". */
+  remPartMorning: 'Morning',
+  remPartMidday: 'Midday',
+  remPartAfternoon: 'Afternoon',
+  remPartEvening: 'Evening',
+  /* What the phone actually shows. Short, and it names the app, because a
+     notification arriving hours later has to say who is asking. */
+  remNotifTitle: 'Time for a measurement',
+  remNotifBody: 'Open CYPHIX and take your ECG.',
+
+  testsNextAt: 'Next {when}',
+
   insTabStudies: 'Studies',
   insTabInsights: 'Insights',
 

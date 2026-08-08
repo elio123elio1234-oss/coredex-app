@@ -1,5 +1,97 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.34.0 — 2026-08-08 — Measurement reminders: pick how many a day and when, and the phone asks
+
+⚠️ **Native rebuild, not an OTA.** See the bottom of this entry.
+
+The app could tell you what you had measured and whether anything had changed.
+It could not ask you to measure. Now it can: how many times a day, at what
+times, and the phone notifies you — every day, whether or not this app has been
+opened since.
+
+### Where it went, and why there
+
+**Settings already had the switch.** `testReminders` has existed since v0.2 as a
+toggle that stored a boolean and did nothing at all. It is now the real thing,
+and the row itself opens the schedule.
+
+The switch and the times stay **two settings**. The switch answers "may this app
+remind me at all"; the schedule answers "when". Folding them into one control
+would mean a patient who silenced reminders for a fortnight lost the times they
+had chosen and had to set them again — so switching off keeps the schedule, and
+switching on restores it.
+
+**The Tests tab's badge was the word "Scheduled".** Static, and therefore an
+answer to nothing. It now prints the actual next reminder, because that circle
+is where a patient looks to ask *when am I meant to do this?* With nothing set
+it falls back to the plain word, which is still true — that is the test the app
+schedules.
+
+### The editor asks the question a patient can answer
+
+"How many times a day" first — *twice* is a thing a patient (or their doctor)
+has an answer to — and the times follow from it, pre-filled with sensible
+waking-day anchors that are all editable. Asking for times first means an empty
+list and an add button, which is a data-entry form.
+
+The rows are named by **part of the day**, chosen from the time rather than the
+index, so a reminder dragged to 07:30 reads "Morning" and not "Reminder 2". At a
+glance the list reads as a day.
+
+The time picker is the OS's own — the real iOS wheel, the real Android clock
+dialog. A hand-rolled picker is the fastest way to make a settings screen feel
+like a website, and this is a control every one of these users has operated a
+thousand times to set an alarm.
+
+### How it fires, and the failure it is built to avoid
+
+A repeating **daily trigger**, handed to the operating system. Deliberately not
+a background task that re-arms itself: that would be at the mercy of iOS's
+background-execution budget, so a patient who had not opened the app in a week
+would silently stop being reminded — which is the one failure this feature
+cannot have. Four repeating triggers cost nothing and survive a reboot.
+
+**The stored schedule is the truth; the OS's pending notifications are a
+projection of it.** Every path that edits the schedule ends in the same
+`applySchedule`, and it is re-applied on mount. That last part fixes a bug that
+would otherwise have been invisible: a notification's words are baked in when it
+is *scheduled*, so a patient switching the app to Hebrew would have kept getting
+English reminders until they next happened to edit their times.
+
+Permission is asked when reminders are switched **on** — the moment the patient
+has said what it is for — and never re-asked after a settled no, because on iOS
+a second request shows no prompt at all and would read as a silent failure. If
+it was denied, the sheet says so in words: a schedule that looks armed and never
+fires is worse than one that is plainly off.
+
+### The schedule belongs to the patient, not to the phone
+
+The shape lives in **`CYPHIX_SHARED`** (`types/reminder.ts`). It looks like a
+device preference, and it is one, but it is also a statement about someone's
+care — "three readings a day, morning, midday and evening". It has to survive a
+new phone, it has to be legible to the web app, and a clinician who asked for
+twice a day should be able to see whether that is what the app is asking for.
+
+Times are stored as **minutes of the local day, never as instants**: a reminder
+is a time of day, and pinning it to a date and a timezone would wake a patient
+who flew somewhere at 03:00.
+
+**Nothing in it recommends how often to measure.** Four a day is a UI bound, not
+advice; there is no "recommended" marker on any option and no streak language
+anywhere. How often to take an ECG is a clinical instruction and this app does
+not give those — the same rule that governs the rest of the clinical stack.
+
+### ⚠️ Why this one is a rebuild
+
+`expo-notifications` and `@react-native-community/datetimepicker` are **native
+modules**. They cannot reach an installed build over the air, so `app.json`'s
+`version` moved to **0.34.0** together with `version.ts` — the only situation in
+which those two numbers travel together (mobile `CLAUDE.md` §5A.2).
+
+Every OTA after this one must be published while `app.json` still reads 0.34.0,
+or it targets a runtime that no installed build has, reaches nobody, and reports
+success while doing it.
+
 ## v0.33.3 — 2026-08-08 — The ECG sheet is a panel, not a grid running off the screen
 
 Flush to the display was fine while the corners were square. The moment they

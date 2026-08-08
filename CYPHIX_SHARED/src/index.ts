@@ -73,11 +73,18 @@ export * from './ecg/ecgImport';
    later without changing an answer — which is the point of them being
    here rather than in the app that happens to run them today. Same
    prohibition as `ecgAnalysis`: they measure distances, never meanings. */
+/* When the patient means to measure. A statement about their care rather
+   than a handset setting — it has to survive a new phone and be legible to
+   the web — so the shape is here and only the DELIVERY (OS notifications
+   on a phone; nothing comparable in a browser tab) is per-platform. */
+export * from './types/reminder';
+
 export * from './types/ecgIdentity';
 export * from './ecg/beatTemplate';
 export * from './ecg/ecgIdentity';
 export * from './ecg/measurementStats';
 
+// v1.8.0 — Adds the measurement-reminder schedule (types/reminder.ts).
 // v1.7.0 — Adds the ECG ID stack (beat templates, the personal baseline, the
 //          measurement-cadence summary) and names the precordial leads, so the
 //          identity is written against "whatever leads a study had" rather than

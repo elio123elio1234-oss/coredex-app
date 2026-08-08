@@ -1,7 +1,43 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.33.3';
-export const APP_BUILD_LABEL = 'The ECG sheet is a rounded panel, not a grid running off the screen';
+export const APP_VERSION = '0.34.0';
+export const APP_BUILD_LABEL = 'Measurement reminders: pick how many a day and when, and the phone asks';
+
+// v0.34.0 — Reminders. The patient picks how many measurements a day and at
+//           what times; the phone notifies them, every day, whether or not
+//           this app has been opened since.
+//           WHERE IT LIVES. The Settings row `testReminders` already existed
+//           as a switch that stored a boolean and did nothing — it is now the
+//           real thing, and the row itself opens the schedule. The two stay
+//           SEPARATE settings: the switch answers "may this app remind me at
+//           all", the schedule answers "when". Folding them into one would
+//           mean a patient silencing reminders for a fortnight lost the times
+//           they had chosen. The Tests tab's badge said the static word
+//           "Scheduled"; it now prints the actual next reminder, because that
+//           circle is where someone looks to ask when they are meant to do
+//           this.
+//           HOW IT FIRES. `SchedulableTriggerInputTypes.DAILY` — a repeating
+//           trigger handed to the OS. Deliberately NOT a background task: a
+//           patient who has not opened the app in a week would silently stop
+//           being reminded, which is the one failure this feature cannot have.
+//           The stored schedule is the truth and the OS is a projection of it,
+//           re-applied on mount — which also fixes a bug that would otherwise
+//           be invisible, since a notification's words are baked in when it is
+//           scheduled and a patient switching to Hebrew would keep being
+//           reminded in English.
+//           The schedule SHAPE is in `@cyphix/shared` (`types/reminder.ts`):
+//           it is a statement about a patient's care, not a handset setting —
+//           it has to survive a new phone and be legible to the web. Times of
+//           day, never instants, so flying does not move anyone's reminders.
+//           Nothing in it recommends how often to measure; four a day is a UI
+//           bound, not advice.
+//           ⚠️ THIS RELEASE IS A NATIVE REBUILD, NOT AN OTA. `expo-notifications`
+//           and `@react-native-community/datetimepicker` are native modules, so
+//           `app.json`'s version moved to 0.34.0 WITH this file — the only
+//           situation in which the two travel together (mobile CLAUDE.md
+//           §5A.2). Every OTA after this one must be published while app.json
+//           still reads 0.34.0, or it targets a runtime no installed build has
+//           and reaches nobody, silently.
 
 // v0.33.3 — The sheet ran FLUSH to the display, which was fine while its
 //           corners were square and wrong the moment they were rounded: a

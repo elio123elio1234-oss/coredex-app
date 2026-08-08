@@ -51,10 +51,12 @@ import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
+import ReminderSheet from '@/components/organisms/ReminderSheet';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
 import { useAuth } from '@/features/auth/useAuth';
 import { useBle } from '@/features/ble/useBle';
 import { usePreferences } from '@/features/preferences/usePreferences';
+import { useReminders } from '@/features/reminders/useReminders';
 import { DEMO_CARD } from '@/features/profile/demoCard';
 import type { CareMode, ThemeChoice } from '@/features/preferences/preferencesSlice';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -122,7 +124,30 @@ export default function SettingsScreen() {
      one, which is how a demo becomes a false belief about an account. */
   const realRole: Role = sessionRole ?? 'clinician';
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [reminderSheet, setReminderSheet] = useState(false);
+  const reminders = useReminders();
   const palette = shellPalette(prefs.background, dark);
+
+  /* What the reminders row says instead of its generic description once
+     there is a real schedule: how many a day, and when the next one is.
+     A row whose subtitle never changes cannot tell a patient whether the
+     thing behind it is actually set up. */
+  const reminderSummary = reminders.active
+    ? [
+        tr('remPerDay', { n: String(reminders.schedule.slots.length) }),
+        reminders.next
+          ? tr('remNextAt', {
+              when: reminders.next.toLocaleString(lang, {
+                weekday: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            })
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
 
   /* Device connection in WORDS, never colour alone — the same wording the
      patient's home screen uses, so one device reads as one state. */
@@ -226,14 +251,32 @@ export default function SettingsScreen() {
           title={tr('setSecNotifications')}
           description={tr('setSecNotificationsDesc')}
         >
+          {/* ★ The master switch and the TIMES are two settings, and this
+              row now carries both: the switch answers "may this app remind
+              me at all", and tapping the row opens the schedule. Folding
+              them into one control would mean a patient silencing
+              reminders for a fortnight lost the times they had chosen. */}
           <SettingsRow
             first
             label={tr('setNotifReminders')}
-            description={tr('setNotifRemindersDesc')}
+            description={
+              prefs.notifications.testReminders
+                ? (reminderSummary ?? tr('setNotifRemindersDesc'))
+                : tr('setNotifRemindersDesc')
+            }
+            onPress={
+              prefs.notifications.testReminders ? () => setReminderSheet(true) : undefined
+            }
             control={
               <Switch
                 value={prefs.notifications.testReminders}
-                onValueChange={(v) => setNotification('testReminders', v)}
+                onValueChange={(v) => {
+                  setNotification('testReminders', v);
+                  // Turning it on with nothing scheduled yet goes straight
+                  // to the question it raises — "when?" — rather than
+                  // leaving the patient to find the row again.
+                  if (v && !reminders.schedule.enabled) setReminderSheet(true);
+                }}
                 accessibilityLabel={tr('setNotifReminders')}
               />
             }
@@ -439,6 +482,8 @@ export default function SettingsScreen() {
         }}
         onCancel={() => setConfirmSignOut(false)}
       />
+
+      <ReminderSheet visible={reminderSheet} onClose={() => setReminderSheet(false)} />
     </View>
   );
 }

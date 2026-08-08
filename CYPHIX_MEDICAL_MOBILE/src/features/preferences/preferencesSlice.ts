@@ -14,6 +14,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { emptySchedule, type MeasurementSchedule } from '@cyphix/shared';
 import { DEFAULT_LANG, type LangCode } from '@/i18n/config';
 import type { BgStyle } from '@/theme/shellTheme';
 import { DEFAULT_BG } from '@/theme/shellTheme';
@@ -41,6 +42,20 @@ export interface PreferencesState {
    * English and repaint in Hebrew a frame later. See i18n/I18nProvider.
    */
   language: LangCode;
+  /**
+   * When the patient means to measure (`@cyphix/shared` `types/reminder`).
+   *
+   * ★ It lives in THIS slice rather than a store of its own for the same
+   * reason `language` does: it is read back before the first paint. The
+   * Tests tab prints the next reminder on the scheduled test's badge, and
+   * a schedule arriving on a separate async key would draw that badge
+   * empty and then fill it a frame later.
+   *
+   * `notifications.testReminders` remains the master switch — this is the
+   * TIMES. A patient who silences reminders for a fortnight gets their own
+   * times back when they turn them on again, rather than an empty editor.
+   */
+  schedule: MeasurementSchedule;
   /** False until the stored values have been read back — see `hydrate`. */
   loaded: boolean;
 }
@@ -51,6 +66,12 @@ const initialState: PreferencesState = {
   notifications: { testReminders: true, resultsReady: true, doctorMessages: true },
   careMode: 'clinician',
   language: DEFAULT_LANG,
+  /* Off, with no times. `testReminders` defaults to true — that switch is
+     "may this app remind me at all", and it is answered before anyone has
+     said WHEN. Shipping a default 09:00 would have every patient's phone
+     buzz on the morning after they installed it, about something they
+     never asked for. */
+  schedule: emptySchedule(),
   loaded: false,
 };
 
@@ -82,11 +103,22 @@ const slice = createSlice({
     setLanguage(state, action: PayloadAction<LangCode>) {
       state.language = action.payload;
     },
+    /** Replace the whole schedule. The editor commits once, on close. */
+    setSchedule(state, action: PayloadAction<MeasurementSchedule>) {
+      state.schedule = action.payload;
+    },
   },
 });
 
-export const { hydrate, setTheme, setBackground, setNotification, setCareMode, setLanguage } =
-  slice.actions;
+export const {
+  hydrate,
+  setTheme,
+  setBackground,
+  setNotification,
+  setCareMode,
+  setLanguage,
+  setSchedule,
+} = slice.actions;
 export default slice.reducer;
 
 /* ── Storage, kept next to the slice that owns the shape ── */
@@ -115,5 +147,9 @@ export async function writePreferences(state: PreferencesState): Promise<void> {
   }
 }
 
+// v1.2.0 — Adds `schedule` (the measurement-reminder times). Same argument as
+//          `language` for putting it here: the Tests badge prints the next
+//          reminder, and a separate async key would draw that badge empty and
+//          fill it a frame later.
 // v1.1.0 — Adds `language`: it rides in the same pre-hydrated blob as the
 //          theme so the app never opens in the wrong language for a frame.

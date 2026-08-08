@@ -2,7 +2,7 @@
   "expo": {
     "name": "CYPHIX Medical",
     "slug": "elio-el-hassrouny",
-    "version": "0.30.0",
+    "version": "0.34.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "cyphix",
@@ -54,7 +54,15 @@
           "faceIDPermission": "CYPHIX uses Face ID so you can open your own health record without typing your password."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "color": "#0D2041",
+          "defaultChannel": "measurement-reminders"
+        }
+      ]
     ],
     "experiments": {
       "tsconfigPaths": true
