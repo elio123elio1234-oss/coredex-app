@@ -363,17 +363,9 @@ export const he: Record<TranslationKey, string> = {
      רצפים. כמה פעמים לעשות אק"ג היא הוראה קלינית והאפליקציה הזו לא נותנת
      כאלה. */
   remTitle: 'תזכורות',
-  remSubtitle: 'בחרו מתי CYPHIX תבקש מכם לבצע מדידה.',
   remSecWhen: 'תזכורות',
-  remSecWhenDesc: 'התראה בשעות שתבחרו, בכל יום.',
-  remSecTimes: 'שעות',
-  remSecTimesDesc: 'הקישו על שעה כדי לשנות אותה.',
   remEnable: 'הזכירו לי למדוד',
-  remEnableDesc: 'הטלפון יתריע גם כאשר CYPHIX סגורה.',
   remHowMany: 'כמה פעמים ביום',
-  remHowManyDesc: 'בחרו מספר והשעות ימולאו — כולן ניתנות לעריכה.',
-  remFootnote:
-    'תזכורות הן פתק לעצמכם. כמה פעמים לעשות אק"ג היא החלטה שלכם ושל הרופא שלכם.',
   remDone: 'סיום',
   remNextAt: 'הבאה {when}',
   remPerDay: '{n}× ביום',
@@ -393,10 +385,6 @@ export const he: Record<TranslationKey, string> = {
      ⚠️ יורה רק אם לא נרשמה מדידה. הניסוח חייב להישאר ניטרלי: בלי "פספסת",
      בלי "עדיין לא". האפליקציה לא יודעת למה — ותזכורת שנוזפת היא תזכורת
      שמכבים. */
-  remSecFollow: 'אם לא מדדתם',
-  remSecFollowDesc: 'התראה אחת נוספת, רק כשלא נרשמה מדידה.',
-  remFollowEnable: 'לשאול שוב מאוחר יותר',
-  remFollowEnableDesc: 'מדלגים עליה לגמרי אם כבר יש מדידה בהיסטוריה.',
   remFollowAfter: 'כמה זמן אחר כך',
   remFollowNotifTitle: 'המדידה שלכם עדיין פתוחה',
   remFollowNotifBody: 'עוד לא נרשמה מדידה — בצעו אותה מתי שנוח לכם.',
@@ -407,13 +395,10 @@ export const he: Record<TranslationKey, string> = {
      ★ מדווחים מה הטלפון באמת מחזיק, לא מה האפליקציה התכוונה. הם קיימים כי
      בוזבזה שעה בהמתנה לתזכורת חוזרת שמעולם לא נדרכה, וכל שאר הנתונים במסך
      הזה תיארו כוונה. */
-  remSecCheck: 'בדיקה שזה עובד',
-  remSecCheckDesc: 'מה שהטלפון שלכם באמת מחזיק כרגע.',
-  remArmedDaily: 'תזכורות יומיות דרוכות',
-  remArmedFollow: 'תזכורות חוזרות דרוכות',
-  remArmedFollowOff: 'כבוי למעלה.',
+  /* `d` daily + `f` follow-ups the OS is holding. Fact, not intent. */
+  remArmed: '{d} + {f} דרוכות',
+  remFollowOff: 'כבוי',
   remTest: 'שליחת בדיקה עכשיו',
-  remTestDesc: 'תזכורת בעוד 10 שניות, וחוזרת דקה אחריה.',
   remTestSent: 'נשלח — נעלו את הטלפון וחכו לשתיהן.',
   remTestFailed: 'לא הצלחנו לשלוח. ההתראות של CYPHIX כבויות.',
 

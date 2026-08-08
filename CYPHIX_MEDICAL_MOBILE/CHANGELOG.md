@@ -1,5 +1,53 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.37.0 - 2026-08-08 - The second ask is on by default, and Reminders fits on one screen
+
+### On by default
+
+Someone who has set reminders at all has already said they want to be caught
+when they forget - a reminder they slept through having no consequence is the
+exact case they were guarding against. So the second ask now defaults to **on,
+an hour later**. It is one tap from Off, and a measurement silences it before it
+ever fires, so being wrong about this default costs nothing.
+
+**The subtle part is telling "Off" apart from "not set".** `normalizeSchedule`
+now treats them differently:
+
+| stored | means | result |
+|---|---|---|
+| `null` | the patient chose Off | stays off |
+| a number | their chosen delay | kept |
+| **missing** | written by a build that had no such field | **takes the default** |
+
+Coercing the third case to `null` is what silently left the follow-up off on
+every install that predated it - and that is what had somebody waiting an hour
+for a notification that had never been armed.
+
+### One screen
+
+Reminders had grown to four sections, three descriptions, a subtitle and a
+footnote: a whole scrolling page to set a notification. It is one card now, and
+every cut followed one rule - **a control that explains itself needs no sentence
+under it.**
+
+- **`Off` became a segment** of the follow-up control. That single change
+  collapsed a switch, its description and the heading they lived under into
+  nothing, for identical expressive power.
+- **The two armed counts and the test button became one row**, whose *value* is
+  the count: `2 + 6 set`.
+- Section descriptions, the page subtitle and the footnote are gone - and so are
+  **17 translation keys per language**, deleted rather than left orphaned.
+
+What stayed, and why: the permission warning (every control above it is a lie
+without it) and the armed count (it is fact rather than intent, and its absence
+once cost an hour).
+
+### Verified
+
+The 15 malformed-input cases still produce no invalid dates, and five new cases
+confirm the default logic: explicit `null` stays off, 30 and 120 are kept, and a
+missing field - from an older build or a brand-new install - takes 60.
+
 ## v0.36.0 — 2026-08-08 — See what the phone actually holds, and test it in a minute
 
 An hour was spent waiting for a follow-up that never arrived — and **the app

@@ -375,17 +375,9 @@ export const en = {
      no "you should", no streak language. How often to take an ECG is a
      clinical instruction and this app does not give those. */
   remTitle: 'Reminders',
-  remSubtitle: 'Choose when CYPHIX should ask you to take a reading.',
   remSecWhen: 'Reminders',
-  remSecWhenDesc: 'A notification at the times you choose, every day.',
-  remSecTimes: 'Times',
-  remSecTimesDesc: 'Tap a time to change it.',
   remEnable: 'Remind me to measure',
-  remEnableDesc: 'The phone will notify you even when CYPHIX is closed.',
   remHowMany: 'How many times a day',
-  remHowManyDesc: 'Pick a number and the times fill in — all of them editable.',
-  remFootnote:
-    'Reminders are a note to yourself. How often to take an ECG is a decision for you and your doctor.',
   remDone: 'Done',
   remNextAt: 'Next {when}',
   remPerDay: '{n}× a day',
@@ -406,10 +398,6 @@ export const en = {
      ⚠️ It fires ONLY if nothing was recorded. The copy must stay neutral:
      no "you missed", no "you still haven't". The app does not know why —
      and a reminder that scolds is a reminder that gets switched off. */
-  remSecFollow: 'If you haven’t measured',
-  remSecFollowDesc: 'One more notification, only when nothing was recorded.',
-  remFollowEnable: 'Ask again later',
-  remFollowEnableDesc: 'Skipped entirely if a reading is already in your history.',
   remFollowAfter: 'How much later',
   remFollowNotifTitle: 'Your reading is still open',
   remFollowNotifBody: 'Nothing recorded yet — take it whenever suits you.',
@@ -420,13 +408,10 @@ export const en = {
      ★ These report what the PHONE holds, not what the app intended. They
      exist because an hour was spent waiting for a follow-up that had never
      been armed, and every other reading on this screen described intent. */
-  remSecCheck: 'Check it works',
-  remSecCheckDesc: 'What your phone is actually holding right now.',
-  remArmedDaily: 'Daily reminders set',
-  remArmedFollow: 'Follow-ups set',
-  remArmedFollowOff: 'Switched off above.',
+  /* `d` daily + `f` follow-ups the OS is holding. Fact, not intent. */
+  remArmed: '{d} + {f} set',
+  remFollowOff: 'Off',
   remTest: 'Send a test now',
-  remTestDesc: 'A reminder in 10 seconds and a follow-up a minute later.',
   remTestSent: 'Sent — lock your phone and watch for both.',
   remTestFailed: 'Could not send. Notifications are switched off for CYPHIX.',
 

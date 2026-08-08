@@ -69,6 +69,17 @@ export interface MeasurementSchedule {
 /** Delays the editor offers for the second ask. */
 export const FOLLOW_UP_CHOICES: readonly number[] = [30, 60, 120];
 
+/**
+ * The second ask is ON by default, an hour later.
+ *
+ * ★ Deliberately not off. Someone who has set reminders at all has said
+ * they want to be caught when they forget — a reminder they slept through
+ * having no consequence is the case they were guarding against. It stays
+ * one tap from Off, and a measurement silences it before it ever fires, so
+ * the cost of being wrong about this default is nil.
+ */
+export const DEFAULT_FOLLOW_UP_MINUTES = 60;
+
 /** How long "Snooze" on the notification pushes it back. */
 export const SNOOZE_MINUTES = 15;
 
@@ -109,7 +120,7 @@ export function defaultSlotTimes(count: number): MinutesOfDay[] {
 
 /** An empty, switched-off schedule — what a new account starts with. */
 export function emptySchedule(): MeasurementSchedule {
-  return { enabled: false, slots: [], followUpMinutes: null, updatedAt: null };
+  return { enabled: false, slots: [], followUpMinutes: DEFAULT_FOLLOW_UP_MINUTES, updatedAt: null };
 }
 
 /**
@@ -155,13 +166,25 @@ export function normalizeSchedule(raw: unknown): MeasurementSchedule {
         .map((s) => ({ id: s.id, at: Math.round(s.at) }))
     : [];
 
+  /* ★ `null` and MISSING are different answers, and the difference is the
+     whole of "on by default".
+       null      the patient chose Off. Honour it.
+       a number  their chosen delay.
+       missing   written by a build that had no such field, or corrupt —
+                 take the default, which is on.
+     Coercing missing to `null` would silently leave the second ask off for
+     every install that predates it, which is exactly the failure that had
+     somebody waiting an hour for a notification that was never armed. */
   const follow = r.followUpMinutes;
   return {
     enabled: r.enabled === true,
     slots: sortSlots(slots).slice(0, MAX_REMINDERS_PER_DAY),
-    followUpMinutes: typeof follow === 'number' && Number.isFinite(follow) && follow > 0
-      ? Math.round(follow)
-      : null,
+    followUpMinutes:
+      follow === null
+        ? null
+        : typeof follow === 'number' && Number.isFinite(follow) && follow > 0
+          ? Math.round(follow)
+          : DEFAULT_FOLLOW_UP_MINUTES,
     updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : null,
   };
 }
@@ -324,6 +347,11 @@ export function isOccurrenceSatisfied(
   return measurementTimes.some((t) => t >= opens && t <= closes);
 }
 
+// v1.2.0 — The second ask is ON by default (`DEFAULT_FOLLOW_UP_MINUTES`), and
+//          `normalizeSchedule` now distinguishes an explicit `null` ("the
+//          patient chose Off") from a MISSING field ("written by a build that
+//          had no such field") — coercing the second to null is what silently
+//          left the follow-up off on every pre-existing install.
 // v1.1.0 — Adds the CONDITIONAL second ask: `followUpMinutes`, the dated
 //          `upcomingOccurrences` a scheduler arms one at a time, and the window
 //          that decides whether a measurement already answered one. The primary

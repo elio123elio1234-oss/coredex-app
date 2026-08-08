@@ -6,9 +6,8 @@
    chevron PUSHES a screen; a bottom sheet is for a quick action or a
    single pick — something you glance at and dismiss. This is a switch, a
    segmented control, a list of times and an inline picker, which is a
-   panel of settings, and cramming it into a half-height sheet made it
-   read as small and improvised. Reported from the phone in exactly those
-   words.
+   panel of settings, and cramming it into a half-height sheet made it read
+   as small and improvised.
 
    As a pushed route it also gets things the sheet had to fake: the native
    slide transition, the edge-swipe back gesture, a real back affordance,
@@ -18,8 +17,26 @@
    `SettingsSection` and `SettingsRow`, the same backdrop, the same top
    bar, the same page metrics. Not for code reuse — for CONTINUITY. This
    screen is reached from Settings and is part of it, so a bespoke layout
-   would announce itself as somewhere else. Looking like the screen it came
-   from is most of what "feels native" means here.
+   would announce itself as somewhere else.
+
+   ══ ★ ONE CARD, NO PROSE ══
+   It grew to four sections, three descriptions, a subtitle and a footnote
+   — a full scrolling page to set a notification, which was reported in
+   those words and was right. Everything now lives in ONE card that fits
+   without scrolling, and every cut followed one rule: **a control that
+   explains itself needs no sentence under it.**
+
+   What went, and why none of it is missed:
+     • the follow-up's own section, switch and description — "Ask again
+       after" simply gained an OFF segment, so a whole section became one
+       row with the same expressive power;
+     • "Check it works" — two count rows and a test row became ONE row
+       whose VALUE is the count;
+     • every section description, the page subtitle, the footnote.
+
+   What stayed, and why: the permission warning (rare, and every control
+   above it is a lie without it) and the armed count (it is FACT rather
+   than intent, and its absence once cost somebody an hour).
 
    ══ WHAT IT DOES NOT SAY ══
    Nowhere does it suggest how often anyone should measure. Four a day is a
@@ -74,9 +91,6 @@ function BackChevron({ color }: { color: string }) {
  * The list then reads as a day, which is what makes it checkable at a
  * glance instead of requiring the numbers to be read.
  */
-/** What the follow-up switch turns on. An hour is the obvious first guess. */
-const DEFAULT_FOLLOW_UP = 60;
-
 function partOfDay(at: number): TranslationKey {
   if (at < 11 * 60) return 'remPartMorning';
   if (at < 15 * 60) return 'remPartMidday';
@@ -115,14 +129,19 @@ export default function RemindersScreen() {
     [],
   );
 
-  /* Minutes, labelled in the unit a patient thinks in: "1 h", not "60". */
+  /* ★ OFF is a SEGMENT, not a switch above the segments. That one choice
+     removed an entire section — a switch, its description and the heading
+     they lived under — for exactly the same expressive power. Minutes are
+     labelled in the unit a patient thinks in: "1h", not "60". */
   const followUpOptions = useMemo(
-    () =>
-      FOLLOW_UP_CHOICES.map((m) => ({
+    () => [
+      { value: 'off', label: tr('remFollowOff') },
+      ...FOLLOW_UP_CHOICES.map((m) => ({
         value: String(m),
         label: m < 60 ? `${m}m` : m % 60 === 0 ? `${m / 60}h` : `${Math.floor(m / 60)}h${m % 60}`,
       })),
-    [],
+    ],
+    [tr],
   );
 
   /** A `Date` carrying only the time — what the OS picker takes. */
@@ -141,16 +160,6 @@ export default function RemindersScreen() {
     void Haptics.selectionAsync();
     reminders.setSlotTime(slotId, date.getHours() * 60 + date.getMinutes());
   };
-
-  const nextText = reminders.next
-    ? tr('remNextAt', {
-        when: reminders.next.toLocaleString(lang, {
-          weekday: 'long',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      })
-    : null;
 
   return (
     <View style={styles.root}>
@@ -179,30 +188,17 @@ export default function RemindersScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.page,
-          { paddingBottom: Math.max(insets.bottom, 16) + 40 },
-        ]}
+        contentContainerStyle={[styles.page, { paddingBottom: Math.max(insets.bottom, 16) + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
-            {tr('remTitle')}
-          </Text>
-          <Text style={[styles.subtitle, { color: t.textSecondary, textAlign: align }]}>
-            {tr('remSubtitle')}
-          </Text>
-        </View>
+        <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
+          {tr('remTitle')}
+        </Text>
 
-        <SettingsSection
-          art={NotificationsIllustration}
-          title={tr('remSecWhen')}
-          description={tr('remSecWhenDesc')}
-        >
+        <SettingsSection art={NotificationsIllustration} title={tr('remSecWhen')}>
           <SettingsRow
             first
             label={tr('remEnable')}
-            description={tr('remEnableDesc')}
             control={
               <Switch
                 value={allowed && reminders.schedule.enabled}
@@ -224,7 +220,6 @@ export default function RemindersScreen() {
           {showTimes && (
             <SettingsRow
               label={tr('remHowMany')}
-              description={tr('remHowManyDesc')}
               control={
                 <SegmentedControl
                   options={countOptions}
@@ -235,83 +230,13 @@ export default function RemindersScreen() {
               }
             />
           )}
-        </SettingsSection>
 
-        {/* ★ The second ask. Its own section because it is a different
-            promise from the one above: those times are unconditional, this
-            one only happens if nothing was recorded — and that condition
-            is the part worth being explicit about, or a patient who
-            measured at 19:12 and got nudged at 20:00 would conclude the
-            app is not paying attention. */}
-        {showTimes && (
-          <SettingsSection
-            art={NotificationsIllustration}
-            title={tr('remSecFollow')}
-            description={tr('remSecFollowDesc')}
-          >
-            <SettingsRow
-              first
-              label={tr('remFollowEnable')}
-              description={tr('remFollowEnableDesc')}
-              control={
-                <Switch
-                  value={reminders.schedule.followUpMinutes !== null}
-                  onValueChange={(v) => {
-                    void Haptics.selectionAsync();
-                    reminders.setFollowUp(v ? DEFAULT_FOLLOW_UP : null);
-                  }}
-                  accessibilityLabel={tr('remFollowEnable')}
-                />
-              }
-            />
-
-            {reminders.schedule.followUpMinutes !== null && (
-              <SettingsRow
-                label={tr('remFollowAfter')}
-                control={
-                  <SegmentedControl
-                    options={followUpOptions}
-                    value={String(reminders.schedule.followUpMinutes)}
-                    onChange={(v) => reminders.setFollowUp(Number(v))}
-                    accessibilityLabel={tr('remFollowAfter')}
-                  />
-                }
-              />
-            )}
-          </SettingsSection>
-        )}
-
-        {/* ★ Permission is the one state that makes everything else a lie.
-            A schedule that looks armed and silently never fires is worse
-            than one that is plainly off — so it is said in words, near the
-            switch that appears to have done something. */}
-        {showTimes && reminders.permission === 'denied' && (
-          <View
-            style={[
-              styles.notice,
-              { backgroundColor: t.attentionSoft, borderColor: t.attention },
-              rtl && styles.rowRtl,
-            ]}
-          >
-            <Ionicons name="notifications-off-outline" size={18} color={t.attention} />
-            <Text style={[styles.noticeText, { color: t.attention, textAlign: align }]}>
-              {tr('remDenied')}
-            </Text>
-          </View>
-        )}
-
-        {showTimes && (
-          <SettingsSection
-            art={NotificationsIllustration}
-            title={tr('remSecTimes')}
-            description={nextText ?? tr('remSecTimesDesc')}
-          >
-            {reminders.schedule.slots.map((slot, i) => {
+          {showTimes &&
+            reminders.schedule.slots.map((slot) => {
               const open = editing === slot.id;
               return (
                 <View key={slot.id}>
                   <SettingsRow
-                    first={i === 0}
                     label={tr(partOfDay(slot.at))}
                     onPress={() => {
                       void Haptics.selectionAsync();
@@ -319,10 +244,7 @@ export default function RemindersScreen() {
                     }}
                     value={
                       <Text
-                        style={[
-                          styles.time,
-                          { color: open ? t.accentLive : t.textPrimary },
-                        ]}
+                        style={[styles.time, { color: open ? t.accentLive : t.textPrimary }]}
                         allowFontScaling={false}
                       >
                         {formatMinutes(slot.at)}
@@ -337,9 +259,8 @@ export default function RemindersScreen() {
                         mode="time"
                         /* `spinner` on iOS: the wheel is what "set a time"
                            has looked like on this phone since 2007, and the
-                           compact variant opens its own popover, which is a
-                           second surface inside a screen that already is
-                           one. */
+                           compact variant opens its own popover — a second
+                           surface inside a screen that already is one. */
                         display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
                         onChange={onPicked(slot.id)}
                         locale={lang}
@@ -361,67 +282,76 @@ export default function RemindersScreen() {
                 </View>
               );
             })}
-          </SettingsSection>
-        )}
 
-        {/* ★ WHAT THE PHONE ACTUALLY HOLDS.
-            This section exists because an hour was spent waiting for a
-            follow-up that had never been armed, and nothing in the app
-            could say so. Everything above reports INTENT — the switch, the
-            times, the next one due — and intent was never the thing in
-            doubt. These two numbers come straight from the OS, so they
-            cannot agree with a mistaken belief held anywhere else. */}
-        {showTimes && (
-          <SettingsSection
-            art={NotificationsIllustration}
-            title={tr('remSecCheck')}
-            description={tr('remSecCheckDesc')}
-          >
+          {/* The second ask, as ONE row. It is ON by default, so the thing
+              worth exposing is the delay — and OFF is just its first
+              segment rather than a switch of its own. */}
+          {showTimes && (
             <SettingsRow
-              first
-              label={tr('remArmedDaily')}
-              value={
-                <Text style={[styles.count, { color: t.textPrimary }]} allowFontScaling={false}>
-                  {reminders.armed ? reminders.armed.daily : '—'}
-                </Text>
+              label={tr('remFollowAfter')}
+              control={
+                <SegmentedControl
+                  options={followUpOptions}
+                  value={
+                    reminders.schedule.followUpMinutes === null
+                      ? 'off'
+                      : String(reminders.schedule.followUpMinutes)
+                  }
+                  onChange={(v) => reminders.setFollowUp(v === 'off' ? null : Number(v))}
+                  accessibilityLabel={tr('remFollowAfter')}
+                />
               }
             />
-            <SettingsRow
-              label={tr('remArmedFollow')}
-              description={
-                reminders.schedule.followUpMinutes === null ? tr('remArmedFollowOff') : undefined
-              }
-              value={
-                <Text style={[styles.count, { color: t.textPrimary }]} allowFontScaling={false}>
-                  {reminders.armed ? reminders.armed.followUps : '—'}
-                </Text>
-              }
-            />
+          )}
+
+          {/* FACT, not intent — read from the OS, and its absence once cost
+              an hour. The count is this row's VALUE rather than two rows of
+              its own. */}
+          {showTimes && (
             <SettingsRow
               label={tr('remTest')}
-              description={testState === 'sent' ? tr('remTestSent') : tr('remTestDesc')}
+              description={testState === 'sent' ? tr('remTestSent') : undefined}
               onPress={() => {
                 void Haptics.selectionAsync();
                 setTestState('sending');
                 void reminders.sendTest().then((ok) => setTestState(ok ? 'sent' : 'failed'));
               }}
               value={
-                <Ionicons
-                  name={testState === 'sent' ? 'checkmark-circle' : 'play-circle-outline'}
-                  size={22}
-                  color={testState === 'sent' ? t.success : t.accentLive}
-                />
+                <Text style={[styles.armed, { color: t.textSecondary }]} allowFontScaling={false}>
+                  {reminders.armed
+                    ? tr('remArmed', {
+                        d: String(reminders.armed.daily),
+                        f: String(reminders.armed.followUps),
+                      })
+                    : '—'}
+                </Text>
               }
             />
-            {testState === 'failed' && (
-              <SettingsRow label={tr('remTestFailed')} />
-            )}
-          </SettingsSection>
+          )}
+        </SettingsSection>
+
+        {/* ★ Kept when nearly everything else was cut: every control above
+            is a lie without it. Rare, and load-bearing when it appears. */}
+        {showTimes && reminders.permission === 'denied' && (
+          <View
+            style={[
+              styles.notice,
+              { backgroundColor: t.attentionSoft, borderColor: t.attention },
+              rtl && styles.rowRtl,
+            ]}
+          >
+            <Ionicons name="notifications-off-outline" size={18} color={t.attention} />
+            <Text style={[styles.noticeText, { color: t.attention, textAlign: align }]}>
+              {tr('remDenied')}
+            </Text>
+          </View>
         )}
 
-        <Text style={[styles.footnote, { color: t.textTertiary, textAlign: align }]}>
-          {tr('remFootnote')}
-        </Text>
+        {testState === 'failed' && (
+          <Text style={[styles.failed, { color: t.attention, textAlign: align }]}>
+            {tr('remTestFailed')}
+          </Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -442,9 +372,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  header: { paddingHorizontal: 4, marginBottom: 4 },
-  title: { fontSize: 32, fontWeight: '800' },
-  subtitle: { fontSize: 14.5, marginTop: 6, lineHeight: 20 },
+  title: { fontSize: 32, fontWeight: '800', paddingHorizontal: 4 },
 
   notice: {
     flexDirection: 'row',
@@ -455,8 +383,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   noticeText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  failed: { fontSize: 12.5, lineHeight: 18, paddingHorizontal: 4 },
 
   time: { fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  armed: { fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'] },
 
   picker: { alignItems: 'center', gap: 10, paddingBottom: 14 },
   done: {
@@ -468,19 +398,15 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   doneText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '700' },
-
-  count: { fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  footnote: { fontSize: 11.5, lineHeight: 17, paddingHorizontal: 4 },
 });
 
-// v1.1.0 — Adds the "Check it works" section: how many reminders the OS is
-//          ACTUALLY holding, and a test that fires the real primary + follow-up
-//          inside a minute. Both exist because an hour was spent waiting for a
-//          follow-up that had never been armed, and every reading this screen
-//          offered reported intent rather than fact.
+// v1.2.0 — Cut to ONE card that fits without scrolling. It had become four
+//          sections, three descriptions, a subtitle and a footnote — a whole
+//          scrolling page to set a notification. `Off` became a SEGMENT of the
+//          follow-up control, collapsing a switch, a description and a heading
+//          into nothing; the armed count became the test row's VALUE instead of
+//          two rows of its own. Kept: the permission warning (every control
+//          above it is a lie without it) and the count (fact, not intent — its
+//          absence once cost an hour).
+// v1.1.0 — Adds the armed count and the one-minute test.
 // v1.0.0 — The reminder editor as a PUSHED SCREEN rather than a bottom sheet.
-//          A Settings row with a chevron pushes on iOS; a sheet is for a quick
-//          action, and a switch plus a segmented control plus a list of times
-//          plus an inline picker crammed into half a screen read as small and
-//          improvised. Built from Settings' own section and row components so
-//          it is visually continuous with the screen it came from.

@@ -1,7 +1,34 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.36.0';
-export const APP_BUILD_LABEL = 'Reminders: see what the phone actually holds, and test it in a minute';
+export const APP_VERSION = '0.37.0';
+export const APP_BUILD_LABEL = 'The second ask is on by default, and Reminders fits on one screen';
+
+// v0.37.0 - Two things, both asked for.
+//           THE SECOND ASK IS ON BY DEFAULT, an hour later. Someone who set
+//           reminders at all has said they want to be caught when they forget;
+//           a reminder they slept through having no consequence is the case
+//           they were guarding against. It stays one tap from Off, and a
+//           measurement silences it before it ever fires, so being wrong about
+//           this default costs nothing.
+//           * `normalizeSchedule` now distinguishes an explicit `null` ("the
+//           patient chose Off" - honour it) from a MISSING field ("written by a
+//           build that had no such field" - take the default). Coercing the
+//           second to null is what silently left the follow-up off on every
+//           pre-existing install, which is what had somebody waiting an hour.
+//           REMINDERS FITS ON ONE SCREEN. It had grown to four sections, three
+//           descriptions, a subtitle and a footnote - a whole scrolling page to
+//           set a notification. Now one card, and every cut followed one rule:
+//           A CONTROL THAT EXPLAINS ITSELF NEEDS NO SENTENCE UNDER IT.
+//             - `Off` became a SEGMENT of the follow-up control, which
+//               collapsed a switch, its description and their heading into
+//               nothing for identical expressive power;
+//             - the two armed counts and the test button became ONE row whose
+//               VALUE is the count;
+//             - 17 translation keys deleted per language, not orphaned.
+//           Kept: the permission warning (every control above it is a lie
+//           without it) and the armed count (fact rather than intent - its
+//           absence once cost an hour).
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.36.0 — An hour was spent waiting for a follow-up that never arrived, and
 //           the app could not say why. That is the real defect this release
