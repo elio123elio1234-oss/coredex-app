@@ -375,10 +375,17 @@ export const en = {
      no "you should", no streak language. How often to take an ECG is a
      clinical instruction and this app does not give those. */
   remTitle: 'Reminders',
-  remClose: 'Close reminders',
+  remSubtitle: 'Choose when CYPHIX should ask you to take a reading.',
+  remSecWhen: 'Reminders',
+  remSecWhenDesc: 'A notification at the times you choose, every day.',
+  remSecTimes: 'Times',
+  remSecTimesDesc: 'Tap a time to change it.',
   remEnable: 'Remind me to measure',
-  remEnableDesc: 'A notification at the times you choose, every day.',
+  remEnableDesc: 'The phone will notify you even when CYPHIX is closed.',
   remHowMany: 'How many times a day',
+  remHowManyDesc: 'Pick a number and the times fill in — all of them editable.',
+  remFootnote:
+    'Reminders are a note to yourself. How often to take an ECG is a decision for you and your doctor.',
   remDone: 'Done',
   remNextAt: 'Next {when}',
   remPerDay: '{n}× a day',

@@ -1,7 +1,27 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.34.0';
-export const APP_BUILD_LABEL = 'Measurement reminders: pick how many a day and when, and the phone asks';
+export const APP_VERSION = '0.34.1';
+export const APP_BUILD_LABEL = 'Reminders is a screen now, not a bottom sheet';
+
+// v0.34.1 — The reminder editor was a bottom sheet, and it read as small and
+//           improvised on the phone. It was the wrong container: on iOS a
+//           settings row with a chevron PUSHES a panel, and a sheet is for a
+//           quick action or a single pick — not for a switch, a segmented
+//           control, a list of times and an inline wheel.
+//           It is a pushed route now (`Reminders`), which also gets it the
+//           native slide transition, the edge-swipe back and as much height as
+//           it needs. Built from Settings' OWN `SettingsSection` /
+//           `SettingsRow` and the same page metrics — not for code reuse, for
+//           CONTINUITY: it is reached from Settings and is part of it, so a
+//           bespoke layout would announce itself as somewhere else. Looking
+//           like the screen it came from is most of what "native" means here.
+//           The two switches also collapsed into one ON THIS SCREEN: the
+//           master switch and the schedule cannot usefully differ here, and a
+//           patient facing two toggles that both say "reminders" has to work
+//           out which is which. They stay separate in the model, so silencing
+//           still does not forget the times.
+//           OTA: TypeScript only, so app.json stays at 0.34.0 — the runtime
+//           the installed build listens on.
 
 // v0.34.0 — Reminders. The patient picks how many measurements a day and at
 //           what times; the phone notifies them, every day, whether or not

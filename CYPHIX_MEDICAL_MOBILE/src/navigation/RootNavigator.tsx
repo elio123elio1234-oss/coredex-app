@@ -55,6 +55,7 @@ import HistoryScreen from '@/screens/HistoryScreen';
 import HomeScreen from '@/screens/HomeScreen';
 import LimbMeasureScreen from '@/screens/LimbMeasureScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
+import RemindersScreen from '@/screens/RemindersScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import StudyViewerScreen from '@/screens/StudyViewerScreen';
 import TestsScreen from '@/screens/TestsScreen';
@@ -133,6 +134,16 @@ export default function RootNavigator() {
           component={SettingsScreen}
           options={{ animation: 'slide_from_right' }}
         />
+        {/* Pushed FROM Settings, and it looks like Settings. On iOS a
+            settings row with a chevron pushes a panel; the first version
+            of this was a bottom sheet and read as small and improvised,
+            because a sheet is for a quick action rather than for a switch,
+            a picker and a list of times. */}
+        <Stack.Screen
+          name="Reminders"
+          component={RemindersScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
         {/* Reading a study is a full-screen job: the dock's five destinations
             would be competing with a toolbar, and the trace wants the height.
             It stays PORTRAIT (inherited from the stack) — the six leads are
@@ -148,5 +159,6 @@ export default function RootNavigator() {
   );
 }
 
+// v3.2.0 — Adds the Reminders route, pushed from Settings.
 // v3.1.0 — Adds the StudyViewer route (Scan History's reading screen) above the
 //          tabs, portrait like every route but the exam.

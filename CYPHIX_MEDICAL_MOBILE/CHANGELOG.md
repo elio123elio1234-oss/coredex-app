@@ -1,5 +1,49 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.34.1 — 2026-08-08 — Reminders is a screen now, not a bottom sheet
+
+Reported from the phone: it works, but it comes up from the bottom, it's small,
+and it doesn't feel native.
+
+That was a container problem, not a styling one. **On iOS a settings row with a
+chevron pushes a panel.** A bottom sheet is for a quick action or a single pick
+— something you glance at and dismiss. A switch, a segmented control, a list of
+times and an inline picker crammed into a half-height sheet is a settings panel
+wearing the wrong clothes, and it looks improvised because it is.
+
+It is a pushed route now. That also gets it, for free, the things the sheet had
+to approximate: the native slide transition, the edge-swipe back gesture, a real
+back affordance, and as much height as the content wants.
+
+### It is built from Settings' own parts
+
+`SettingsSection`, `SettingsRow`, the same backdrop, the same top bar, the same
+page metrics — **not for code reuse, for continuity**. This screen is reached
+from Settings and belongs to it, so a bespoke layout would announce itself as
+somewhere else. Looking like the screen you came from is most of what "feels
+native" means here; the rest is the OS transition doing its job.
+
+The times are now full settings rows with the time as their value, and the
+picker opens beneath the row it belongs to with room around it rather than
+squeezed against a sheet's edge.
+
+### One switch instead of two
+
+The master switch (`testReminders`) and the schedule's own `enabled` flag are
+still two things in the model — that is what lets a patient silence reminders
+for a fortnight without losing the times they chose. But on *this* screen they
+cannot usefully differ, and a patient facing two toggles that both say
+"reminders" has to work out which is which. One switch drives both.
+
+### Also
+
+- A footnote saying reminders are a note to yourself, and that how often to take
+  an ECG is a decision for the patient and their doctor. The same rule as
+  everywhere else in this app: it records what was chosen, it does not advise.
+- The permission-denied notice moved out of the sheet and sits directly under
+  the switch that appears to have done something — which is where someone looks
+  when nothing arrives.
+
 ## v0.34.0 — 2026-08-08 — Measurement reminders: pick how many a day and when, and the phone asks
 
 ⚠️ **Native rebuild, not an OTA.** See the bottom of this entry.

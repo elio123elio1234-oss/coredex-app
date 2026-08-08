@@ -51,7 +51,6 @@ import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
-import ReminderSheet from '@/components/organisms/ReminderSheet';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
 import { useAuth } from '@/features/auth/useAuth';
 import { useBle } from '@/features/ble/useBle';
@@ -110,7 +109,7 @@ const ROLE_LABEL_KEY: Record<Role, TranslationKey> = {
 export default function SettingsScreen() {
   const t = useTheme();
   const dark = useIsDark();
-  const nav = useNavigation<{ goBack: () => void }>();
+  const nav = useNavigation<{ goBack: () => void; navigate: (screen: string) => void }>();
   const insets = useSafeAreaInsets();
   const { prefs, setTheme, setBackground, setNotification, setCareMode } = usePreferences();
   const { t: tr, lang, setLang } = useTranslation();
@@ -124,7 +123,6 @@ export default function SettingsScreen() {
      one, which is how a demo becomes a false belief about an account. */
   const realRole: Role = sessionRole ?? 'clinician';
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const [reminderSheet, setReminderSheet] = useState(false);
   const reminders = useReminders();
   const palette = shellPalette(prefs.background, dark);
 
@@ -264,9 +262,10 @@ export default function SettingsScreen() {
                 ? (reminderSummary ?? tr('setNotifRemindersDesc'))
                 : tr('setNotifRemindersDesc')
             }
-            onPress={
-              prefs.notifications.testReminders ? () => setReminderSheet(true) : undefined
-            }
+            onPress={() => {
+              void Haptics.selectionAsync();
+              nav.navigate('Reminders');
+            }}
             control={
               <Switch
                 value={prefs.notifications.testReminders}
@@ -275,7 +274,7 @@ export default function SettingsScreen() {
                   // Turning it on with nothing scheduled yet goes straight
                   // to the question it raises — "when?" — rather than
                   // leaving the patient to find the row again.
-                  if (v && !reminders.schedule.enabled) setReminderSheet(true);
+                  if (v && !reminders.schedule.enabled) nav.navigate('Reminders');
                 }}
                 accessibilityLabel={tr('setNotifReminders')}
               />
@@ -482,8 +481,6 @@ export default function SettingsScreen() {
         }}
         onCancel={() => setConfirmSignOut(false)}
       />
-
-      <ReminderSheet visible={reminderSheet} onClose={() => setReminderSheet(false)} />
     </View>
   );
 }

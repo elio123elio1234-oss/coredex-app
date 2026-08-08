@@ -363,10 +363,17 @@ export const he: Record<TranslationKey, string> = {
      רצפים. כמה פעמים לעשות אק"ג היא הוראה קלינית והאפליקציה הזו לא נותנת
      כאלה. */
   remTitle: 'תזכורות',
-  remClose: 'סגירת התזכורות',
+  remSubtitle: 'בחרו מתי CYPHIX תבקש מכם לבצע מדידה.',
+  remSecWhen: 'תזכורות',
+  remSecWhenDesc: 'התראה בשעות שתבחרו, בכל יום.',
+  remSecTimes: 'שעות',
+  remSecTimesDesc: 'הקישו על שעה כדי לשנות אותה.',
   remEnable: 'הזכירו לי למדוד',
-  remEnableDesc: 'התראה בשעות שתבחרו, בכל יום.',
+  remEnableDesc: 'הטלפון יתריע גם כאשר CYPHIX סגורה.',
   remHowMany: 'כמה פעמים ביום',
+  remHowManyDesc: 'בחרו מספר והשעות ימולאו — כולן ניתנות לעריכה.',
+  remFootnote:
+    'תזכורות הן פתק לעצמכם. כמה פעמים לעשות אק"ג היא החלטה שלכם ושל הרופא שלכם.',
   remDone: 'סיום',
   remNextAt: 'הבאה {when}',
   remPerDay: '{n}× ביום',
