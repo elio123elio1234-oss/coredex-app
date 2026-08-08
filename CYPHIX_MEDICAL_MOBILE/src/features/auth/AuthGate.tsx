@@ -26,9 +26,18 @@ import { claimCacheFor } from '@/services/db/cacheOwner';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { restoreSession } from './authSlice';
 
-/** The reference's splash duration — long enough for the trace to draw
-    itself and the wordmark to land. */
-const SPLASH_MS = 1700;
+/**
+ * Floor on how long the splash stays up.
+ *
+ * It was 1700 ms because the splash used to ANIMATE — long enough for the
+ * trace to draw itself and the wordmark to land. That entrance is gone
+ * (BootSplash is now the web's static wordmark), so the only job left is
+ * not flickering: a screen that appears and vanishes reads as a fault.
+ * ~900 ms does that and gives back three quarters of a second of every
+ * cold start. Leaving 1700 would be a magic number whose reason had been
+ * deleted out from under it.
+ */
+const SPLASH_MS = 900;
 /** Longest we will wait for the device to answer before giving up on it. */
 const RESTORE_TIMEOUT_MS = 4000;
 

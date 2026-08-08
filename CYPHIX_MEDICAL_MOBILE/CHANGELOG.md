@@ -1,5 +1,50 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.34.2 — 2026-08-08 — The boot splash is the CYPHIX wordmark on white
+
+It was navy with the full lockup. It is now the wordmark on white, matching the
+web — and specifically matching **which** web screen, because the web has two
+branded loading surfaces and they are not interchangeable:
+
+- `LoadingScreen` — drifting blobs, an orbiting spinner, the full lockup. The
+  showy one.
+- `AuthGate`'s restore splash — `CyphixWordmark` on the page background with a
+  small busy ring, and nothing else.
+
+This is the second, at the user's instruction, and it is the right one for the
+job anyway: **this screen exists because a disk read is in flight.** That is a
+fraction of a second and it is not an occasion. Reserving the theatrical version
+for somewhere it is earned is what keeps it meaning something.
+
+**The wordmark, not the lockup.** `BrandLogo` adds the mark and "MEDICAL", which
+is full identification — correct on a report, where the issuer of a clinical
+document must be unambiguous, and heavy on a screen that is up for under a
+second while the app works out who is signed in.
+
+### Three things that came with it
+
+**The status bar flipped to dark glyphs.** Light ones were right on navy and are
+invisible on white — and a typecheck, both bundles and `expo-doctor` all pass
+happily with an unreadable clock.
+
+**The splash floor went 1700 → 900 ms.** 1700 existed so the old *entrance
+animation* could finish landing; that animation is gone, so the only job left is
+not flickering — a screen that appears and vanishes reads as a fault. Leaving
+1700 would have been a magic number whose reason had been deleted out from under
+it, and it costs three quarters of a second on every cold start.
+
+**The version line stays**, but moved from `muted` to `label`. With OTAs landing
+several times a day it is the fastest honest answer to "did my change reach the
+phone?" — but `#B3BCC9` at 75 % opacity on white is about `#C6CDD6`, i.e. a line
+that is in the render tree and not on the screen.
+
+### For the record, since this is the second time
+
+v0.19.3 went white with a mark-only lockup and was reverted to navy. That revert
+is not evidence against white: the objection then was the cropped **mark**, not
+the background. This keeps the white and uses the **wordmark**, which is what
+the web actually shows.
+
 ## v0.34.1 — 2026-08-08 — Reminders is a screen now, not a bottom sheet
 
 Reported from the phone: it works, but it comes up from the bottom, it's small,

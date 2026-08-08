@@ -1,7 +1,30 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.34.1';
-export const APP_BUILD_LABEL = 'Reminders is a screen now, not a bottom sheet';
+export const APP_VERSION = '0.34.2';
+export const APP_BUILD_LABEL = 'The boot splash is the CYPHIX wordmark on white, as the web has it';
+
+// v0.34.2 — The boot splash was navy with the full lockup. It is now the CYPHIX
+//           WORDMARK on white — the web's session-restore splash (`AuthGate`),
+//           not its blob-and-orbit `LoadingScreen`. The distinction was the
+//           user's and it is the right one anyway: this screen exists because a
+//           disk read is in flight, which is a fraction of a second and is not
+//           an occasion. Keeping the theatrical version for somewhere it is
+//           earned is what keeps it meaning something.
+//           Wordmark rather than `BrandLogo`: the lockup adds the mark and
+//           "MEDICAL", which is full identification — right on a report, where
+//           the issuer of a clinical document must be unambiguous, heavy on a
+//           screen that is up for under a second.
+//           ⚠️ The status bar flipped to DARK glyphs with it. Light ones were
+//           correct on navy and are invisible on white, and nothing in a
+//           typecheck, a bundle or expo-doctor catches that.
+//           The splash floor dropped 1700 → 900 ms: 1700 existed so the old
+//           ENTRANCE ANIMATION could finish, and that animation is gone. The
+//           only job left is not flickering. Leaving it would have been a magic
+//           number whose reason had been deleted out from under it.
+//           The version line stays — with OTAs landing several times a day it
+//           is the fastest honest answer to "did my change reach the phone?" —
+//           but moved from `muted` to `label`, because #B3BCC9 at 75 % on white
+//           is a line that is in the render tree and not on the screen.
 
 // v0.34.1 — The reminder editor was a bottom sheet, and it read as small and
 //           improvised on the phone. It was the wrong container: on iOS a

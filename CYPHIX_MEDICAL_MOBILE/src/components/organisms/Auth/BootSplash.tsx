@@ -1,91 +1,102 @@
 /* ==================================================================
-   BootSplash (organism) — the first thing anyone sees: the full CYPHIX
-   lockup on navy, landing with the tagline behind it.
+   BootSplash (organism) — the first thing anyone sees: the CYPHIX
+   wordmark on a white page, exactly as the web app's session-restore
+   splash does it.
 
-   It is shown while the device is checked for a stored session, and for
-   a moment longer so the entrance completes rather than being cut off by
-   a fast disk. That is the whole reason it has a minimum: a splash that
-   flickers reads as a fault, and this is the frame in which the app says
-   what it is.
+   It is shown while the device is checked for a stored session, and for a
+   moment longer so it does not flicker: a splash that appears and
+   vanishes reads as a fault.
 
-   ── Why it is `crop`, and why it is nearly the full width ──
-   The logo looked off-centre here because it WAS: the inherited viewBox
-   holds 7.3 units of air on the left and 27.6 on the right, so the ink sat
-   ~18 pt left of the screen's centre and filled four fifths of the width
-   it claimed. `crop` draws the ink's measured box instead — centred, and
-   ~24 % larger for the same number.
-   The width is 90 % of the window (capped at 520 so a tablet does not get
-   a billboard) rather than a flat point size, which is a guess that is
-   right on exactly one screen. The lockup is wide and thin (aspect ≈ 6.6),
-   so near-full-width reads as confident rather than shouted: 351 pt of
-   real ink on a standard iPhone, against 256 pt before.
+   ══ WHY IT MATCHES THE WEB, AND WHICH WEB SCREEN ══
+   The web has TWO branded loading surfaces and they are not
+   interchangeable:
 
-   ── What used to be here, and why it is gone ──
-   The design reference put a pulsing ring with a stylised ECG trace
-   drawing itself inside it above the wordmark. It is out at the user's
-   instruction: it is not part of the CYPHIX identity, and a mark that
-   behaves like a logo but is not one is worse than no mark. The brand
-   lockup carries the screen on its own.
+     • `LoadingScreen` — drifting blobs and an orbiting spinner behind the
+       full lockup. The showy one.
+     • `AuthGate`'s restore splash — `CyphixWordmark` on the page
+       background with a small busy ring, and nothing else.
 
-   The version is printed under the tagline deliberately — it is the one
+   This is the second one, at the user's instruction. It is also the right
+   one for the job: this screen exists because a disk read is in flight,
+   which is a fraction of a second and is not an occasion. Reserving the
+   theatrical version for somewhere it is earned keeps it meaning
+   something.
+
+   ══ THE WORDMARK, NOT THE LOCKUP ══
+   `CyphixWordmark` is the lettering alone. `BrandLogo` adds the mark and
+   "MEDICAL" underneath, which is the full identification — right on a
+   report, where the issuer of a clinical document must be unambiguous,
+   and heavy on a screen that is up for 1.7 seconds while the app finds
+   out who is signed in.
+
+   ── Two earlier versions, so this is not re-litigated a third time ──
+   v0.19.3 went white with a mark-only lockup and was reverted to navy.
+   That revert is not evidence against white: the objection was the
+   cropped MARK, not the background. This keeps the white and uses the
+   WORDMARK, which is the thing the web actually shows.
+
+   The version is printed at the bottom deliberately — it is the one
    screen everybody reaches, so "is my build actually on the phone?" is
-   answered without opening Settings.
+   answered without opening Settings. With updates arriving over the air
+   several times a day, that line is the fastest honest answer there is.
    ================================================================== */
 
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import FadeUpView from '@/components/atoms/Auth/FadeUpView';
-import BrandLogo from '@/components/atoms/BrandLogo';
+import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import CyphixWordmark from '@/components/atoms/CyphixWordmark';
 import { APP_VERSION } from '@/config/version';
-import { LABEL_TYPE, authPalette } from '@/theme/authTheme';
-import { useTranslation } from '@/i18n/useTranslation';
+import { authPalette } from '@/theme/authTheme';
 
-/** Share of the window the lockup takes, and the point it stops growing. */
-const WIDTH_RATIO = 0.9;
-const MAX_WIDTH = 520;
+/** `.auth-wordmark { width: min(58vw, 240px) }` — the web's own rule. */
+const WIDTH_RATIO = 0.58;
+const MAX_WIDTH = 240;
 
 export default function BootSplash() {
-  const palette = authPalette(false); // the splash is navy in both themes
-  const { t: tr } = useTranslation();
+  /* The signed-out world is white in both themes (`authTheme`), and this
+     screen belongs to it — it is shown before the app knows whose theme
+     to honour, so it must not depend on knowing. */
+  const palette = authPalette(false);
   const { width } = useWindowDimensions();
-  const logoWidth = Math.min(width * WIDTH_RATIO, MAX_WIDTH);
 
   return (
-    <View style={[styles.root, { backgroundColor: palette.navy }]}>
-      {/* Light glyphs: this screen is navy whatever the phone's theme is. */}
-      <StatusBar style="light" />
+    <View style={[styles.root, { backgroundColor: palette.page }]}>
+      {/* ★ DARK glyphs. The clock and the battery were light for a navy
+          screen; on white that is a status bar you cannot read, and it is
+          the kind of thing a bundle and a typecheck both wave through. */}
+      <StatusBar style="dark" />
 
-      <FadeUpView delay={120}>
-        <BrandLogo width={logoWidth} tint="light" crop />
-      </FadeUpView>
+      <CyphixWordmark width={Math.min(width * WIDTH_RATIO, MAX_WIDTH)} />
 
-      <View style={styles.footer}>
-        <FadeUpView delay={520}>
-          <Text style={[styles.tagline, { color: palette.onNavyFaint }]} allowFontScaling={false}>
-            {tr('authTagline')}
-          </Text>
-        </FadeUpView>
-        <FadeUpView delay={720}>
-          <Text style={[styles.version, { color: palette.onNavyFaint }]} allowFontScaling={false}>
-            {`v${APP_VERSION}`}
-          </Text>
-        </FadeUpView>
-      </View>
+      {/* The web's `.auth-spin--lg` under the wordmark: a busy ring, not a
+          performance. It says "working", which is the only thing this
+          screen has to say. */}
+      <ActivityIndicator size="small" color={palette.navy} style={styles.spinner} />
+
+      {/* `label`, not `muted`: on navy the version sat on `onNavyFaint` and
+          read fine, but `muted` (#B3BCC9) faded at 75 % on WHITE is about
+          #C6CDD6 — a line that is present in the render tree and not on
+          the screen. A version nobody can read answers nothing. */}
+      <Text style={[styles.version, { color: palette.label }]} allowFontScaling={false}>
+        {`v${APP_VERSION}`}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  footer: { position: 'absolute', bottom: 56, alignItems: 'center', gap: 8 },
-  tagline: { ...LABEL_TYPE, fontSize: 11, letterSpacing: 1.54 },
-  version: { fontSize: 10, letterSpacing: 0.6, opacity: 0.7 },
+  /* `.auth-splash { gap: 30px }`. */
+  spinner: { marginTop: 30 },
+  version: { position: 'absolute', bottom: 40, fontSize: 10, letterSpacing: 0.6 },
 });
 
+// v2.0.0 — White page + the CYPHIX WORDMARK, matching the web's session-restore
+//          splash (`AuthGate`), not its blob-and-orbit `LoadingScreen`. Drops
+//          the navy field, the full lockup and the tagline; keeps the version
+//          line, which is how anyone tells whether an OTA actually landed.
+//          ⚠️ The status bar flipped to dark glyphs with it — light ones on a
+//          white screen are invisible, and nothing in a build catches that.
 // v1.4.0 — The lockup was really off-centre (the source viewBox is padded
-//          asymmetrically, 7.3 units left vs 27.6 right): `crop` fixes that at
-//          the atom, and the width goes to 90 % of the window, capped at 520.
+//          asymmetrically): `crop` fixed that at the atom, width 90 % capped 520.
 // v1.3.0 — Back to the navy screen and the full `BrandLogo` (v0.19.3's white
-//          screen + mark-only lockup is reverted), keeping the one thing that
-//          was actually wanted: the lockup is sized from the window instead of
-//          a fixed 210 pt.
+//          screen + mark-only lockup reverted).
