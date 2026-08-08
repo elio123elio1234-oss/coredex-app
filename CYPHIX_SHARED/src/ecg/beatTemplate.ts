@@ -54,7 +54,7 @@
 
 import { DISPLAY_FS } from './ecgDSP';
 import type { EcgLeadName } from '../types/ecg';
-import type { BeatTemplate } from '../types/ecgIdentity';
+import type { BeatRejectReason, BeatTemplate, RejectedBeat } from '../types/ecgIdentity';
 
 /* ══════════════════ The canonical grid ══════════════════ */
 
@@ -78,7 +78,16 @@ export const TEMPLATE_SAMPLES = TEMPLATE_PRE_SAMPLES + TEMPLATE_POST_SAMPLES + 1
  * is worse than having no baseline, because it looks fine. Callers compare
  * this against the cached value and recompute on a mismatch.
  */
-export const TEMPLATE_VERSION = 1;
+export const TEMPLATE_VERSION = 2;
+
+/**
+ * How many rejected beats are kept for display, per recording.
+ *
+ * Four is enough to show a reader what was thrown out and why; keeping all
+ * of them would put a second copy of a noisy recording in the cache to
+ * illustrate a point three beats already make.
+ */
+export const MAX_KEPT_REJECTS = 4;
 
 /* ══════════════════ Tunables, named and justified ══════════════════ */
 
@@ -190,18 +199,19 @@ interface Candidate {
  * the template we are about to build, which matters: gating on shape alone
  * would be circular.
  */
-function rejectPremature(rPeaks: number[]): { kept: number[]; rejected: number } {
-  if (rPeaks.length < 3) return { kept: [...rPeaks], rejected: 0 };
+function rejectPremature(rPeaks: number[]): { kept: number[]; premature: number[] } {
+  if (rPeaks.length < 3) return { kept: [...rPeaks], premature: [] };
 
   const rr: number[] = [];
   for (let i = 1; i < rPeaks.length; i++) rr.push(rPeaks[i] - rPeaks[i - 1]);
   const medianRr = medianOf(rr);
-  if (medianRr <= 0) return { kept: [...rPeaks], rejected: 0 };
+  if (medianRr <= 0) return { kept: [...rPeaks], premature: [] };
 
   const lo = medianRr * (1 - PREMATURITY_FRACTION);
   const hi = medianRr * (1 + PREMATURITY_FRACTION);
 
   const kept: number[] = [];
+  const premature: number[] = [];
   for (let i = 0; i < rPeaks.length; i++) {
     const before = i > 0 ? rPeaks[i] - rPeaks[i - 1] : medianRr;
     const after = i < rPeaks.length - 1 ? rPeaks[i + 1] - rPeaks[i] : medianRr;
@@ -211,8 +221,9 @@ function rejectPremature(rPeaks: number[]): { kept: number[]; rejected: number }
        beat look abnormal. Testing both intervals rejects the culprit and
        spares its neighbour. */
     if (before >= lo && before <= hi && after >= lo && after <= hi) kept.push(rPeaks[i]);
+    else premature.push(rPeaks[i]);
   }
-  return { kept, rejected: rPeaks.length - kept.length };
+  return { kept, premature };
 }
 
 /* ══════════════════ THE ENTRY POINT ══════════════════ */
@@ -226,6 +237,8 @@ export interface BeatTemplateResult {
   /** Where R sits in every template. */
   rIndex: number;
   sampleRate: number;
+  /** Up to `MAX_KEPT_REJECTS` of the discarded beats, on the reference lead. */
+  rejected: RejectedBeat[];
 }
 
 /**
@@ -253,6 +266,7 @@ export function buildBeatTemplates(
     beatsRejected: rPeaks.length,
     rIndex: TEMPLATE_PRE_SAMPLES,
     sampleRate: TEMPLATE_FS,
+    rejected: [],
   };
 
   const leadNames = Object.keys(leads) as EcgLeadName[];
@@ -268,12 +282,11 @@ export function buildBeatTemplates(
      A beat too close to either end of the recording has no full window
      around it. Padding it would invent samples that were never measured;
      dropping it costs one beat out of a dozen. */
-  const { kept: onTime, rejected: prematureCount } = rejectPremature(rPeaks);
-  const candidates: Candidate[] = onTime
-    .filter((r) => r - pre - realign >= 0 && r + post + realign < reference.length)
-    .map((r) => ({ r, lag: 0 }));
+  const { kept: onTime, premature } = rejectPremature(rPeaks);
+  const inWindow = (r: number) => r - pre - realign >= 0 && r + post + realign < reference.length;
+  const candidates: Candidate[] = onTime.filter(inWindow).map((r) => ({ r, lag: 0 }));
 
-  let rejected = prematureCount + (onTime.length - candidates.length);
+  let rejected = premature.length + (onTime.length - candidates.length);
   if (candidates.length < MIN_TEMPLATE_BEATS) return { ...empty, beatsRejected: rPeaks.length };
 
   /* ── 2. Isoelectric correction, per beat ─────────────────────────
@@ -346,14 +359,41 @@ export function buildBeatTemplates(
      mis-detected by 6 ms — throwing away good data and, worse, throwing
      it away non-randomly. */
   const accepted: Candidate[] = [];
+  const discarded: RejectedBeat[] = [];
+
+  /** Keep a rejected beat as evidence, bounded. See `MAX_KEPT_REJECTS`. */
+  const keepReject = (c: Candidate, reason: BeatRejectReason, beat?: Float32Array) => {
+    if (discarded.length >= MAX_KEPT_REJECTS) return;
+    const samples = beat ?? cut(reference, c);
+    discarded.push({
+      samples: toCanonicalGrid(samples, fs, pre),
+      reason,
+      correlation: Math.max(0, correlate(samples, preliminary, coreFrom, coreTo)),
+      atSec: c.r / fs,
+    });
+  };
+
   for (const c of candidates) {
     const beat = cut(reference, c);
     if (correlate(beat, preliminary, coreFrom, coreTo) >= MIN_BEAT_CORRELATION) accepted.push(c);
-    else rejected++;
+    else {
+      rejected++;
+      keepReject(c, 'dissimilar', beat);
+    }
+  }
+
+  /* The premature ones are kept too, and they are the interesting case: a
+     beat thrown out for its TIMING usually looks different as well, and
+     showing it next to the template is what lets a reader see that for
+     themselves rather than take the RR test on trust. Only those with a
+     full window — a beat clipped by the end of the recording has no
+     complete shape to draw, so it stays a count. */
+  for (const r of premature) {
+    if (inWindow(r)) keepReject({ r, lag: 0 }, 'premature');
   }
 
   if (accepted.length < MIN_TEMPLATE_BEATS) {
-    return { ...empty, beatsRejected: rPeaks.length };
+    return { ...empty, beatsRejected: rPeaks.length, rejected: discarded };
   }
 
   /* ── 6. Final template + dispersion, per lead, on the canonical grid ── */
@@ -380,6 +420,10 @@ export function buildBeatTemplates(
       dispersion: toCanonicalGrid(spread, fs, pre),
       beatsUsed: accepted.length,
       beatsRejected: rejected,
+      // Only the reference lead carries the evidence: it is what the beat
+      // decisions were MADE on, and six copies would be six times the
+      // cache for the same conclusion.
+      rejected: lead === referenceLead ? discarded : [],
     };
   }
 
@@ -389,9 +433,14 @@ export function buildBeatTemplates(
     beatsRejected: rejected,
     rIndex: TEMPLATE_PRE_SAMPLES,
     sampleRate: TEMPLATE_FS,
+    rejected: discarded,
   };
 }
 
+// v2.0.0 — Keeps up to four of the REJECTED beats (with reason, correlation and
+//          where in the recording they sat), so "3 beats were not used" can be
+//          drawn against the accepted beat instead of asserted. TEMPLATE_VERSION
+//          → 2: a v1 cache entry has no evidence in it and is recomputed.
 // v1.0.0 — The representative (median) beat of one recording: prematurity and
 //          shape gates, cross-correlation realignment before averaging, a
 //          per-sample median rather than a mean, and the per-sample spread kept

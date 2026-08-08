@@ -35,9 +35,31 @@ interface Props {
    * `chrome`, since the two travel together today, but stays overridable.
    */
   dock?: boolean;
+  /**
+   * ★ The screen owns its own bottom clearance because it SCROLLS.
+   *
+   * By default the shell reserves the dock's footprint as padding, which
+   * ends the content box above the bar. For a static screen that is right.
+   * For a scrolling one it is visibly wrong: the list stops at a hard edge
+   * and the strip below it — where the dock floats — is bare page. On the
+   * phone that reads as a grey bar wedged under the content, and it
+   * defeats the whole point of a frosted dock, which is to have something
+   * passing underneath it to refract.
+   *
+   * With this set, the content box runs to the screen edge and the screen
+   * puts `dockFootprint()` on its scroll container's CONTENT inset instead
+   * — so the last card can still be scrolled clear of the bar, but
+   * everything travels behind the glass on the way.
+   */
+  scrollsUnderDock?: boolean;
 }
 
-export default function PatientShell({ children, chrome = true, dock = chrome }: Props) {
+export default function PatientShell({
+  children,
+  chrome = true,
+  dock = chrome,
+  scrollsUnderDock = false,
+}: Props) {
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
   const { prefs } = usePreferences();
@@ -73,9 +95,11 @@ export default function PatientShell({ children, chrome = true, dock = chrome }:
             paddingRight: Math.max(insets.right, 20),
             // dockFootprint already accounts for the safe area where it
             // matters — adding insets.bottom again here squeezed the screen.
-            paddingBottom: dock
-              ? dockFootprint(insets.bottom, screenH)
-              : Math.max(insets.bottom, 12),
+            paddingBottom: scrollsUnderDock
+              ? 0
+              : dock
+                ? dockFootprint(insets.bottom, screenH)
+                : Math.max(insets.bottom, 12),
           },
         ]}
       >
@@ -91,5 +115,8 @@ const styles = StyleSheet.create({
   content: { flex: 1, justifyContent: 'center' },
 });
 
+// v2.3.0 — `scrollsUnderDock`: a scrolling screen takes the dock's clearance on
+//          its own content inset instead, so the page travels BEHIND the glass
+//          rather than stopping on a bare strip above it.
 // v2.2.0 — The floating wordmark is behind SHOW_SHELL_WORDMARK (off for now),
 //          and the padding that cleared it follows the same switch.

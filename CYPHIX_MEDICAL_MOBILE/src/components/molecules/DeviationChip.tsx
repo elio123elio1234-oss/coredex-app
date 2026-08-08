@@ -15,9 +15,17 @@
    it is the same rule the whole analysis stack runs on (`ecgIdentity.ts`
    header — nothing here interprets).
 
-   Colour is never the only carrier: `marked` and `watch` differ in fill,
-   in border AND in the label, so the chip survives a colour-blind reader
-   and a screenshot in greyscale.
+   ══ AMBER, NEVER RED ══
+   Red on a medical device means alarm: something is wrong, act now. This
+   is a distance from a personal baseline — the app is not permitted to say
+   whether it is wrong, and it does not know. Reported from the phone that
+   the red made people tense before they had read what it referred to,
+   which is exactly the failure mode: a colour that interprets, on a layer
+   forbidden from interpreting. Amber says "look at this" and stops there.
+
+   Colour is never the only carrier either: `marked` and `watch` differ in
+   fill, in border AND in the label, so the chip survives a colour-blind
+   reader and a greyscale screenshot.
    ================================================================== */
 
 import { StyleSheet, Text, View } from 'react-native';
@@ -52,9 +60,9 @@ export default function DeviationChip({ deviation, label, severityLabel, rtl }: 
   const t = useTheme();
   const marked = deviation.severity === 'marked';
 
-  const tint = marked ? t.danger : t.textSecondary;
-  const fill = marked ? t.dangerSoft : t.bgSoft;
-  const border = marked ? t.danger : t.border;
+  const tint = marked ? t.attention : t.textSecondary;
+  const fill = marked ? t.attentionSoft : t.bgSoft;
+  const border = marked ? t.attention : t.border;
 
   const unit = deviation.unit === 'ratio' ? '' : ` ${deviation.unit}`;
   const sign = deviation.delta > 0 ? '+' : '';
@@ -89,7 +97,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: RADIUS.sm,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chipRtl: { flexDirection: 'row-reverse' },
   label: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
@@ -97,6 +105,8 @@ const styles = StyleSheet.create({
   from: { fontSize: 10.5, fontVariant: ['tabular-nums'] },
 });
 
+// v1.1.0 — Amber, not red: red is an alarm, and a distance from your own
+//          baseline is a measurement. Hairline border.
 // v1.0.0 — One deviation with its own arithmetic on it (delta, and the
 //          baseline → value pair it came from), graded by fill, border and word
 //          rather than by colour alone.

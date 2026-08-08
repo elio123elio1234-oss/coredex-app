@@ -42,6 +42,7 @@ import {
   decodeChannel,
   encodeChannel,
   TEMPLATE_VERSION,
+  type BeatRejectReason,
   type BeatTemplate,
   type EcgLeadName,
   type RecordingTemplate,
@@ -71,6 +72,8 @@ interface StoredLead {
   d: string;
   used: number;
   rejected: number;
+  /** The kept rejected beats — only the reference lead carries any. */
+  rej?: { s: string; r: string; c: number; t: number }[];
 }
 
 interface StoredTemplate {
@@ -100,6 +103,14 @@ function encode(t: RecordingTemplate): StoredTemplate {
       d: encodeChannel(lead.dispersion),
       used: lead.beatsUsed,
       rejected: lead.beatsRejected,
+      rej: lead.rejected.length
+        ? lead.rejected.map((b) => ({
+            s: encodeChannel(b.samples),
+            r: b.reason,
+            c: b.correlation,
+            t: b.atSec,
+          }))
+        : undefined,
     };
   }
   return {
@@ -124,6 +135,12 @@ function decode(s: StoredTemplate): RecordingTemplate {
       dispersion: decodeChannel(lead.d),
       beatsUsed: lead.used,
       beatsRejected: lead.rejected,
+      rejected: (lead.rej ?? []).map((b) => ({
+        samples: decodeChannel(b.s),
+        reason: b.r as BeatRejectReason,
+        correlation: b.c,
+        atSec: b.t,
+      })),
     };
   }
   return {
@@ -215,6 +232,9 @@ export async function clearTemplates(): Promise<void> {
   await removeCached(KEY);
 }
 
+// v1.1.0 — Carries the kept REJECTED beats through the cache, so the evidence
+//          for "3 beats were not used" survives a restart with the template it
+//          belongs to. TEMPLATE_VERSION 2 discards the v1 entries that have none.
 // v1.0.0 — Per-recording beat templates cached on the device: one heavy entry
 //          read through a memo, staged in memory and flushed in batches, gated
 //          on TEMPLATE_VERSION so two generations of the maths can never be

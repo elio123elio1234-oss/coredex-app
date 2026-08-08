@@ -1,5 +1,123 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.32.0 — 2026-08-08 — ECG ID: drag the beat to measure it, drag the track to build it
+
+v0.31.0 shipped the maths and a page to put it on. Seen on the phone, the page
+was the problem: it looked like a landing page rather than an ECG system, and
+it was something to look at rather than something to use.
+
+### The green capsule had to go, and so did the red
+
+**Green means "pass".** A baseline existing is not a pass, and this layer is
+not permitted to grade anything at all — so a green `ESTABLISHED` capsule next
+to a 24 pt headline was a verdict rendered as styling. State is now a
+letterspaced small-caps line, which is the register a clinical instrument
+labels its own panels in, and there is no status colour on the card.
+
+**Red is worse.** On a medical device red means alarm: something is wrong, act
+now. A distance from your own baseline is a *measurement* — the app does not
+know whether it is bad and is forbidden from saying so. Reported from the phone
+exactly as it fails: the red made people tense before they had read what it
+referred to. Every deviation, flag and outlier is now amber (`attention`, a new
+token) — "look at this", full stop. `danger` stays where it belongs, on
+destructive actions and real failures.
+
+And the chips gained a sentence saying what a difference actually is, because
+they were reported as unclear. **A number nobody can interpret is worse than no
+number: it worries without informing.**
+
+### Two layout bugs
+
+"Confidence 48 %" printed straight **through** the enrollment ring. A `Text`
+inside a flex row does not wrap — it overflows its parent — and that column had
+no `flexShrink`. (`MetricTile` carries a comment about this exact failure; it
+was not read.) Fixed, and the ring was reworked while it was open: it used to
+sit at `5/5` for the rest of the account's life. It now draws **segments while
+enrolling** (a countable target of studies) and a **continuous arc for
+agreement** once established — two quantities, two shapes.
+
+The **grey band under the content** was the shell reserving the dock's
+footprint as padding, so the page ended above the bar and the strip the dock
+floats over was bare background. That also left a frosted bar with nothing to
+refract, which defeats the point of it. `PatientShell` gained
+`scrollsUnderDock`; the clearance moved onto each scroll view's content inset,
+and both History tabs now travel behind the glass.
+
+### A caliper you drag along the beat
+
+Tap or drag anywhere on the signature and a line follows your finger, ticking
+once per small square — 20 ms at this sweep speed, so the grid becomes
+something the hand can feel. It reads out **time from R**, the baseline in
+**mV**, and the width of **your own range** at that point, plus the latest
+study's value when it is overlaid.
+
+The readout is in the chrome, not on the paper. History's calipers learned that
+in v0.16.0: a readout floating on the trace covers the deflections whose
+position it reports.
+
+Two gesture details that are the difference between a control and an
+interruption: the pan claims horizontal movement and explicitly **fails on
+vertical**, handing the page back to the scroll view — without that the card is
+a hole you cannot scroll through. And it acts on `onStart`, not `onBegin`, so
+resting a thumb while flicking past does not drop a caliper and buzz.
+
+### A track you drag to build the average
+
+One notch per contributing study. Drag right and the baseline assembles study
+by study under your finger, one haptic tick each. It is the only control here
+that **explains** the feature rather than describing it: told that averaging
+many recordings cancels what is not the heart, a reader has to take it on
+faith; given this, they watch it happen in about two seconds.
+
+**⚠️ It was written claiming the shaded band tightens as studies are added.
+Measuring it said otherwise.** Across six simulated sessions with ordinary
+variation the mean tolerance went 0.021 → 0.026 → 0.028 mV and then settled.
+
+That is not a defect, it is the definition: the corridor is a **prediction
+interval for the next study**, not the standard error of a mean, so it
+converges on this person's real variability instead of shrinking toward zero.
+Both things it is built from are population spreads, and neither gets smaller
+because you looked more.
+
+The true story is the better one and is what ships. After one study the band is
+narrow only because it holds nothing but that recording's own beat-to-beat
+noise — **a single measurement wearing the costume of a range**, and the most
+over-confident picture this system can draw. Dragging right is watching the app
+learn how much you actually vary. The caption says that, and both the shared
+function and the component carry a warning not to write the tempting version
+again.
+
+### The rejected beats are now shown, not asserted
+
+"3 beats were not used" asked the reader to trust the single decision that most
+shapes the whole feature — which beats were allowed to define the template.
+Trust is the wrong currency here; the point of the product is that a clinician
+can check what it did.
+
+Up to four discarded beats are kept per recording (`TEMPLATE_VERSION` → 2, so
+v1 cache entries are recomputed) and drawn on the **accepted beat's own axes and
+gain**, each labelled with why it went — it came early (so it started somewhere
+other than the usual place) or its shape did not match — and how well it
+correlated. One gain for all the traces, deliberately: a rejected beat rescaled
+to its own extremes would be drawn the same height as the accepted one, and
+"it is twice as tall" is precisely what the picture exists to show.
+
+Both are completely ordinary findings in a healthy recording, and the copy says
+so. Amber, never red.
+
+### Smaller things
+
+- The signature's paper is dimmed and has lost its own border. At report weight
+  the grid dominated the card, which is most of why the whole thing read as a
+  drawing pasted on the screen rather than as data. The geometry is untouched:
+  a small square is still a small square, and the scale is still printed.
+- Twelve bordered lead boxes read as a form to fill in. Only the **selected**
+  cell is drawn as a control now; an un-measured lead has no fill at all,
+  because it is not a button.
+- Hairline rules and tabular figures throughout; the match figure is neutral
+  rather than green, since painting the ordinary case as a pass implies the
+  other case is a fail.
+
 ## v0.31.0 — 2026-08-08 — History › Insights: your ECG ID, a baseline built from your own studies
 
 History could tell you what you have. It could not tell you whether anything

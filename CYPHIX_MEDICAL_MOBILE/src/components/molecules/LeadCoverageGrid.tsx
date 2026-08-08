@@ -69,12 +69,17 @@ export default function LeadCoverageGrid({
               void Haptics.selectionAsync();
               onSelect?.(row.lead);
             }}
+            /* Only the SELECTED cell is drawn as a control. Twelve
+               bordered boxes read as a form to fill in; eleven quiet
+               labels and one lit cell read as a picker, which is what it
+               is. An un-measured lead has no fill at all — it is not a
+               button, and it should not look like one. */
             style={({ pressed }) => [
               styles.cell,
               {
-                backgroundColor: active ? t.accentSoft : t.bgSoft,
-                borderColor: active ? t.accent : t.border,
-                opacity: has ? (pressed ? 0.6 : 1) : 0.55,
+                backgroundColor: active ? t.accentSoft : has ? t.bgSoft : 'transparent',
+                borderColor: active ? t.accent : 'transparent',
+                opacity: has ? (pressed ? 0.6 : 1) : 0.45,
               },
             ]}
           >
@@ -114,13 +119,15 @@ const styles = StyleSheet.create({
     flexBasis: '14%',
     alignItems: 'center',
     gap: 1,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: RADIUS.sm,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   lead: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.3 },
-  count: { fontSize: 11, fontVariant: ['tabular-nums'] },
+  count: { fontSize: 10.5, fontVariant: ['tabular-nums'] },
 });
 
+// v1.1.0 — Only the selected cell is drawn as a control. Twelve bordered boxes
+//          read as a form; one lit cell among quiet labels reads as a picker.
 // v1.0.0 — Per-lead evidence for the ECG ID across all twelve leads, with the
 //          never-measured ones printed empty rather than omitted.

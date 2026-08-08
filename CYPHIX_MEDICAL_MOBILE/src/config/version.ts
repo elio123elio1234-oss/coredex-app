@@ -1,7 +1,53 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.31.0';
-export const APP_BUILD_LABEL = 'History › Insights: your ECG ID, a baseline beat built from your own studies';
+export const APP_VERSION = '0.32.0';
+export const APP_BUILD_LABEL = 'ECG ID: drag the beat to measure it, drag the track to build it';
+
+// v0.32.0 — Insights reworked on device feedback. It looked, correctly, like a
+//           landing page rather than an ECG system, and it was static.
+//           WHAT WAS WRONG, IN THE ORDER IT WAS SAID:
+//           • A green ESTABLISHED capsule beside a 24 pt headline. Green means
+//             "pass"; a baseline existing is not a pass and this layer may not
+//             grade anything. State is now a letterspaced small-caps line, the
+//             register an instrument labels itself in. No status colour at all.
+//           • "Confidence 48%" printed THROUGH the ring. A Text in a flex row
+//             does not wrap — it overflows — and that column had no
+//             `flexShrink`. Fixed, and the ring stopped being frozen at 5/5
+//             forever: segments while enrolling (a countable target), a
+//             continuous arc for agreement once established.
+//           • Red. On a medical device red means alarm — act now — and a
+//             distance from your own baseline is a measurement, not a verdict.
+//             It made people tense before they had read what it referred to,
+//             which is a colour interpreting on a layer forbidden to. New
+//             `attention` amber token; `danger` stays for destructive actions.
+//             The chips also gained a sentence saying what a difference IS: a
+//             number nobody can interpret is worse than no number.
+//           • A grey band under the content, over the dock. The shell reserved
+//             the dock's footprint as padding, so the page ENDED above the bar
+//             and the strip it floats over was bare — which also left the
+//             frosted bar with nothing to refract. The clearance moved onto
+//             the scroll views' content insets; the page now passes behind it.
+//           WHAT IS NEW:
+//           • A CALIPER on the signature. Tap or drag and a line follows the
+//             finger, ticking once per small square, reading out time from R,
+//             the baseline in mV and the width of your own range there — in
+//             the chrome, never on the paper it would cover.
+//           • A BUILDER: drag the track and the baseline assembles study by
+//             study under your finger, one haptic tick each. It is the only
+//             control that EXPLAINS the feature instead of describing it.
+//             ⚠️ It was written claiming the band tightens as studies are
+//             added. Measuring it said otherwise — 0.021 → 0.028 mV, then
+//             flat. The corridor is a prediction interval, not a standard
+//             error, so it converges on real variability rather than
+//             shrinking. The honest story is better and is what ships: after
+//             one study the narrow band is a single measurement dressed as a
+//             range, and watching it fill out is the app learning how much
+//             you vary.
+//           • The REJECTED beats are kept (TEMPLATE_VERSION → 2) and drawn on
+//             the accepted beat's own axes with why each went. "3 beats were
+//             not used" asked for trust on the decision that most shapes the
+//             result; now it is checkable.
+//           Still an OTA: TypeScript only, app.json stays 0.30.0.
 
 // v0.31.0 — History got a second tab, and with it the feature the app did not
 //           have: a way to answer "has anything CHANGED?".

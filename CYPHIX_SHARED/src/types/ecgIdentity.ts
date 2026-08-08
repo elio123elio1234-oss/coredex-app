@@ -68,6 +68,22 @@ export interface BeatTemplate {
   beatsUsed: number;
   /** Beats found but rejected — prematurity, low correlation, or clipped window. */
   beatsRejected: number;
+  /**
+   * ★ A few of the rejected beats, KEPT so they can be shown.
+   *
+   * Reporting only a count ("3 beats were not used") asks the reader to
+   * take the algorithm's word for it, on the one decision that most shapes
+   * the result — which beats were allowed to define the template. Keeping
+   * a handful means the claim is checkable: draw them against the accepted
+   * beat and a reader can see for themselves that the rejected one is a
+   * different shape, and disagree if it is not.
+   *
+   * Bounded on purpose (`MAX_KEPT_REJECTS`), and only on the reference
+   * lead: this is evidence for a UI, not a second copy of the recording.
+   * A `truncated` beat is counted but never kept — its window ran off the
+   * end of the record, so there is no complete beat to draw.
+   */
+  rejected: RejectedBeat[];
 }
 
 /** Why a beat did not make it into the template. Reported, never silent. */
@@ -78,6 +94,17 @@ export type BeatRejectReason =
   | 'premature'
   /** Shape disagreed with this recording's own preliminary template. */
   | 'dissimilar';
+
+/** One beat that was left out, with the evidence for leaving it out. */
+export interface RejectedBeat {
+  /** The beat itself, on the canonical grid — drawable beside the template. */
+  samples: Float32Array;
+  reason: BeatRejectReason;
+  /** Its correlation with the recording's own preliminary template, 0–1. */
+  correlation: number;
+  /** Where it sat in the recording, in seconds from the start. */
+  atSec: number;
+}
 
 /**
  * Everything one stored recording contributes to an identity.

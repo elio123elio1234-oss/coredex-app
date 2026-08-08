@@ -42,7 +42,16 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
@@ -60,6 +69,7 @@ import {
   useCreateRecordingMutation,
   useListRecordingsQuery,
 } from '@/services/api/endpoints/recordingApi';
+import { dockFootprint } from '@/navigation/dockMetrics';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -67,6 +77,8 @@ export default function HistoryScreen() {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
   const navigation = useNavigation<{ navigate: (screen: string, params: object) => void }>();
+  const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
   const user = useCurrentUser();
   const { can } = usePermissions();
   const features = useViewerFeatures();
@@ -188,7 +200,12 @@ export default function HistoryScreen() {
   );
 
   return (
-    <PatientShell>
+    /* Both tabs scroll, so the dock's clearance belongs on their content
+       insets rather than on the shell's padding — otherwise the page ends
+       at a hard edge and the strip the dock floats over is bare
+       background, which reads as a grey bar wedged under the content and
+       leaves the frosted bar with nothing to refract. */
+    <PatientShell scrollsUnderDock>
       <View style={styles.root}>
         <View style={[styles.head, rtl && styles.rowRtl]}>
           <View style={styles.headText}>
@@ -287,7 +304,10 @@ export default function HistoryScreen() {
             data={list.data}
             keyExtractor={(item) => item.id}
             renderItem={renderCard}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: dockFootprint(insets.bottom, screenH) },
+            ]}
             showsVerticalScrollIndicator={false}
             accessibilityLabel={tr('histListLabel')}
             refreshControl={
@@ -343,6 +363,9 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.3.0 — Both tabs take the dock's clearance on their own content inset, so
+//          the page passes BEHIND the frosted bar instead of ending on a bare
+//          strip above it.
 // v1.2.0 — Two tabs: the list, and INSIGHTS (the ECG ID). The switch appears
 //          only once there are studies, and Import hides on the tab where
 //          nothing is a row.

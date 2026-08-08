@@ -72,7 +72,9 @@ export default function SimilarityTimeline({ matches, onSelect, labels, rtl }: P
             ? 6
             : Math.max(6, ((Math.max(FLOOR, m.similarity) - FLOOR) / (100 - FLOOR)) * BAR_H);
 
-          const fill = excluded ? t.border : flagged ? t.danger : t.accentLive;
+          // Amber, not red — see `tokens.ts`. A study that differs is one
+          // to look at, and the bar is already a tap target for doing so.
+          const fill = excluded ? t.border : flagged ? t.attention : t.accentLive;
 
           return (
             <Pressable
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
   foot: { width: BAR_W, height: 3, borderRadius: 2 },
 });
 
+// v1.1.0 — Amber rather than red for a study that differs.
 // v1.0.0 — One bar per study against the ECG ID, oldest first, on a stated
 //          80–100 axis so the one short bar is findable; every bar opens its
 //          study, and excluded studies keep their slot.

@@ -25,6 +25,26 @@ export interface ThemeTokens {
   successSoft: string;
   danger: string;
   dangerSoft: string;
+  /**
+   * ★ ATTENTION — "worth a look", which is NOT what `danger` means.
+   *
+   * `danger` is red, and red on a medical device means alarm: something is
+   * wrong, act now. It is the right colour for a failed save or a delete
+   * confirmation, and the wrong one for "this study differs from your
+   * usual". Reported from the phone as exactly that — the red made people
+   * tense before they had read what it referred to, and what it referred
+   * to was a measurement, not a verdict.
+   *
+   * It is also a rule violation dressed as styling: the analysis layer is
+   * forbidden from interpreting (`ecgAnalysis.ts`), and painting a
+   * difference red interprets it — in the one direction we may not go.
+   *
+   * Amber carries "look at this" without carrying "this is bad". Use it
+   * for every deviation, flag and outlier in Insights. `danger` stays for
+   * destructive actions and genuine failures.
+   */
+  attention: string;
+  attentionSoft: string;
 }
 
 export const LIGHT: ThemeTokens = {
@@ -46,6 +66,9 @@ export const LIGHT: ThemeTokens = {
   successSoft: 'rgba(34, 164, 93, 0.12)',
   danger: '#E5342A',
   dangerSoft: 'rgba(229, 52, 42, 0.10)',
+  // amber-700: dark enough to pass contrast on white as body text.
+  attention: '#B45309',
+  attentionSoft: 'rgba(180, 83, 9, 0.10)',
 };
 
 export const DARK: ThemeTokens = {
@@ -67,8 +90,16 @@ export const DARK: ThemeTokens = {
   successSoft: 'rgba(52, 211, 153, 0.14)',
   danger: '#F87171',
   dangerSoft: 'rgba(248, 113, 113, 0.14)',
+  // amber-400: the dark theme needs a LIGHTER amber, not the same one —
+  // #B45309 on #131B2C is barely legible.
+  attention: '#F5B544',
+  attentionSoft: 'rgba(245, 181, 68, 0.14)',
 };
 
 export const RADIUS = { lg: 20, md: 12, sm: 8 } as const;
 
+// v0.2.0 — Adds `attention` (amber): "worth a look", which is a different
+//          statement from `danger` (red = alarm, act now). Insights paints every
+//          deviation with it — a difference from your own baseline is a
+//          measurement, and colouring it red interprets it.
 // v0.1.0 — Brand tokens ported 1:1 from web tokens.css (light + dark).

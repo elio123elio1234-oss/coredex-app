@@ -380,23 +380,61 @@ export const en = {
   insEmptyBody:
     'Once a few clean studies are recorded, CYPHIX averages the beats in each one into a single representative beat — and those into a baseline that is yours. Every new study is then measured against it.',
 
-  insMatEnrolling: 'ENROLLING',
-  insMatEstablished: 'ESTABLISHED',
+  /* State reads as an instrument label, not as a verdict: no "pass",
+     nothing green. "Established" describes how much evidence there is,
+     which is a fact about the data and not a grade for the heart. */
+  insMatEnrolling: 'Baseline forming',
+  insMatEstablished: 'Baseline established',
   insEnrollLabel: 'Studies enrolled',
   insEnrollHint:
     '{n} more clean studies and the baseline is set. Early studies shape it the most.',
-  insConfidence: 'Confidence {n}%',
-  insBuiltFrom: 'Built from {n} studies',
+  insBuiltFrom: '{n} studies',
+  insUpdated: 'Updated {date}',
+  /* The ring's own caption — it names what the number in the middle IS,
+     which changes between the two states. */
+  insRingStudies: 'studies',
+  insRingAgreement: 'agree',
 
   insCompareLatest: 'Overlay latest study',
   insLegendBand: 'Your usual range',
   insLegendLatest: 'Latest study',
+
+  /* The caliper — drag along the beat. */
+  insCalHint: 'Drag across the beat to measure it',
+  insCalMs: 'from R',
+  insCalMv: 'baseline',
+  insCalBand: 'range',
+  insCalLatest: 'latest',
+
+  /* The builder — drag to assemble the average study by study. */
+  insBuiltAll: 'Averaging all {n} studies',
+  insBuiltPartial: 'Averaging the first {k} of {n} studies',
+  insBuiltReset: 'show all',
+  /* ⚠️ Says the band FILLS OUT. It does not tighten — see BeatBuilder's
+     header. A caption promising a narrowing range would promise the one
+     thing the maths will not do. */
+  insBuiltMeaning:
+    'One study shows only its own beat-to-beat noise. The shaded range fills out as studies are added — that is the app learning how much you actually vary.',
+
+  /* Beats left out of one study's average. */
+  insRejectedTitle: '{n} beats not averaged in',
+  insRejectedBody:
+    'A beat leaves the average for its timing — it came early, so it started somewhere other than the usual place — or for its shape. Both are ordinary findings in a healthy recording. The heavy line is the beat that was used.',
+  insRejPremature: 'Came early',
+  insRejDissimilar: 'Different shape',
+  insRejTruncated: 'Cut off by the end of the recording',
+  insRejMatch: '{n}% match',
   insCoverageBody:
     'Studies behind each lead. V1–V6 fill in on their own when a 12-lead test is recorded.',
 
   insLatestTitle: 'Latest study',
   insMatch: '{n}% match',
   insNoDeviations: 'Nothing measurably different from your baseline.',
+  /* ★ What a difference IS. The chips were reported as unclear, and a
+     number nobody can interpret is worse than no number: it worries
+     without informing. Says what was compared and what it is not. */
+  insDeviationMeaning:
+    'Each figure is this study measured against your own earlier ones — not against a normal range. A difference is something to look at with your doctor, not a result.',
 
   insFlaggedTitle: 'Early studies that disagree',
   insFlaggedBody:

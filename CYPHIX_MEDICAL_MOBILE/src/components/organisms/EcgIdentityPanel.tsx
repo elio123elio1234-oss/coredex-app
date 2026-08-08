@@ -4,58 +4,74 @@
    Where the Studies tab answers "what do I have", this answers the
    question a list cannot: **has anything changed?**
 
-     ┌ ECG ID ─────────────────────── ◍ 5/5 ┐
-     │        the signature beat, on paper,  │
-     │        inside its tolerance corridor  │
-     │  I  II  III  aVR aVL aVF              │
-     │  V1 V2 V3 V4 V5 V6   (not yet)        │
+     ┌───────────────────────────────────────┐
+     │ ECG ID                          ╭───╮ │
+     │ BASELINE ESTABLISHED · 11 STUDIES│ 71│ │
+     │ Updated 7 Aug                    ╰───╯ │
+     │                                        │
+     │   ‹ the signature beat, on paper,      │
+     │     inside its own tolerance corridor › │
+     │   ▌▌▌▌▌▌▌▌│░░░  Averaging 8 of 11      │
+     │   I II III aVR aVL aVF                 │
+     │   V1 V2 V3 V4 V5 V6                    │
      └───────────────────────────────────────┘
-       Latest study · 97 %      [QRS +14 ms]
-       Match over time    ▇▇▇▇▂▇▇▇
-       Your baseline      PR QRS QTc Axis Rate
-       When you measure   ▁▃▇▅▁▁▂▅▃▁
 
    ══ THE ORDER IS THE ARGUMENT ══
    Signature first, because it is the thing that did not exist before.
    Then the newest study measured against it — the only study anyone is
-   actually asking about. Then the history of those measurements, then
-   the numbers behind them, and finally the habit that produced them all.
-   Each block answers a question raised by the one above it.
+   actually asking about. Then the history of those measurements, then the
+   numbers behind them, and finally the habit that produced them all. Each
+   block answers a question raised by the one above it.
+
+   ══ IT READS AS AN INSTRUMENT, NOT AS A POSTER ══
+   The first version put a green ESTABLISHED capsule next to a 24 pt
+   headline and was told, correctly, that it looked like a landing page
+   rather than an ECG system. Green means "pass"; a baseline existing is
+   not a pass, and the app is not allowed to grade anything. State is now a
+   letterspaced small-caps line — the register a clinical instrument
+   labels itself in — every number is tabular, and rules are hairlines.
+   No status colour anywhere except amber, which means "look at this".
 
    ══ WHAT IT REFUSES TO SAY ══
    Nothing here interprets (`ecgIdentity.ts` header). Every difference is
    printed as an arithmetic statement — value, baseline, delta — and the
    footer says in plain words that this is a comparison with the patient's
-   own past recordings and not a diagnosis. That sentence is not boilerplate
-   and must not be removed to save a line.
+   own past recordings and not a diagnosis. That sentence is part of the
+   screen and must not be removed to save a line.
 
    This screen is doctor-dense and scrolls, which is deliberate: History is
    the one patient-facing tab the UX direction exempts from "must fit
-   without scrolling".
+   without scrolling". It scrolls UNDER the glass dock — see the content
+   inset below.
    ================================================================== */
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type {
-  DeviationKind,
-  EcgLeadName,
-  ExclusionReason,
-  IdentityDeviation,
-  IdentityMatch,
-  MeasurementStats,
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  buildBaselineSequence,
+  type DeviationKind,
+  type EcgLeadName,
+  type ExclusionReason,
+  type IdentityDeviation,
+  type IdentityMatch,
+  type MeasurementStats,
 } from '@cyphix/shared';
 import MetricTile from '@/components/atoms/MetricTile';
-import BeatSignature from '@/components/molecules/BeatSignature';
+import BeatBuilder from '@/components/molecules/BeatBuilder';
+import BeatSignature, { type CaliperReading } from '@/components/molecules/BeatSignature';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
 import DeviationChip from '@/components/molecules/DeviationChip';
 import IdentityRing from '@/components/molecules/IdentityRing';
 import LeadCoverageGrid from '@/components/molecules/LeadCoverageGrid';
+import RejectedBeats from '@/components/molecules/RejectedBeats';
 import SimilarityTimeline from '@/components/molecules/SimilarityTimeline';
 import { useEcgIdentity } from '@/features/insights/useEcgIdentity';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { TranslationKey } from '@/i18n/config';
+import { dockFootprint } from '@/navigation/dockMetrics';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
@@ -64,6 +80,9 @@ interface Props {
   patientId?: string;
   onOpenStudy: (recordingId: string) => void;
 }
+
+/** Card padding, in one place: the signature is sized by subtracting it. */
+const CARD_PAD = 14;
 
 /** Short chip labels. Full names (`iQRS` etc.) are too long for a chip row. */
 const DEVIATION_LABEL: Record<DeviationKind, TranslationKey> = {
@@ -84,9 +103,6 @@ const EXCLUSION_LABEL: Record<ExclusionReason, TranslationKey> = {
   outlier: 'insExOutlier',
 };
 
-/** Card padding, in one place: the signature is sized by subtracting it. */
-const CARD_PAD = 14;
-
 interface DeviationGroup {
   key: string;
   /** The largest of the group — same kind means same unit, so |delta| sorts. */
@@ -100,10 +116,9 @@ interface DeviationGroup {
  *
  * A study whose axis has genuinely moved produces `morphology` on all six
  * leads, `corridor` on all six and `amplitude` on three — fourteen chips
- * saying one thing. Grouped it is three: "Shape · 6 leads", "Outside range
- * · 6 leads", "Amplitude · 3 leads". Nothing is hidden, because the chip
- * still carries the WORST member's arithmetic and the lead count says how
- * widespread it was; what is removed is thirteen repetitions of the same
+ * saying one thing. Grouped it is three. Nothing is hidden: the chip still
+ * carries the WORST member's arithmetic and the lead count says how
+ * widespread it was. What is removed is thirteen repetitions of the same
  * sentence, which is what made the real signal unreadable.
  */
 function groupDeviations(deviations: readonly IdentityDeviation[]): DeviationGroup[] {
@@ -118,7 +133,6 @@ function groupDeviations(deviations: readonly IdentityDeviation[]): DeviationGro
     if (Math.abs(d.delta) > Math.abs(existing.worst.delta)) existing.worst = d;
     if (d.severity === 'marked') existing.worst = { ...existing.worst, severity: 'marked' };
   }
-  // Most severe first, then largest — the reader's eye stops at the top.
   return [...groups.values()].sort((a, b) => {
     if (a.worst.severity !== b.worst.severity) return a.worst.severity === 'marked' ? -1 : 1;
     return b.leads.length - a.leads.length;
@@ -128,14 +142,18 @@ function groupDeviations(deviations: readonly IdentityDeviation[]): DeviationGro
 export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
   const view = useEcgIdentity(patientId);
 
   const [lead, setLead] = useState<EcgLeadName>('II');
   const [compare, setCompare] = useState(true);
   const [cardWidth, setCardWidth] = useState(0);
+  const [caliper, setCaliper] = useState<CaliperReading | null>(null);
+  /** How many studies the builder is averaging. null = all of them. */
+  const [built, setBuilt] = useState<number | null>(null);
 
   const align = rtl ? ('right' as const) : ('left' as const);
-
   const identity = view.identity;
 
   /* ★ The newest study that was SCORED — which includes one excluded as an
@@ -146,11 +164,9 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
      — a stranger may not redefine you), and the card would then skip past
      it to the last study that DID match. The single most interesting
      result in the whole feature would have been the one it hid. The other
-     exclusions genuinely have nothing to show: a simulator run and a strip
-     with two clean beats were never measured against anything. */
+     exclusions genuinely have nothing to show. */
   const latest = useMemo(
-    () =>
-      identity?.matches.find((m) => m.excluded === null || m.excluded === 'outlier') ?? null,
+    () => identity?.matches.find((m) => m.excluded === null || m.excluded === 'outlier') ?? null,
     [identity],
   );
 
@@ -159,16 +175,49 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
     [identity],
   );
 
-  /* The overlay: the newest study's own beat for the selected lead, drawn
-     over the baseline. Loaded from nothing extra — the identity already
-     holds every template it was built from. */
-  const overlay = useMemo(() => {
-    if (!compare || !identity || !latest) return null;
-    return view.templateOf(latest.recordingId)?.leads[lead]?.samples ?? null;
-  }, [compare, identity, latest, lead, view]);
+  /* The baseline as it stood after each study — what the builder scrubs
+     through. Computed per lead, once, and only for the leads that have
+     one; the sequence is an incremental accumulation, so it costs about
+     the same as building the baseline once. */
+  const sequence = useMemo(() => {
+    if (!identity) return [];
+    const weights = new Map(identity.matches.map((m) => [m.recordingId, m.weight]));
+    const templates = identity.matches
+      .map((m) => view.templateOf(m.recordingId))
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    return buildBaselineSequence(templates, (x) => weights.get(x.recordingId) ?? 0, lead);
+  }, [identity, view, lead]);
 
-  const fmtDate = (iso: string) =>
-    iso ? new Date(iso).toLocaleDateString(lang, { day: '2-digit', month: 'short' }) : '—';
+  /** The signature actually drawn: the finished baseline, or a partial one. */
+  const shown = useMemo(() => {
+    const full = identity?.leads[lead] ?? null;
+    if (!full) return null;
+    if (built === null || sequence.length === 0) return full;
+    return sequence[Math.min(sequence.length, Math.max(1, built)) - 1] ?? full;
+  }, [identity, lead, built, sequence]);
+
+  const overlay = useMemo(() => {
+    // A partial baseline is being explained, not compared — laying a study
+    // over "the first three studies" invites a reading of a thing that is
+    // not the patient's baseline.
+    if (!compare || built !== null || !identity || !latest) return null;
+    return view.templateOf(latest.recordingId)?.leads[lead]?.samples ?? null;
+  }, [compare, built, identity, latest, lead, view]);
+
+  /** The latest study's discarded beats, for the evidence card. */
+  const rejected = useMemo(() => {
+    if (!latest) return null;
+    const template = view.templateOf(latest.recordingId);
+    const onLead = template?.leads[lead] ?? template?.leads.II;
+    if (!onLead || onLead.rejected.length === 0) return null;
+    return { beats: onLead.rejected, accepted: onLead.samples, total: onLead.beatsRejected };
+  }, [latest, view, lead]);
+
+  const fmtDate = useCallback(
+    (iso: string) =>
+      iso ? new Date(iso).toLocaleDateString(lang, { day: '2-digit', month: 'short' }) : '—',
+    [lang],
+  );
 
   /* ── States before there is anything to draw ─────────────────── */
 
@@ -232,61 +281,62 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
     );
   }
 
-  const selected = identity.leads[lead];
-
-  const maturityLabel =
-    identity.maturity === 'established' ? tr('insMatEstablished') : tr('insMatEnrolling');
+  const established = identity.maturity === 'established';
   const remaining = Math.max(0, identity.enrollmentTarget - identity.enrolled);
+  const sheetWidth = Math.max(80, cardWidth - CARD_PAD * 2 - 2);
 
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={styles.content}
+      /* ★ The dock's clearance lives HERE, not on the shell's padding, so
+         the page travels behind the frosted bar instead of stopping on a
+         bare strip above it (`PatientShell.scrollsUnderDock`). */
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: dockFootprint(insets.bottom, screenH) },
+      ]}
       showsVerticalScrollIndicator={false}
+      /* The signature and the builder both own horizontal drags; without
+         this the scroll view steals them the moment a finger slides. */
+      directionalLockEnabled
     >
       {/* ══ 1. The signature ══════════════════════════════════════ */}
       <View
         style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}
         onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
       >
-        <View style={[styles.heroHead, rtl && styles.rowRtl]}>
-          <View style={styles.heroText}>
-            <Text style={[styles.heroTitle, { color: t.textPrimary, textAlign: align }]}>
+        {/* The header is a two-column row where the LEFT column shrinks.
+            Without `flexShrink` a Text in a row does not wrap — it runs
+            straight under the ring, which is exactly what it did. */}
+        <View style={[styles.head, rtl && styles.rowRtl]}>
+          <View style={styles.headText}>
+            <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
               {tr('insTitle')}
             </Text>
-            <View style={[styles.pillRow, rtl && styles.rowRtl]}>
-              <View
-                style={[
-                  styles.pill,
-                  {
-                    backgroundColor:
-                      identity.maturity === 'established' ? t.successSoft : t.accentSoft,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    { color: identity.maturity === 'established' ? t.success : t.accentLive },
-                  ]}
-                >
-                  {maturityLabel}
-                </Text>
-              </View>
-              <Text style={[styles.meta, { color: t.textTertiary }]}>
-                {tr('insConfidence', { n: String(identity.confidence) })}
-              </Text>
-            </View>
-            <Text style={[styles.meta, { color: t.textSecondary, textAlign: align }]}>
+            <Text
+              style={[styles.state, { color: t.textSecondary, textAlign: align }]}
+              numberOfLines={2}
+            >
+              {established ? tr('insMatEstablished') : tr('insMatEnrolling')}
+              {' · '}
               {tr('insBuiltFrom', { n: String(identity.enrolled) })}
-              {identity.updatedAt ? ` · ${fmtDate(identity.updatedAt)}` : ''}
             </Text>
+            {identity.updatedAt && (
+              <Text
+                style={[styles.meta, { color: t.textTertiary, textAlign: align }]}
+                numberOfLines={1}
+              >
+                {tr('insUpdated', { date: fmtDate(identity.updatedAt) })}
+              </Text>
+            )}
           </View>
 
           <IdentityRing
             enrolled={identity.enrolled}
             target={identity.enrollmentTarget}
             confidence={identity.confidence}
+            established={established}
+            caption={established ? tr('insRingAgreement') : tr('insRingStudies')}
             accessibilityLabel={tr('insEnrollLabel')}
           />
         </View>
@@ -297,31 +347,80 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
           </Text>
         )}
 
-        {selected && cardWidth > 0 && (
+        {/* The caliper readout, in the CHROME. On the paper it would cover
+            the deflections whose position it reports — History's calipers
+            learned this in v0.16.0. Reserved height, so landing the
+            caliper does not shift the sheet under the finger. */}
+        <View style={[styles.readout, rtl && styles.rowRtl]}>
+          {caliper ? (
+            <>
+              <ReadoutCell
+                label={tr('insCalMs')}
+                value={`${caliper.msFromR > 0 ? '+' : ''}${Math.round(caliper.msFromR)}`}
+              />
+              <ReadoutCell label={tr('insCalMv')} value={caliper.baselineMv.toFixed(2)} />
+              <ReadoutCell label={tr('insCalBand')} value={`±${caliper.toleranceMv.toFixed(2)}`} />
+              {caliper.overlayMv !== null && (
+                <ReadoutCell
+                  label={tr('insCalLatest')}
+                  value={caliper.overlayMv.toFixed(2)}
+                  tint={t.accentLive}
+                />
+              )}
+            </>
+          ) : (
+            <Text style={[styles.hint, { color: t.textTertiary }]} numberOfLines={1}>
+              {tr('insCalHint')}
+            </Text>
+          )}
+        </View>
+
+        {shown && cardWidth > 0 && (
           <BeatSignature
-            baseline={selected.samples}
-            tolerance={selected.tolerance}
+            baseline={shown.samples}
+            tolerance={shown.tolerance}
             sampleRate={identity.sampleRate}
             rIndex={identity.rIndex}
             overlay={overlay}
-            /* `onLayout` reports the card's OUTER width — padding and border
-               included. Handing that straight to a fixed-width sheet puts
-               30 pt of paper outside the card, which `overflow` then clips
-               rather than reveals: the trace would simply lose its last
-               60 ms with nothing on screen to say so. */
-            width={Math.max(80, cardWidth - CARD_PAD * 2 - 2)}
+            width={sheetWidth}
             label={lead}
+            onCaliper={setCaliper}
           />
         )}
 
-        {/* Legend — a shaded region and a second trace mean nothing unless
-            they are named. */}
+        {/* Drag to build the average study by study. It is the one control
+            that EXPLAINS what an ECG ID is instead of describing it. */}
+        {sequence.length > 1 && (
+          <>
+            <BeatBuilder
+              total={sequence.length}
+              value={built ?? sequence.length}
+              onChange={(v) => setBuilt(v >= sequence.length ? null : v)}
+              rtl={rtl}
+              caption={
+                built === null
+                  ? tr('insBuiltAll', { n: String(sequence.length) })
+                  : tr('insBuiltPartial', { k: String(built), n: String(sequence.length) })
+              }
+              resetLabel={tr('insBuiltReset')}
+            />
+            {/* Only once they have actually pulled it back — the sentence
+                explains something they are looking at, and printed up
+                front it is a paragraph about a control nobody has used. */}
+            {built !== null && (
+              <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+                {tr('insBuiltMeaning')}
+              </Text>
+            )}
+          </>
+        )}
+
         <View style={[styles.legend, rtl && styles.rowRtl]}>
           <Legend colour={t.textTertiary} label={tr('insLegendBand')} rtl={rtl} />
           {overlay && <Legend colour={t.accentLive} label={tr('insLegendLatest')} rtl={rtl} />}
         </View>
 
-        {latest && (
+        {latest && built === null && (
           <Pressable
             accessibilityRole="switch"
             accessibilityState={{ checked: compare }}
@@ -344,6 +443,8 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
             </Text>
           </Pressable>
         )}
+
+        <View style={[styles.rule, { backgroundColor: t.border }]} />
 
         <LeadCoverageGrid
           coverage={identity.coverage}
@@ -370,7 +471,9 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
           ]}
         >
           <View style={[styles.rowBetween, rtl && styles.rowRtl]}>
-            <Text style={[styles.cardTitle, { color: t.textPrimary }]}>{tr('insLatestTitle')}</Text>
+            <Text style={[styles.sectionTitle, { color: t.textTertiary }]}>
+              {tr('insLatestTitle')}
+            </Text>
             <Text style={[styles.score, { color: scoreColour(latest, t) }]}>
               {tr('insMatch', { n: String(latest.similarity) })}
             </Text>
@@ -387,27 +490,61 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
               {tr('insNoDeviations')}
             </Text>
           ) : (
-            <View style={[styles.chips, rtl && styles.rowRtl]}>
-              {groupDeviations(latest.deviations).map((g) => (
-                <DeviationChip
-                  key={g.key}
-                  deviation={g.worst}
-                  rtl={rtl}
-                  label={`${tr(DEVIATION_LABEL[g.worst.kind])}${leadSuffix(g, tr)}`}
-                  severityLabel={
-                    g.worst.severity === 'marked' ? tr('insSevMarked') : tr('insSevWatch')
-                  }
-                />
-              ))}
-            </View>
+            <>
+              <View style={[styles.chips, rtl && styles.rowRtl]}>
+                {groupDeviations(latest.deviations).map((g) => (
+                  <DeviationChip
+                    key={g.key}
+                    deviation={g.worst}
+                    rtl={rtl}
+                    label={`${tr(DEVIATION_LABEL[g.worst.kind])}${leadSuffix(g, tr)}`}
+                    severityLabel={
+                      g.worst.severity === 'marked' ? tr('insSevMarked') : tr('insSevWatch')
+                    }
+                  />
+                ))}
+              </View>
+              {/* ★ What a difference IS, in one sentence. The chips were
+                  reported as unclear — and a number nobody can interpret
+                  is worse than no number, because it worries without
+                  informing. */}
+              <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+                {tr('insDeviationMeaning')}
+              </Text>
+            </>
           )}
         </Pressable>
       )}
 
-      {/* ══ 3. Early studies that disagree with their own cohort ══ */}
+      {/* ══ 3. The beats that were not used ══════════════════════ */}
+      {rejected && cardWidth > 0 && (
+        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+            {tr('insRejectedTitle', { n: String(rejected.total) })}
+          </Text>
+          <Text style={[styles.hint, { color: t.textSecondary, textAlign: align }]}>
+            {tr('insRejectedBody')}
+          </Text>
+          <RejectedBeats
+            accepted={rejected.accepted}
+            rejected={rejected.beats}
+            sampleRate={identity.sampleRate}
+            width={sheetWidth}
+            rtl={rtl}
+            labels={{
+              premature: tr('insRejPremature'),
+              dissimilar: tr('insRejDissimilar'),
+              truncated: tr('insRejTruncated'),
+              match: (pct) => tr('insRejMatch', { n: String(pct) }),
+            }}
+          />
+        </View>
+      )}
+
+      {/* ══ 4. Early studies that disagree with their own cohort ══ */}
       {flagged.length > 0 && (
-        <View style={[styles.card, { backgroundColor: t.dangerSoft, borderColor: t.danger }]}>
-          <Text style={[styles.cardTitle, { color: t.danger, textAlign: align }]}>
+        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.attention }]}>
+          <Text style={[styles.sectionTitle, { color: t.attention, textAlign: align }]}>
             {tr('insFlaggedTitle')}
           </Text>
           <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
@@ -430,7 +567,7 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
               <Text style={[styles.flagDate, { color: t.textPrimary }]}>
                 {fmtDate(m.recordedAt)}
               </Text>
-              <Text style={[styles.meta, { color: t.textSecondary }]}>
+              <Text style={[styles.meta, { color: t.textSecondary }]} numberOfLines={1}>
                 {m.excluded
                   ? tr(EXCLUSION_LABEL[m.excluded])
                   : tr('insMatch', { n: String(m.similarity) })}
@@ -445,9 +582,9 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         </View>
       )}
 
-      {/* ══ 4. Every study against the baseline, over time ════════ */}
+      {/* ══ 5. Every study against the baseline, over time ════════ */}
       <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-        <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
+        <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
           {tr('insTimelineTitle')}
         </Text>
         <SimilarityTimeline
@@ -458,9 +595,9 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         />
       </View>
 
-      {/* ══ 5. The numbers the baseline holds ════════════════════ */}
+      {/* ══ 6. The numbers the baseline holds ════════════════════ */}
       <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-        <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
+        <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
           {tr('insBaselineTitle')}
         </Text>
         <View style={styles.tiles}>
@@ -482,7 +619,7 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         </View>
       </View>
 
-      {/* ══ 6. The habit that produced all of it ═════════════════ */}
+      {/* ══ 7. The habit that produced all of it ═════════════════ */}
       {view.stats && <CadenceCard stats={view.stats} rtl={rtl} />}
 
       <Text style={[styles.disclaimer, { color: t.textTertiary }]}>{tr('insDisclaimer')}</Text>
@@ -494,8 +631,8 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
    Defined at module scope, NOT inside the component. A function
    component declared in a render body is a new component TYPE on every
    render, so React unmounts and remounts its whole subtree each time —
-   which here would tear down and rebuild the cadence chart on every
-   state change in the panel above it. */
+   which here would tear down and rebuild the cadence chart every time the
+   caliper moved. */
 
 function Card({ children }: { children: ReactNode }) {
   const t = useTheme();
@@ -514,6 +651,24 @@ function Legend({ colour, label, rtl }: { colour: string; label: string; rtl: bo
     <View style={[styles.legendItem, rtl && styles.rowRtl]}>
       <View style={[styles.swatch, { backgroundColor: colour }]} />
       <Text style={[styles.legendText, { color: t.textTertiary }]}>{label}</Text>
+    </View>
+  );
+}
+
+/** One figure of the caliper readout — label above, tabular number below. */
+function ReadoutCell({ label, value, tint }: { label: string; value: string; tint?: string }) {
+  const t = useTheme();
+  return (
+    <View style={styles.readoutCell}>
+      <Text style={[styles.readoutLabel, { color: t.textTertiary }]} allowFontScaling={false}>
+        {label}
+      </Text>
+      <Text
+        style={[styles.readoutValue, { color: tint ?? t.textPrimary }]}
+        allowFontScaling={false}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
@@ -542,7 +697,7 @@ function CadenceCard({ stats, rtl }: { stats: MeasurementStats; rtl: boolean }) 
 
   return (
     <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-      <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
+      <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
         {tr('insCadenceTitle')}
       </Text>
       <View style={[styles.factRow, rtl && styles.rowRtl]}>
@@ -571,38 +726,71 @@ function CadenceCard({ stats, rtl }: { stats: MeasurementStats; rtl: boolean }) 
 }
 
 /** " · II" for one lead, " · 6 leads" for many, nothing for a study-wide number. */
-function leadSuffix(g: DeviationGroup, tr: (k: TranslationKey, v?: Record<string, string>) => string): string {
+function leadSuffix(
+  g: DeviationGroup,
+  tr: (k: TranslationKey, v?: Record<string, string>) => string,
+): string {
   if (g.leads.length === 0) return '';
   if (g.leads.length === 1) return ` · ${g.leads[0]}`;
   return ` · ${tr('insDevLeads', { n: String(g.leads.length) })}`;
 }
 
-/** Green only when nothing is marked — colour must agree with the chips. */
-function scoreColour(match: IdentityMatch, t: { success: string; danger: string; textPrimary: string }): string {
-  if (match.deviations.some((d) => d.severity === 'marked')) return t.danger;
-  if (match.similarity >= 90) return t.success;
-  return t.textPrimary;
+/**
+ * The match figure's colour.
+ *
+ * Amber when something is marked, and otherwise NEUTRAL — not green. A
+ * high match is the ordinary case, and painting the ordinary case as a
+ * pass implies the other case is a fail, which is a verdict this layer
+ * does not get to reach.
+ */
+function scoreColour(
+  match: IdentityMatch,
+  t: { attention: string; textPrimary: string },
+): string {
+  return match.deviations.some((d) => d.severity === 'marked') ? t.attention : t.textPrimary;
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { gap: 10, paddingBottom: 16 },
+  content: { gap: 10 },
   rowRtl: { flexDirection: 'row-reverse' },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
 
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: CARD_PAD, gap: 10 },
+  card: {
+    borderRadius: RADIUS.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: CARD_PAD,
+    gap: 10,
+  },
   standalone: { padding: 24, gap: 8 },
   cardTitle: { fontSize: 16, fontWeight: '700' },
+  /* Small-caps, letterspaced, tertiary — the register an instrument labels
+     its own panels in, and quiet enough that the DATA is the loud thing. */
+  sectionTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase' },
   body: { fontSize: 14, lineHeight: 20 },
-  meta: { fontSize: 12.5 },
+  meta: { fontSize: 12.5, flexShrink: 1 },
   hint: { fontSize: 11.5, lineHeight: 16 },
 
-  heroHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroText: { flex: 1, gap: 4 },
-  heroTitle: { fontSize: 24, fontWeight: '800', letterSpacing: 0.2 },
-  pillRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },
-  pillText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  /* ★ `flexShrink` + `minWidth: 0` is what keeps this column out from
+     under the ring. A Text in a row does not wrap by default — it
+     overflows its parent and prints straight through whatever is beside
+     it, which is precisely what "Confidence 48%" did. */
+  headText: { flex: 1, flexShrink: 1, minWidth: 0, gap: 3 },
+  title: { fontSize: 26, fontWeight: '800', letterSpacing: -0.3 },
+  state: { fontSize: 11, fontWeight: '800', letterSpacing: 0.9, textTransform: 'uppercase' },
+
+  readout: { flexDirection: 'row', alignItems: 'center', gap: 18, minHeight: 30 },
+  readoutCell: { gap: 1 },
+  readoutLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase' },
+  readoutValue: { fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
+
+  rule: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
 
   legend: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -617,7 +805,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 7,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   toggleText: { fontSize: 12.5, fontWeight: '700' },
 
@@ -642,7 +830,12 @@ const styles = StyleSheet.create({
   tile: { flexGrow: 1, flexBasis: '46%' },
 
   factRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  fact: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: RADIUS.sm, borderWidth: 1 },
+  fact: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: RADIUS.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   factText: { fontSize: 11.5, fontWeight: '600' },
 
   reasons: { gap: 3, marginTop: 4 },
@@ -651,8 +844,23 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 11, lineHeight: 16, paddingHorizontal: 4, textAlign: 'center' },
 });
 
-// v1.0.0 — The Insights tab: the ECG ID on paper inside its own corridor, the
-//          newest study measured against it, the enrollment studies that
-//          disagree, the match history, the baseline numbers and the
-//          measurement habit — with the "not a diagnosis" line as part of the
-//          screen rather than an afterthought.
+// v2.0.0 — Reworked after device feedback that it read as a landing page rather
+//          than an instrument:
+//            • the green ESTABLISHED capsule is gone — state is a letterspaced
+//              small-caps line, because green means "pass" and a baseline
+//              existing is not a pass;
+//            • the header column now shrinks, so it no longer prints under the
+//              ring (a Text in a row does not wrap — it overflows);
+//            • red is gone from every routine surface in favour of amber, and
+//              the deviation chips gained a sentence saying what a difference
+//              actually is;
+//            • hairline rules and tabular figures throughout;
+//            • a draggable CALIPER on the signature, reading out in the chrome;
+//            • a BUILDER that assembles the baseline study by study under the
+//              finger — the one control that explains the feature rather than
+//              describing it;
+//            • the discarded beats are drawn against the accepted one;
+//            • the dock's clearance moved onto this scroll view's content
+//              inset, so the page passes BEHIND the glass instead of stopping
+//              on a bare grey strip above it.
+// v1.0.0 — The Insights tab.
