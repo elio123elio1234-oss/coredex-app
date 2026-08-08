@@ -14,7 +14,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { emptySchedule, type MeasurementSchedule } from '@cyphix/shared';
+import { emptySchedule, normalizeSchedule, type MeasurementSchedule } from '@cyphix/shared';
 import { DEFAULT_LANG, type LangCode } from '@/i18n/config';
 import type { BgStyle } from '@/theme/shellTheme';
 import { DEFAULT_BG } from '@/theme/shellTheme';
@@ -81,9 +81,39 @@ const slice = createSlice({
   name: 'preferences',
   initialState,
   reducers: {
-    /** Replace the defaults with whatever was on disk (partial is fine). */
+    /**
+     * Replace the defaults with whatever was on disk.
+     *
+     * ★ NESTED OBJECTS ARE MERGED, NOT REPLACED — and this is not
+     * tidiness, it is the fix for a crash.
+     *
+     * A plain `{ ...state, ...payload }` swaps each nested object out
+     * WHOLESALE, so a blob written by an older version arrives missing
+     * every field added since, and those fields end up `undefined`
+     * instead of taking their default. v0.35.0 added
+     * `schedule.followUpMinutes`; on every existing install it hydrated as
+     * `undefined`, passed a `!== null` guard, produced `new Date(NaN)` —
+     * truthy, so it survived the next guard too — and crashed the app at
+     * the OS scheduler on every navigation.
+     *
+     * What is on disk was written by a DIFFERENT PROGRAM (an older build
+     * of this one). It is untrusted input and is treated as such: the
+     * defaults win for anything it does not carry, and `schedule` is put
+     * through `normalizeSchedule`, which validates types and ranges
+     * rather than assuming the shape.
+     *
+     * ⚠️ A new nested object in this state needs a line here. A new field
+     * inside `schedule` needs a line in `normalizeSchedule`.
+     */
     hydrate(state, action: PayloadAction<Partial<PreferencesState>>) {
-      return { ...state, ...action.payload, loaded: true };
+      const stored = action.payload;
+      return {
+        ...state,
+        ...stored,
+        notifications: { ...state.notifications, ...(stored.notifications ?? {}) },
+        schedule: normalizeSchedule(stored.schedule ?? state.schedule),
+        loaded: true,
+      };
     },
     setTheme(state, action: PayloadAction<ThemeChoice>) {
       state.theme = action.payload;
@@ -103,9 +133,10 @@ const slice = createSlice({
     setLanguage(state, action: PayloadAction<LangCode>) {
       state.language = action.payload;
     },
-    /** Replace the whole schedule. The editor commits once, on close. */
+    /** Replace the whole schedule. Normalised on the way in, so a bad
+        value can never be persisted and read back as a crash later. */
     setSchedule(state, action: PayloadAction<MeasurementSchedule>) {
-      state.schedule = action.payload;
+      state.schedule = normalizeSchedule(action.payload);
     },
   },
 });
@@ -147,6 +178,11 @@ export async function writePreferences(state: PreferencesState): Promise<void> {
   }
 }
 
+// v1.3.0 — `hydrate` MERGES nested objects instead of replacing them, and puts
+//          `schedule` through `normalizeSchedule`. Replacing wholesale meant a
+//          blob written by an older build arrived missing every field added
+//          since — which is exactly how v0.35.0's `followUpMinutes` hydrated as
+//          `undefined` and crashed the app (see the reducer's comment).
 // v1.2.0 — Adds `schedule` (the measurement-reminder times). Same argument as
 //          `language` for putting it here: the Tests badge prints the next
 //          reminder, and a separate async key would draw that badge empty and

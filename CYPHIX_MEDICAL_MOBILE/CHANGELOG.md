@@ -1,5 +1,63 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.35.1 — 2026-08-08 — Fixes the v0.35.0 crash
+
+**v0.35.0 crashed the app on every navigation.** Reported from the phone as
+"it crashes when I press anywhere". Production was rolled back to the embedded
+0.34.0 bundle within minutes of the report; this is the fix.
+
+### What happened
+
+v0.35.0 added `schedule.followUpMinutes`. Every existing install had a schedule
+**persisted by v0.34**, which has no such field — and `hydrate` was
+`{ ...state, ...payload }`, which replaces a nested object *wholesale*, so the
+new field never took its default.
+
+From there it is a chain of four things each of which looked fine:
+
+1. `followUpMinutes` hydrated as `undefined`.
+2. `undefined !== null` — so the "is the follow-up switched on?" guard **passed**.
+3. `new Date(NaN)` was built from it.
+4. **An Invalid Date is truthy**, so it also survived `if (!followUpAt) continue`.
+
+Handing that to the OS scheduler threw, inside a `void (async () => …)()` with
+no `catch` — an unhandled rejection. `useReminders` is mounted by the Tests
+**tab**, so it re-fired on essentially any navigation.
+
+### Fixed in four places, on purpose
+
+Any one of them alone would have left the next version of this bug alive:
+
+1. **`hydrate` merges nested objects** and puts the schedule through the new
+   `normalizeSchedule`. This is the root cause: *what is on disk was written by
+   a different program* — an older build of this one — and is untrusted input.
+2. **`normalizeSchedule`** (shared) validates types and ranges, so every
+   optional-ish field has exactly one absent value and downstream code has one
+   thing to test.
+3. **The scheduler checks `Number.isFinite(date.getTime())`**, not truthiness,
+   and a `safely()` wrapper catches every call into `expo-notifications`.
+4. **Every `void (async …)()` in the feature catches.** A reminder that fails
+   to arm is a reminder that does not arrive; it must never be an app that dies.
+
+### Verified
+
+Against the exact blob that crashed it, plus fourteen other shapes a disk can
+hand back — `null`, a string, missing slot ids, `NaN` times, times outside the
+day, `followUpMinutes` as `NaN` / `"60"` / `0` / `-30`, `enabled: "yes"`, nine
+slots. None produce an invalid date; the good schedule still produces 19:00 →
+20:00. The nine behaviour cases from v0.35.0 all still pass.
+
+### The lesson, which is worth more than the fix
+
+**A persisted shape is untrusted input, and `x !== null` is not a null check
+when the value can be `undefined`.** Both are now written into the code at the
+places that have to remember them: the `hydrate` reducer, `normalizeSchedule`,
+and the guard in the scheduler.
+
+Worth saying plainly: typecheck, both bundles and `expo-doctor` all passed on
+v0.35.0. None of them can see a value that only exists on a device that has
+been running an older version of the app.
+
 ## v0.35.0 — 2026-08-08 — Reminders ask a second time, and carry Snooze / Done
 
 Set a reading for 19:00 and, if nothing is in your history by 20:00, the phone

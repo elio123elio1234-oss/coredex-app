@@ -1,7 +1,38 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.35.0';
-export const APP_BUILD_LABEL = 'Reminders ask a second time if nothing was recorded, and carry Snooze / Done';
+export const APP_VERSION = '0.35.1';
+export const APP_BUILD_LABEL = 'Fixes the v0.35.0 crash: a stored schedule written by an older build';
+
+// v0.35.1 — ⚠️ v0.35.0 CRASHED THE APP ON EVERY NAVIGATION. Rolled back to the
+//           embedded 0.34.0 bundle within minutes; this is the fix.
+//           WHAT HAPPENED. v0.35.0 added `schedule.followUpMinutes`. Every
+//           existing install had a schedule PERSISTED BY v0.34, which has no
+//           such field — and `hydrate` was `{ ...state, ...payload }`, which
+//           replaces a nested object WHOLESALE, so the default never applied.
+//           It came back `undefined`; `undefined !== null` passed the "is the
+//           follow-up on?" guard; `new Date(NaN)` was built; and an Invalid
+//           Date is TRUTHY, so it also survived `if (!followUpAt) continue`.
+//           Handing it to the OS scheduler threw, inside a `void (async …)()`
+//           with no catch — an unhandled rejection. `useReminders` is mounted
+//           by the Tests TAB, so it re-fired on any navigation.
+//           FIXED IN FOUR PLACES, because any one of them alone would have
+//           left the next version of this bug live:
+//             1. `hydrate` MERGES nested objects and runs the schedule through
+//                the new `normalizeSchedule` — the root cause. What is on disk
+//                was written by a different program and is untrusted input.
+//             2. `normalizeSchedule` (shared) validates types and ranges, so
+//                every optional field has exactly one absent value.
+//             3. The scheduler checks `Number.isFinite(date.getTime())` rather
+//                than truthiness, and `safely()` wraps every call into
+//                expo-notifications.
+//             4. Every `void (async …)()` in the feature now catches. A
+//                reminder that fails to arm is a reminder that does not
+//                arrive; it must never be an app that dies.
+//           Verified against the exact crashing blob plus fourteen other
+//           malformed shapes, and the nine behaviour cases still pass.
+//           ★ THE LESSON, worth more than the fix: a persisted shape is
+//           untrusted input, and `x !== null` is not a null check when the
+//           value can be `undefined`.
 
 // v0.35.0 — Two additions to reminders, both asked for.
 //           THE SECOND ASK. Set a reading for 19:00 and, if nothing is in your

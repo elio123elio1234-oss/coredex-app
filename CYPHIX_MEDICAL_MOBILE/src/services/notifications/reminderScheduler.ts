@@ -52,31 +52,32 @@
    answer it is.
    ================================================================== */
 
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 import {
   isOccurrenceSatisfied,
+  normalizeSchedule,
   sortSlots,
   SNOOZE_MINUTES,
   upcomingOccurrences,
   type MeasurementSchedule,
-} from '@cyphix/shared';
+} from "@cyphix/shared";
 
 /** Android needs a channel before anything can be posted to it. */
-const CHANNEL_ID = 'measurement-reminders';
+const CHANNEL_ID = "measurement-reminders";
 
 /** Marks a notification as ours, so a future feature's alerts survive a cancel. */
-const REMINDER_TAG = 'cyphix.measurementReminder';
+const REMINDER_TAG = "cyphix.measurementReminder";
 
 /** The interactive category both kinds of reminder are posted under. */
-const CATEGORY_ID = 'cyphix.reminder';
-const ACTION_SNOOZE = 'cyphix.reminder.snooze';
-const ACTION_DONE = 'cyphix.reminder.done';
+const CATEGORY_ID = "cyphix.reminder";
+const ACTION_SNOOZE = "cyphix.reminder.snooze";
+const ACTION_DONE = "cyphix.reminder.done";
 
 /** How far ahead the conditional follow-ups are armed. See the header. */
 const FOLLOW_UP_DAYS = 7;
 
-export type PermissionOutcome = 'granted' | 'denied' | 'undetermined';
+export type PermissionOutcome = "granted" | "denied" | "undetermined";
 
 /** Every string the OS will show. Injected, never imported — see `applySchedule`. */
 export interface ReminderCopy {
@@ -131,12 +132,34 @@ function queue<T>(job: () => Promise<T>): Promise<T> {
   return next;
 }
 
+/**
+ * Run an OS call and swallow its failure.
+ *
+ * ★ A reminder that fails to arm is a reminder that does not arrive. It
+ * must never be an app that dies — and in v0.35.0 it was exactly that: one
+ * rejected `scheduleNotificationAsync` became an unhandled rejection and
+ * took the whole app down on every navigation.
+ *
+ * Deliberately silent rather than rethrowing: there is no caller anywhere
+ * up this stack for whom "the notification could not be scheduled" is
+ * worth interrupting a patient over, and `applySchedule` already reports
+ * the one failure that IS actionable — permission.
+ */
+async function safely(what: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await what();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /* ══════════════════ OS set-up ══════════════════ */
 
 async function ensureChannel(): Promise<void> {
-  if (Platform.OS !== 'android') return;
+  if (Platform.OS !== "android") return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: 'Measurement reminders',
+    name: "Measurement reminders",
     importance: Notifications.AndroidImportance.DEFAULT,
     /* DEFAULT, not HIGH: this is a routine nudge, and a heads-up
        notification that jumps over what someone is doing is for something
@@ -169,19 +192,19 @@ async function ensureCategory(copy: ReminderCopy): Promise<void> {
 
 export async function requestPermission(): Promise<PermissionOutcome> {
   const current = await Notifications.getPermissionsAsync();
-  if (current.granted) return 'granted';
-  if (!current.canAskAgain) return 'denied';
+  if (current.granted) return "granted";
+  if (!current.canAskAgain) return "denied";
 
   const asked = await Notifications.requestPermissionsAsync({
     ios: { allowAlert: true, allowSound: true, allowBadge: false },
   });
-  return asked.granted ? 'granted' : 'denied';
+  return asked.granted ? "granted" : "denied";
 }
 
 export async function permissionStatus(): Promise<PermissionOutcome> {
   const current = await Notifications.getPermissionsAsync();
-  if (current.granted) return 'granted';
-  return current.canAskAgain ? 'undetermined' : 'denied';
+  if (current.granted) return "granted";
+  return current.canAskAgain ? "undetermined" : "denied";
 }
 
 /* ══════════════════ Cancelling ══════════════════ */
@@ -229,6 +252,11 @@ export function applySchedule(
 ): Promise<ApplyResult> {
   return queue(async () => {
     lastCopy = copy;
+    /* ★ Normalised HERE too, not only by the caller. This is the boundary
+       to the operating system: whatever reaches it must already be valid,
+       and a service that trusts its argument to have been cleaned
+       upstream is a service that breaks the day a second caller appears. */
+    schedule = normalizeSchedule(schedule);
 
     for (const n of await ours()) {
       await Notifications.cancelScheduledNotificationAsync(n.identifier);
@@ -239,62 +267,77 @@ export function applySchedule(
     }
 
     const permission = await requestPermission();
-    if (permission !== 'granted') return { daily: 0, followUps: 0, permission };
+    if (permission !== "granted") return { daily: 0, followUps: 0, permission };
 
-    await ensureChannel();
-    await ensureCategory(copy);
+    await safely(() => ensureChannel());
+    await safely(() => ensureCategory(copy));
 
     /* ── The primary reminders: repeating, unconditional ── */
     const slots = sortSlots(schedule.slots);
+    let daily = 0;
     for (const slot of slots) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: copy.title,
-          body: copy.body,
-          data: { tag: REMINDER_TAG, kind: 'primary', slotId: slot.id },
-          categoryIdentifier: CATEGORY_ID,
-          ...(Platform.OS === 'android' ? {} : { sound: 'default' }),
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour: Math.floor(slot.at / 60),
-          minute: slot.at % 60,
-          ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}),
-        },
-      });
+      const ok = await safely(() =>
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: copy.title,
+            body: copy.body,
+            data: { tag: REMINDER_TAG, kind: "primary", slotId: slot.id },
+            categoryIdentifier: CATEGORY_ID,
+            ...(Platform.OS === "android" ? {} : { sound: "default" }),
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: Math.floor(slot.at / 60),
+            minute: slot.at % 60,
+            ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
+          },
+        }),
+      );
+      if (ok) daily++;
     }
 
     /* ── The follow-ups: dated, and only where still owed ── */
     let followUps = 0;
     if (schedule.followUpMinutes !== null) {
       for (const occurrence of upcomingOccurrences(schedule, FOLLOW_UP_DAYS)) {
-        if (!occurrence.followUpAt) continue;
+        /* ⚠️ `Number.isFinite(getTime())`, not `if (!followUpAt)`. An
+           Invalid Date is TRUTHY, so the obvious guard passes it straight
+           through to the OS — which throws, and that throw is what took
+           the app down on every navigation in v0.35.0. A Date is not
+           validated by being present. */
+        const fireAt = occurrence.followUpAt;
+        if (!fireAt || !Number.isFinite(fireAt.getTime())) continue;
         if (isOccurrenceSatisfied(occurrence, measurementTimes)) continue;
 
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: copy.followUpTitle,
-            body: copy.followUpBody,
-            data: {
-              tag: REMINDER_TAG,
-              kind: 'followUp',
-              slotId: occurrence.slotId,
-              due: occurrence.at.getTime(),
+        const armed = await safely(() =>
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: copy.followUpTitle,
+              body: copy.followUpBody,
+              data: {
+                tag: REMINDER_TAG,
+                kind: "followUp",
+                slotId: occurrence.slotId,
+                due: occurrence.at.getTime(),
+              },
+              categoryIdentifier: CATEGORY_ID,
+              ...(Platform.OS === "android" ? {} : { sound: "default" }),
             },
-            categoryIdentifier: CATEGORY_ID,
-            ...(Platform.OS === 'android' ? {} : { sound: 'default' }),
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: occurrence.followUpAt,
-            ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}),
-          },
-        });
-        followUps++;
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              // The hoisted local, not the property: a closure loses the
+              // narrowing the guard above just established — which is TS
+              // telling us the same thing the crash did.
+              date: fireAt,
+              ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
+            },
+          }),
+        );
+        if (armed) followUps++;
       }
     }
 
-    return { daily: slots.length, followUps, permission };
+    return { daily, followUps, permission };
   });
 }
 
@@ -311,27 +354,28 @@ export function applySchedule(
 Notifications.addNotificationResponseReceivedListener((response) => {
   const action = response.actionIdentifier;
   const data = response.notification.request.content.data as
-    | { slotId?: string; due?: number }
-    | undefined;
+    { slotId?: string; due?: number } | undefined;
 
   if (action === ACTION_SNOOZE) {
     const copy = lastCopy;
     if (!copy) return;
-    void Notifications.scheduleNotificationAsync({
-      content: {
-        title: copy.title,
-        body: copy.body,
-        data: { tag: REMINDER_TAG, kind: 'snoozed', slotId: data?.slotId },
-        categoryIdentifier: CATEGORY_ID,
-        ...(Platform.OS === 'android' ? {} : { sound: 'default' }),
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: SNOOZE_MINUTES * 60,
-        repeats: false,
-        ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}),
-      },
-    });
+    void safely(() =>
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: copy.title,
+          body: copy.body,
+          data: { tag: REMINDER_TAG, kind: "snoozed", slotId: data?.slotId },
+          categoryIdentifier: CATEGORY_ID,
+          ...(Platform.OS === "android" ? {} : { sound: "default" }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: SNOOZE_MINUTES * 60,
+          repeats: false,
+          ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
+        },
+      }),
+    );
     return;
   }
 
@@ -342,8 +386,13 @@ Notifications.addNotificationResponseReceivedListener((response) => {
        cancelling all of them would silence the rest of the week. */
     void queue(async () => {
       for (const n of await ours()) {
-        const d = n.content.data as { kind?: string; slotId?: string; due?: number } | undefined;
-        if (d?.kind === 'followUp' && d.slotId === data?.slotId && d.due === data?.due) {
+        const d = n.content.data as
+          { kind?: string; slotId?: string; due?: number } | undefined;
+        if (
+          d?.kind === "followUp" &&
+          d.slotId === data?.slotId &&
+          d.due === data?.due
+        ) {
           await Notifications.cancelScheduledNotificationAsync(n.identifier);
         }
       }
@@ -351,6 +400,14 @@ Notifications.addNotificationResponseReceivedListener((response) => {
   }
 });
 
+// v2.1.0 — HARDENED after v0.35.0 crashed the app on every navigation. The
+//          schedule is normalised at this boundary as well as by the caller, a
+//          follow-up date is checked with `Number.isFinite(getTime())` rather
+//          than for truthiness (an Invalid Date is truthy, which is precisely
+//          how the bad value reached the OS), and `safely()` wraps every call
+//          into `expo-notifications` so one rejected notification can never
+//          become an unhandled rejection. A reminder failing to arm is a
+//          reminder that does not arrive; it must never be an app that dies.
 // v2.0.0 — Adds the CONDITIONAL second ask and the Snooze / Done actions.
 //          Follow-ups are DATED one-shots armed a week ahead and skipped where
 //          a measurement already answers them: they cannot be repeating

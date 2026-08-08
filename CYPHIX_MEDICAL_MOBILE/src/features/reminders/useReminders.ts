@@ -44,8 +44,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  emptySchedule,
   nextOccurrence,
+  normalizeSchedule,
   resizeSchedule,
   sortSlots,
   type MeasurementSchedule,
@@ -98,7 +98,12 @@ export function useReminders(): UseReminders {
   const { t: tr, lang } = useTranslation();
   const [permission, setPermission] = useState<PermissionOutcome>('undetermined');
 
-  const schedule = prefs.schedule ?? emptySchedule();
+  /* ★ Normalised, not just defaulted. `prefs.schedule` is read back off a
+     disk written by an OLDER BUILD of this app — a different program — so
+     a field added since arrives `undefined` rather than at its default.
+     That is precisely how v0.35.0 crashed: `followUpMinutes` was missing,
+     `undefined !== null` passed, and `new Date(NaN)` reached the OS. */
+  const schedule = useMemo(() => normalizeSchedule(prefs.schedule), [prefs.schedule]);
   /* The master switch and the times are separate settings, and BOTH have
      to be on. Folding them into one would mean a patient silencing
      reminders lost the times they had chosen. */
@@ -139,12 +144,16 @@ export function useReminders(): UseReminders {
   const push = useCallback(
     async (next: MeasurementSchedule) => {
       dispatch(setSchedule(next));
-      const result = await applySchedule(
-        { ...next, enabled: next.enabled && prefs.notifications.testReminders },
-        copy,
-        measurementTimes,
-      );
-      setPermission(result.permission);
+      try {
+        const result = await applySchedule(
+          { ...next, enabled: next.enabled && prefs.notifications.testReminders },
+          copy,
+          measurementTimes,
+        );
+        setPermission(result.permission);
+      } catch {
+        // Same rule as the effect below: the schedule is saved either way.
+      }
     },
     [dispatch, prefs.notifications.testReminders, copy, measurementTimes],
   );
@@ -153,8 +162,15 @@ export function useReminders(): UseReminders {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const result = await applySchedule({ ...schedule, enabled: armed }, copy, measurementTimes);
-      if (!cancelled) setPermission(result.permission);
+      try {
+        const result = await applySchedule({ ...schedule, enabled: armed }, copy, measurementTimes);
+        if (!cancelled) setPermission(result.permission);
+      } catch {
+        /* ⚠️ A `void (async …)()` with no catch is how a background
+           concern becomes a crash: an unhandled rejection here took the
+           whole app down in v0.35.0. Reminders failing to arm is a bad
+           day for reminders and must never be one for the app. */
+      }
     })();
     return () => {
       cancelled = true;
@@ -228,6 +244,10 @@ export function useReminders(): UseReminders {
   };
 }
 
+// v2.1.0 — Normalises the schedule read back from storage, and CATCHES around
+//          every apply. v0.35.0 crashed on every navigation because a field
+//          added in that release hydrated as `undefined` from a blob an older
+//          build had written, and the resulting rejection was unhandled.
 // v2.0.0 — Feeds the scheduler the recent MEASUREMENT TIMES, so a conditional
 //          follow-up whose window already contains a recording is never armed —
 //          cheaper than cancelling one later, and it works for a reading taken

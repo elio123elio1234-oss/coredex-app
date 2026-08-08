@@ -113,6 +113,60 @@ export function emptySchedule(): MeasurementSchedule {
 }
 
 /**
+ * ★ Make a schedule read back off a disk safe to use.
+ *
+ * ══ THIS EXISTS BECAUSE IT ALREADY CRASHED THE APP ══
+ * v0.35.0 added `followUpMinutes` and shipped over installs whose stored
+ * schedule was written by v0.34, which had no such field. It came back
+ * `undefined`, `undefined !== null` passed the "is the follow-up on?"
+ * guard, and the result was `new Date(NaN)` — an **Invalid Date, which is
+ * truthy**, so it also survived a `if (!followUpAt) continue`. Handing
+ * that to the OS scheduler threw, and the throw took the app down on
+ * every navigation.
+ *
+ * Three lessons are baked in here rather than left to be relearned:
+ *   1. A persisted shape is UNTRUSTED INPUT. It was written by an older
+ *      version of this code, which is a different program.
+ *   2. `x !== null` is not a null check when the value can be undefined.
+ *      Every optional-ish field below is coerced to exactly one absent
+ *      value, so downstream code has one thing to test.
+ *   3. An Invalid Date passes every truthiness test there is. Numbers are
+ *      validated here, before a Date is ever built from them.
+ *
+ * Call it on ANYTHING that came from storage or the network — and when
+ * the next field is added to this type, it gets a line here first.
+ */
+export function normalizeSchedule(raw: unknown): MeasurementSchedule {
+  const base = emptySchedule();
+  if (!raw || typeof raw !== 'object') return base;
+  const r = raw as Partial<Record<keyof MeasurementSchedule, unknown>>;
+
+  const slots = Array.isArray(r.slots)
+    ? r.slots
+        .filter(
+          (s): s is ReminderSlot =>
+            !!s &&
+            typeof s === 'object' &&
+            typeof (s as ReminderSlot).id === 'string' &&
+            Number.isFinite((s as ReminderSlot).at),
+        )
+        // A time outside the day is a corrupt row, not a reminder at 34:00.
+        .filter((s) => s.at >= 0 && s.at < 24 * 60)
+        .map((s) => ({ id: s.id, at: Math.round(s.at) }))
+    : [];
+
+  const follow = r.followUpMinutes;
+  return {
+    enabled: r.enabled === true,
+    slots: sortSlots(slots).slice(0, MAX_REMINDERS_PER_DAY),
+    followUpMinutes: typeof follow === 'number' && Number.isFinite(follow) && follow > 0
+      ? Math.round(follow)
+      : null,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : null,
+  };
+}
+
+/**
  * Resize a schedule to `count` slots, keeping the times already chosen.
  *
  * Growing appends from the defaults for the NEW size rather than
@@ -219,6 +273,18 @@ export function upcomingOccurrences(
 ): SlotOccurrence[] {
   if (!schedule.enabled || schedule.slots.length === 0) return [];
 
+  /* ⚠️ NOT `!== null`. This function is reached with schedules read off a
+     disk, and `undefined` used to slip through that test and produce
+     `new Date(NaN)` — which is truthy, so it survived every downstream
+     guard and crashed the app at the OS boundary. `normalizeSchedule`
+     should have made this unnecessary; it is here anyway, because a pure
+     function has no business emitting an Invalid Date whatever it is
+     handed. */
+  const followUp =
+    typeof schedule.followUpMinutes === 'number' && Number.isFinite(schedule.followUpMinutes)
+      ? schedule.followUpMinutes
+      : null;
+
   const out: SlotOccurrence[] = [];
   const midnight = new Date(from.getFullYear(), from.getMonth(), from.getDate());
 
@@ -233,10 +299,7 @@ export function upcomingOccurrences(
       at.setHours(Math.floor(slot.at / 60), slot.at % 60, 0, 0);
       if (at.getTime() <= from.getTime()) continue;
 
-      const followUpAt =
-        schedule.followUpMinutes === null
-          ? null
-          : new Date(at.getTime() + schedule.followUpMinutes * 60_000);
+      const followUpAt = followUp === null ? null : new Date(at.getTime() + followUp * 60_000);
 
       out.push({ slotId: slot.id, at, followUpAt });
     }
