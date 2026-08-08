@@ -359,6 +359,82 @@ export const en = {
   histDeleteFailed: 'Could not delete the recording. Try again.',
   viewerRetry: 'Try again',
 
+  /* ── History → Insights: the ECG ID ──
+     ★ Copy rules for this whole block, because it is the easiest place in
+     the app to write something that becomes a diagnosis by accident:
+       • never a verdict — no "normal", "abnormal", "healthy", "concerning";
+       • every difference is stated as a distance from the PATIENT'S OWN
+         baseline, never from a population range;
+       • never an instruction — "see a doctor" is a clinical decision this
+         app is not licensed to make. "Open the study" is a UI action and
+         is fine.
+     `insDisclaimer` is part of the screen, not boilerplate. */
+  insTabStudies: 'Studies',
+  insTabInsights: 'Insights',
+
+  insTitle: 'ECG ID',
+  insBuilding: 'Building your ECG ID',
+  insBuildingBody: 'Reading your studies…',
+  insProgress: 'Analysing study {done} of {total}',
+  insEmptyTitle: 'No ECG ID yet',
+  insEmptyBody:
+    'Once a few clean studies are recorded, CYPHIX averages the beats in each one into a single representative beat — and those into a baseline that is yours. Every new study is then measured against it.',
+
+  insMatEnrolling: 'ENROLLING',
+  insMatEstablished: 'ESTABLISHED',
+  insEnrollLabel: 'Studies enrolled',
+  insEnrollHint:
+    '{n} more clean studies and the baseline is set. Early studies shape it the most.',
+  insConfidence: 'Confidence {n}%',
+  insBuiltFrom: 'Built from {n} studies',
+
+  insCompareLatest: 'Overlay latest study',
+  insLegendBand: 'Your usual range',
+  insLegendLatest: 'Latest study',
+  insCoverageBody:
+    'Studies behind each lead. V1–V6 fill in on their own when a 12-lead test is recorded.',
+
+  insLatestTitle: 'Latest study',
+  insMatch: '{n}% match',
+  insNoDeviations: 'Nothing measurably different from your baseline.',
+
+  insFlaggedTitle: 'Early studies that disagree',
+  insFlaggedBody:
+    'The first studies weigh most, so one recorded with a loose electrode would bend the baseline everything else is compared against. Open these and check them.',
+
+  insTimelineTitle: 'Match over time',
+  insBaselineTitle: 'Your baseline',
+  insCadenceTitle: 'When you measure',
+  insCadenceStudies: '{n} studies',
+  insCadencePerWeek: '{n} a week',
+  insCadenceStreak: '{n} weeks running',
+  insCadenceGap: 'Longest gap {n} days',
+  insCadenceLast: 'Last {n} days ago',
+  insCadenceToday: 'Recorded today',
+  insCadenceBusiest: 'Most often between {from}:00 and {to}:00',
+
+  /* Chip labels — short on purpose; the full names (`iQRS`…) do not fit. */
+  insDevShape: 'Shape',
+  insDevBand: 'Outside range',
+  insDevAmplitude: 'Amplitude',
+  insDevQrs: 'QRS',
+  insDevQtc: 'QTc',
+  insDevPr: 'PR',
+  insDevAxis: 'Axis',
+  insDevRate: 'Rate',
+  insDevLeads: '{n} leads',
+  insSevWatch: 'small difference',
+  insSevMarked: 'large difference',
+
+  insExSimulated: 'Simulation — not counted',
+  insExFewBeats: 'Too few clean beats',
+  insExLowQuality: 'Signal too unsteady',
+  insExOutlier: 'Does not match your other studies',
+  insExcludedShort: 'Not counted',
+
+  insDisclaimer:
+    'A comparison with this person’s own earlier recordings, not with a population. It is not a diagnosis and does not replace clinical assessment.',
+
   /* ── Viewer tools ── */
   bpm: 'BPM',
   vtCalipers: 'Calipers',
@@ -660,6 +736,9 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.14.0 — The Insights tab (ECG ID). The copy rules for the block are written
+//           INTO the block, because it is the one place in this app where a
+//           careless adjective turns a measurement into a diagnosis.
 // v1.3.0 — Carries the whole signed-out flow: splash, welcome, sign-in,
 //          reset, registration, the six health steps, review and success —
 //          plus the failure codes, each mapped to one honest sentence.

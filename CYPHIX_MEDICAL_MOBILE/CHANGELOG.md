@@ -1,5 +1,171 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.31.0 — 2026-08-08 — History › Insights: your ECG ID, a baseline built from your own studies
+
+History could tell you what you have. It could not tell you whether anything
+had **changed** — and that is the question people actually open it with.
+
+It could not, structurally. "Has anything changed?" is a question about every
+study at once, and a list is a thing you read one row at a time. Forty rows
+contain the answer and cannot show it. So History now has two tabs, and the
+second one is a different kind of view.
+
+### What an ECG ID is
+
+Every recording of one person contains the same beat, drawn again and again
+with noise on top. Line those beats up on their R peaks and take a per-sample
+**median** and the uncorrelated part — mains hum, muscle, electrode movement,
+the baseline riding on the breath — collapses while the shape survives. With
+~12 beats the noise floor drops by roughly √12 ≈ 3.5×.
+
+This is not our invention. It is the *median beat* / representative complex
+that every clinical ECG cart computes, and it is what their automated
+measurements are actually taken from. It exists because you can see detail in
+it — a small Q wave, a subtle ST shift — that no single noisy beat shows.
+
+Do that per study, fuse the results across studies, and you get something one
+recording can never give: a **baseline**. Not "is this normal for a human",
+which is what a textbook range answers, but *is this normal for you* — which is
+the question that catches a change while it is still small, because a QRS that
+widened by 18 ms is still comfortably inside every textbook range.
+
+A clinician already does this by hand: pull up the old traces, lay them on top,
+see what moved. All this does is make it happen every time, and keep the
+arithmetic visible afterwards.
+
+### The five decisions that make it trustworthy
+
+**1. Not every study may define you.** Simulator output, low-SQI strips and
+recordings with too few clean beats are barred, each with a reason printed on
+screen. A baseline quietly built from a bad strip is *worse* than no baseline:
+it moves the reference, so the good studies then score as deviant and the real
+change hides in the noise.
+
+**2. The early studies weigh more — and are watched hardest.** Enrollment is
+when the reference is decided, exactly as with a fingerprint, so the first five
+studies carry a decaying boost. And *because* they do, an early study that
+disagrees with its own cohort is **flagged by name** rather than absorbed.
+Without that flag one loose electrode on day one would poison every comparison
+that followed, permanently and invisibly.
+
+**3. Studies that disagree are down-weighted, not averaged in.** A second pass
+re-weights each study by how well it agrees with the provisional baseline. One
+that correlates below the floor contributes nothing — it is still scored, still
+shown, it simply does not get to redefine the person.
+
+**4. A study is never scored against a baseline it helped build.** Every match
+uses a **leave-one-out** baseline. Skipping this is the classic way a system
+like this fools itself: with few studies each one drags the mean toward itself
+and then reports an excellent match with largely its own reflection, which
+makes outliers the *least* likely thing it ever catches.
+
+**5. The corridor is measured, not chosen.** How far a trace may move before it
+counts as having moved comes from this person's own repeatability — the spread
+between their studies plus the spread within them — never from a constant
+somebody picked. It is drawn as a ±2σ band behind the beat.
+
+### ⚠️ Two real defects, found by running it rather than by reading it
+
+Both of these typechecked, bundled and passed `expo-doctor`. Both were found by
+building synthetic cohorts and printing what the algorithm actually decided.
+
+**The provisional baseline had to become a weighted MEDIAN.** With five
+consistent studies and one taken with a displaced electrode — bigger complexes,
+a flipped frontal axis — the mean-based version excluded **the five** as
+outliers and made **the one** the baseline. The minority did not merely survive;
+it won, and the patient's identity became the shape of their worst recording.
+
+The mechanism is worth stating because it is not obvious: in the leads where the
+bad study's polarity was reversed, the average of the two populations very
+nearly *cancelled*. That left a small, noise-shaped residual; the good studies
+correlated poorly against it, and the study that dominated what was left
+correlated well. **An estimator an outlier can pull cannot be used to find that
+outlier.** Median to find the inliers, weighted mean of the inliers to combine
+them.
+
+**The amplitude ratio needed an absolute floor.** Leads III and aVL are derived
+and often around 0.2 mV, so a 0.07 mV wobble is a 35 % change — and the ratio
+test reported `marked` on ordinary session-to-session variation in exactly those
+leads while the two measured leads stayed silent. It is now gated on a 0.3 mV
+baseline amplitude *and* on three times that lead's own measured tolerance.
+
+A third, smaller correction came from the same runs: the deviation thresholds
+are no longer one number applied to three intervals. QRS onset/offset come from
+a slope collapse — the firmest landmarks in the delineation — so 10 ms is real.
+PR needs **P onset**, the faintest landmark on the trace, and a 25 ms threshold
+there fired on delineation jitter between ordinary consecutive studies. A panel
+that cries "your PR changed" every other week teaches the reader to ignore it,
+which costs more than the one real finding it might catch. QRS [10, 20] ms,
+QTc [30, 50], PR [35, 55]; rate is reported but never graded past `watch`,
+because it moves with the stairs and the coffee.
+
+### Nothing here interprets
+
+Same rule as `ecgAnalysis.ts`, and it is load-bearing. Every output is a
+**distance from a baseline**, carrying the value, the baseline and the delta so
+a clinician can check the arithmetic and disagree with it — "QRS +14 ms,
+98 → 112". There is no "abnormal", no finding, no advice. Adding one would
+change what this product legally is. The screen says in plain words that it is
+a comparison with this person's own earlier recordings and not a diagnosis, and
+that line is part of the screen rather than boilerplate beside it.
+
+### Twelve leads, built in now rather than retrofitted
+
+Nothing in the stack counts to six. `EcgLeadName` is limb ∪ precordial and an
+identity holds a *partial* map keyed by it, so a study carrying V1–V6 extends
+the identity into those leads on its own while limb-only studies keep
+contributing to the limb leads and are not penalised for what they never had.
+The coverage grid prints all twelve with the un-measured ones explicitly empty —
+which is how a reader sees that this is a six-lead identity, and is the seam the
+12-lead hardware arrives through.
+
+### It is only ever slow once
+
+One template costs a base64 decode, six lead derivations, three filter stages
+per lead, a Pan-Tompkins pass and a median stack. Forty of those in one
+synchronous burst is a frozen screen — and `await` inside a CPU-bound loop
+yields *nothing*, so it has to be a real macrotask. The pass therefore starts
+after `runAfterInteractions`, does one study at a time with a yield between
+each, releases every waveform the moment it is used (`subscribe: false`, or
+forty of them sit in the RTK cache for the rest of the session), and says
+"Analysing study 12 of 34" instead of hiding behind a spinner of unknown length.
+
+Templates are then cached on the device, gated on `TEMPLATE_VERSION` so two
+generations of the maths can never be averaged into one signature. A recording
+is immutable, so its template is too: the second visit reads one file.
+
+### Where the code lives, and why that matters
+
+All of the maths is in **`CYPHIX_SHARED`** — `ecg/beatTemplate.ts`,
+`ecg/ecgIdentity.ts`, `ecg/measurementStats.ts` — with zero React, zero DOM and
+zero React Native imports. That is deliberate and it is the rule, not a
+preference: the web port is now a UI job, and the server can adopt the same
+functions unchanged the day this moves off-device. A second implementation of
+any of it would be a violation of the Cross-Platform Rule.
+
+**The web does not have this yet**, and its row in `PARITY.md` says so as
+`⏳ pending` — this shipped mobile-first at the user's request, and the ledger
+is the IOU.
+
+### Also in this release
+
+- **Measurement statistics** (`summariseMeasurementHistory`): totals, per-week
+  cadence, longest gap, weeks in a row, days since last, and a 24-bar
+  local-hour histogram with the busiest four-hour block lit. It sits beside the
+  baseline rather than in a stats corner because it *qualifies* it — six studies
+  all taken at 22:00 are a good baseline for late evenings and a poor one for a
+  07:00 comparison, and the hours are the only place a reader can see that. No
+  targets, no streak game: it counts and divides, it never advises.
+- The signature is drawn on the same millimetre paper as the report, at
+  **50 mm/s** — the clinical *detail* speed, printed on the sheet. 700 ms at
+  25 mm/s is 17.5 mm wide against ~27 mm tall, and a square-gridded sheet of
+  that is an unreadable vertical sliver. Gain drops to half-standard only when a
+  complex will not fit, and says so. A *fitted* scale was not used and must not
+  be: a QRS measured by eye off a 17 mm/s strip reads ~30 % narrow.
+- `SegmentedTabs` (already built for the report) carries the switch. Tabs rather
+  than a sixth dock item: both views are about the same records, and the reader
+  moves between them constantly — flag, open the study, back.
+
 ## v0.30.0 — 2026-08-07 — My Tests: one big circle per test, swipe or arrow between them
 
 The Tests tab has been a placeholder since v0.2 — a card saying results would

@@ -1,8 +1,38 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.30.0';
-export const APP_BUILD_LABEL = 'My Tests: one big circle per test, swipe or arrow between them';
+export const APP_VERSION = '0.31.0';
+export const APP_BUILD_LABEL = 'History › Insights: your ECG ID, a baseline beat built from your own studies';
 
+// v0.31.0 — History got a second tab, and with it the feature the app did not
+//           have: a way to answer "has anything CHANGED?".
+//           A list cannot answer that. It is a question about every study at
+//           once, and a list is read one row at a time — so the forty rows hold
+//           the answer and never show it.
+//           ECG ID. Every eligible study is reduced to its REPRESENTATIVE BEAT
+//           (the median of ~12 beats, ectopics rejected, cross-correlation
+//           realigned before averaging), those are fused into one weighted
+//           baseline, and every study is then scored against it. The clinical
+//           point is the part a textbook range cannot give: a QRS of 104 ms is
+//           unremarkable for a population and may be a 16 ms change for THIS
+//           person. Doing it by hand — pull the old traces, lay them on top —
+//           is how that is caught today; this just does it every time and keeps
+//           the arithmetic afterwards.
+//           The early studies weigh most, exactly as a fingerprint enrollment
+//           does — and BECAUSE they do, an early study that disagrees with its
+//           own cohort is flagged by name instead of absorbed.
+//           ⚠️ TWO REAL DEFECTS were found by running the algorithm on
+//           synthetic cohorts before shipping, and neither would have been
+//           found by reading it:
+//             • as a weighted MEAN, five consistent studies plus one bad one
+//               ended with the FIVE excluded and the ONE as the baseline. An
+//               estimator an outlier can pull cannot be used to find that
+//               outlier. The provisional baseline is now a per-sample weighted
+//               MEDIAN;
+//             • the amplitude ratio fired `marked` on the small derived leads
+//               (III, aVL) for ordinary session-to-session variation. It now
+//               needs an absolute floor as well as a ratio.
+//           This is an OTA: TypeScript only, no native module added, so
+//           `app.json` stays at 0.30.0 (mobile CLAUDE.md §5A.2).
 // v0.30.0 — The Tests tab stopped being a placeholder and became the web's test
 //           PICKER. One circle owns the screen instead of the web's 3-up grid,
 //           because the photograph is the interface here and a thumbnail is not

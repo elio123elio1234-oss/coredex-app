@@ -61,6 +61,27 @@ export * from './ecg/ecgAlign';
 export * from './ecg/ecgExport';
 export * from './ecg/ecgImport';
 
+/* ── ECG ID: a patient measured against THEMSELVES ────────────────
+   `ecgAlign` compares two studies. These three compare a study against
+   every study that came before it: `beatTemplate` reduces one recording
+   to its representative beat, `ecgIdentity` fuses those into a personal
+   baseline and scores each study against it (leave-one-out, so nothing is
+   ever graded against its own reflection), and `measurementStats` says
+   when the measuring actually happened.
+
+   Pure maths with no IO, so the same functions can move server-side
+   later without changing an answer — which is the point of them being
+   here rather than in the app that happens to run them today. Same
+   prohibition as `ecgAnalysis`: they measure distances, never meanings. */
+export * from './types/ecgIdentity';
+export * from './ecg/beatTemplate';
+export * from './ecg/ecgIdentity';
+export * from './ecg/measurementStats';
+
+// v1.7.0 — Adds the ECG ID stack (beat templates, the personal baseline, the
+//          measurement-cadence summary) and names the precordial leads, so the
+//          identity is written against "whatever leads a study had" rather than
+//          against six and 12-lead hardware extends it instead of replacing it.
 // v1.6.0 — Adds the sync contract (api/sync.ts): delta envelope + cursor rules
 //          + the 304 convention, so offline-first means one thing platform-wide.
 // v1.5.0 — Adds the patient medical-card contract (card, portrait, routes), so

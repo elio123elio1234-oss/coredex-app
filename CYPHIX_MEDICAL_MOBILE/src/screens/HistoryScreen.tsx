@@ -13,8 +13,27 @@
    patient-facing tab that is allowed to be a list of records rather than
    one big button.
 
+   ══ TWO TABS: STUDIES · INSIGHTS ══
+   The list answers "what do I have". It cannot answer "has anything
+   changed", because that question is about all the studies at once and a
+   list is a thing you read one row at a time. INSIGHTS is that second
+   view: the patient's ECG ID — a representative beat fused from every
+   good study — with every study scored against it.
+
+   They are TABS of one module rather than two dock destinations on
+   purpose. Both are about the same set of records, the dock is already
+   five items wide, and the reader moves between them constantly: flag on
+   the Insights side → open the study → back. A segmented control at the
+   top is one thumb-width away; a sixth dock item would be a different
+   place to go.
+
+   The control sits UNDER the title, not beside it: it belongs to History,
+   and a switch level with a heading reads as a switch for the screen.
+
    ══ THIS SCREEN OWNS FETCHING ══
    Cards take data as props. Storage, RBAC and audit live behind hooks.
+   `EcgIdentityPanel` owns its own — it needs the WAVEFORMS, which this
+   list deliberately never loads.
    ================================================================== */
 
 import { useCallback, useState } from 'react';
@@ -26,7 +45,9 @@ import * as Haptics from 'expo-haptics';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
+import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import StudyCard from '@/components/molecules/StudyCard';
+import EcgIdentityPanel from '@/components/organisms/EcgIdentityPanel';
 import PatientShell from '@/components/templates/PatientShell';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
@@ -52,6 +73,7 @@ export default function HistoryScreen() {
   const sync = useSync();
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [tab, setTab] = useState<'studies' | 'insights'>('studies');
 
   /* A patient sees only their own studies — as the QUERY ARGUMENT, never as
      client-side filtering, so the server can enforce it unchanged. */
@@ -135,6 +157,7 @@ export default function HistoryScreen() {
 
   const align = rtl ? ('right' as const) : ('left' as const);
   const empty = !list.data || list.data.length === 0;
+  const showTabs = !list.isLoading && !list.isError && !empty;
 
   const cardLabels = {
     bpm: tr('bpm'),
@@ -181,8 +204,9 @@ export default function HistoryScreen() {
           </View>
 
           {/* Import lives on the LIST, not inside a study: it CREATES a study,
-              and an action that adds a row belongs where the rows are. */}
-          {features.has('exportRaw') && (
+              and an action that adds a row belongs where the rows are. It is
+              hidden on Insights for the same reason — nothing there is a row. */}
+          {features.has('exportRaw') && tab === 'studies' && (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={tr('histImport')}
@@ -202,13 +226,33 @@ export default function HistoryScreen() {
           )}
         </View>
 
+        {/* The switch appears only once there is a second view worth
+            switching to. Offering "Insights" over an empty history would
+            promise a baseline that cannot exist yet. */}
+        {showTabs && (
+          <SegmentedTabs
+            options={[
+              { value: 'studies', label: tr('insTabStudies') },
+              { value: 'insights', label: tr('insTabInsights') },
+            ]}
+            value={tab}
+            onChange={setTab}
+            accessibilityLabel={tr('histTitle')}
+          />
+        )}
+
         {importError && (
           <Text style={[styles.error, { color: t.danger, backgroundColor: t.dangerSoft }]}>
             {importError}
           </Text>
         )}
 
-        {list.isLoading ? (
+        {showTabs && tab === 'insights' ? (
+          <EcgIdentityPanel
+            patientId={subject}
+            onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
+          />
+        ) : list.isLoading ? (
           <HistorySkeleton />
         ) : list.isError ? (
           <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
@@ -299,6 +343,9 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.2.0 — Two tabs: the list, and INSIGHTS (the ECG ID). The switch appears
+//          only once there are studies, and Import hides on the tab where
+//          nothing is a row.
 // v1.1.0 — Pull-to-refresh runs the SYNC rather than refetching this one query,
 //          so it also picks up studies deleted and notes written elsewhere.
 // v1.0.0 — The History list: cached summaries as cards, pull to refresh, CSV

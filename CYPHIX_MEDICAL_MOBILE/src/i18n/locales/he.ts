@@ -349,6 +349,79 @@ export const he: Record<TranslationKey, string> = {
   histDeleteFailed: 'לא הצלחנו למחוק את ההקלטה. נסו שוב.',
   viewerRetry: 'נסו שוב',
 
+  /* ── היסטוריה → תובנות: תעודת ה‑ECG ──
+     ★ כללי הניסוח לבלוק הזה, כי זה המקום הכי קל באפליקציה לכתוב בו
+     אבחנה בטעות:
+       • אף פעם לא פסק דין — בלי "תקין", "לא תקין", "בריא", "מדאיג";
+       • כל הפרש נאמר כמרחק מקו הבסיס של המטופל עצמו, לא מטווח אוכלוסייה;
+       • אף פעם לא הוראה — "פנו לרופא" היא החלטה קלינית שלאפליקציה הזו
+         אין רישיון לקבל. "פתחו את הבדיקה" היא פעולת ממשק ומותרת.
+     `insDisclaimer` הוא חלק מהמסך, לא טקסט משפטי לצידו. */
+  insTabStudies: 'בדיקות',
+  insTabInsights: 'תובנות',
+
+  insTitle: 'תעודת ECG',
+  insBuilding: 'בונים את תעודת ה‑ECG שלכם',
+  insBuildingBody: 'קוראים את הבדיקות…',
+  insProgress: 'מנתחים בדיקה {done} מתוך {total}',
+  insEmptyTitle: 'עדיין אין תעודת ECG',
+  insEmptyBody:
+    'אחרי כמה בדיקות נקיות, CYPHIX ממצעת את הפעימות שבכל אחת לפעימה מייצגת אחת — ואת אלה לקו בסיס ששייך רק לכם. מכאן כל בדיקה חדשה נמדדת מולו.',
+
+  insMatEnrolling: 'בהרשמה',
+  insMatEstablished: 'מבוסס',
+  insEnrollLabel: 'בדיקות שנרשמו',
+  insEnrollHint: 'עוד {n} בדיקות נקיות וקו הבסיס ייקבע. לבדיקות הראשונות המשקל הגדול ביותר.',
+  insConfidence: 'ודאות {n}%',
+  insBuiltFrom: 'נבנה מ‑{n} בדיקות',
+
+  insCompareLatest: 'הצגת הבדיקה האחרונה מעל',
+  insLegendBand: 'הטווח הרגיל שלכם',
+  insLegendLatest: 'הבדיקה האחרונה',
+  insCoverageBody:
+    'כמה בדיקות עומדות מאחורי כל ליד. V1–V6 יתמלאו מעצמם כשתוקלט בדיקת 12 לידים.',
+
+  insLatestTitle: 'הבדיקה האחרונה',
+  insMatch: 'התאמה {n}%',
+  insNoDeviations: 'אין הבדל מדיד מקו הבסיס שלכם.',
+
+  insFlaggedTitle: 'בדיקות מוקדמות שחורגות',
+  insFlaggedBody:
+    'לבדיקות הראשונות המשקל הגדול ביותר, ולכן אחת שהוקלטה עם אלקטרודה רופפת תעקם את קו הבסיס שכל השאר נמדדות מולו. פתחו אותן ובדקו.',
+
+  insTimelineTitle: 'התאמה לאורך זמן',
+  insBaselineTitle: 'קו הבסיס שלכם',
+  insCadenceTitle: 'מתי אתם מודדים',
+  insCadenceStudies: '{n} בדיקות',
+  insCadencePerWeek: '{n} בשבוע',
+  insCadenceStreak: '{n} שבועות ברצף',
+  insCadenceGap: 'ההפסקה הארוכה ביותר {n} ימים',
+  insCadenceLast: 'לפני {n} ימים',
+  insCadenceToday: 'הוקלטה היום',
+  insCadenceBusiest: 'לרוב בין {from}:00 ל‑{to}:00',
+
+  /* תוויות צ׳יפים — קצרות בכוונה; השמות המלאים לא נכנסים. */
+  insDevShape: 'צורה',
+  insDevBand: 'מחוץ לטווח',
+  insDevAmplitude: 'משרעת',
+  insDevQrs: 'QRS',
+  insDevQtc: 'QTc',
+  insDevPr: 'PR',
+  insDevAxis: 'ציר',
+  insDevRate: 'קצב',
+  insDevLeads: '{n} לידים',
+  insSevWatch: 'הפרש קטן',
+  insSevMarked: 'הפרש גדול',
+
+  insExSimulated: 'סימולציה — לא נספרת',
+  insExFewBeats: 'מעט מדי פעימות נקיות',
+  insExLowQuality: 'האות אינו יציב מספיק',
+  insExOutlier: 'אינה תואמת את שאר הבדיקות שלכם',
+  insExcludedShort: 'לא נספרה',
+
+  insDisclaimer:
+    'השוואה להקלטות הקודמות של האדם עצמו, לא לאוכלוסייה. אינה אבחנה ואינה מחליפה הערכה קלינית.',
+
   /* ── כלי המציג ── */
   bpm: 'BPM',
   vtCalipers: 'סרגל מדידה',
@@ -636,6 +709,9 @@ export const he: Record<TranslationKey, string> = {
   exit: 'יציאה',
 };
 
+// v1.14.0 — עברית לטאב התובנות (תעודת ה‑ECG), מפתח מול מפתח עם en.ts. כללי
+//           הניסוח תורגמו כ*כללים*, לא כהערה — מי שיוסיף כאן מחרוזת חדשה צריך
+//           לקרוא אותם באותה שפה שבה הוא כותב.
 // v1.3.0 — Hebrew for the whole signed-out flow. The clinical reasons each
 //          step gives are translated as reasons, not as labels — a patient
 //          declining a question must be able to read what they decline.

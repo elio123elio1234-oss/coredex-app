@@ -38,6 +38,43 @@ export const LIMB_LEAD_ORDER: readonly LimbLeadName[] = [
 /** One sample across all six limb leads, in millivolts. */
 export type SixLeadSample = Record<LimbLeadName, number>;
 
+/** The 6 precordial (chest) leads. Measured one electrode at a time today. */
+export type PrecordialLeadName = 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6';
+
+export const PRECORDIAL_LEAD_ORDER: readonly PrecordialLeadName[] = [
+  'V1',
+  'V2',
+  'V3',
+  'V4',
+  'V5',
+  'V6',
+] as const;
+
+/**
+ * ANY lead this platform can name.
+ *
+ * ★ Written as a union rather than as the six limb leads because the parts
+ * of the system that reason ACROSS recordings — the ECG ID baseline, the
+ * per-lead coverage report — must not have the number six compiled into
+ * them. A device that one day sends V1–V6 should extend the record it
+ * builds, not require the record to be rebuilt. Anything keyed by
+ * `EcgLeadName` therefore uses a PARTIAL map: a lead that was never
+ * measured is absent, which is a different statement from "measured and
+ * flat".
+ */
+export type EcgLeadName = LimbLeadName | PrecordialLeadName;
+
+/** Standard 12-lead print order (limb block, then precordial block). */
+export const TWELVE_LEAD_ORDER: readonly EcgLeadName[] = [
+  ...LIMB_LEAD_ORDER,
+  ...PRECORDIAL_LEAD_ORDER,
+] as const;
+
+/** True for the six leads this hardware derives from Lead I + Lead II. */
+export function isLimbLead(lead: EcgLeadName): lead is LimbLeadName {
+  return (LIMB_LEAD_ORDER as readonly string[]).includes(lead);
+}
+
 /** What the user is measuring. */
 export type MeasurementType = 'limb' | 'chest' | '12lead';
 
@@ -108,4 +145,7 @@ export interface ValidatorResult {
   failReason?: 'timeout' | 'lead_off' | 'no_signal' | 'few_peaks' | 'irregular';
 }
 
+// v1.1.0 — Names the precordial leads and the 12-lead order, and introduces
+//          `EcgLeadName` so cross-recording features (ECG ID) can be written
+//          against "whatever leads this study had" instead of against six.
 // v1.0.0 — Canonical ECG domain types, lifted verbatim from the web app.
