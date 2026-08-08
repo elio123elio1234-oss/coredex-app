@@ -1,5 +1,17 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.33.3 — 2026-08-08 — The ECG sheet is a panel, not a grid running off the screen
+
+Flush to the display was fine while the corners were square. The moment they
+were rounded it stopped working: **a curve that ends against the screen edge
+does not read as a corner — it reads as the grid spilling off the screen.** A
+rounded rectangle has to be seen to be one.
+
+The sheet now stops `SHEET_MARGIN` (10 pt) short on each side. That is half the
+page's own 20 pt margin, so it is still visibly wider than everything around it
+— it still breaks out of the text column — while being a shape you can read the
+edges of. "Almost the full width", which is what was asked for.
+
 ## v0.33.2 — 2026-08-08 — The ECG sheet has rounded corners
 
 The full-bleed grid ended in hard 90° corners, which read as a slab rather than

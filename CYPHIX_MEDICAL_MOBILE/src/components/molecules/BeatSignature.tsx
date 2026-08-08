@@ -149,6 +149,21 @@ const LEAD_IN_MM = 3;
 const TAIL_MM = 2;
 /** One channel height for every lead, always. See the header. */
 export const SIGNATURE_HEIGHT_MM = 26;
+
+/**
+ * ★ How much page is left either side of the sheet.
+ *
+ * The sheet ran to the screen edge exactly. With square corners that read
+ * as a slab; with ROUNDED corners it reads worse — a curve that ends flush
+ * against the edge does not look like a corner, it looks like the grid
+ * spilling off the display. A rounded rectangle needs to be seen to be
+ * one.
+ *
+ * Small enough that this is still "the ECG gets the width" and not a card
+ * — 10 pt against a 20 pt page margin is half the inset everything else
+ * on the screen has, so the sheet still visibly breaks out of the column.
+ */
+export const SHEET_MARGIN = 10;
 /** Space kept clear of the sheet edges so a tall R is not shaved by it. */
 const HEADROOM_MM = 5;
 

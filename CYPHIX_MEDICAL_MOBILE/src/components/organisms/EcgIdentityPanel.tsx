@@ -7,10 +7,11 @@
      ECG ID                                        ╭───╮
      BASELINE ESTABLISHED · 11 STUDIES             │ 71│
      ───────────────────────────────────────────── ╰───╯
-      II                                    ⌇
-      ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌   ← full bleed,
-      ────────╱▔╲──╮   ╭──────────────────────────       fixed box
-                    ╰───╯          50 mm/s · 10 mm/mV
+     ╭──────────────────────────────────────────╮
+     │ II                          ⌇            │  ← wider than the
+     │ ─────────╱▔╲──╮   ╭──────────────────────│     column, but not
+     │               ╰───╯      50 mm/s·10 mm/mV│     flush to the edge
+     ╰──────────────────────────────────────────╯
       ▌▌▌▌▌▌▌▌▌▌▌   I  II  III  aVR aVL aVF
      ─────────────────────────────────────────────
      MATCH OVER TIME
@@ -28,9 +29,12 @@
    and a full-bleed hairline — the trace is drawn on the page itself and
    spans the whole screen. The rules a de-carded layout has to hold to:
 
-     • the ECG runs EDGE TO EDGE. It is the subject; it gets the width.
+     • the ECG BREAKS OUT of the text column. It is the subject; it gets
+       the width — but it stops `SHEET_MARGIN` short of the display,
+       because a rounded corner that ends flush against the screen edge
+       does not read as a corner, it reads as the grid spilling off.
        ★ The SCREEN bleeds and this panel holds the padding
-       (`paddingHorizontal`), which the ECG cancels with a negative
+       (`paddingHorizontal`), which the sheet cancels with a negative
        margin. Doing it the other way round — narrow scroller, negative
        margin — does not work: RN clips a scroll view's children at its
        frame, so the trace and the lead label were being CUT at the edges.
@@ -80,6 +84,7 @@ import {
 import BeatBuilder from '@/components/molecules/BeatBuilder';
 import BeatSignature, {
   pickGain,
+  SHEET_MARGIN,
   type CaliperReading,
 } from '@/components/molecules/BeatSignature';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
@@ -102,9 +107,10 @@ interface Props {
    *
    * The screen bleeds (`PatientShell.bleedHorizontal`) so the scroll view
    * spans the full width; the padding lives here instead, and the ECG
-   * cancels it with `-paddingHorizontal` to reach the screen edge. Doing
-   * it the other way round — a narrow scroller and a negative margin —
-   * is what was CUTTING the trace and the lead label: RN clips a scroll
+   * cancels most of it with a negative margin to break out of the column
+   * (`SHEET_MARGIN` of page is deliberately left either side). Doing it
+   * the other way round — a narrow scroller and a negative margin — is
+   * what was CUTTING the trace and the lead label: RN clips a scroll
    * view's children at its frame.
    */
   paddingHorizontal: number;
@@ -315,10 +321,22 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
 
   const established = identity.maturity === 'established';
   const remaining = Math.max(0, identity.enrollmentTarget - identity.enrolled);
-  /* Cancels the content padding exactly, so a full-bleed child lands on
-     the screen's own edges. The scroll view is full width (the screen
-     bleeds), so there is nothing here to clip it. */
-  const bleedStyle = { marginHorizontal: -paddingHorizontal };
+  /* ★ The sheet breaks OUT of the text column, but stops `SHEET_MARGIN`
+     short of the screen edge.
+
+     Flush to the edge was the first version and it was wrong once the
+     corners were rounded: a curve that ends against the display edge does
+     not read as a corner, it reads as the grid spilling off the screen.
+     Pulling it back 10 pt — half the page's own 20 pt margin — leaves the
+     rounded rectangle visible as a rectangle while the sheet is still
+     obviously wider than everything around it.
+
+     The scroll view is full width (the screen bleeds), so the negative
+     margin has somewhere to go; inside a narrow scroller it would just be
+     clipped away. */
+  const sheetInset = Math.max(0, paddingHorizontal - SHEET_MARGIN);
+  const sheetWidth = Math.max(80, screenW - SHEET_MARGIN * 2);
+  const bleedStyle = { marginHorizontal: -sheetInset };
 
   return (
     <ScrollView
@@ -410,7 +428,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             sampleRate={identity.sampleRate}
             rIndex={identity.rIndex}
             overlay={overlay}
-            width={screenW}
+            width={sheetWidth}
             mmPerMv={mmPerMv}
             label={lead}
             onCaliper={setCaliper}
@@ -621,7 +639,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
                 accepted={rejected.accepted}
                 rejected={rejected.beats}
                 sampleRate={identity.sampleRate}
-                width={screenW}
+                width={sheetWidth}
                 mmPerMv={mmPerMv}
                 rtl={rtl}
                 labels={{
@@ -904,6 +922,10 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
 });
 
+// v3.1.1 — The sheet stops 10 pt short of the display instead of running flush
+//          to it. Flush was fine while the corners were square; once they were
+//          rounded, a curve ending against the screen edge stopped reading as a
+//          corner and started reading as the grid spilling off the screen.
 // v3.1.0 — Two fixes from device feedback:
 //          • the full-bleed ECG was being CUT at both edges, taking the lead
 //            label with it. A negative margin cannot escape a ScrollView — RN

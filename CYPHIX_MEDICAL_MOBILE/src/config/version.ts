@@ -1,7 +1,16 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.33.2';
-export const APP_BUILD_LABEL = 'The ECG sheet has rounded corners';
+export const APP_VERSION = '0.33.3';
+export const APP_BUILD_LABEL = 'The ECG sheet is a rounded panel, not a grid running off the screen';
+
+// v0.33.3 — The sheet ran FLUSH to the display, which was fine while its
+//           corners were square and wrong the moment they were rounded: a
+//           curve ending against the screen edge does not read as a corner, it
+//           reads as the grid spilling off the screen. It now stops
+//           `SHEET_MARGIN` (10 pt) short on each side — half the page's own
+//           20 pt margin, so the sheet is still visibly wider than everything
+//           around it while being a rectangle you can actually see the shape
+//           of. "Almost the full width", which is what was asked for.
 
 // v0.33.2 — The full-bleed ECG grid ended in hard 90° corners. Rounded now, at
 //           the app's own radii (lg for the signature, md for the smaller
