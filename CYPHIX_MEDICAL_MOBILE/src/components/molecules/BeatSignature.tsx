@@ -65,10 +65,10 @@
    the trace covers the deflections whose position it reports.
    ================================================================== */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, G, Line, Path, Rect } from 'react-native-svg';
 import { runOnJS } from 'react-native-reanimated';
 import { StyleSheet, Text, View } from 'react-native';
 import {
@@ -77,6 +77,7 @@ import {
   CORRIDOR_BAND_SIGMA,
   STANDARD_MM_PER_MV,
 } from '@cyphix/shared';
+import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
 /* ── The SCREEN palette ───────────────────────────────────────────
@@ -287,6 +288,23 @@ export default function BeatSignature({
   const height = (width * heightMm) / geometry.widthMm;
   const pxPerMm = width / geometry.widthMm;
 
+  /* ── The rounded corners ──────────────────────────────────────
+     Done as an SVG `ClipPath`, NOT as `overflow: 'hidden'` plus a
+     `borderRadius` on the wrapping View. Clipping a native SVG child to a
+     parent's rounded corners is one of the places Android and iOS have
+     historically disagreed, and a corner that is round on one platform and
+     square on the other is exactly the class of defect a typecheck and a
+     bundle both wave through.
+
+     The radius is converted from POINTS into millimetres through the
+     sheet's own scale, so it is the same visual curve whatever width the
+     sheet is handed — a fixed mm radius would grow and shrink with the
+     device. `useId` because react-native-svg resolves `url(#…)` per
+     document on Android: two sheets sharing an id would clip to whichever
+     mounted last. */
+  const clipId = useId();
+  const rxMm = pxPerMm > 0 ? RADIUS.lg / pxPerMm : 0;
+
   /** Screen x (points) → sample index, clamped to the drawn beat. */
   const sampleAt = useCallback(
     (px: number): number => {
@@ -374,7 +392,15 @@ export default function BeatSignature({
         preserveAspectRatio="xMidYMid meet"
         accessibilityLabel={`ECG ID · lead ${label}`}
       >
+        <Defs>
+          <ClipPath id={clipId}>
+            <Rect x={0} y={0} width={geometry.widthMm} height={heightMm} rx={rxMm} ry={rxMm} />
+          </ClipPath>
+        </Defs>
 
+        {/* Everything drawn lives inside the rounded sheet — including the
+            caliper, which must stop at the same edge the grid does. */}
+        <G clipPath={`url(#${clipId})`}>
         {/* Dimmed against the report's grid — context, not the subject. */}
         <Path d={geometry.grid.minor} fill="none" stroke={c.gridMinor} strokeWidth={0.07} opacity={0.55} />
         <Path d={geometry.grid.major} fill="none" stroke={c.gridMajor} strokeWidth={0.14} opacity={0.7} />
@@ -435,6 +461,7 @@ export default function BeatSignature({
             <Circle cx={cursorX} cy={cursorY} r={0.55} fill={t.accentLive} />
           </>
         )}
+        </G>
       </Svg>
 
       <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
@@ -454,13 +481,14 @@ export default function BeatSignature({
 }
 
 const styles = StyleSheet.create({
-  /* Inset from the sheet EDGE rather than from a card's padding: this
-     thing is now full-bleed, so 16 pt of margin is what keeps the lead
-     name and the scale off the screen's own edge. */
+  /* Inset from the sheet EDGE, not from a card's padding: this thing is
+     full-bleed. The inset clears the corner RADIUS as well as the screen
+     edge — a label tucked at 2 pt sits in the arc that was just cut away
+     and reads as floating loose of the sheet it belongs to. */
   label: {
     position: 'absolute',
-    top: 2,
-    left: 16,
+    top: 6,
+    left: 20,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.6,
@@ -468,13 +496,20 @@ const styles = StyleSheet.create({
   },
   scale: {
     position: 'absolute',
-    bottom: 2,
-    right: 16,
+    bottom: 6,
+    right: 20,
     fontSize: 8.5,
     fontVariant: ['tabular-nums'],
   },
 });
 
+// v3.1.0 — Rounded sheet corners, as an SVG ClipPath rather than a View's
+//          `overflow: hidden` + `borderRadius`: clipping a native SVG child to
+//          a parent's rounded corners is a place iOS and Android have
+//          historically disagreed, and a corner round on one and square on the
+//          other passes typecheck, bundle and doctor alike. The radius is
+//          converted from points into mm through the sheet's own scale, so the
+//          curve looks the same at any width.
 // v3.0.0 — Two changes from device feedback, both about it not feeling native:
 //          • the sheet no longer has a size of its own. Height and gain are
 //            handed in, chosen once from the tallest lead in the identity, so

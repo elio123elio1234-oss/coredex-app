@@ -29,8 +29,8 @@
    Purely presentational.
    ================================================================== */
 
-import { useMemo } from 'react';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { useId, useMemo } from 'react';
+import Svg, { ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
 import { StyleSheet, Text, View } from 'react-native';
 import { buildEcgPath, type RejectedBeat } from '@cyphix/shared';
 import {
@@ -38,6 +38,7 @@ import {
   SCREEN_LIGHT,
   SIGNATURE_MM_PER_SEC,
 } from '@/components/molecules/BeatSignature';
+import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -105,6 +106,13 @@ export default function RejectedBeats({
   const height = (width * HEIGHT_MM) / geometry.widthMm;
   const align = rtl ? ('right' as const) : ('left' as const);
 
+  /* Rounded like the signature, one step smaller — radius scales with the
+     surface, and this sheet is about two thirds its height. Clipped inside
+     the SVG for the same reason (see `BeatSignature`), and with a unique
+     id because Android resolves `url(#…)` per document. */
+  const clipId = useId();
+  const rxMm = geometry.widthMm > 0 ? (RADIUS.md * geometry.widthMm) / width : 0;
+
   const reasonOf = (r: RejectedBeat) =>
     r.reason === 'premature'
       ? labels.premature
@@ -121,6 +129,13 @@ export default function RejectedBeats({
           viewBox={`0 0 ${geometry.widthMm} ${HEIGHT_MM}`}
           preserveAspectRatio="xMidYMid meet"
         >
+          <Defs>
+            <ClipPath id={clipId}>
+              <Rect x={0} y={0} width={geometry.widthMm} height={HEIGHT_MM} rx={rxMm} ry={rxMm} />
+            </ClipPath>
+          </Defs>
+
+          <G clipPath={`url(#${clipId})`}>
           {/* No grid: this is a shape comparison, and the eye compares two
               curves better without a ruler competing with them. The gain
               is the identity's, so anything measured here would still be
@@ -146,6 +161,7 @@ export default function RejectedBeats({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          </G>
         </Svg>
       </View>
 
@@ -176,6 +192,7 @@ const styles = StyleSheet.create({
   match: { fontSize: 11, fontVariant: ['tabular-nums'] },
 });
 
+// v1.2.0 — Rounded corners, clipped inside the SVG like the signature's.
 // v1.1.0 — On the screen rather than on a white sheet, and on the IDENTITY'S
 //          gain rather than one fitted here, so every trace in Insights is at
 //          one scale and "twice as tall" is drawn twice as tall.

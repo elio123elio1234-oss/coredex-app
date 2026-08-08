@@ -1,7 +1,22 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.33.1';
-export const APP_BUILD_LABEL = 'Insights: the ECG edges stopped being clipped; the timeline is now the picker';
+export const APP_VERSION = '0.33.2';
+export const APP_BUILD_LABEL = 'The ECG sheet has rounded corners';
+
+// v0.33.2 — The full-bleed ECG grid ended in hard 90° corners. Rounded now, at
+//           the app's own radii (lg for the signature, md for the smaller
+//           rejected-beats sheet — radius scales with the surface).
+//           ⚠️ Done as an SVG `ClipPath`, NOT `overflow: 'hidden'` +
+//           `borderRadius` on the wrapping View. Clipping a native SVG child
+//           to a parent's rounded corners is one of the places iOS and Android
+//           have historically disagreed, and a corner that is round on one and
+//           square on the other passes typecheck, both bundles and doctor. The
+//           radius converts points → millimetres through the sheet's own
+//           scale, so the curve reads the same at any width, and each sheet
+//           gets a `useId` clip id because Android resolves `url(#…)` per
+//           document — two sheets sharing one would clip to whichever mounted
+//           last. The lead label and the scale caption moved in to 20 pt so
+//           they clear the arc instead of floating loose in it.
 
 // v0.33.1 — • THE EDGES WERE BEING CUT, lead label included. Not a padding
 //             mistake: a negative margin cannot escape a ScrollView, because

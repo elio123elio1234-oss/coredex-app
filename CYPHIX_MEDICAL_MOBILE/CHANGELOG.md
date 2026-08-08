@@ -1,5 +1,30 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.33.2 — 2026-08-08 — The ECG sheet has rounded corners
+
+The full-bleed grid ended in hard 90° corners, which read as a slab rather than
+as a panel. Rounded at the app's own radii — `lg` for the signature, `md` for
+the shorter rejected-beats sheet, since radius scales with the surface.
+
+**Done as an SVG `ClipPath`, not as `overflow: 'hidden'` plus a `borderRadius`
+on the wrapping `View`.** Clipping a native SVG child to a parent's rounded
+corners is one of the places iOS and Android have historically disagreed, and a
+corner that is round on one platform and square on the other passes typecheck,
+both bundles and `expo-doctor` without complaint — the exact class of defect
+this project's definition of "verified" exists to keep honest.
+
+Two details that would otherwise bite later:
+
+- the radius converts **points → millimetres through the sheet's own scale**, so
+  the curve reads the same whatever width the sheet is handed. A fixed
+  millimetre radius would grow and shrink with the device.
+- each sheet's clip path gets a `useId` identifier, because react-native-svg
+  resolves `url(#…)` per *document* on Android: two sheets sharing an id would
+  both clip to whichever one mounted last.
+
+The lead label and the scale caption moved in from 16 pt to 20 pt so they clear
+the arc rather than sitting in the part that was just cut away.
+
 ## v0.33.1 — 2026-08-08 — The ECG edges stopped being clipped; the timeline is the picker
 
 ### The full-bleed trace was being cut, and the lead label with it
