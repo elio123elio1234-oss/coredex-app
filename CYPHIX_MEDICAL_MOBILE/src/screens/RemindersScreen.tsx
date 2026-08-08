@@ -95,6 +95,7 @@ export default function RemindersScreen() {
 
   /** Which slot's picker is open. Null when none is. */
   const [editing, setEditing] = useState<string | null>(null);
+  const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
   const palette = shellPalette(prefs.background, dark);
   const align = rtl ? ('right' as const) : ('left' as const);
@@ -363,6 +364,61 @@ export default function RemindersScreen() {
           </SettingsSection>
         )}
 
+        {/* ★ WHAT THE PHONE ACTUALLY HOLDS.
+            This section exists because an hour was spent waiting for a
+            follow-up that had never been armed, and nothing in the app
+            could say so. Everything above reports INTENT — the switch, the
+            times, the next one due — and intent was never the thing in
+            doubt. These two numbers come straight from the OS, so they
+            cannot agree with a mistaken belief held anywhere else. */}
+        {showTimes && (
+          <SettingsSection
+            art={NotificationsIllustration}
+            title={tr('remSecCheck')}
+            description={tr('remSecCheckDesc')}
+          >
+            <SettingsRow
+              first
+              label={tr('remArmedDaily')}
+              value={
+                <Text style={[styles.count, { color: t.textPrimary }]} allowFontScaling={false}>
+                  {reminders.armed ? reminders.armed.daily : '—'}
+                </Text>
+              }
+            />
+            <SettingsRow
+              label={tr('remArmedFollow')}
+              description={
+                reminders.schedule.followUpMinutes === null ? tr('remArmedFollowOff') : undefined
+              }
+              value={
+                <Text style={[styles.count, { color: t.textPrimary }]} allowFontScaling={false}>
+                  {reminders.armed ? reminders.armed.followUps : '—'}
+                </Text>
+              }
+            />
+            <SettingsRow
+              label={tr('remTest')}
+              description={testState === 'sent' ? tr('remTestSent') : tr('remTestDesc')}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                setTestState('sending');
+                void reminders.sendTest().then((ok) => setTestState(ok ? 'sent' : 'failed'));
+              }}
+              value={
+                <Ionicons
+                  name={testState === 'sent' ? 'checkmark-circle' : 'play-circle-outline'}
+                  size={22}
+                  color={testState === 'sent' ? t.success : t.accentLive}
+                />
+              }
+            />
+            {testState === 'failed' && (
+              <SettingsRow label={tr('remTestFailed')} />
+            )}
+          </SettingsSection>
+        )}
+
         <Text style={[styles.footnote, { color: t.textTertiary, textAlign: align }]}>
           {tr('remFootnote')}
         </Text>
@@ -413,9 +469,15 @@ const styles = StyleSheet.create({
   },
   doneText: { color: '#FFFFFF', fontSize: 15.5, fontWeight: '700' },
 
+  count: { fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
   footnote: { fontSize: 11.5, lineHeight: 17, paddingHorizontal: 4 },
 });
 
+// v1.1.0 — Adds the "Check it works" section: how many reminders the OS is
+//          ACTUALLY holding, and a test that fires the real primary + follow-up
+//          inside a minute. Both exist because an hour was spent waiting for a
+//          follow-up that had never been armed, and every reading this screen
+//          offered reported intent rather than fact.
 // v1.0.0 — The reminder editor as a PUSHED SCREEN rather than a bottom sheet.
 //          A Settings row with a chevron pushes on iOS; a sheet is for a quick
 //          action, and a switch plus a segmented control plus a list of times

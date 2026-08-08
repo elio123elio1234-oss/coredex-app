@@ -1,7 +1,39 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.35.1';
-export const APP_BUILD_LABEL = 'Fixes the v0.35.0 crash: a stored schedule written by an older build';
+export const APP_VERSION = '0.36.0';
+export const APP_BUILD_LABEL = 'Reminders: see what the phone actually holds, and test it in a minute';
+
+// v0.36.0 — An hour was spent waiting for a follow-up that never arrived, and
+//           the app could not say why. That is the real defect this release
+//           fixes; the follow-up itself was probably never armed, because a
+//           rollback to 0.34.0 (no follow-up at all) and a `followUpMinutes`
+//           that `normalizeSchedule` reset to null both leave exactly the
+//           symptom seen: primary fires, second ask does not.
+//           ★ "CHECK IT WORKS" — a section reporting what the OPERATING SYSTEM
+//           actually holds, read from `getAllScheduledNotificationsAsync`.
+//           Every other reading on that screen described INTENT (the switch,
+//           the times, the next one due), and intent was never what was in
+//           doubt. Two numbers would have answered the question in seconds.
+//           ★ "SEND A TEST NOW" — the real primary in 10 s and the real
+//           follow-up 70 s later, through the same content, category and
+//           actions. Not a mock: if the test works and the scheduled one does
+//           not, the difference is timing rather than plumbing. A feature whose
+//           shortest honest interval is thirty minutes is otherwise close to
+//           untestable, which is how an hour gets spent.
+//           THE FOLLOW-UP NOW REPEATS — three times, ten minutes apart, all
+//           carrying the same `due` so one Done or one measurement cancels the
+//           chain rather than the next one only. One notification on a lock
+//           screen is one chance to be looking at the phone.
+//           ⚠️ Which forces a BUDGET: iOS keeps at most 64 pending
+//           notifications and silently drops the rest, and 4 slots × 7 days × 3
+//           repeats is 84. Occurrences are armed in TIME ORDER until the budget
+//           is spent — tonight matters, next Tuesday's third repeat does not.
+//           Android follow-ups get their own HIGH-importance channel. The
+//           primary stays DEFAULT: it is a routine nudge at a time the patient
+//           chose, and nothing this app produces is urgent by construction. The
+//           follow-up is different, and the difference is consent — they
+//           switched on a thing whose whole job is to catch a miss.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.35.1 — ⚠️ v0.35.0 CRASHED THE APP ON EVERY NAVIGATION. Rolled back to the
 //           embedded 0.34.0 bundle within minutes; this is the fix.

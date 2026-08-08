@@ -77,6 +77,32 @@ const ACTION_DONE = "cyphix.reminder.done";
 /** How far ahead the conditional follow-ups are armed. See the header. */
 const FOLLOW_UP_DAYS = 7;
 
+/**
+ * How many times a follow-up repeats before giving up, and how far apart.
+ *
+ * Asked for as "until you snooze or deny": one notification on a lock
+ * screen is one chance to be looking at the phone. Three, spaced out, is a
+ * reminder that survives being in another room — and every one of them is
+ * cancelled the instant a measurement lands or Done is tapped, so this
+ * never nags someone who has already answered.
+ */
+const FOLLOW_UP_REPEATS = 3;
+const FOLLOW_UP_REPEAT_GAP_MIN = 10;
+
+/**
+ * ★ iOS keeps at most 64 PENDING notifications per app and silently drops
+ * the rest — so this is a budget, not a guideline.
+ *
+ * Four slots × seven days × three repeats is 84, which would overflow and
+ * lose whichever the OS felt like. Occurrences are therefore armed in
+ * TIME ORDER until the budget is spent: nearest-first, because tonight's
+ * reminder matters and next Tuesday's third repeat does not.
+ */
+const MAX_PENDING = 56;
+
+/** The Android channel a follow-up goes to — see `ensureChannel`. */
+const FOLLOW_CHANNEL_ID = 'measurement-reminders-followup';
+
 export type PermissionOutcome = "granted" | "denied" | "undetermined";
 
 /** Every string the OS will show. Injected, never imported — see `applySchedule`. */
@@ -158,6 +184,23 @@ async function safely(what: () => Promise<unknown>): Promise<boolean> {
 
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== "android") return;
+
+  /* ★ TWO channels, because they are two different promises.
+     The primary is a routine nudge at a time the patient chose, so it is
+     DEFAULT: a heads-up notification that jumps over what someone is
+     doing is for something urgent, and nothing this app produces is
+     urgent by construction — it does not interpret, so it can never know
+     that anything is.
+     The FOLLOW-UP is different, and the difference is consent: the patient
+     switched on a thing whose entire job is to catch them when they have
+     missed something. HIGH is what they asked for by asking for it. */
+  await Notifications.setNotificationChannelAsync(FOLLOW_CHANNEL_ID, {
+    name: "Missed measurement",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 150, 250],
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  });
+
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: "Measurement reminders",
     importance: Notifications.AndroidImportance.DEFAULT,
@@ -296,10 +339,12 @@ export function applySchedule(
       if (ok) daily++;
     }
 
-    /* ── The follow-ups: dated, and only where still owed ── */
+    /* ── The follow-ups: dated, repeated, and only where still owed ── */
     let followUps = 0;
     if (schedule.followUpMinutes !== null) {
+      let budget = MAX_PENDING - daily;
       for (const occurrence of upcomingOccurrences(schedule, FOLLOW_UP_DAYS)) {
+        if (budget <= 0) break;
         /* ⚠️ `Number.isFinite(getTime())`, not `if (!followUpAt)`. An
            Invalid Date is TRUTHY, so the obvious guard passes it straight
            through to the OS — which throws, and that throw is what took
@@ -309,35 +354,157 @@ export function applySchedule(
         if (!fireAt || !Number.isFinite(fireAt.getTime())) continue;
         if (isOccurrenceSatisfied(occurrence, measurementTimes)) continue;
 
-        const armed = await safely(() =>
-          Notifications.scheduleNotificationAsync({
-            content: {
-              title: copy.followUpTitle,
-              body: copy.followUpBody,
-              data: {
-                tag: REMINDER_TAG,
-                kind: "followUp",
-                slotId: occurrence.slotId,
-                due: occurrence.at.getTime(),
+        /* ★ A CHAIN, not one shot. One notification on a lock screen is
+           one chance to be looking at the phone; three, spaced out,
+           survives being in another room. Every one of them carries the
+           same `due`, so a single Done — or a measurement — cancels the
+           whole chain rather than the next one only. */
+        for (let repeat = 0; repeat < FOLLOW_UP_REPEATS && budget > 0; repeat++) {
+          const at = new Date(fireAt.getTime() + repeat * FOLLOW_UP_REPEAT_GAP_MIN * 60_000);
+          if (!Number.isFinite(at.getTime())) break;
+
+          const armed = await safely(() =>
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: copy.followUpTitle,
+                body: copy.followUpBody,
+                data: {
+                  tag: REMINDER_TAG,
+                  kind: "followUp",
+                  slotId: occurrence.slotId,
+                  due: occurrence.at.getTime(),
+                },
+                categoryIdentifier: CATEGORY_ID,
+                ...(Platform.OS === "android" ? {} : { sound: "default" }),
               },
-              categoryIdentifier: CATEGORY_ID,
-              ...(Platform.OS === "android" ? {} : { sound: "default" }),
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              // The hoisted local, not the property: a closure loses the
-              // narrowing the guard above just established — which is TS
-              // telling us the same thing the crash did.
-              date: fireAt,
-              ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
-            },
-          }),
-        );
-        if (armed) followUps++;
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                // The hoisted local, not the property: a closure loses the
+                // narrowing the guard above just established — which is TS
+                // telling us the same thing the crash did.
+                date: at,
+                ...(Platform.OS === "android" ? { channelId: FOLLOW_CHANNEL_ID } : {}),
+              },
+            }),
+          );
+          if (armed) {
+            followUps++;
+            budget--;
+          }
+        }
       }
     }
 
     return { daily, followUps, permission };
+  });
+}
+
+/* ══════════════════ Telling the truth about what is armed ══════════════════ */
+
+export interface ArmedSummary {
+  /** Repeating daily reminders the OS is holding. */
+  daily: number;
+  /** Conditional follow-ups the OS is holding, repeats included. */
+  followUps: number;
+  /** When the very next one of ours fires, whatever kind. */
+  nextAt: Date | null;
+}
+
+/**
+ * ★ WHAT THE OS ACTUALLY HAS, not what this app believes it asked for.
+ *
+ * This exists because of an hour somebody spent waiting for a follow-up
+ * that was never armed, with no way to find that out. Everything else in
+ * this feature reports INTENT — the schedule, the switch, the next time —
+ * and intent was exactly what was not in question. The only useful
+ * question was "is anything actually pending?", and nothing could answer
+ * it.
+ *
+ * Read straight from `getAllScheduledNotificationsAsync`, so it cannot
+ * agree with a mistaken belief held anywhere else in the app.
+ */
+export function armedSummary(): Promise<ArmedSummary> {
+  return queue(async () => {
+    const mine = await ours();
+    let nextAt: Date | null = null;
+
+    for (const n of mine) {
+      const trigger = n.trigger as { type?: string; value?: number } | null;
+      const when =
+        trigger && typeof trigger.value === 'number' ? new Date(trigger.value) : null;
+      if (when && Number.isFinite(when.getTime()) && (!nextAt || when < nextAt)) nextAt = when;
+    }
+
+    return {
+      daily: mine.filter((n) => n.content.data?.kind === 'primary').length,
+      followUps: mine.filter((n) => n.content.data?.kind === 'followUp').length,
+      nextAt,
+    };
+  });
+}
+
+/**
+ * Fire the whole chain in the next minute, to see it rather than trust it.
+ *
+ * A reminder feature is close to untestable in the ordinary way: the
+ * shortest honest interval the editor offers is thirty minutes, and the
+ * thing worth checking — does the follow-up appear on the lock screen,
+ * with its buttons, when nothing was recorded — takes that long to find
+ * out. It cost an hour once, and the answer was "no, because it was never
+ * armed at all".
+ *
+ * So this arms the REAL content, category and actions, ten seconds and
+ * seventy seconds from now. It is not a mock: if this works and the
+ * scheduled one does not, the difference is timing, not plumbing.
+ *
+ * It does NOT go through `applySchedule`, so it neither cancels nor is
+ * cancelled by the real reminders.
+ */
+export function scheduleTestReminder(copy: ReminderCopy): Promise<boolean> {
+  return queue(async () => {
+    const permission = await requestPermission();
+    if (permission !== 'granted') return false;
+
+    await safely(() => ensureChannel());
+    await safely(() => ensureCategory(copy));
+
+    const primary = await safely(() =>
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: copy.title,
+          body: copy.body,
+          data: { tag: REMINDER_TAG, kind: 'primary', slotId: 'test', test: true },
+          categoryIdentifier: CATEGORY_ID,
+          ...(Platform.OS === 'android' ? {} : { sound: 'default' }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 10,
+          repeats: false,
+          ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}),
+        },
+      }),
+    );
+
+    const followUp = await safely(() =>
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: copy.followUpTitle,
+          body: copy.followUpBody,
+          data: { tag: REMINDER_TAG, kind: 'followUp', slotId: 'test', due: Date.now(), test: true },
+          categoryIdentifier: CATEGORY_ID,
+          ...(Platform.OS === 'android' ? {} : { sound: 'default' }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 70,
+          repeats: false,
+          ...(Platform.OS === 'android' ? { channelId: FOLLOW_CHANNEL_ID } : {}),
+        },
+      }),
+    );
+
+    return primary && followUp;
   });
 }
 

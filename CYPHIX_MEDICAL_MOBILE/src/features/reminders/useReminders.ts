@@ -55,7 +55,10 @@ import { usePreferences } from '@/features/preferences/usePreferences';
 import { useTranslation } from '@/i18n/useTranslation';
 import {
   applySchedule,
+  armedSummary,
   permissionStatus,
+  scheduleTestReminder,
+  type ArmedSummary,
   type PermissionOutcome,
   type ReminderCopy,
 } from '@/services/notifications/reminderScheduler';
@@ -86,6 +89,14 @@ export interface UseReminders {
   setEnabled: (enabled: boolean) => void;
   /** Minutes after a missed slot to ask again; null switches it off. */
   setFollowUp: (minutes: number | null) => void;
+  /**
+   * ★ What the OS ACTUALLY holds — not what this app believes it asked
+   * for. Everything else here reports intent, and intent was never the
+   * thing in doubt.
+   */
+  armed: ArmedSummary | null;
+  /** Fire the real primary + follow-up inside a minute, to see them. */
+  sendTest: () => Promise<boolean>;
 }
 
 /** Slot ids only have to be unique within one patient's schedule. */
@@ -141,6 +152,15 @@ export function useReminders(): UseReminders {
     [lang],
   );
 
+  /* Re-read after every apply, so the number on screen is the OS's answer
+     and not a second copy of this app's assumptions. */
+  const [armedState, setArmed] = useState<ArmedSummary | null>(null);
+  const refreshArmed = useCallback(() => {
+    void armedSummary()
+      .then(setArmed)
+      .catch(() => setArmed(null));
+  }, []);
+
   const push = useCallback(
     async (next: MeasurementSchedule) => {
       dispatch(setSchedule(next));
@@ -151,11 +171,12 @@ export function useReminders(): UseReminders {
           measurementTimes,
         );
         setPermission(result.permission);
+        refreshArmed();
       } catch {
         // Same rule as the effect below: the schedule is saved either way.
       }
     },
-    [dispatch, prefs.notifications.testReminders, copy, measurementTimes],
+    [dispatch, prefs.notifications.testReminders, copy, measurementTimes, refreshArmed],
   );
 
   /* ── Keep the OS honest ───────────────────────────────────────── */
@@ -164,7 +185,10 @@ export function useReminders(): UseReminders {
     void (async () => {
       try {
         const result = await applySchedule({ ...schedule, enabled: armed }, copy, measurementTimes);
-        if (!cancelled) setPermission(result.permission);
+        if (!cancelled) {
+          setPermission(result.permission);
+          refreshArmed();
+        }
       } catch {
         /* ⚠️ A `void (async …)()` with no catch is how a background
            concern becomes a crash: an unhandled rejection here took the
@@ -191,6 +215,7 @@ export function useReminders(): UseReminders {
   useEffect(() => {
     void permissionStatus().then(setPermission);
   }, []);
+
 
   const commit = useCallback(
     (next: MeasurementSchedule) => {
@@ -232,8 +257,16 @@ export function useReminders(): UseReminders {
     [schedule, commit],
   );
 
+  const sendTest = useCallback(async () => {
+    const ok = await scheduleTestReminder(copy);
+    refreshArmed();
+    return ok;
+  }, [copy, refreshArmed]);
+
   return {
     schedule,
+    armed: armedState,
+    sendTest,
     active: armed && schedule.slots.length > 0,
     next: armed ? nextOccurrence(schedule) : null,
     permission,
@@ -244,6 +277,11 @@ export function useReminders(): UseReminders {
   };
 }
 
+// v2.2.0 — Exposes `armed` (what the OS ACTUALLY holds, read back from
+//          `getAllScheduledNotificationsAsync`) and `sendTest`. Both exist
+//          because an hour was spent waiting for a follow-up that had never
+//          been armed, with nothing in the app able to say so: every other
+//          reading here reports INTENT, and intent was not what was in doubt.
 // v2.1.0 — Normalises the schedule read back from storage, and CATCHES around
 //          every apply. v0.35.0 crashed on every navigation because a field
 //          added in that release hydrated as `undefined` from a blob an older

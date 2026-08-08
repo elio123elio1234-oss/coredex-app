@@ -1,5 +1,69 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.36.0 — 2026-08-08 — See what the phone actually holds, and test it in a minute
+
+An hour was spent waiting for a follow-up that never arrived — and **the app
+could not say why**. That is the real defect this release fixes.
+
+The follow-up itself was most likely never armed. Two ordinary things produce
+exactly that symptom, and both were in play: the crash rollback put the phone
+back on **0.34.0, which has no follow-up at all**, and `normalizeSchedule` in
+the 0.35.1 fix resets `followUpMinutes` to `null` on any schedule saved before
+it. Primary fires, second ask does not. Neither was discoverable.
+
+### "Check it works"
+
+A section reporting what the **operating system** is holding, read straight from
+`getAllScheduledNotificationsAsync`:
+
+```
+Daily reminders set      2
+Follow-ups set           6
+```
+
+Every other reading on that screen described **intent** — the switch, the times,
+the next one due — and intent was never what was in doubt. These two numbers
+cannot agree with a mistaken belief held anywhere else in the app, and they
+would have answered the question in about two seconds.
+
+### "Send a test now"
+
+Fires the **real** primary in 10 seconds and the **real** follow-up 70 seconds
+later, through the same content, category and actions. It is not a mock: if the
+test works and the scheduled one does not, the difference is timing, not
+plumbing.
+
+A feature whose shortest honest interval is thirty minutes is otherwise close to
+untestable — which is precisely how an hour gets spent.
+
+### The follow-up now repeats
+
+Three times, ten minutes apart, all carrying the same `due` so **one** Done — or
+one measurement — cancels the whole chain rather than only the next one. One
+notification on a lock screen is one chance to be looking at the phone; three,
+spaced out, survives being in another room.
+
+⚠️ Which forces a **budget**. iOS keeps at most **64 pending notifications** and
+silently drops the rest, and 4 slots × 7 days × 3 repeats is 84. Occurrences are
+now armed in **time order until the budget is spent**: tonight's reminder
+matters, next Tuesday's third repeat does not.
+
+On Android the follow-up gets its own **HIGH-importance channel**, so it arrives
+as a heads-up rather than a quiet row. The primary stays `DEFAULT`: it is a
+routine nudge at a time the patient chose, and nothing this app produces is
+urgent by construction — it does not interpret, so it can never know that
+anything is. The follow-up is different, and the difference is **consent**: the
+patient switched on a thing whose entire job is to catch a miss.
+
+### What iOS will not let me do yet
+
+Making a notification genuinely *prominent* on the iOS lock screen means the
+**Time Sensitive** interruption level, and that needs the
+`com.apple.developer.usernotifications.time-sensitive` entitlement — a native
+rebuild and a new capability on the App ID. It is a defensible claim for this
+feature, unlike the push entitlement stripped in 0.34.0, but it is a rebuild
+rather than an over-the-air change. Say the word and it goes in the next binary.
+
 ## v0.35.1 — 2026-08-08 — Fixes the v0.35.0 crash
 
 **v0.35.0 crashed the app on every navigation.** Reported from the phone as

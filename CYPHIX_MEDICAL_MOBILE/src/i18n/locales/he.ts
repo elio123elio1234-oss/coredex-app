@@ -403,6 +403,20 @@ export const he: Record<TranslationKey, string> = {
   remActionSnooze: 'הזכירו בעוד 15 דק׳',
   remActionDone: 'בוצע',
 
+  /* ── בדיקה שזה עובד ──
+     ★ מדווחים מה הטלפון באמת מחזיק, לא מה האפליקציה התכוונה. הם קיימים כי
+     בוזבזה שעה בהמתנה לתזכורת חוזרת שמעולם לא נדרכה, וכל שאר הנתונים במסך
+     הזה תיארו כוונה. */
+  remSecCheck: 'בדיקה שזה עובד',
+  remSecCheckDesc: 'מה שהטלפון שלכם באמת מחזיק כרגע.',
+  remArmedDaily: 'תזכורות יומיות דרוכות',
+  remArmedFollow: 'תזכורות חוזרות דרוכות',
+  remArmedFollowOff: 'כבוי למעלה.',
+  remTest: 'שליחת בדיקה עכשיו',
+  remTestDesc: 'תזכורת בעוד 10 שניות, וחוזרת דקה אחריה.',
+  remTestSent: 'נשלח — נעלו את הטלפון וחכו לשתיהן.',
+  remTestFailed: 'לא הצלחנו לשלוח. ההתראות של CYPHIX כבויות.',
+
   testsNextAt: 'הבאה {when}',
 
   insTabStudies: 'בדיקות',

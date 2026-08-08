@@ -416,6 +416,20 @@ export const en = {
   remActionSnooze: 'Remind me in 15 min',
   remActionDone: 'Done',
 
+  /* ── Check it works ──
+     ★ These report what the PHONE holds, not what the app intended. They
+     exist because an hour was spent waiting for a follow-up that had never
+     been armed, and every other reading on this screen described intent. */
+  remSecCheck: 'Check it works',
+  remSecCheckDesc: 'What your phone is actually holding right now.',
+  remArmedDaily: 'Daily reminders set',
+  remArmedFollow: 'Follow-ups set',
+  remArmedFollowOff: 'Switched off above.',
+  remTest: 'Send a test now',
+  remTestDesc: 'A reminder in 10 seconds and a follow-up a minute later.',
+  remTestSent: 'Sent — lock your phone and watch for both.',
+  remTestFailed: 'Could not send. Notifications are switched off for CYPHIX.',
+
   testsNextAt: 'Next {when}',
 
   insTabStudies: 'Studies',
