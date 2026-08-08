@@ -1,7 +1,47 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.34.2';
-export const APP_BUILD_LABEL = 'The boot splash is the CYPHIX wordmark on white, as the web has it';
+export const APP_VERSION = '0.35.0';
+export const APP_BUILD_LABEL = 'Reminders ask a second time if nothing was recorded, and carry Snooze / Done';
+
+// v0.35.0 — Two additions to reminders, both asked for.
+//           THE SECOND ASK. Set a reading for 19:00 and, if nothing is in your
+//           history by 20:00, the phone asks once more. The word doing the work
+//           is IF: a patient who measured at 19:12 must not be nudged at 20:00
+//           about the thing they already did, and nothing erodes a reminder
+//           faster than being wrong about what you already know. A reading up
+//           to 45 min EARLY counts too — 18:50 is the evening reading.
+//           ⚠️ THE TWO KINDS ARE ARMED DIFFERENTLY, AND HAVE TO BE. The primary
+//           reminder is a repeating DAILY trigger: it fires whether or not this
+//           app has run in a month, and that guarantee is the feature. The
+//           follow-up cannot be, because it is CONDITIONAL — nothing can
+//           evaluate "did they measure?" while the app is closed. So it is
+//           armed as DATED one-shots, a week ahead, and simply not armed where
+//           a recording already answers it (cheaper than cancelling later, and
+//           it works for a reading taken on another device and synced here).
+//           The honest cost: follow-ups exist only as far ahead as they were
+//           armed. Re-armed on every launch and after every recording, so a
+//           patient would have to ignore the app for a week to lose them — by
+//           which point the primary reminders, which never stop, are the thing
+//           doing the work.
+//           SNOOZE / DONE on the notification, so it is something the patient
+//           ACTS on rather than only swipes away. Neither opens the app: the
+//           whole point of "not now" is that it costs nothing. Done cancels
+//           that occurrence's second ask — matched on the slot AND the date it
+//           was due, because the same slot has a follow-up armed for each of
+//           the next seven days and cancelling all of them would silence the
+//           rest of the week.
+//           ⚠️ ALSO FIXES A LATENT RACE. `useReminders` is mounted in three
+//           places and Settings + Reminders are on screen together whenever the
+//           editor is pushed, so two concurrent cancel-then-set passes could
+//           interleave and leave duplicates or nothing. Every apply now goes
+//           through a queue. It would have presented as "sometimes I get two",
+//           which is close to impossible to reproduce on purpose.
+//           Copy stays neutral by rule: no "you missed", no "you still
+//           haven't". The app does not know why, and a reminder that scolds is
+//           a reminder that gets switched off.
+//           OTA: TypeScript only — `expo-notifications` is already in the
+//           0.34.0 binary, and categories and actions are runtime calls into
+//           it. app.json stays at 0.34.0.
 
 // v0.34.2 — The boot splash was navy with the full lockup. It is now the CYPHIX
 //           WORDMARK on white — the web's session-restore splash (`AuthGate`),

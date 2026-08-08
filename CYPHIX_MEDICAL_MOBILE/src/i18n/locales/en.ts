@@ -402,6 +402,20 @@ export const en = {
   remNotifTitle: 'Time for a measurement',
   remNotifBody: 'Open CYPHIX and take your ECG.',
 
+  /* ── The second ask ──
+     ⚠️ It fires ONLY if nothing was recorded. The copy must stay neutral:
+     no "you missed", no "you still haven't". The app does not know why —
+     and a reminder that scolds is a reminder that gets switched off. */
+  remSecFollow: 'If you haven’t measured',
+  remSecFollowDesc: 'One more notification, only when nothing was recorded.',
+  remFollowEnable: 'Ask again later',
+  remFollowEnableDesc: 'Skipped entirely if a reading is already in your history.',
+  remFollowAfter: 'How much later',
+  remFollowNotifTitle: 'Your reading is still open',
+  remFollowNotifBody: 'Nothing recorded yet — take it whenever suits you.',
+  remActionSnooze: 'Remind me in 15 min',
+  remActionDone: 'Done',
+
   testsNextAt: 'Next {when}',
 
   insTabStudies: 'Studies',

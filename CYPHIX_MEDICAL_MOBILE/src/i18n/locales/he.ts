@@ -389,6 +389,20 @@ export const he: Record<TranslationKey, string> = {
   remNotifTitle: 'הגיע הזמן למדידה',
   remNotifBody: 'פתחו את CYPHIX ובצעו אק"ג.',
 
+  /* ── הבקשה השנייה ──
+     ⚠️ יורה רק אם לא נרשמה מדידה. הניסוח חייב להישאר ניטרלי: בלי "פספסת",
+     בלי "עדיין לא". האפליקציה לא יודעת למה — ותזכורת שנוזפת היא תזכורת
+     שמכבים. */
+  remSecFollow: 'אם לא מדדתם',
+  remSecFollowDesc: 'התראה אחת נוספת, רק כשלא נרשמה מדידה.',
+  remFollowEnable: 'לשאול שוב מאוחר יותר',
+  remFollowEnableDesc: 'מדלגים עליה לגמרי אם כבר יש מדידה בהיסטוריה.',
+  remFollowAfter: 'כמה זמן אחר כך',
+  remFollowNotifTitle: 'המדידה שלכם עדיין פתוחה',
+  remFollowNotifBody: 'עוד לא נרשמה מדידה — בצעו אותה מתי שנוח לכם.',
+  remActionSnooze: 'הזכירו בעוד 15 דק׳',
+  remActionDone: 'בוצע',
+
   testsNextAt: 'הבאה {when}',
 
   insTabStudies: 'בדיקות',

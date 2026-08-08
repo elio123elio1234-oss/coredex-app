@@ -50,11 +50,37 @@ export interface MeasurementSchedule {
   enabled: boolean;
   slots: ReminderSlot[];
   /**
+   * ★ Ask a second time, this many minutes later, IF no measurement has
+   * been recorded by then. `null` switches it off.
+   *
+   * Not a duplicate reminder — a CONDITIONAL one, and the condition is the
+   * whole point: a patient who measured at 19:12 must not be nudged at
+   * 20:00 about the thing they already did. Nothing erodes a reminder
+   * faster than being wrong about what you already know.
+   */
+  followUpMinutes: number | null;
+  /**
    * ISO-8601 of the last edit. Present so a future server sync can resolve
    * two devices that both changed it without asking the patient.
    */
   updatedAt: string | null;
 }
+
+/** Delays the editor offers for the second ask. */
+export const FOLLOW_UP_CHOICES: readonly number[] = [30, 60, 120];
+
+/** How long "Snooze" on the notification pushes it back. */
+export const SNOOZE_MINUTES = 15;
+
+/**
+ * A measurement this long BEFORE a slot still counts as that slot's.
+ *
+ * Somebody who takes their evening reading at 18:50 has done the 19:00
+ * one. Without a lead-in the follow-up would fire at 20:00 about a
+ * measurement that is already in their history, which is the single
+ * fastest way to teach a patient to ignore this app's notifications.
+ */
+export const SATISFY_LEAD_MINUTES = 45;
 
 /* ══════════════════ Defaults ══════════════════ */
 
@@ -83,7 +109,7 @@ export function defaultSlotTimes(count: number): MinutesOfDay[] {
 
 /** An empty, switched-off schedule — what a new account starts with. */
 export function emptySchedule(): MeasurementSchedule {
-  return { enabled: false, slots: [], updatedAt: null };
+  return { enabled: false, slots: [], followUpMinutes: null, updatedAt: null };
 }
 
 /**
@@ -154,6 +180,92 @@ export function nextOccurrence(
   return date;
 }
 
+/* ══════════════════ The second ask ══════════════════ */
+
+/** One dated firing of one slot, with the follow-up it may owe. */
+export interface SlotOccurrence {
+  slotId: string;
+  /** When the primary reminder is due, as a local instant. */
+  at: Date;
+  /** When to ask again if nothing was recorded. Null when it is switched off. */
+  followUpAt: Date | null;
+}
+
+/**
+ * Every slot firing in the next `days` days, from `from` onwards.
+ *
+ * Dated instants, unlike the primary reminders themselves — and that
+ * asymmetry is deliberate, so it is worth stating here rather than only in
+ * the scheduler:
+ *
+ *   • the PRIMARY reminder is a repeating daily trigger handed to the OS.
+ *     It fires whether or not this app has run in a month. That guarantee
+ *     is the feature.
+ *   • the FOLLOW-UP cannot be, because it is CONDITIONAL — nothing can
+ *     evaluate "did they measure?" while the app is closed. So it is
+ *     armed as individual dated notifications and cancelled when the
+ *     measurement lands.
+ *
+ * The cost is honest and bounded: follow-ups only exist as far ahead as
+ * they were armed. Arm a week at a time and re-arm on every launch and a
+ * patient would have to not open the app for seven days to lose them — by
+ * which point the primary reminders, which never stop, are the thing
+ * doing the work anyway.
+ */
+export function upcomingOccurrences(
+  schedule: MeasurementSchedule,
+  days: number,
+  from: Date = new Date(),
+): SlotOccurrence[] {
+  if (!schedule.enabled || schedule.slots.length === 0) return [];
+
+  const out: SlotOccurrence[] = [];
+  const midnight = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+
+  for (let day = 0; day <= days; day++) {
+    for (const slot of sortSlots(schedule.slots)) {
+      const at = new Date(midnight);
+      /* setDate THEN setHours, and never `+ day * 86400000`: adding a
+         fixed number of milliseconds is wrong across a DST boundary, and
+         a reminder that drifts by an hour twice a year is a reminder
+         nobody trusts. */
+      at.setDate(at.getDate() + day);
+      at.setHours(Math.floor(slot.at / 60), slot.at % 60, 0, 0);
+      if (at.getTime() <= from.getTime()) continue;
+
+      const followUpAt =
+        schedule.followUpMinutes === null
+          ? null
+          : new Date(at.getTime() + schedule.followUpMinutes * 60_000);
+
+      out.push({ slotId: slot.id, at, followUpAt });
+    }
+  }
+
+  return out.sort((a, b) => a.at.getTime() - b.at.getTime());
+}
+
+/**
+ * Has this occurrence already been answered by a measurement?
+ *
+ * The window opens `SATISFY_LEAD_MINUTES` before the slot and closes at
+ * the follow-up. Anything recorded inside it counts, so an early reading
+ * silences the second ask exactly as an on-time one does.
+ */
+export function isOccurrenceSatisfied(
+  occurrence: SlotOccurrence,
+  measurementTimes: readonly number[],
+): boolean {
+  const opens = occurrence.at.getTime() - SATISFY_LEAD_MINUTES * 60_000;
+  const closes = (occurrence.followUpAt ?? occurrence.at).getTime();
+  return measurementTimes.some((t) => t >= opens && t <= closes);
+}
+
+// v1.1.0 — Adds the CONDITIONAL second ask: `followUpMinutes`, the dated
+//          `upcomingOccurrences` a scheduler arms one at a time, and the window
+//          that decides whether a measurement already answered one. The primary
+//          reminder stays a repeating OS trigger and the follow-up cannot be —
+//          nothing can evaluate "did they measure?" with the app closed.
 // v1.0.0 — The measurement-reminder schedule: times of day (never instants, so
 //          a patient who flies is not woken at 03:00), stable slot ids, and the
 //          defaults an editor opens on. Delivery is per-platform and lives

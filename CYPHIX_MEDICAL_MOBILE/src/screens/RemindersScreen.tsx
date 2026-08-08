@@ -38,7 +38,7 @@ import * as Haptics from 'expo-haptics';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { formatMinutes, MAX_REMINDERS_PER_DAY } from '@cyphix/shared';
+import { FOLLOW_UP_CHOICES, formatMinutes, MAX_REMINDERS_PER_DAY } from '@cyphix/shared';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import { NotificationsIllustration } from '@/components/atoms/Illustration';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
@@ -74,6 +74,9 @@ function BackChevron({ color }: { color: string }) {
  * The list then reads as a day, which is what makes it checkable at a
  * glance instead of requiring the numbers to be read.
  */
+/** What the follow-up switch turns on. An hour is the obvious first guess. */
+const DEFAULT_FOLLOW_UP = 60;
+
 function partOfDay(at: number): TranslationKey {
   if (at < 11 * 60) return 'remPartMorning';
   if (at < 15 * 60) return 'remPartMidday';
@@ -107,6 +110,16 @@ export default function RemindersScreen() {
       Array.from({ length: MAX_REMINDERS_PER_DAY }, (_, i) => ({
         value: String(i + 1),
         label: String(i + 1),
+      })),
+    [],
+  );
+
+  /* Minutes, labelled in the unit a patient thinks in: "1 h", not "60". */
+  const followUpOptions = useMemo(
+    () =>
+      FOLLOW_UP_CHOICES.map((m) => ({
+        value: String(m),
+        label: m < 60 ? `${m}m` : m % 60 === 0 ? `${m / 60}h` : `${Math.floor(m / 60)}h${m % 60}`,
       })),
     [],
   );
@@ -222,6 +235,50 @@ export default function RemindersScreen() {
             />
           )}
         </SettingsSection>
+
+        {/* ★ The second ask. Its own section because it is a different
+            promise from the one above: those times are unconditional, this
+            one only happens if nothing was recorded — and that condition
+            is the part worth being explicit about, or a patient who
+            measured at 19:12 and got nudged at 20:00 would conclude the
+            app is not paying attention. */}
+        {showTimes && (
+          <SettingsSection
+            art={NotificationsIllustration}
+            title={tr('remSecFollow')}
+            description={tr('remSecFollowDesc')}
+          >
+            <SettingsRow
+              first
+              label={tr('remFollowEnable')}
+              description={tr('remFollowEnableDesc')}
+              control={
+                <Switch
+                  value={reminders.schedule.followUpMinutes !== null}
+                  onValueChange={(v) => {
+                    void Haptics.selectionAsync();
+                    reminders.setFollowUp(v ? DEFAULT_FOLLOW_UP : null);
+                  }}
+                  accessibilityLabel={tr('remFollowEnable')}
+                />
+              }
+            />
+
+            {reminders.schedule.followUpMinutes !== null && (
+              <SettingsRow
+                label={tr('remFollowAfter')}
+                control={
+                  <SegmentedControl
+                    options={followUpOptions}
+                    value={String(reminders.schedule.followUpMinutes)}
+                    onChange={(v) => reminders.setFollowUp(Number(v))}
+                    accessibilityLabel={tr('remFollowAfter')}
+                  />
+                }
+              />
+            )}
+          </SettingsSection>
+        )}
 
         {/* ★ Permission is the one state that makes everything else a lie.
             A schedule that looks armed and silently never fires is worse

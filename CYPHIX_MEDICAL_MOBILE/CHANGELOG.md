@@ -1,5 +1,73 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.35.0 — 2026-08-08 — Reminders ask a second time, and carry Snooze / Done
+
+Set a reading for 19:00 and, if nothing is in your history by 20:00, the phone
+asks once more.
+
+**The word doing all the work is *if*.** A patient who measured at 19:12 must
+not be nudged at 20:00 about the thing they already did — nothing erodes a
+reminder faster than being wrong about what you already know. A reading up to
+**45 minutes early** counts as well: 18:50 is the evening reading.
+
+### ⚠️ The two kinds are armed differently, and have to be
+
+|  | how | why |
+|---|---|---|
+| **Primary** | repeating `DAILY` trigger | Fires whether or not this app has run in a month. That guarantee *is* the feature. |
+| **Follow-up** | dated one-shots, a week ahead | It is **conditional**, and nothing can evaluate "did they measure?" while the app is closed. |
+
+So the condition is applied when the app *is* open: an occurrence whose window
+already contains a recording is simply **never armed**. That is cheaper than
+cancelling one later, and it works for a reading taken on another device and
+synced here.
+
+The honest cost: follow-ups exist only as far ahead as they were armed. They are
+re-armed on every launch **and after every recording**, so a patient would have
+to ignore the app for a week to lose them — by which point the primary
+reminders, which never stop, are the thing doing the work anyway.
+
+### Snooze / Done
+
+The notification now carries two actions, so it is something to **act on**
+rather than only swipe away — which is what was asked for.
+
+- **Remind me in 15 min** re-fires it.
+- **Done** cancels that occurrence's second ask.
+
+Neither opens the app: the whole point of "not now" is that it costs nothing.
+Done is matched on the slot **and the date it was due**, because the same slot
+has a follow-up armed for each of the next seven days and cancelling by slot
+alone would silence the rest of the week.
+
+### ⚠️ It also fixes a latent race
+
+`useReminders` is mounted in three places, and Settings + Reminders are on screen
+together whenever the editor is pushed. Two concurrent cancel-then-set passes
+could interleave and leave duplicates or nothing. Every apply now goes through a
+queue that serialises them.
+
+Nobody reported this, and nobody easily could have: it would present as
+"sometimes I get two", which is close to impossible to reproduce on purpose.
+
+### The copy stays neutral, by rule
+
+No "you missed", no "you still haven't". The app does not know why a reading did
+not happen, and a reminder that scolds is a reminder that gets switched off. It
+says the reading is still open and to take it whenever suits.
+
+### Verified
+
+The window logic is where this feature lives or dies, so it was probed rather
+than reasoned about: on-time, 10 min early, 44 min early (in), 50 min early
+(out), one minute before the follow-up (in), five minutes after (out), nothing
+at all, an unrelated lunchtime reading, and a morning reading against an evening
+slot. Twelve cases, all as intended. Plus tsc, both bundles and doctor.
+
+**Not yet seen on a device** — and the two things a bundle cannot prove here are
+exactly the new ones: whether the action buttons appear on the lock screen, and
+whether a follow-up correctly stays silent after a real recording.
+
 ## v0.34.2 — 2026-08-08 — The boot splash is the CYPHIX wordmark on white
 
 It was navy with the full lockup. It is now the wordmark on white, matching the
