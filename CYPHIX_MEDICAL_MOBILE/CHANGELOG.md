@@ -81,6 +81,37 @@ advice; there is no "recommended" marker on any option and no streak language
 anywhere. How often to take an ECG is a clinical instruction and this app does
 not give those — the same rule that governs the rest of the clinical stack.
 
+### ⚠️ The first build of this failed, and the fix is worth knowing
+
+```
+Provisioning profile "…AppStore…" doesn't support the Push Notifications
+capability / doesn't include the aps-environment entitlement.
+```
+
+`expo-notifications` adds `aps-environment` to the iOS entitlements
+unconditionally — **and its config plugin is applied by autolinking**, so
+deleting it from `app.json`'s `plugins` array does nothing at all. (Verified
+rather than assumed: `expo config --type introspect` still reported the
+entitlement afterwards.)
+
+The obvious fix is to enable Push Notifications on the App ID and reissue the
+profile. That is the wrong fix. This app schedules **local** reminders through
+`UNUserNotificationCenter`, which needs no entitlement: nothing calls
+`getExpoPushTokenAsync`, no device token is ever created, no server can reach
+the phone. Claiming the capability would leave an entitlement list that does not
+describe the binary — in an app whose whole argument is that it claims only what
+it does — and hands App Store review a fair question with no good answer.
+
+So `plugins/withoutPushEntitlement.js` deletes the key after the library sets
+it. It *deletes* rather than blanks, because the library's own guard is
+`if (!config.modResults['aps-environment'])` and an empty string would simply be
+overwritten on the next run.
+
+★ Worth keeping: **`expo config --type introspect` runs the whole config-plugin
+pipeline on Windows.** This entire class of failure — entitlements, Info.plist,
+manifest — is now checkable in seconds instead of costing a 30-minute cloud
+build to discover.
+
 ### ⚠️ Why this one is a rebuild
 
 `expo-notifications` and `@react-native-community/datetimepicker` are **native
