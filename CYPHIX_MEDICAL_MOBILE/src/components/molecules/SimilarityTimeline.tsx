@@ -20,8 +20,14 @@
    floor is stated on the axis, because a truncated axis that does not say
    so is the oldest chart lie there is.
 
-   Every bar is a tap target back to its study: a flag that cannot be
-   opened is an alarm with no door.
+   ══ A BAR SELECTS; IT DOES NOT NAVIGATE ══
+   Tapping used to open the study. That made the older bars a one-way door
+   — you could leave through them but never look, so the chart could show
+   you an outlier and then only offer to change screens about it. Now a
+   tap PICKS the bar and the detail underneath the chart changes to that
+   study, and the detail row is what opens it. Two steps, and the second
+   one is optional, which is the right shape for "which of these is worth
+   my attention".
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
@@ -32,6 +38,9 @@ import { useTheme } from '@/theme/useTheme';
 interface Props {
   /** Newest first, as the identity reports them. */
   matches: readonly IdentityMatch[];
+  /** The bar whose detail is showing below the chart. */
+  selectedId?: string | null;
+  /** Picks a bar. This is a SELECTION, not navigation — see the header. */
   onSelect: (recordingId: string) => void;
   /** Localised axis labels. */
   labels: { floor: string; top: string; excluded: string };
@@ -43,7 +52,13 @@ const FLOOR = 80;
 const BAR_H = 74;
 const BAR_W = 12;
 
-export default function SimilarityTimeline({ matches, onSelect, labels, rtl }: Props) {
+export default function SimilarityTimeline({
+  matches,
+  selectedId,
+  onSelect,
+  labels,
+  rtl,
+}: Props) {
   const t = useTheme();
 
   // Oldest → newest: time runs forward, always, whatever order the data
@@ -68,6 +83,7 @@ export default function SimilarityTimeline({ matches, onSelect, labels, rtl }: P
         {ordered.map((m) => {
           const excluded = m.excluded !== null;
           const flagged = m.flaggedAtEnrollment || m.deviations.some((d) => d.severity === 'marked');
+          const active = m.recordingId === selectedId;
           const height = excluded
             ? 6
             : Math.max(6, ((Math.max(FLOOR, m.similarity) - FLOOR) / (100 - FLOOR)) * BAR_H);
@@ -80,6 +96,7 @@ export default function SimilarityTimeline({ matches, onSelect, labels, rtl }: P
             <Pressable
               key={m.recordingId}
               accessibilityRole="button"
+              accessibilityState={{ selected: active }}
               accessibilityLabel={
                 excluded ? labels.excluded : `${m.similarity}% · ${m.recordedAt.slice(0, 10)}`
               }
@@ -91,14 +108,27 @@ export default function SimilarityTimeline({ matches, onSelect, labels, rtl }: P
               hitSlop={{ top: 6, bottom: 10, left: 3, right: 3 }}
             >
               <View style={styles.column}>
-                <View style={[styles.bar, { height, backgroundColor: fill }]} />
+                {/* The UNSELECTED bars step back rather than the selected
+                    one stepping forward. Brightening one bar in a row of a
+                    dozen adds a second colour to decode, and this chart
+                    already spends its one colour on "differs". */}
+                <View
+                  style={[styles.bar, { height, backgroundColor: fill, opacity: active ? 1 : 0.45 }]}
+                />
               </View>
-              {/* A struck study still gets a slot — a gap in the row would
-                  read as a study that does not exist. */}
+              {/* The foot marks the selected bar, and doubles as the slot a
+                  struck study keeps — a gap in the row would read as a
+                  study that does not exist. */}
               <View
                 style={[
                   styles.foot,
-                  { backgroundColor: excluded ? t.textTertiary : 'transparent' },
+                  {
+                    backgroundColor: active
+                      ? t.textPrimary
+                      : excluded
+                        ? t.textTertiary
+                        : 'transparent',
+                  },
                 ]}
               />
             </Pressable>
@@ -131,6 +161,10 @@ const styles = StyleSheet.create({
   foot: { width: BAR_W, height: 3, borderRadius: 2 },
 });
 
+// v1.2.0 — A bar SELECTS rather than navigates, and the selection is marked by
+//          the other bars stepping back plus a foot tick. Tapping used to leave
+//          the screen, which made the older bars a one-way door: the chart could
+//          point at an outlier and then only offer to change screens about it.
 // v1.1.0 — Amber rather than red for a study that differs.
 // v1.0.0 — One bar per study against the ECG ID, oldest first, on a stated
 //          80–100 axis so the one short bar is findable; every bar opens its

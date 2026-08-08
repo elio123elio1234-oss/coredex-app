@@ -57,7 +57,7 @@ import HistorySkeleton from '@/components/molecules/HistorySkeleton';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import StudyCard from '@/components/molecules/StudyCard';
 import EcgIdentityPanel from '@/components/organisms/EcgIdentityPanel';
-import PatientShell from '@/components/templates/PatientShell';
+import PatientShell, { shellPaddingH } from '@/components/templates/PatientShell';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
@@ -170,6 +170,10 @@ export default function HistoryScreen() {
   const align = rtl ? ('right' as const) : ('left' as const);
   const empty = !list.data || list.data.length === 0;
   const showTabs = !list.isLoading && !list.isError && !empty;
+  /* The padding the shell would have applied, now applied here — one
+     number, from one function, so the header and the scroll content can
+     never disagree about where the margin is. */
+  const padH = shellPaddingH(insets);
 
   const cardLabels = {
     bpm: tr('bpm'),
@@ -205,9 +209,14 @@ export default function HistoryScreen() {
        at a hard edge and the strip the dock floats over is bare
        background, which reads as a grey bar wedged under the content and
        leaves the frosted bar with nothing to refract. */
-    <PatientShell scrollsUnderDock>
+    /* `bleedHorizontal`: the Insights signature has to reach the screen
+       edge, and a negative margin cannot escape a ScrollView — it gets
+       cut at the scroller's frame, which is what was clipping the trace
+       and the lead label. So the SHELL drops its side padding and this
+       screen applies the same `shellPaddingH` itself, per element. */
+    <PatientShell scrollsUnderDock bleedHorizontal>
       <View style={styles.root}>
-        <View style={[styles.head, rtl && styles.rowRtl]}>
+        <View style={[styles.head, { paddingHorizontal: padH }, rtl && styles.rowRtl]}>
           <View style={styles.headText}>
             <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
               {tr('histTitle')}
@@ -247,19 +256,26 @@ export default function HistoryScreen() {
             switching to. Offering "Insights" over an empty history would
             promise a baseline that cannot exist yet. */}
         {showTabs && (
-          <SegmentedTabs
-            options={[
-              { value: 'studies', label: tr('insTabStudies') },
-              { value: 'insights', label: tr('insTabInsights') },
-            ]}
-            value={tab}
-            onChange={setTab}
-            accessibilityLabel={tr('histTitle')}
-          />
+          <View style={{ paddingHorizontal: padH }}>
+            <SegmentedTabs
+              options={[
+                { value: 'studies', label: tr('insTabStudies') },
+                { value: 'insights', label: tr('insTabInsights') },
+              ]}
+              value={tab}
+              onChange={setTab}
+              accessibilityLabel={tr('histTitle')}
+            />
+          </View>
         )}
 
         {importError && (
-          <Text style={[styles.error, { color: t.danger, backgroundColor: t.dangerSoft }]}>
+          <Text
+            style={[
+              styles.error,
+              { color: t.danger, backgroundColor: t.dangerSoft, marginHorizontal: padH },
+            ]}
+          >
             {importError}
           </Text>
         )}
@@ -267,12 +283,20 @@ export default function HistoryScreen() {
         {showTabs && tab === 'insights' ? (
           <EcgIdentityPanel
             patientId={subject}
+            paddingHorizontal={padH}
             onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
           />
         ) : list.isLoading ? (
-          <HistorySkeleton />
+          <View style={{ paddingHorizontal: padH }}>
+            <HistorySkeleton />
+          </View>
         ) : list.isError ? (
-          <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: t.surface, borderColor: t.border, marginHorizontal: padH },
+            ]}
+          >
             <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
               {tr('histTitle')}
             </Text>
@@ -291,7 +315,12 @@ export default function HistoryScreen() {
             </Pressable>
           </View>
         ) : empty ? (
-          <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: t.surface, borderColor: t.border, marginHorizontal: padH },
+            ]}
+          >
             <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
               {tr('histEmptyTitle')}
             </Text>
@@ -306,7 +335,10 @@ export default function HistoryScreen() {
             renderItem={renderCard}
             contentContainerStyle={[
               styles.listContent,
-              { paddingBottom: dockFootprint(insets.bottom, screenH) },
+              {
+                paddingHorizontal: padH,
+                paddingBottom: dockFootprint(insets.bottom, screenH),
+              },
             ]}
             showsVerticalScrollIndicator={false}
             accessibilityLabel={tr('histListLabel')}

@@ -408,7 +408,6 @@ export const he: Record<TranslationKey, string> = {
   insRejTruncated: 'נחתכה בסוף ההקלטה',
   insRejMatch: 'התאמה {n}%',
 
-  insLatestTitle: 'הבדיקה האחרונה',
   insMatch: 'התאמה {n}%',
   insNoDeviations: 'אין הבדל מדיד מקו הבסיס שלכם.',
   /* ★ מה זה הפרש. הצ׳יפים דווחו כלא ברורים, ומספר שאי אפשר לפרש גרוע

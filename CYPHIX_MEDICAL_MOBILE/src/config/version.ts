@@ -1,7 +1,26 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.33.0';
-export const APP_BUILD_LABEL = 'Insights has no cards: the ECG runs edge to edge on the page itself';
+export const APP_VERSION = '0.33.1';
+export const APP_BUILD_LABEL = 'Insights: the ECG edges stopped being clipped; the timeline is now the picker';
+
+// v0.33.1 — • THE EDGES WERE BEING CUT, lead label included. Not a padding
+//             mistake: a negative margin cannot escape a ScrollView, because
+//             RN clips a scroller's children at its own frame — so making the
+//             child wider than the scroller simply lost the overhang. The
+//             SCREEN now bleeds (`PatientShell.bleedHorizontal` +
+//             `shellPaddingH`), History applies the side padding per element,
+//             and the ECG cancels it with a negative margin that finally has
+//             room to go.
+//           • "LATEST STUDY" IS GONE AS A SECTION. It repeated the timeline's
+//             last bar — same date, same match figure — so the duplication was
+//             the whole complaint. The chart is now a PICKER: tap any bar and
+//             the detail under it changes, defaulting to the newest. The
+//             deviation chips survived because they are the only place the
+//             actual answer lives, and the beats that study left out moved in
+//             beside them. Tapping a bar no longer navigates (the detail row
+//             does), which also makes the older studies inspectable rather
+//             than only openable.
+//           Still an OTA: TypeScript only, app.json stays 0.30.0.
 
 // v0.33.0 — Three reports, one cause: it was still drawn INSIDE things.
 //           • THE BOX RESIZED. Height and gain were derived per lead from that

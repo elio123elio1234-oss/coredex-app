@@ -13,7 +13,9 @@
                     ╰───╯          50 mm/s · 10 mm/mV
       ▌▌▌▌▌▌▌▌▌▌▌   I  II  III  aVR aVL aVF
      ─────────────────────────────────────────────
-     LATEST STUDY                        97 %    ›
+     MATCH OVER TIME
+      ▇▇▇▇▂▇▇▇▇▇▇        ← tap a bar to pick a study
+     7 Aug                              97 %    ›
 
    ══ THERE ARE NO CARDS ══
    Everything used to be a white rounded rectangle on a grey page, with
@@ -27,8 +29,11 @@
    spans the whole screen. The rules a de-carded layout has to hold to:
 
      • the ECG runs EDGE TO EDGE. It is the subject; it gets the width.
-       The bleed is measured (screen width − content width), never a
-       hard-coded inset, so it cannot drift from the shell's padding.
+       ★ The SCREEN bleeds and this panel holds the padding
+       (`paddingHorizontal`), which the ECG cancels with a negative
+       margin. Doing it the other way round — narrow scroller, negative
+       margin — does not work: RN clips a scroll view's children at its
+       frame, so the trace and the lead label were being CUT at the edges.
      • one gain and one channel height for every lead and every step of
        the builder, chosen once — see `pickGain`. A box that resizes when
        you change lead reads as instability, because it is.
@@ -36,14 +41,18 @@
        waveform are what a reader has to look past to see the thing they
        came for. What survives is what the screen cannot say without
        words: what a difference IS, and the disclaimer.
+     • no section says what another section already said. "Latest study"
+       used to be its own block above the timeline, repeating the last
+       bar's date and match figure; it is now the timeline's DETAIL, and
+       the chart became a picker.
 
    ══ THE ORDER IS THE ARGUMENT ══
    Signature first, because it is the thing that did not exist before.
-   Then the newest study measured against it — the only study anyone is
-   actually asking about. Then the beats that were left out, the history
-   of the measurements, the numbers behind them, and the habit that
-   produced them all. Each block answers a question raised by the one
-   above it.
+   Then anything wrong with the studies that BUILT it. Then a study
+   measured against it — the newest by default, any of them on a tap —
+   with the beats that study left out. Then the baseline's own numbers,
+   and the habit that produced all of it. Each block answers a question
+   raised by the one above it.
 
    ══ WHAT IT REFUSES TO SAY ══
    Nothing here interprets (`ecgIdentity.ts` header). Every difference is
@@ -88,6 +97,17 @@ import { useTheme } from '@/theme/useTheme';
 interface Props {
   /** Patient scope — the same argument History's list is fetched with. */
   patientId?: string;
+  /**
+   * The side margin, applied to this panel's own scroll CONTENT.
+   *
+   * The screen bleeds (`PatientShell.bleedHorizontal`) so the scroll view
+   * spans the full width; the padding lives here instead, and the ECG
+   * cancels it with `-paddingHorizontal` to reach the screen edge. Doing
+   * it the other way round — a narrow scroller and a negative margin —
+   * is what was CUTTING the trace and the lead label: RN clips a scroll
+   * view's children at its frame.
+   */
+  paddingHorizontal: number;
   onOpenStudy: (recordingId: string) => void;
 }
 
@@ -145,7 +165,7 @@ function groupDeviations(deviations: readonly IdentityDeviation[]): DeviationGro
   });
 }
 
-export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
+export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenStudy }: Props) {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -154,24 +174,25 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
 
   const [lead, setLead] = useState<EcgLeadName>('II');
   const [compare, setCompare] = useState(true);
-  const [contentWidth, setContentWidth] = useState(0);
   const [caliper, setCaliper] = useState<CaliperReading | null>(null);
   /** How many studies the builder is averaging. null = all of them. */
   const [built, setBuilt] = useState<number | null>(null);
+  /** Which study the timeline is showing detail for. null = the newest. */
+  const [picked, setPicked] = useState<string | null>(null);
 
   const align = rtl ? ('right' as const) : ('left' as const);
   const identity = view.identity;
-
-  /* ★ The bleed is MEASURED, never assumed. The shell's horizontal
-     padding is `max(safe-area, 20)`, which changes with the notch and the
-     orientation; a hard-coded −20 here would leave a hairline of page
-     down one edge on exactly the devices nobody tests on. */
-  const bleed = contentWidth > 0 ? Math.max(0, (screenW - contentWidth) / 2) : 0;
 
   const latest = useMemo(
     () => identity?.matches.find((m) => m.excluded === null || m.excluded === 'outlier') ?? null,
     [identity],
   );
+
+  /** The study the detail block describes — the newest until one is tapped. */
+  const selected = useMemo(() => {
+    if (!identity) return null;
+    return identity.matches.find((m) => m.recordingId === picked) ?? latest;
+  }, [identity, picked, latest]);
 
   const flagged = useMemo(
     () => identity?.matches.filter((m) => m.flaggedAtEnrollment) ?? [],
@@ -229,14 +250,14 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
     return view.templateOf(latest.recordingId)?.leads[lead]?.samples ?? null;
   }, [compare, built, identity, latest, lead, view]);
 
-  /** The latest study's discarded beats, for the evidence block. */
+  /** The SELECTED study's discarded beats — evidence about that study. */
   const rejected = useMemo(() => {
-    if (!latest) return null;
-    const template = view.templateOf(latest.recordingId);
+    if (!selected) return null;
+    const template = view.templateOf(selected.recordingId);
     const onLead = template?.leads[lead] ?? template?.leads.II;
     if (!onLead || onLead.rejected.length === 0) return null;
     return { beats: onLead.rejected, accepted: onLead.samples, total: onLead.beatsRejected };
-  }, [latest, view, lead]);
+  }, [selected, view, lead]);
 
   const fmtDate = useCallback(
     (iso: string) =>
@@ -294,7 +315,10 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
 
   const established = identity.maturity === 'established';
   const remaining = Math.max(0, identity.enrollmentTarget - identity.enrolled);
-  const bleedStyle = { marginHorizontal: -bleed };
+  /* Cancels the content padding exactly, so a full-bleed child lands on
+     the screen's own edges. The scroll view is full width (the screen
+     bleeds), so there is nothing here to clip it. */
+  const bleedStyle = { marginHorizontal: -paddingHorizontal };
 
   return (
     <ScrollView
@@ -304,10 +328,12 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
          bare strip above it (`PatientShell.scrollsUnderDock`). */
       contentContainerStyle={[
         styles.content,
-        { paddingBottom: dockFootprint(insets.bottom, screenH) },
+        {
+          paddingHorizontal,
+          paddingBottom: dockFootprint(insets.bottom, screenH),
+        },
       ]}
       showsVerticalScrollIndicator={false}
-      onLayout={(e) => setContentWidth(e.nativeEvent.layout.width)}
       /* The signature and the builder both own horizontal drags; without
          this the scroll view steals them the moment a finger slides. */
       directionalLockEnabled
@@ -376,7 +402,7 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         )}
       </View>
 
-      {shown && bleed >= 0 && contentWidth > 0 && (
+      {shown && (
         <View style={bleedStyle}>
           <BeatSignature
             baseline={shown.samples}
@@ -384,7 +410,7 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
             sampleRate={identity.sampleRate}
             rIndex={identity.rIndex}
             overlay={overlay}
-            width={contentWidth + bleed * 2}
+            width={screenW}
             mmPerMv={mmPerMv}
             label={lead}
             onCaliper={setCaliper}
@@ -454,106 +480,10 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         rtl={rtl}
       />
 
-      {/* ══ 2. The newest study, measured ═════════════════════════ */}
-      {latest && (
-        <>
-          <Rule bleed={bleed} />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              void Haptics.selectionAsync();
-              onOpenStudy(latest.recordingId);
-            }}
-            style={({ pressed }) => [styles.block, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <View style={[styles.rowBetween, rtl && styles.rowRtl]}>
-              <Text style={[styles.sectionTitle, { color: t.textTertiary }]}>
-                {tr('insLatestTitle')}
-              </Text>
-              <View style={[styles.scoreRow, rtl && styles.rowRtl]}>
-                <Text style={[styles.score, { color: scoreColour(latest, t) }]}>
-                  {tr('insMatch', { n: String(latest.similarity) })}
-                </Text>
-                <Ionicons
-                  name={rtl ? 'chevron-back' : 'chevron-forward'}
-                  size={15}
-                  color={t.textTertiary}
-                />
-              </View>
-            </View>
-            <Text style={[styles.meta, { color: t.textSecondary, textAlign: align }]}>
-              {fmtDate(latest.recordedAt)}
-              {/* Scored but NOT counted toward the baseline has to say so,
-                  or the reader assumes it moved the reference. */}
-              {latest.excluded ? ` · ${tr(EXCLUSION_LABEL[latest.excluded])}` : ''}
-            </Text>
-
-            {latest.deviations.length === 0 ? (
-              <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
-                {tr('insNoDeviations')}
-              </Text>
-            ) : (
-              <>
-                <View style={[styles.chips, rtl && styles.rowRtl]}>
-                  {groupDeviations(latest.deviations).map((g) => (
-                    <DeviationChip
-                      key={g.key}
-                      deviation={g.worst}
-                      rtl={rtl}
-                      label={`${tr(DEVIATION_LABEL[g.worst.kind])}${leadSuffix(g, tr)}`}
-                      severityLabel={
-                        g.worst.severity === 'marked' ? tr('insSevMarked') : tr('insSevWatch')
-                      }
-                    />
-                  ))}
-                </View>
-                {/* ★ Kept when almost everything else was cut. A number
-                    nobody can interpret is worse than no number — it
-                    worries without informing. */}
-                <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-                  {tr('insDeviationMeaning')}
-                </Text>
-              </>
-            )}
-          </Pressable>
-        </>
-      )}
-
-      {/* ══ 3. The beats that were not used ══════════════════════ */}
-      {rejected && contentWidth > 0 && (
-        <>
-          <Rule bleed={bleed} />
-          <View style={styles.block}>
-            <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
-              {tr('insRejectedTitle', { n: String(rejected.total) })}
-            </Text>
-            <View style={bleedStyle}>
-              <RejectedBeats
-                accepted={rejected.accepted}
-                rejected={rejected.beats}
-                sampleRate={identity.sampleRate}
-                width={contentWidth + bleed * 2}
-                mmPerMv={mmPerMv}
-                rtl={rtl}
-                labels={{
-                  premature: tr('insRejPremature'),
-                  dissimilar: tr('insRejDissimilar'),
-                  truncated: tr('insRejTruncated'),
-                  match: (pct) => tr('insRejMatch', { n: String(pct) }),
-                }}
-              />
-            </View>
-            <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-              {tr('insRejectedBody')}
-            </Text>
-          </View>
-        </>
-      )}
-
-      {/* ══ 4. Early studies that disagree with their own cohort ══ */}
+      {/* ══ 2. Early studies that disagree with their own cohort ══ */}
       {flagged.length > 0 && (
         <>
-          <Rule bleed={bleed} />
+          <Rule bleed={paddingHorizontal} />
           <View style={styles.block}>
             <Text style={[styles.sectionTitle, { color: t.attention, textAlign: align }]}>
               {tr('insFlaggedTitle')}
@@ -594,22 +524,123 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         </>
       )}
 
-      {/* ══ 5. Every study against the baseline, over time ════════ */}
-      <Rule bleed={bleed} />
+      {/* ══ 3. Every study against the baseline — and the one picked ══
+          ★ This used to be TWO sections: a "Latest study" card and a
+          separate timeline. They said the same thing twice — the card's
+          date and match figure are the last bar of the chart — and the
+          duplication was reported as adding nothing.
+
+          Merged, the timeline becomes a PICKER: tapping a bar selects
+          that study and the detail below it changes, defaulting to the
+          newest. The deviations are the part that exists nowhere else and
+          are the actual answer to "has anything changed", so they stayed;
+          what went is the second copy of the header. Tapping a bar no
+          longer navigates — the detail row does — which also makes the
+          older studies reachable instead of only openable. */}
+      <Rule bleed={paddingHorizontal} />
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
           {tr('insTimelineTitle')}
         </Text>
         <SimilarityTimeline
           matches={identity.matches}
-          onSelect={onOpenStudy}
+          selectedId={selected?.recordingId ?? null}
+          onSelect={setPicked}
           rtl={rtl}
           labels={{ top: '100', floor: '80', excluded: tr('insExcludedShort') }}
         />
+
+        {selected && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              void Haptics.selectionAsync();
+              onOpenStudy(selected.recordingId);
+            }}
+            style={({ pressed }) => [styles.detail, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <View style={[styles.rowBetween, rtl && styles.rowRtl]}>
+              <Text style={[styles.detailDate, { color: t.textPrimary }]} numberOfLines={1}>
+                {fmtDate(selected.recordedAt)}
+                {/* Scored but NOT counted toward the baseline has to say
+                    so, or the reader assumes it moved the reference. */}
+                {selected.excluded ? ` · ${tr(EXCLUSION_LABEL[selected.excluded])}` : ''}
+              </Text>
+              <View style={[styles.scoreRow, rtl && styles.rowRtl]}>
+                <Text style={[styles.score, { color: scoreColour(selected, t) }]}>
+                  {tr('insMatch', { n: String(selected.similarity) })}
+                </Text>
+                <Ionicons
+                  name={rtl ? 'chevron-back' : 'chevron-forward'}
+                  size={15}
+                  color={t.textTertiary}
+                />
+              </View>
+            </View>
+
+            {selected.deviations.length === 0 ? (
+              <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
+                {tr('insNoDeviations')}
+              </Text>
+            ) : (
+              <>
+                <View style={[styles.chips, rtl && styles.rowRtl]}>
+                  {groupDeviations(selected.deviations).map((g) => (
+                    <DeviationChip
+                      key={g.key}
+                      deviation={g.worst}
+                      rtl={rtl}
+                      label={`${tr(DEVIATION_LABEL[g.worst.kind])}${leadSuffix(g, tr)}`}
+                      severityLabel={
+                        g.worst.severity === 'marked' ? tr('insSevMarked') : tr('insSevWatch')
+                      }
+                    />
+                  ))}
+                </View>
+                {/* ★ Kept when almost everything else was cut. A number
+                    nobody can interpret is worse than no number — it
+                    worries without informing. */}
+                <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+                  {tr('insDeviationMeaning')}
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
+        {/* The beats that study left out — evidence about the SELECTED
+            study, so it belongs with it rather than in a section of its
+            own two scrolls away. */}
+        {rejected && (
+          <View style={styles.block}>
+            <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+              {tr('insRejectedTitle', { n: String(rejected.total) })}
+            </Text>
+            <View style={bleedStyle}>
+              <RejectedBeats
+                accepted={rejected.accepted}
+                rejected={rejected.beats}
+                sampleRate={identity.sampleRate}
+                width={screenW}
+                mmPerMv={mmPerMv}
+                rtl={rtl}
+                labels={{
+                  premature: tr('insRejPremature'),
+                  dissimilar: tr('insRejDissimilar'),
+                  truncated: tr('insRejTruncated'),
+                  match: (pct) => tr('insRejMatch', { n: String(pct) }),
+                }}
+              />
+            </View>
+            <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+              {tr('insRejectedBody')}
+            </Text>
+          </View>
+        )}
       </View>
 
-      {/* ══ 6. The numbers the baseline holds ════════════════════ */}
-      <Rule bleed={bleed} />
+      {/* ══ 4. The numbers the baseline holds ════════════════════ */}
+      <Rule bleed={paddingHorizontal} />
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
           {tr('insBaselineTitle')}
@@ -626,15 +657,15 @@ export default function EcgIdentityPanel({ patientId, onOpenStudy }: Props) {
         </View>
       </View>
 
-      {/* ══ 7. The habit that produced all of it ═════════════════ */}
+      {/* ══ 5. The habit that produced all of it ═════════════════ */}
       {view.stats && (
         <>
-          <Rule bleed={bleed} />
+          <Rule bleed={paddingHorizontal} />
           <CadenceCard stats={view.stats} rtl={rtl} />
         </>
       )}
 
-      <Rule bleed={bleed} />
+      <Rule bleed={paddingHorizontal} />
       <Text style={[styles.disclaimer, { color: t.textTertiary }]}>{tr('insDisclaimer')}</Text>
     </ScrollView>
   );
@@ -841,6 +872,11 @@ const styles = StyleSheet.create({
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   toggleText: { fontSize: 12, fontWeight: '700' },
 
+  /* The picked study's detail: a row of its own under the chart, with a
+     little air above it so it reads as belonging to the bar that is lit
+     rather than as the next section. */
+  detail: { gap: 8, paddingTop: 4 },
+  detailDate: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   score: { fontSize: 17, fontWeight: '800', fontVariant: ['tabular-nums'] },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -868,6 +904,17 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
 });
 
+// v3.1.0 — Two fixes from device feedback:
+//          • the full-bleed ECG was being CUT at both edges, taking the lead
+//            label with it. A negative margin cannot escape a ScrollView — RN
+//            clips children at the scroller's frame. The screen now bleeds
+//            (`PatientShell.bleedHorizontal`) and this panel owns the padding,
+//            so the negative margin finally has somewhere to go.
+//          • "Latest study" is gone as a section. It repeated the timeline's
+//            last bar — same date, same figure — so the chart became a PICKER
+//            and that content became its detail. The deviations survived, since
+//            they are the only place the actual answer lives; the beats that
+//            study left out moved in beside them, where they belong.
 // v3.0.0 — De-carded, at the user's report that it still read as a drawing
 //          rather than as data. There are no white rectangles left: sections
 //          are a small-caps label, their content and a full-bleed hairline, and

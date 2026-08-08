@@ -423,7 +423,6 @@ export const en = {
   insRejTruncated: 'Cut off by the end of the recording',
   insRejMatch: '{n}% match',
 
-  insLatestTitle: 'Latest study',
   insMatch: '{n}% match',
   insNoDeviations: 'Nothing measurably different from your baseline.',
   /* ★ What a difference IS. The chips were reported as unclear, and a

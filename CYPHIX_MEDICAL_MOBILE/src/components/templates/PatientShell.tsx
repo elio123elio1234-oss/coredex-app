@@ -52,6 +52,20 @@ interface Props {
    * everything travels behind the glass on the way.
    */
   scrollsUnderDock?: boolean;
+  /**
+   * ★ The screen owns its own SIDE padding, because something inside it
+   * has to reach the screen edge.
+   *
+   * A negative margin cannot escape a scroll view: RN sets `clipsToBounds`
+   * on it, so a child made wider than the scroller is silently CUT at the
+   * scroller's frame — which took the first ~20 pt off each side of the
+   * full-bleed ECG and swallowed the lead label sitting there. The fix is
+   * not a bigger negative margin, it is to stop the scroll view being
+   * narrow: the shell drops its horizontal padding, the screen applies the
+   * same padding on its scroll CONTENT, and the one element that wants the
+   * full width cancels it with a negative margin that now has room to go.
+   */
+  bleedHorizontal?: boolean;
 }
 
 export default function PatientShell({
@@ -59,6 +73,7 @@ export default function PatientShell({
   chrome = true,
   dock = chrome,
   scrollsUnderDock = false,
+  bleedHorizontal = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
@@ -90,9 +105,11 @@ export default function PatientShell({
                content settling up by ~29 pt rather than as a gap closing. */
             paddingTop: insets.top + (wordmark ? 70 : 12),
             // Landscape puts the notch on a SIDE, so the horizontal padding
-            // has to clear it — 20 is only the floor.
-            paddingLeft: Math.max(insets.left, 20),
-            paddingRight: Math.max(insets.right, 20),
+            // has to clear it — 20 is only the floor. A bleeding screen
+            // takes both the padding and that responsibility on itself
+            // (`shellPaddingH` is the same expression, exported for it).
+            paddingLeft: bleedHorizontal ? 0 : Math.max(insets.left, 20),
+            paddingRight: bleedHorizontal ? 0 : Math.max(insets.right, 20),
             // dockFootprint already accounts for the safe area where it
             // matters — adding insets.bottom again here squeezed the screen.
             paddingBottom: scrollsUnderDock
@@ -109,12 +126,28 @@ export default function PatientShell({
   );
 }
 
+/**
+ * The side padding the shell would have applied.
+ *
+ * Exported so a `bleedHorizontal` screen re-applies exactly the same
+ * number rather than a copy of it — two 20s that are meant to be one 20
+ * is how a layout drifts on the first device with a different notch.
+ */
+export function shellPaddingH(insets: { left: number; right: number }): number {
+  return Math.max(insets.left, insets.right, 20);
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   brand: { position: 'absolute', left: 20, zIndex: 20 },
   content: { flex: 1, justifyContent: 'center' },
 });
 
+// v2.4.0 — `bleedHorizontal` + `shellPaddingH`: a screen with something that
+//          must reach the screen edge takes the side padding onto its own
+//          scroll content. A negative margin cannot escape a ScrollView —
+//          `clipsToBounds` cuts the child at the scroller's frame — so the
+//          scroller itself has to be full width.
 // v2.3.0 — `scrollsUnderDock`: a scrolling screen takes the dock's clearance on
 //          its own content inset instead, so the page travels BEHIND the glass
 //          rather than stopping on a bare strip above it.

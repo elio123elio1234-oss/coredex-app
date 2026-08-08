@@ -1,5 +1,51 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.33.1 — 2026-08-08 — The ECG edges stopped being clipped; the timeline is the picker
+
+### The full-bleed trace was being cut, and the lead label with it
+
+Reported from the phone: the edges are shaved and the `I` / `II` / `aVL` label
+sitting there is clipped. It was not a padding number being wrong.
+
+**A negative margin cannot escape a ScrollView.** React Native clips a
+scroller's children at its own frame, so making a child wider than the scroller
+does not overhang — the overhang is simply lost. The shell was applying the
+side padding, which made the scroll view 40 pt narrower than the screen, and
+the signature's `marginHorizontal: -20` was quietly cut off on both sides. The
+lead label lives 16 pt from the edge, i.e. entirely inside the cut.
+
+The fix is to stop the scroller being narrow. `PatientShell` gained
+`bleedHorizontal`, which drops its own side padding, plus `shellPaddingH()` so
+the screen re-applies *the same number* rather than a copy of it — two 20s that
+are meant to be one 20 is how a layout drifts on the first device with a
+different notch. History now pads its header, its tabs and its scroll content
+itself, and the ECG cancels that padding with a negative margin that finally
+has room to go.
+
+### "Latest study" is gone, and the timeline took its job
+
+Asked whether that block was earning its space. It was not — and the reason is
+worth stating, because deleting it outright would have lost something.
+
+Its *date* and its *match figure* were the last bar of the chart directly below
+it, said again in bigger type. That is the duplication that made it feel like
+filler. But its **deviation chips** are the only place in the whole feature
+where "has anything changed" is actually answered, so they could not go.
+
+So the two merged. **The timeline is now a picker**: tapping a bar selects that
+study and the detail beneath the chart becomes that study — defaulting to the
+newest, so the common case is unchanged. The beats that study left out moved in
+beside it, since they are evidence about that study and were sitting two
+scrolls away in a section of their own.
+
+A bar tap no longer navigates; the detail row does. That also fixes something
+the old design got wrong quietly: tapping an old bar used to be a one-way door
+out of the screen, so the chart could point at an outlier and then only offer
+to change screens about it. Now you can look first.
+
+Net: two sections fewer, nothing lost, and every older study became inspectable
+instead of only openable.
+
 ## v0.33.0 — 2026-08-08 — Insights has no cards: the ECG runs edge to edge on the page itself
 
 Three separate reports from the phone, one cause underneath all of them: the
