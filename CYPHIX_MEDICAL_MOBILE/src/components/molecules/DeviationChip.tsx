@@ -60,7 +60,12 @@ export default function DeviationChip({ deviation, label, severityLabel, rtl }: 
   const t = useTheme();
   const marked = deviation.severity === 'marked';
 
-  const tint = marked ? t.attention : t.textSecondary;
+  /* ★ The GOLD is a border and a fill; the words are ordinary text.
+     Drawing the label in the accent is what forced that accent dark
+     enough to clear body-text contrast on white — and any amber that
+     dark is brown, which is exactly how it was reported. Freeing the
+     colour from the text let it become the gold it should have been. */
+  const tint = marked ? t.textPrimary : t.textSecondary;
   const fill = marked ? t.attentionSoft : t.bgSoft;
   const border = marked ? t.attention : t.border;
 
@@ -73,6 +78,10 @@ export default function DeviationChip({ deviation, label, severityLabel, rtl }: 
       accessibilityRole="text"
       accessibilityLabel={`${label}, ${severityLabel}, ${sign}${format(deviation.delta, deviation.unit)}${unit}`}
     >
+      {/* Severity is still carried by more than colour: a marked chip has
+          a filled dot, a gold rule and a heavier fill, so it survives a
+          colour-blind reader and a greyscale screenshot. */}
+      {marked && <View style={[styles.dot, { backgroundColor: t.attention }]} />}
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         {label}
       </Text>
@@ -100,11 +109,16 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   chipRtl: { flexDirection: 'row-reverse' },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   label: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
   delta: { fontSize: 12.5, fontWeight: '800', fontVariant: ['tabular-nums'] },
   from: { fontSize: 10.5, fontVariant: ['tabular-nums'] },
 });
 
+// v1.2.0 — The accent is a border, a soft fill and a dot; the WORDS are
+//          ordinary text. Painting the label in the accent is what forced that
+//          accent dark enough for body-text contrast on white, and any amber
+//          that dark is brown — which is how it was reported.
 // v1.1.0 — Amber, not red: red is an alarm, and a distance from your own
 //          baseline is a measurement. Hairline border.
 // v1.0.0 — One deviation with its own arithmetic on it (delta, and the

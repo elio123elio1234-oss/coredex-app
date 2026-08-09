@@ -74,7 +74,7 @@ export default function CadenceStrip({
                 styles.bar,
                 {
                   height,
-                  backgroundColor: count === 0 ? t.border : lit ? t.accentLive : t.textTertiary,
+                  backgroundColor: count === 0 ? t.border : lit ? t.teal : t.textTertiary,
                 },
               ]}
             />

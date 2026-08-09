@@ -1,7 +1,38 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.37.0';
-export const APP_BUILD_LABEL = 'The second ask is on by default, and Reminders fits on one screen';
+export const APP_VERSION = '0.38.0';
+export const APP_BUILD_LABEL = 'ECG ID in brand teal, and Settings rows stop crushing their labels';
+
+// v0.38.0 - Three fixes reported from the phone.
+//           THE SETTINGS LAYOUT BUG, and it was a real one. `SettingsRow` had
+//           `control: { flexShrink: 0 }` - "the control keeps its natural
+//           size", which is right for a Switch. Give it a long chip ("Secure
+//           On-Device Processing") and the control takes the width it asks
+//           for, `flex: 1` on the label column loses to a sibling that refuses
+//           to yield, and the label wraps ONE CHARACTER PER LINE. A control may
+//           now shrink and may never exceed half the row; nothing with a fixed
+//           intrinsic size notices.
+//           THE COLOURS. Insights was drawn in `accentLive` (#2F6BD8), which
+//           means "live" - the streaming dot, the running trace - a generic UI
+//           blue doing a job it was never chosen for, and it looked it. It is
+//           the brand TEAL now (#0AA3B2 / #2DD4BF), which the whole signed-out
+//           flow already carries. `accentLive` is untouched, so the report, the
+//           viewer and the status dot are unchanged.
+//           * `attention` stopped being brown. #B45309 was chosen to clear
+//           4.5:1 as body text on white, and any amber dark enough for that IS
+//           brown. The fix was structural: the accent is now only ever a
+//           stroke, a border, a dot or a soft fill, and deviation text is drawn
+//           in ordinary text colours - which freed the colour to be the gold it
+//           should have been (#D99A2B / #F0B84A).
+//           "EARLY STUDIES THAT DISAGREE" IS GONE. Defensible in the abstract -
+//           the first studies weigh most, so a bad one bends the reference -
+//           but on a real screen it asked the reader to judge, from a date and
+//           a percentage, whether a weeks-old recording was bad. There was no
+//           good answer to "what do I do with this". The model still flags them
+//           and the timeline still draws them in the attention colour, so a
+//           divergent early study stays findable where every study is looked
+//           at; what went is a section repeating it in prose.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.37.0 - Two things, both asked for.
 //           THE SECOND ASK IS ON BY DEFAULT, an hour later. Someone who set

@@ -52,11 +52,22 @@
 
    ══ THE ORDER IS THE ARGUMENT ══
    Signature first, because it is the thing that did not exist before.
-   Then anything wrong with the studies that BUILT it. Then a study
-   measured against it — the newest by default, any of them on a tap —
-   with the beats that study left out. Then the baseline's own numbers,
-   and the habit that produced all of it. Each block answers a question
-   raised by the one above it.
+   Then a study measured against it — the newest by default, any of them
+   on a tap — with the beats that study left out. Then the baseline's own
+   numbers, and the habit that produced all of it. Each block answers a
+   question raised by the one above it.
+
+   ══ WHAT WAS REMOVED, AND WHY IT WAS RIGHT TO ══
+   "Early studies that disagree" had its own section. It was defensible
+   in the abstract — the first studies weigh most, so a bad one bends the
+   reference — but on a real screen it asked the reader to do something
+   they had no way of doing: judge, from a date and a percentage, whether
+   a recording from weeks ago was bad. Asked what it was for, there was
+   no good answer.
+   The MODEL still flags them (`flaggedAtEnrollment`), and the timeline
+   still draws them in the attention colour, so a divergent early study
+   remains findable exactly where every other study is looked at. What
+   went is a section that repeated that in prose.
 
    ══ WHAT IT REFUSES TO SAY ══
    Nothing here interprets (`ecgIdentity.ts` header). Every difference is
@@ -200,10 +211,6 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
     return identity.matches.find((m) => m.recordingId === picked) ?? latest;
   }, [identity, picked, latest]);
 
-  const flagged = useMemo(
-    () => identity?.matches.filter((m) => m.flaggedAtEnrollment) ?? [],
-    [identity],
-  );
 
   /* ★ ONE gain for the whole panel, from the tallest thing it will ever
      draw — every lead's baseline plus its corridor, and the study that
@@ -409,7 +416,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
               <ReadoutCell
                 label={tr('insCalLatest')}
                 value={caliper.overlayMv.toFixed(2)}
-                tint={t.accentLive}
+                tint={t.teal}
               />
             )}
           </>
@@ -466,7 +473,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
       <View style={[styles.legendRow, rtl && styles.rowRtl]}>
         <View style={[styles.legend, rtl && styles.rowRtl]}>
           <Legend colour={t.textTertiary} label={tr('insLegendBand')} rtl={rtl} />
-          {overlay && <Legend colour={t.accentLive} label={tr('insLegendLatest')} rtl={rtl} />}
+          {overlay && <Legend colour={t.teal} label={tr('insLegendLatest')} rtl={rtl} />}
         </View>
         {latest && built === null && (
           <Pressable
@@ -482,9 +489,9 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             <Ionicons
               name={compare ? 'eye' : 'eye-off-outline'}
               size={15}
-              color={compare ? t.accentLive : t.textTertiary}
+              color={compare ? t.teal : t.textTertiary}
             />
-            <Text style={[styles.toggleText, { color: compare ? t.accentLive : t.textTertiary }]}>
+            <Text style={[styles.toggleText, { color: compare ? t.teal : t.textTertiary }]}>
               {tr('insCompareLatest')}
             </Text>
           </Pressable>
@@ -498,51 +505,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         rtl={rtl}
       />
 
-      {/* ══ 2. Early studies that disagree with their own cohort ══ */}
-      {flagged.length > 0 && (
-        <>
-          <Rule bleed={paddingHorizontal} />
-          <View style={styles.block}>
-            <Text style={[styles.sectionTitle, { color: t.attention, textAlign: align }]}>
-              {tr('insFlaggedTitle')}
-            </Text>
-            <Text style={[styles.hint, { color: t.textSecondary, textAlign: align }]}>
-              {tr('insFlaggedBody')}
-            </Text>
-            {flagged.map((m) => (
-              <Pressable
-                key={m.recordingId}
-                accessibilityRole="button"
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  onOpenStudy(m.recordingId);
-                }}
-                style={({ pressed }) => [
-                  styles.flagRow,
-                  rtl && styles.rowRtl,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Text style={[styles.flagDate, { color: t.textPrimary }]}>
-                  {fmtDate(m.recordedAt)}
-                </Text>
-                <Text style={[styles.meta, { color: t.textSecondary }]} numberOfLines={1}>
-                  {m.excluded
-                    ? tr(EXCLUSION_LABEL[m.excluded])
-                    : tr('insMatch', { n: String(m.similarity) })}
-                </Text>
-                <Ionicons
-                  name={rtl ? 'chevron-back' : 'chevron-forward'}
-                  size={15}
-                  color={t.textTertiary}
-                />
-              </Pressable>
-            ))}
-          </View>
-        </>
-      )}
-
-      {/* ══ 3. Every study against the baseline — and the one picked ══
+      {/* ══ 2. Every study against the baseline — and the one picked ══
           ★ This used to be TWO sections: a "Latest study" card and a
           separate timeline. They said the same thing twice — the card's
           date and match figure are the last bar of the chart — and the
@@ -657,7 +620,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         )}
       </View>
 
-      {/* ══ 4. The numbers the baseline holds ════════════════════ */}
+      {/* ══ 3. The numbers the baseline holds ════════════════════ */}
       <Rule bleed={paddingHorizontal} />
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
@@ -675,7 +638,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         </View>
       </View>
 
-      {/* ══ 5. The habit that produced all of it ═════════════════ */}
+      {/* ══ 4. The habit that produced all of it ═════════════════ */}
       {view.stats && (
         <>
           <Rule bleed={paddingHorizontal} />
@@ -922,6 +885,12 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
 });
 
+// v3.2.0 — Insights is drawn in the brand TEAL rather than `accentLive`, a
+//          generic UI blue meaning "live" that was doing a job it was never
+//          chosen for. "Early studies that disagree" is gone: it asked the
+//          reader to judge, from a date and a percentage, whether a weeks-old
+//          recording was bad — the model still flags them and the timeline
+//          still draws them in the attention colour.
 // v3.1.1 — The sheet stops 10 pt short of the display instead of running flush
 //          to it. Flush was fine while the corners were square; once they were
 //          rounded, a curve ending against the screen edge stopped reading as a

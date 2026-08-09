@@ -45,6 +45,23 @@ export interface ThemeTokens {
    */
   attention: string;
   attentionSoft: string;
+  /**
+   * ★ The brand TEAL, for the ECG ID.
+   *
+   * Insights was drawn in `accentLive` (#2F6BD8), and it was reported as a
+   * cheap blue. It is: that token means "live" — the streaming dot, the
+   * running trace — and it is a generic UI blue doing a job it was never
+   * chosen for. Insights needs a colour for a DIFFERENT idea: the study
+   * being compared, the caliper, the marks a finger moves.
+   *
+   * Teal is the brand's own (it carries the whole signed-out flow in
+   * `authTheme`), it is not blue, and against the navy trace on white it
+   * reads as an instrument rather than as a link. Kept separate from
+   * `accentLive` on purpose — repainting that would change the report,
+   * the viewer and the status dot, none of which anyone complained about.
+   */
+  teal: string;
+  tealSoft: string;
 }
 
 export const LIGHT: ThemeTokens = {
@@ -66,9 +83,16 @@ export const LIGHT: ThemeTokens = {
   successSoft: 'rgba(34, 164, 93, 0.12)',
   danger: '#E5342A',
   dangerSoft: 'rgba(229, 52, 42, 0.10)',
-  // amber-700: dark enough to pass contrast on white as body text.
-  attention: '#B45309',
-  attentionSoft: 'rgba(180, 83, 9, 0.10)',
+  /* ★ A clean GOLD, not the amber-700 brown it was.
+     #B45309 was picked to clear 4.5:1 as body text on white — and any
+     amber dark enough to do that is brown. The fix is structural rather
+     than chromatic: attention text is now drawn in the ordinary text
+     colours and this token is only ever a STROKE, a BORDER or a soft
+     FILL, so it is free to be the colour it should have been. */
+  attention: '#D99A2B',
+  attentionSoft: 'rgba(217, 154, 43, 0.13)',
+  teal: '#0AA3B2',
+  tealSoft: 'rgba(10, 163, 178, 0.12)',
 };
 
 export const DARK: ThemeTokens = {
@@ -90,14 +114,22 @@ export const DARK: ThemeTokens = {
   successSoft: 'rgba(52, 211, 153, 0.14)',
   danger: '#F87171',
   dangerSoft: 'rgba(248, 113, 113, 0.14)',
-  // amber-400: the dark theme needs a LIGHTER amber, not the same one —
-  // #B45309 on #131B2C is barely legible.
-  attention: '#F5B544',
-  attentionSoft: 'rgba(245, 181, 68, 0.14)',
+  attention: '#F0B84A',
+  attentionSoft: 'rgba(240, 184, 74, 0.16)',
+  /* Brighter on near-black, and far enough from the dark theme's GREEN
+     trace (#4ADE80) that a compared study never reads as the baseline. */
+  teal: '#2DD4BF',
+  tealSoft: 'rgba(45, 212, 191, 0.15)',
 };
 
 export const RADIUS = { lg: 20, md: 12, sm: 8 } as const;
 
+// v0.3.0 — Adds `teal` (the brand's own, from authTheme) for the ECG ID, which
+//          was drawn in `accentLive` — a generic UI blue meaning "live", doing
+//          a job it was never chosen for. `attention` became a clean gold
+//          rather than the amber-700 brown: it is now only ever a stroke, a
+//          border or a soft fill, so it no longer has to clear body-text
+//          contrast on white, which is what forced it brown.
 // v0.2.0 — Adds `attention` (amber): "worth a look", which is a different
 //          statement from `danger` (red = alarm, act now). Insights paints every
 //          deviation with it — a difference from your own baseline is a

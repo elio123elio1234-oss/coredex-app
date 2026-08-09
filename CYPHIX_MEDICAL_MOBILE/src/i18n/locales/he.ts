@@ -462,8 +462,6 @@ export const he: Record<TranslationKey, string> = {
   insDeviationMeaning:
     'נמדד מול הבדיקות הקודמות שלכם, לא מול טווח נורמה. הפרש הוא משהו להסתכל עליו יחד עם הרופא.',
 
-  insFlaggedTitle: 'בדיקות מוקדמות שחורגות',
-  insFlaggedBody: 'הבדיקות הראשונות מעצבות את קו הבסיס הכי הרבה. פתחו אותן ובדקו.',
 
   insTimelineTitle: 'התאמה לאורך זמן',
   insBaselineTitle: 'קו הבסיס שלכם',

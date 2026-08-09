@@ -113,11 +113,26 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   rowRtl: { flexDirection: 'row-reverse' },
-  main: { flex: 1, minWidth: 0, gap: 3 },
+  main: { flex: 1, flexShrink: 1, minWidth: 0, gap: 3 },
   label: { fontSize: 14, fontWeight: '700' },
   desc: { fontSize: 12.5, lineHeight: 18 },
-  control: { flexShrink: 0 },
-  value: { flexShrink: 0, fontSize: 13, fontWeight: '600', textAlign: 'right', maxWidth: '55%' },
+  /* ★ `flexShrink: 1`, and a ceiling.
+     It was `flexShrink: 0`, which reads as "the control keeps its natural
+     size" and is fine for a Switch. Give it a long chip — "Secure
+     On-Device Processing" — and the control takes the width it asks for,
+     `flex: 1` on the label column loses to a sibling that refuses to
+     yield, and the label collapses to one character per line. That is
+     exactly what happened in Privacy & Security.
+     A control may now shrink, and may never take more than half the row.
+     Nothing with a fixed intrinsic size (a Switch is ~51 pt) notices;
+     only something that was going to bully the label does. */
+  control: { flexShrink: 1, minWidth: 0, maxWidth: '52%', alignItems: 'flex-end' },
+  value: { flexShrink: 1, fontSize: 13, fontWeight: '600', textAlign: 'right', maxWidth: '52%' },
 });
 
+// v1.2.0 — A control may SHRINK and may never exceed half the row. It was
+//          `flexShrink: 0`, so a long status chip took the width it wanted and
+//          squeezed the label column — which has `flex: 1` — down to one
+//          character per line. Reported from Privacy & Security, where the chip
+//          reads "Secure On-Device Processing".
 // v1.1.0 — Reverses and re-aligns under an RTL language.

@@ -479,8 +479,6 @@ export const en = {
   insDeviationMeaning:
     'Measured against your own earlier studies, not a normal range. A difference is something to look at with your doctor.',
 
-  insFlaggedTitle: 'Early studies that disagree',
-  insFlaggedBody: 'The first studies shape the baseline most. Open these and check them.',
 
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',

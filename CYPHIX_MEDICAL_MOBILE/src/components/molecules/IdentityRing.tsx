@@ -74,7 +74,7 @@ export default function IdentityRing({
      not look like a finished job, so the confident tone waits for the
      agreement as well as the count. */
   const strong = established && confidence >= CONFIDENT_AT;
-  const active = strong ? t.success : t.accentLive;
+  const active = strong ? t.success : t.teal;
 
   const segArc = circumference / segments;
   const gap = (GAP_DEG / 360) * circumference;

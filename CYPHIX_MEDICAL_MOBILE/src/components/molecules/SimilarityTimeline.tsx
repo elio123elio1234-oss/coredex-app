@@ -90,7 +90,7 @@ export default function SimilarityTimeline({
 
           // Amber, not red — see `tokens.ts`. A study that differs is one
           // to look at, and the bar is already a tap target for doing so.
-          const fill = excluded ? t.border : flagged ? t.attention : t.accentLive;
+          const fill = excluded ? t.border : flagged ? t.attention : t.teal;
 
           return (
             <Pressable

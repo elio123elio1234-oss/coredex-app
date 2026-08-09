@@ -1,5 +1,57 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.38.0 - 2026-08-09 - ECG ID in brand teal, and Settings rows stop crushing their labels
+
+### The Settings layout bug
+
+Reported with a screenshot: "On-device processing" wrapping one character per
+line down the left edge, with a chip taking the rest of the row.
+
+`SettingsRow` had `control: { flexShrink: 0 }` - "the control keeps its natural
+size". That is right for a `Switch` and wrong for everything else. Give it a
+long chip ("Secure On-Device Processing") and the control takes the width it
+asks for; `flex: 1` on the label column loses to a sibling that refuses to
+yield, and the label collapses.
+
+A control may now shrink, and may never take more than half the row. Nothing
+with a fixed intrinsic size - a Switch is about 51 pt - notices; only something
+that was going to bully the label does.
+
+### The colours
+
+Insights was drawn in `accentLive`, `#2F6BD8`. That token means **live** - the
+streaming dot, the running trace - and it is a generic UI blue that was doing a
+job it had never been chosen for. It looked like one.
+
+It is the brand **teal** now (`#0AA3B2` light, `#2DD4BF` dark), which the entire
+signed-out flow already carries. `accentLive` itself is untouched, so the
+report, the viewer and the status dot are exactly as they were - repainting
+those was not asked for.
+
+**And `attention` stopped being brown.** `#B45309` was picked so it would clear
+4.5:1 as body text on white, and any amber dark enough to do that *is* brown.
+The fix was structural rather than chromatic: the accent is now only ever a
+stroke, a border, a dot or a soft fill, and deviation text is drawn in the
+ordinary text colours. Freed from carrying text contrast, the colour could
+finally be the gold it should have been - `#D99A2B` / `#F0B84A`.
+
+A marked deviation is still distinguished by more than colour: it gains a
+filled dot as well as the gold rule and heavier fill, so it survives a
+colour-blind reader and a greyscale screenshot.
+
+### "Early studies that disagree" is gone
+
+It was defensible in the abstract - the first studies weigh most, so a bad one
+bends the reference every later study is judged against. On a real screen it was
+not: it asked the reader to judge, from a date and a percentage, whether a
+recording from weeks ago had been badly taken. Asked what it was *for*, there
+was no good answer.
+
+The model still flags them (`flaggedAtEnrollment`) and the timeline still draws
+them in the attention colour, so a divergent early study stays findable exactly
+where every other study is looked at. What went is a section that repeated that
+in prose - along with its two translation keys, deleted rather than orphaned.
+
 ## v0.37.0 - 2026-08-08 - The second ask is on by default, and Reminders fits on one screen
 
 ### On by default

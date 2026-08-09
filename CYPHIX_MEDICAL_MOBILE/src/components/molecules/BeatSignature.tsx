@@ -445,7 +445,7 @@ export default function BeatSignature({
           <Path
             d={geometry.ghost}
             fill="none"
-            stroke={t.accentLive}
+            stroke={t.teal}
             strokeWidth={0.22}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -470,10 +470,10 @@ export default function BeatSignature({
               y1={0}
               x2={cursorX}
               y2={heightMm}
-              stroke={t.accentLive}
+              stroke={t.teal}
               strokeWidth={0.18}
             />
-            <Circle cx={cursorX} cy={cursorY} r={0.55} fill={t.accentLive} />
+            <Circle cx={cursorX} cy={cursorY} r={0.55} fill={t.teal} />
           </>
         )}
         </G>
