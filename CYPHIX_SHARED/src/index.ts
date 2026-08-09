@@ -79,11 +79,18 @@ export * from './ecg/ecgImport';
    on a phone; nothing comparable in a browser tab) is per-platform. */
 export * from './types/reminder';
 
+/* The vocabulary a medical card is edited with, and the shape of an
+   edit. Shared because three systems must agree on what "aspirin" is:
+   a free-text field produces four spellings of one substance and
+   nothing downstream can tell they are the same. */
+export * from './types/healthCatalogue';
+
 export * from './types/ecgIdentity';
 export * from './ecg/beatTemplate';
 export * from './ecg/ecgIdentity';
 export * from './ecg/measurementStats';
 
+// v1.9.0 — Adds the health catalogue + the PatientCardPatch contract.
 // v1.8.0 — Adds the measurement-reminder schedule (types/reminder.ts).
 // v1.7.0 — Adds the ECG ID stack (beat templates, the personal baseline, the
 //          measurement-cadence summary) and names the precordial leads, so the
