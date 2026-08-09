@@ -1,5 +1,36 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.38.1 - 2026-08-09 - ECG ID is monitor green, not teal
+
+Teal lasted one release, and the objection was right in a more interesting way
+than "wrong colour": **teal reads as an app; green reads as an instrument.**
+Every continuous monitor on the market is green for the same reason.
+
+`signal` is `#00A862` on light, `#3DDC84` on dark.
+
+**Two weights, deliberately.** A green vivid enough to be worth having sits
+around 2.6:1 on white - fine for a 0.22 mm trace, unreadable as 12 px type. So
+`signal` is strokes, bars, arcs and dots, and `signalInk` is anything that is
+words. Darkening a single token until it served both is precisely the mistake
+that made `attention` brown, and it was not going to be made twice in two days.
+
+### Two things that had to move with it
+
+**The dark-mode baseline trace went near-white.** The rule this panel follows is
+*baseline neutral, compared study in the brand colour* - navy against green on
+light, and it reads instantly. Keeping the report's green trace in dark would
+have put green against green: two curves the eye has to work to separate, in the
+one place whose entire job is showing where they differ. The report keeps its
+own palette; this is not the report.
+
+**The ring stopped changing hue with confidence.** It went `accentLive` →
+`success` as the baseline matured, which only worked while those were blue and
+green. With Insights green throughout they are one colour to the eye and the
+distinction would simply have vanished. Confidence is carried by **weight** now
+- and that is the better encoding regardless: it reads as the same thing getting
+more definite, which is what is actually happening, rather than as a change of
+state.
+
 ## v0.38.0 - 2026-08-09 - ECG ID in brand teal, and Settings rows stop crushing their labels
 
 ### The Settings layout bug

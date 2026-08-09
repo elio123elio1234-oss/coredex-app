@@ -73,8 +73,17 @@ export default function IdentityRing({
   /* Colour is earned, not given: a complete-but-inconsistent baseline must
      not look like a finished job, so the confident tone waits for the
      agreement as well as the count. */
+  /* ★ ONE hue, two weights — not two hues.
+     This used to go from `accentLive` to `success` as the baseline
+     matured, which worked only while those were blue and green. Now that
+     Insights is green throughout, `success` and `signal` are the same
+     colour to the eye and the distinction would simply vanish.
+     So confidence is carried by WEIGHT: a young baseline is drawn at
+     partial strength, a settled one at full. That is also the better
+     encoding — it reads as the same thing getting more definite, which is
+     what is actually happening, rather than as a change of state. */
   const strong = established && confidence >= CONFIDENT_AT;
-  const active = strong ? t.success : t.teal;
+  const active = t.signal;
 
   const segArc = circumference / segments;
   const gap = (GAP_DEG / 360) * circumference;
@@ -113,6 +122,8 @@ export default function IdentityRing({
                 stroke={active}
                 strokeWidth={STROKE}
                 strokeLinecap="round"
+                // The weight that carries confidence — see `active` above.
+                opacity={strong ? 1 : 0.55}
                 strokeDasharray={`${sweep} ${circumference - sweep}`}
               />
             </>
@@ -127,6 +138,7 @@ export default function IdentityRing({
                 stroke={i < filled ? active : t.border}
                 strokeWidth={STROKE}
                 strokeLinecap="round"
+                opacity={i < filled && !strong ? 0.55 : 1}
                 strokeDasharray={`${dash} ${circumference - dash}`}
                 strokeDashoffset={-i * segArc}
               />
@@ -161,6 +173,12 @@ const styles = StyleSheet.create({
   caption: { fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase', marginTop: 1 },
 });
 
+// v2.1.0 — Confidence is carried by WEIGHT, not by a second hue. It used to go
+//          `accentLive` → `success` as the baseline matured, which only worked
+//          while those were blue and green; with Insights green throughout, the
+//          two are one colour to the eye and the distinction would vanish.
+//          Opacity also encodes it better — the same thing getting more
+//          definite, which is what is happening, rather than a change of state.
 // v2.0.0 — Two states, drawn as the two different quantities they are: segments
 //          while enrolling (a countable target), a continuous arc for agreement
 //          once established — which also stops the ring being frozen at 5/5 for

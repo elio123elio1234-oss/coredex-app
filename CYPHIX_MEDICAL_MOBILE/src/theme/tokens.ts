@@ -46,22 +46,28 @@ export interface ThemeTokens {
   attention: string;
   attentionSoft: string;
   /**
-   * ★ The brand TEAL, for the ECG ID.
+   * ★ The ECG ID's own colour: a deep continuous-monitor GREEN.
    *
-   * Insights was drawn in `accentLive` (#2F6BD8), and it was reported as a
-   * cheap blue. It is: that token means "live" — the streaming dot, the
-   * running trace — and it is a generic UI blue doing a job it was never
-   * chosen for. Insights needs a colour for a DIFFERENT idea: the study
-   * being compared, the caliper, the marks a finger moves.
+   * Two attempts got here. It was `accentLive` (#2F6BD8) — a token that
+   * means "live", i.e. a generic UI blue doing a job it was never chosen
+   * for. Then teal, which was worse in a more interesting way: teal reads
+   * as an APP, and green reads as an INSTRUMENT. Every continuous glucose
+   * monitor on the market is green for the same reason.
    *
-   * Teal is the brand's own (it carries the whole signed-out flow in
-   * `authTheme`), it is not blue, and against the navy trace on white it
-   * reads as an instrument rather than as a link. Kept separate from
-   * `accentLive` on purpose — repainting that would change the report,
-   * the viewer and the status dot, none of which anyone complained about.
+   * ── Why there are two weights ──
+   * A green vivid enough to be worth having is around 2.6:1 on white,
+   * which is fine for a 0.22 mm trace and unreadable as 12 px type. Rather
+   * than darken the whole thing until it is olive — the mistake that made
+   * `attention` brown — the MARK and the TYPE are separate tokens.
+   *   `signal`     strokes, bars, arcs, notches, dots.
+   *   `signalInk`  anything that is words.
+   *
+   * `accentLive` is deliberately untouched: repainting it would change the
+   * report, the viewer and the status dot, none of which anyone asked for.
    */
-  teal: string;
-  tealSoft: string;
+  signal: string;
+  signalInk: string;
+  signalSoft: string;
 }
 
 export const LIGHT: ThemeTokens = {
@@ -91,8 +97,9 @@ export const LIGHT: ThemeTokens = {
      FILL, so it is free to be the colour it should have been. */
   attention: '#D99A2B',
   attentionSoft: 'rgba(217, 154, 43, 0.13)',
-  teal: '#0AA3B2',
-  tealSoft: 'rgba(10, 163, 178, 0.12)',
+  signal: '#00A862',
+  signalInk: '#00764B',
+  signalSoft: 'rgba(0, 168, 98, 0.12)',
 };
 
 export const DARK: ThemeTokens = {
@@ -116,14 +123,23 @@ export const DARK: ThemeTokens = {
   dangerSoft: 'rgba(248, 113, 113, 0.14)',
   attention: '#F0B84A',
   attentionSoft: 'rgba(240, 184, 74, 0.16)',
-  /* Brighter on near-black, and far enough from the dark theme's GREEN
-     trace (#4ADE80) that a compared study never reads as the baseline. */
-  teal: '#2DD4BF',
-  tealSoft: 'rgba(45, 212, 191, 0.15)',
+  /* On near-black the green can be the bright one, and type does not need
+     a darker weight — so both point at the same value rather than
+     inventing a difference the background does not require. */
+  signal: '#3DDC84',
+  signalInk: '#4EE79A',
+  signalSoft: 'rgba(61, 220, 132, 0.16)',
 };
 
 export const RADIUS = { lg: 20, md: 12, sm: 8 } as const;
 
+// v0.4.0 — `teal` → `signal` / `signalInk` / `signalSoft`: a deep
+//          continuous-monitor GREEN. Teal read as an app; green reads as an
+//          instrument, which is why every CGM on the market is green. Two
+//          weights because a green vivid enough to be worth having is ~2.6:1 on
+//          white — fine for a 0.22 mm trace, unreadable as 12 px type — and
+//          darkening one token until it served both is exactly what made
+//          `attention` brown.
 // v0.3.0 — Adds `teal` (the brand's own, from authTheme) for the ECG ID, which
 //          was drawn in `accentLive` — a generic UI blue meaning "live", doing
 //          a job it was never chosen for. `attention` became a clean gold

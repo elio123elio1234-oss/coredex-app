@@ -134,7 +134,7 @@ export default function BeatBuilder({
               style={[
                 styles.notch,
                 {
-                  backgroundColor: i < value ? t.teal : t.border,
+                  backgroundColor: i < value ? t.signal : t.border,
                   // The newest included study is the one the finger is on.
                   opacity: i === value - 1 ? 1 : i < value ? 0.75 : 1,
                 },
@@ -155,7 +155,7 @@ export default function BeatBuilder({
         style={({ pressed }) => [styles.captionRow, rtl && styles.rowRtl, { opacity: pressed ? 0.6 : 1 }]}
       >
         <Text
-          style={[styles.caption, { color: partial ? t.teal : t.textTertiary }]}
+          style={[styles.caption, { color: partial ? t.signalInk : t.textTertiary }]}
           numberOfLines={1}
         >
           {caption}

@@ -1,7 +1,28 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.38.0';
-export const APP_BUILD_LABEL = 'ECG ID in brand teal, and Settings rows stop crushing their labels';
+export const APP_VERSION = '0.38.1';
+export const APP_BUILD_LABEL = 'ECG ID is monitor green, not teal';
+
+// v0.38.1 - Teal lasted one release. It reads as an APP; green reads as an
+//           INSTRUMENT, which is why every continuous monitor on the market is
+//           green. `signal` #00A862 / #3DDC84.
+//           * TWO WEIGHTS, deliberately. A green vivid enough to be worth
+//           having is ~2.6:1 on white - fine for a 0.22 mm trace, unreadable as
+//           12 px type. So `signal` is strokes, bars, arcs and dots, and
+//           `signalInk` is anything that is words. Darkening one token until it
+//           served both is exactly what made `attention` brown.
+//           * The DARK-MODE baseline trace went near-white. The rule this panel
+//           follows is: baseline neutral, compared study in the brand colour.
+//           Keeping the report's green trace in dark would have put green
+//           against green - two curves to separate by eye, in the one place
+//           whose whole job is showing where they differ.
+//           * The ring stopped changing HUE with confidence (accentLive ->
+//           success) and changes WEIGHT instead. That distinction only worked
+//           while those were blue and green; with Insights green throughout
+//           they are one colour to the eye. Weight is the better encoding
+//           anyway - the same thing getting more definite, which is what is
+//           actually happening.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.38.0 - Three fixes reported from the phone.
 //           THE SETTINGS LAYOUT BUG, and it was a real one. `SettingsRow` had

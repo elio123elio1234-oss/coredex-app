@@ -98,7 +98,14 @@ export const SCREEN_LIGHT = {
 export const SCREEN_DARK = {
   gridMinor: 'rgba(159, 180, 216, 0.10)',
   gridMajor: 'rgba(159, 180, 216, 0.19)',
-  trace: '#4ADE80',
+  /* ★ NEAR-WHITE, not the report's green.
+     The rule this panel follows is: the BASELINE is neutral and the
+     COMPARED study is the brand colour. In light that is navy against
+     green and reads instantly. Keeping the report's green trace in dark
+     would put green against green — two curves the eye has to work to
+     separate, in the one place whose entire job is showing where they
+     differ. The report keeps its own palette; this is not the report. */
+  trace: '#E8EEF7',
   marker: 'rgba(159, 180, 216, 0.42)',
 };
 
@@ -445,7 +452,7 @@ export default function BeatSignature({
           <Path
             d={geometry.ghost}
             fill="none"
-            stroke={t.teal}
+            stroke={t.signal}
             strokeWidth={0.22}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -470,10 +477,10 @@ export default function BeatSignature({
               y1={0}
               x2={cursorX}
               y2={heightMm}
-              stroke={t.teal}
+              stroke={t.signal}
               strokeWidth={0.18}
             />
-            <Circle cx={cursorX} cy={cursorY} r={0.55} fill={t.teal} />
+            <Circle cx={cursorX} cy={cursorY} r={0.55} fill={t.signal} />
           </>
         )}
         </G>

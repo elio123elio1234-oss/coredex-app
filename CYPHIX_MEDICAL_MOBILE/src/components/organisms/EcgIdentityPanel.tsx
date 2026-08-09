@@ -416,7 +416,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
               <ReadoutCell
                 label={tr('insCalLatest')}
                 value={caliper.overlayMv.toFixed(2)}
-                tint={t.teal}
+                tint={t.signalInk}
               />
             )}
           </>
@@ -473,7 +473,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
       <View style={[styles.legendRow, rtl && styles.rowRtl]}>
         <View style={[styles.legend, rtl && styles.rowRtl]}>
           <Legend colour={t.textTertiary} label={tr('insLegendBand')} rtl={rtl} />
-          {overlay && <Legend colour={t.teal} label={tr('insLegendLatest')} rtl={rtl} />}
+          {overlay && <Legend colour={t.signal} label={tr('insLegendLatest')} rtl={rtl} />}
         </View>
         {latest && built === null && (
           <Pressable
@@ -489,9 +489,9 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             <Ionicons
               name={compare ? 'eye' : 'eye-off-outline'}
               size={15}
-              color={compare ? t.teal : t.textTertiary}
+              color={compare ? t.signal : t.textTertiary}
             />
-            <Text style={[styles.toggleText, { color: compare ? t.teal : t.textTertiary }]}>
+            <Text style={[styles.toggleText, { color: compare ? t.signalInk : t.textTertiary }]}>
               {tr('insCompareLatest')}
             </Text>
           </Pressable>
