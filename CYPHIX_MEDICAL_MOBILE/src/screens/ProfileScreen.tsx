@@ -53,6 +53,9 @@ import { usePortrait } from '@/features/profile/usePortrait';
 import ActionSheet from '@/components/molecules/ActionSheet';
 import type { TranslationKey } from '@/i18n/config';
 import { useTranslation } from '@/i18n/useTranslation';
+import CardListEditor from '@/components/organisms/CardListEditor';
+import { useUpdatePatientCardMutation } from '@/services/api/endpoints/profileApi';
+import type { CatalogueKind, CodedAnswer, PatientCardPatch } from '@cyphix/shared';
 import { shellPalette } from '@/theme/shellTheme';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
@@ -65,10 +68,15 @@ function Section({
   title,
   art: Art,
   children,
+  onEdit,
+  editLabel,
 }: {
   title: string;
   art: React.ComponentType<IllustrationProps>;
   children: React.ReactNode;
+  /** When set, the header carries an Edit button. */
+  onEdit?: () => void;
+  editLabel?: string;
 }) {
   const t = useTheme();
   const { rtl } = useTranslation();
@@ -81,6 +89,25 @@ function Section({
         >
           {title}
         </Text>
+        {/* ★ On the HEADER, not inside the card. A section that can be
+            edited says so where its name is, so the affordance is in the
+            same place for every section — including the ones that are
+            currently empty, which are precisely the ones a patient most
+            needs to be able to fill in. */}
+        {onEdit && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${editLabel ?? ''} ${title}`.trim()}
+            hitSlop={10}
+            onPress={() => {
+              void Haptics.selectionAsync();
+              onEdit();
+            }}
+            style={({ pressed }) => [styles.editBtn, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={[styles.editText, { color: t.signalInk }]}>{editLabel}</Text>
+          </Pressable>
+        )}
       </View>
       <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
         {children}
@@ -215,8 +242,53 @@ export default function ProfileScreen() {
     usePatientCard();
   const portrait = usePortrait(patientId);
   const [portraitSheet, setPortraitSheet] = useState(false);
+  /** Which list is being edited, or null. */
+  const [editing, setEditing] = useState<CatalogueKind | null>(null);
+  const [updateCard, updateState] = useUpdatePatientCardMutation();
+  const [saveError, setSaveError] = useState(false);
   /** There must be a real record to write the picture into. */
   const canEditPortrait = patientId !== null;
+  /* ★ The DEMO card is read-only, and that is not a limitation to work
+     around. It is a fixture with no patient behind it: there is nothing
+     on the server to write to, and an Edit button that appeared to work
+     and then quietly changed nothing is worse than no button. */
+  const canEdit = patientId !== null && !isDemo;
+
+  /* What the sheet currently holds, per category. Family history is a
+     list of plain strings on the card; it is lifted into the same coded
+     shape here so ONE editor serves all three, and flattened again on
+     the way out. */
+  const editingItems: CodedAnswer[] =
+    editing === 'allergy'
+      ? card.allergies
+      : editing === 'medication'
+        ? card.medications.map((m) => ({ display: m.name, code: m.code }))
+        : editing === 'familyHistory'
+          ? card.familyHistory.map((f) => ({ display: f }))
+          : [];
+
+  const saveList = async (next: CodedAnswer[]) => {
+    if (!patientId || !editing) return;
+    setSaveError(false);
+    /* ★ ONLY the edited category is sent. Echoing the whole card back
+       would revert anything changed elsewhere since this screen loaded —
+       invisible on one device, inevitable with two. */
+    const patch: PatientCardPatch =
+      editing === 'allergy'
+        ? { allergies: next }
+        : editing === 'medication'
+          ? { medications: next.map((n) => ({ name: n.display, code: n.code, system: n.system })) }
+          : { familyHistory: next.map((n) => n.display) };
+    try {
+      await updateCard({ id: patientId, patch }).unwrap();
+      setEditing(null);
+    } catch {
+      /* Kept OPEN on failure, with the draft intact. Closing would
+         discard what the patient just typed and leave them believing it
+         was saved — the one outcome a medical record must never produce. */
+      setSaveError(true);
+    }
+  };
   const sexLabel = tr(SEX_KEY[card.gender ?? 'unknown'] ?? 'sexUnknown');
 
   const initials =
@@ -395,11 +467,21 @@ export default function ProfileScreen() {
           <Chips items={card.conditions} empty={tr('profileNoneRecorded')} />
         </Section>
 
-        <Section title={tr('profileAllergies')} art={AllergiesIllustration}>
+        <Section
+          title={tr('profileAllergies')}
+          art={AllergiesIllustration}
+          editLabel={canEdit ? tr('cardEdit') : undefined}
+          onEdit={canEdit ? () => setEditing('allergy') : undefined}
+        >
           <Chips items={card.allergies} empty={tr('profileNoAllergies')} tone="warn" />
         </Section>
 
-        <Section title={tr('profileMedications')} art={MedicationIllustration}>
+        <Section
+          title={tr('profileMedications')}
+          art={MedicationIllustration}
+          editLabel={canEdit ? tr('cardEdit') : undefined}
+          onEdit={canEdit ? () => setEditing('medication') : undefined}
+        >
           {card.medications.length > 0 ? (
             card.medications.map((m, i) => (
               <Row
@@ -421,7 +503,12 @@ export default function ProfileScreen() {
           )}
         </Section>
 
-        <Section title={tr('profileFamily')} art={FamilyHistoryIllustration}>
+        <Section
+          title={tr('profileFamily')}
+          art={FamilyHistoryIllustration}
+          editLabel={canEdit ? tr('cardEdit') : undefined}
+          onEdit={canEdit ? () => setEditing('familyHistory') : undefined}
+        >
           {card.familyHistory.length > 0 ? (
             card.familyHistory.map((f, i) => (
               <Row key={f} label={f} last={i === card.familyHistory.length - 1} />
@@ -588,6 +675,26 @@ export default function ProfileScreen() {
         ]}
       />
 
+      <CardListEditor
+        visible={editing !== null}
+        kind={editing ?? 'allergy'}
+        title={
+          editing === 'medication'
+            ? tr('profileMedications')
+            : editing === 'familyHistory'
+              ? tr('profileFamily')
+              : tr('profileAllergies')
+        }
+        selected={editingItems}
+        saving={updateState.isLoading}
+        error={saveError ? tr('cardSaveFailed') : undefined}
+        onClose={() => {
+          setEditing(null);
+          setSaveError(false);
+        }}
+        onSave={(next) => void saveList(next)}
+      />
+
       <ConfirmDialog
         visible={confirmSignOut}
         title={tr('setAccountSignOut')}
@@ -653,6 +760,8 @@ const styles = StyleSheet.create({
   meta: { fontSize: 14, marginTop: 2 },
   care: { fontSize: 12.5, marginTop: 3 },
   section: { gap: 7 },
+  editBtn: { paddingVertical: 4, paddingHorizontal: 2 },
+  editText: { fontSize: 14, fontWeight: '700' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   /* .settings-section-title — 16.5/800, sentence case. The old 10.5px
      uppercase eyebrow was a stand-in for the missing illustration. */

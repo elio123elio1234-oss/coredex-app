@@ -1,7 +1,35 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.38.1';
-export const APP_BUILD_LABEL = 'ECG ID is monitor green, not teal';
+export const APP_VERSION = '0.39.0';
+export const APP_BUILD_LABEL = 'Allergies, medicines and family history can be edited - and it writes to the server';
+
+// v0.39.0 - The medical card became editable, end to end.
+//           ONE SHEET, NOT A PAGE PER CATEGORY. Asked for, and right: this is
+//           picking a few items off a short list. A pushed screen per category
+//           is four screens and four back buttons for a job that takes two
+//           taps. `BottomSheet` already blurs the page rather than dimming it,
+//           so the card stays visible behind the thing editing it.
+//           THE PICKS COME FROM A SHARED CATALOGUE, chosen for cardiac care -
+//           the things that change how this patient is treated, which is why
+//           adhesive is on the allergy list (ECG electrodes) and pollen is not.
+//           Free text is ALWAYS available: a list that cannot express the
+//           patient's real answer teaches them to pick the nearest wrong thing,
+//           which is then recorded as if it were true.
+//           * ONLY THE EDITED CATEGORY IS SENT. A client that echoes back every
+//           field it rendered reverts anything changed elsewhere since it
+//           loaded - invisible on one device, inevitable with two.
+//           * NOTHING IS WRITTEN UNTIL SAVE. A sheet that saved per tap would
+//           change the record of somebody who opened it to look.
+//           * ON FAILURE THE SHEET STAYS OPEN with the draft intact. Closing
+//           would discard what was just typed and leave the patient believing
+//           it was saved - the one outcome a medical record must never produce.
+//           * The DEMO card has no Edit button. There is no patient behind it
+//           to write to, and a button that appears to work and quietly changes
+//           nothing is worse than no button.
+//           Diagnoses stay read-only: they are FHIR Conditions recorded BY
+//           someone ABOUT a date, and a settings sheet has none of that
+//           provenance (CYPHIX_SERVER v0.3.0).
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.38.1 - Teal lasted one release. It reads as an APP; green reads as an
 //           INSTRUMENT, which is why every continuous monitor on the market is

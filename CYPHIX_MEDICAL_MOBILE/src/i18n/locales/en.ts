@@ -369,6 +369,17 @@ export const en = {
          app is not licensed to make. "Open the study" is a UI action and
          is fine.
      `insDisclaimer` is part of the screen, not boilerplate. */
+  /* ── Editing the medical card ──
+     ★ No copy here tells anyone what to record. The catalogue offers
+     vocabulary; deciding what is true about a patient is theirs and their
+     doctor's. */
+  cardEdit: 'Edit',
+  cardSave: 'Save',
+  cardSaving: 'Saving…',
+  cardSaveFailed: 'Could not save. Your changes are still here — try again.',
+  cardAdd: 'Add',
+  cardAddOther: 'Something else…',
+
   /* ── Measurement reminders ──
      ★ Copy rule for this block: it says WHEN the patient asked to be
      reminded and never how often anyone should measure. No "recommended",
