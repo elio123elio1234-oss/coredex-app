@@ -1,5 +1,123 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.39.2 - 2026-08-09 - sheets open above the dock, and rise in one piece
+
+Reported after v0.39.1: *"the confirm is still hidden underneath, and the
+slider coming up from the bottom flickers badly."* Both were still true. The
+scroll fix was real and it was not enough, because the last cause of each was
+never inside the sheet.
+
+### The button was never going to be reachable there
+
+The floating dock is the tab navigator's `tabBar`. That makes it a **sibling of
+the screen**, painted after it — and nothing a screen renders can paint above a
+sibling of the screen, because `zIndex` orders siblings *within one parent* and
+these have different parents. No value set inside the sheet could have changed
+it.
+
+So v0.39.1 moved Save from **off screen** (clipped by the panel's ceiling) to
+**behind the dock** (pinned into the ~90 pt the bar occupies). Different cause,
+identical result, which is exactly why the second report read the same as the
+first.
+
+Two more consequences of the same fact, both live until now and neither
+reported yet:
+
+- the scrim did not dim the dock, so a modal left one bright saturated control
+  sitting on top of it;
+- **the dock stayed tappable through the scrim** — a patient could change tabs
+  with an unsaved edit open, leaving the editor mounted and its draft alive on
+  a screen they had walked away from.
+
+Overlays are now rendered at the **app root**, above the navigator, through a
+small portal (`components/atoms/OverlayPortal.tsx`). Only the elements move:
+every hook, `Animated.Value` and piece of state stays in the component that
+owns it.
+
+★ **A `Modal` would also have solved it, and is the one thing that must not be
+used.** A Modal is its own window, so the blur inside it has nothing to sample
+and every glass sheet renders as the flat grey rectangle it was written to
+replace (v0.18.0, still in the traps table). A portal keeps the overlay in the
+**same window** and changes only its parent. Same window, different parent —
+that is the whole trick, and it is why "present in tree" was always the rule
+and "inside the screen's own subtree" was never what it meant.
+
+### And the flicker had a third cause: *when*, not *what*
+
+v0.39.1 removed two (an unbounded panel growing as rows mounted, and a second
+commit re-seeding the draft). The one left is the one that survives fixing the
+first two:
+
+**The slide started in the same commit that mounted the content.** Two dozen
+catalogue rows is a hundred-odd native views, and views are created and laid
+out **on the UI thread** — the very thread a native-driver animation runs on.
+So the first frames of the rise were competing with the mount for that thread
+and the sheet arrived in visible steps.
+
+`useNativeDriver: true` does not help here. It is what puts the animation on
+the busy thread.
+
+The panel is therefore committed **off screen** first, and rises only once its
+content has reported a layout. By then the views exist and the thread is idle.
+It costs one frame before the sheet moves and buys every frame after it.
+
+The draft is also seeded **during render** now instead of in an effect, so
+opening builds the rows once rather than mounting them and then correcting
+them a commit later.
+
+### Worth stating plainly
+
+This is the second release in a row shipped on green typechecks, green bundles
+and `expo-doctor` 18/18 for a screen that could not be used. None of those can
+see a button rendered underneath another view — and the fix for the first
+report was verified exactly as thoroughly as the bug that survived it.
+
+---
+
+## v0.39.1 - 2026-08-09 - the edit sheet scrolls, and Save is pinned
+
+`BottomSheet` rendered its children with no scroll view, inside a panel capped
+at 82 % of the window with `overflow: hidden`. Content past that ceiling is not
+scrolled to — it is **clipped**. Twenty-three catalogue rows plus a Save button
+meant the button was not on screen at all.
+
+`scrollable` (opt-in, since every other sheet is short) and the editor's Save
+moved into the sheet's `footer`, a prop that existed for precisely this.
+
+⚠️ **Incomplete**, and v0.39.2 says why: pinning the button to the bottom of a
+bottom-anchored panel put it under the dock. It was still unreachable when this
+shipped.
+
+---
+
+## v0.39.0 - 2026-08-09 - the medical card can be edited, and it writes to the server
+
+Allergies, medicines and family history are editable from the Profile tab: the
+section header carries an Edit control, which opens one sheet over the blurred
+card it is editing — not a pushed screen per category, which would be four
+screens and four ways to get lost for a job that is over in two taps.
+
+Picks come from a **shared cardiac catalogue** (`CYPHIX_SHARED/src/types/
+healthCatalogue.ts`) so the phone, the web and the server agree on what was
+meant; free text produces "asprin", "Aspirin " and "ASA" for one substance and
+nothing downstream can tell they are the same. **"Something else" is always
+available** — a list that cannot express the patient's real answer teaches
+people to pick the nearest wrong one, which is then recorded as if it were true.
+
+Server side: `PATCH /api/v1/patients/:id/card` (server v0.3.0), validated,
+audited by **field name only** — never values — and verified against the live
+database across twelve cases before this shipped.
+
+Two rules the client keeps:
+
+- **Only the edited category is sent.** A client that echoes back every field
+  it rendered reverts anything changed elsewhere since it loaded: invisible on
+  one device, inevitable with two.
+- **Nothing is written until Save**, and a failed save keeps the sheet open
+  with the draft intact. Closing on failure would discard what was just typed
+  and leave the patient believing it was stored.
+
+
 ## v0.38.1 - 2026-08-09 - ECG ID is monitor green, not teal
 
 Teal lasted one release, and the objection was right in a more interesting way

@@ -1,7 +1,27 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.39.1';
-export const APP_BUILD_LABEL = 'The edit sheet scrolls, and Save is where you can reach it';
+export const APP_VERSION = '0.39.2';
+export const APP_BUILD_LABEL = 'Sheets open above the dock, and rise in one piece';
+
+// v0.39.2 - v0.39.1 fixed the clipping and the button was STILL not reachable,
+//           because the last cause was never inside the sheet at all.
+//           The dock is the tab navigator's `tabBar` - a SIBLING of the screen,
+//           painted after it. Nothing a screen renders can go above it: zIndex
+//           orders siblings within ONE parent, and these have different
+//           parents. So pinning Save to the panel's bottom moved it from "off
+//           screen" to "behind the bar" - unreachable either way - while the
+//           scrim never dimmed the dock and the dock stayed TAPPABLE through
+//           the modal.
+//           Overlays now render at the app root (`OverlayPortal`), above the
+//           navigator. Still the same window, so the blur still samples the
+//           real page - that was the reason `Modal` had to go, and a portal
+//           does not reintroduce it.
+//           The judder had a third cause too, and it was WHEN, not what: the
+//           slide started in the same commit that MOUNTED a hundred-odd views,
+//           and views are created on the UI thread - the thread the
+//           native-driver animation runs on. The panel is now committed off
+//           screen and rises only once its content reports a layout.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.39.1 - v0.39.0's edit sheet was unusable, and one cause explains all four
 //           symptoms reported: no scroll, the confirm hidden, nothing saveable,

@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
+import { OverlayPortalHost } from '@/components/atoms/OverlayPortal';
 import { AuthGate } from '@/features/auth/AuthGate';
 import { BleProvider } from '@/features/ble/BleProvider';
 import { PreferencesGate } from '@/features/preferences/PreferencesGate';
@@ -60,6 +61,19 @@ export default function App() {
                     <RootNavigator />
                   </SyncProvider>
                 </AuthGate>
+                {/* ★ LAST, and that is the whole point. Sheets and dialogs
+                    render HERE rather than inside the screen that opens
+                    them, because a screen cannot paint above the floating
+                    dock — the dock is the tab navigator's own bar, a
+                    SIBLING of the screen, and zIndex only orders siblings
+                    of one parent. A sheet's pinned Save button therefore
+                    sat underneath it, the scrim never dimmed it, and it
+                    stayed tappable through a modal.
+                    Inside every provider above, because the elements
+                    resolve their contexts from here — and deliberately
+                    OUTSIDE the navigator, so overlay content may not call
+                    useNavigation(). See components/atoms/OverlayPortal. */}
+                <OverlayPortalHost />
               </BleProvider>
             </I18nProvider>
           </PreferencesGate>
@@ -73,6 +87,11 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v2.7.0 — Mounts OverlayPortalHost after the navigator: sheets and dialogs are
+//          rendered at the root so they are ABOVE the floating dock. Inside a
+//          screen they could not be — the dock is the navigator's tab bar, a
+//          sibling of the screen — which is why a sheet's Save button sat under
+//          it and the dock stayed tappable through a modal.
 // v2.6.0 — Mounts SyncProvider inside the AuthGate: the device now keeps its own
 //          copy of the record and asks the server only what changed.
 // v2.5.0 — Starts the bundled-image warm-up at module scope, before the first

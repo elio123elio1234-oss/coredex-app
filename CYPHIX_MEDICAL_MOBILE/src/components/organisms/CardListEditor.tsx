@@ -45,7 +45,7 @@
    already stored.
    ================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -98,16 +98,28 @@ export default function CardListEditor({
   const [draft, setDraft] = useState<CodedAnswer[]>([]);
   const [typed, setTyped] = useState('');
 
-  useEffect(() => {
+  /* ★ Seeded DURING RENDER on the open, not in an effect — React's own
+     "adjusting state when a prop changes" pattern.
+
+     An effect would run AFTER the sheet had already been committed with
+     the previous draft, so opening cost two full commits of two dozen
+     rows: one to mount them, one to correct them. That second commit
+     landed on the UI thread during the entrance animation, which is
+     part of what "it comes up in frames" was. Set here, React re-runs
+     this component before committing anything, and the rows are only
+     ever built once.
+
+     On OPEN only: re-seeding whenever `selected` changes would throw the
+     draft away the moment a save lands and the card refetches, and the
+     edit would appear to undo itself. */
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
     if (visible) {
       setDraft([...selected]);
       setTyped('');
     }
-    /* Seeded on OPEN only. Re-seeding whenever `selected` changes would
-       throw away the draft the moment the save lands and the card
-       refetches — the edit would appear to undo itself. */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+  }
 
   /* Matched on CODE where both sides have one, and on display text
      otherwise. The seeded demo data carries real SNOMED codes for some
@@ -154,7 +166,7 @@ export default function CardListEditor({
       closeLabel={tr('back')}
       scrollable
       footer={
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: t.border }]}>
           {/* ★ Shown, and the sheet stays OPEN with the draft intact.
               Closing on failure would discard what was just typed and
               leave the patient believing it was saved — the one outcome a
@@ -279,7 +291,15 @@ const styles = StyleSheet.create({
   },
   addBtn: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
 
-  footer: { paddingHorizontal: 4, paddingTop: 10, gap: 8 },
+  /* The hairline is not decoration: it is what says the list ABOVE
+     scrolls and this does not. Without it a pinned button reads as the
+     last row of the list, which is exactly the row people scroll past. */
+  footer: {
+    paddingHorizontal: 4,
+    paddingTop: 12,
+    gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   save: {
     alignItems: 'center',
     paddingVertical: 14,
@@ -289,6 +309,10 @@ const styles = StyleSheet.create({
   error: { marginTop: 12, fontSize: 13, lineHeight: 18, fontWeight: '600' },
 });
 
+// v1.2.0 — The draft is seeded during RENDER rather than in an effect, so
+//          opening builds the rows once instead of twice — the second commit
+//          was landing on the UI thread mid-animation. The pinned footer gains
+//          the hairline that says the list above it scrolls and it does not.
 // v1.1.0 — The list SCROLLS and Save is PINNED in the sheet's footer. Both had
 //          to change: the panel clips at 82 % of the window, so Save sat under
 //          23 rows and was never on screen — "the confirm is hidden and I can't
