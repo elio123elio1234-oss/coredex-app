@@ -31,7 +31,7 @@
    ================================================================== */
 
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlassSurface from '@/components/atoms/GlassSurface';
 import OverlayLayer from '@/components/atoms/OverlayLayer';
@@ -50,6 +50,30 @@ interface Props {
   children: ReactNode;
   /** Pinned below the scrolling content (e.g. a Cancel button). */
   footer?: ReactNode;
+  /**
+   * ★ Put the content in a scroll view.
+   *
+   * ══ WHY THIS HAD TO EXIST ══
+   * The panel is content-driven with a ceiling of 82 % of the window and
+   * `overflow: hidden`. Hand it more content than that and the excess is
+   * not scrolled to — it is CLIPPED, silently. The card editor put a Save
+   * button under twenty-three catalogue rows and the button did not exist
+   * on screen: reported as "the confirm is hidden under the bar and I
+   * can't save anything", which is exactly what a clipped sheet looks
+   * like from the outside.
+   *
+   * It also fixes the other half of that report — "it comes up in frames".
+   * Without a constrained scroll area the panel's height is whatever its
+   * children have mounted SO FAR, so it grows across several frames while
+   * React commits the rows, underneath an entrance animation that is
+   * already running on the native thread. Bounded, it is one height from
+   * the first frame.
+   *
+   * Opt-in rather than default: every existing sheet is short, and
+   * wrapping a video or an action list in a scroll view changes how it
+   * handles touches for no benefit.
+   */
+  scrollable?: boolean;
 }
 
 export default function BottomSheet({
@@ -59,6 +83,7 @@ export default function BottomSheet({
   closeLabel,
   children,
   footer,
+  scrollable = false,
 }: Props) {
   const t = useTheme();
   const dark = useIsDark();
@@ -81,7 +106,22 @@ export default function BottomSheet({
       >
         <View style={[styles.grabber, { backgroundColor: t.textTertiary }]} />
         {title && <Text style={[styles.title, { color: t.textTertiary }]}>{title}</Text>}
-        {children}
+        {scrollable ? (
+          /* `flexShrink` is what bounds it. A ScrollView inside a
+             max-height box with no shrink measures to its content and
+             overflows exactly as a plain View would — the scroll would be
+             there and have nothing to do. */
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          children
+        )}
         {footer}
       </GlassSurface>
     </OverlayLayer>
@@ -108,6 +148,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -6 },
     elevation: 24,
   },
+  scroll: { flexShrink: 1 },
+  scrollContent: { paddingBottom: 4 },
   grabber: {
     alignSelf: 'center',
     width: 36,
@@ -126,6 +168,13 @@ const styles = StyleSheet.create({
   },
 });
 
+// v2.1.0 — `scrollable`: content longer than the 82 % ceiling was CLIPPED, not
+//          scrolled — `overflow: hidden` on a content-driven panel. The card
+//          editor's Save button sat under 23 rows and never appeared on screen.
+//          It also fixes "it comes up in frames": unbounded, the panel's height
+//          is whatever has mounted so far and grows across several frames while
+//          React commits the rows, under an entrance animation already running
+//          natively. Bounded, it is one height from the first frame.
 // v2.0.0 — Presented through OverlayLayer instead of Modal, which is the only
 //          way the blur has anything to sample. Height ceiling measured from
 //          the window rather than a percentage of an auto-height parent.

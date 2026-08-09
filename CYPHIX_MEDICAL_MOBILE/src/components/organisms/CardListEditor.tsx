@@ -31,6 +31,13 @@
    to pick the nearest wrong thing — which is then recorded as if it were
    true.
 
+   ══ ⚠️ THE LIST SCROLLS AND SAVE IS PINNED ⚠️ ══
+   Both learned the hard way. `BottomSheet` caps its panel at 82 % of the
+   window with `overflow: hidden`, so twenty-three catalogue rows plus a
+   Save button did not overflow — the button was CLIPPED and simply was
+   not on screen. Anything that can outgrow the sheet goes in the scroll
+   area; anything that must always be reachable goes in `footer`.
+
    ══ NOTHING IS SAVED UNTIL SAVE ══
    Toggling a row edits a local draft. A sheet that wrote on every tap
    would fire a request per toggle, and a patient who opened it to look
@@ -140,7 +147,35 @@ export default function CardListEditor({
   const extras = draft.filter((d) => !catalogue.some((c) => c.display === d.display || c.code === d.code));
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title={title} closeLabel={tr('back')}>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      closeLabel={tr('back')}
+      scrollable
+      footer={
+        <View style={styles.footer}>
+          {/* ★ Shown, and the sheet stays OPEN with the draft intact.
+              Closing on failure would discard what was just typed and
+              leave the patient believing it was saved — the one outcome a
+              medical record must never produce. */}
+          {error && (
+            <Text style={[styles.error, { color: t.attention, textAlign: align }]}>{error}</Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            disabled={saving}
+            onPress={() => onSave(draft)}
+            style={({ pressed }) => [
+              styles.save,
+              { backgroundColor: t.accent, opacity: saving ? 0.5 : pressed ? 0.75 : 1 },
+            ]}
+          >
+            <Text style={styles.saveText}>{saving ? tr('cardSaving') : tr('cardSave')}</Text>
+          </Pressable>
+        </View>
+      }
+    >
       <View style={styles.root}>
         {extras.map((item) => (
           <Pressable
@@ -221,25 +256,6 @@ export default function CardListEditor({
           </Pressable>
         </View>
 
-        {/* ★ Shown, and the sheet stays OPEN with the draft intact.
-            Closing on failure would discard what was just typed and leave
-            the patient believing it was saved — the one outcome a medical
-            record must never produce. */}
-        {error && (
-          <Text style={[styles.error, { color: t.attention, textAlign: align }]}>{error}</Text>
-        )}
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={saving}
-          onPress={() => onSave(draft)}
-          style={({ pressed }) => [
-            styles.save,
-            { backgroundColor: t.accent, opacity: saving ? 0.5 : pressed ? 0.75 : 1 },
-          ]}
-        >
-          <Text style={styles.saveText}>{saving ? tr('cardSaving') : tr('cardSave')}</Text>
-        </Pressable>
       </View>
     </BottomSheet>
   );
@@ -263,8 +279,8 @@ const styles = StyleSheet.create({
   },
   addBtn: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
 
+  footer: { paddingHorizontal: 4, paddingTop: 10, gap: 8 },
   save: {
-    marginTop: 16,
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: RADIUS.md,
@@ -273,6 +289,10 @@ const styles = StyleSheet.create({
   error: { marginTop: 12, fontSize: 13, lineHeight: 18, fontWeight: '600' },
 });
 
+// v1.1.0 — The list SCROLLS and Save is PINNED in the sheet's footer. Both had
+//          to change: the panel clips at 82 % of the window, so Save sat under
+//          23 rows and was never on screen — "the confirm is hidden and I can't
+//          save anything" is what a clipped sheet looks like from outside.
 // v1.0.0 — One sheet for all three list categories, over the blurred card it is
 //          editing. Picks come from the shared catalogue so three systems agree
 //          on what was meant; "something else" is always available, because a

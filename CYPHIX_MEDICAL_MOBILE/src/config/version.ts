@@ -1,7 +1,29 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.39.0';
-export const APP_BUILD_LABEL = 'Allergies, medicines and family history can be edited - and it writes to the server';
+export const APP_VERSION = '0.39.1';
+export const APP_BUILD_LABEL = 'The edit sheet scrolls, and Save is where you can reach it';
+
+// v0.39.1 - v0.39.0's edit sheet was unusable, and one cause explains all four
+//           symptoms reported: no scroll, the confirm hidden, nothing saveable,
+//           and "it comes up in frames".
+//           `BottomSheet` renders its children with NO scroll view, inside a
+//           panel capped at 82 % of the window with `overflow: hidden`. Give it
+//           more than that and the excess is not scrolled to - it is CLIPPED.
+//           Twenty-three catalogue rows plus a Save button meant the button was
+//           never on screen at all. "Hidden under the bar" is exactly what a
+//           clipped sheet looks like from outside.
+//           The same absence explains the stutter: with nothing bounding it,
+//           the panel's height is whatever has mounted SO FAR, so it grows
+//           across several frames while React commits the rows - underneath an
+//           entrance animation already running on the native thread. Bounded,
+//           it is one height from the first frame.
+//           Fixed at both levels: `BottomSheet` gained an opt-in `scrollable`
+//           (opt-in because wrapping a video or an action list in a scroll view
+//           changes touch handling for no benefit), and the editor puts Save in
+//           the sheet's `footer` - which existed for exactly this and was not
+//           used. Anything that can outgrow the sheet scrolls; anything that
+//           must always be reachable is pinned.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.39.0 - The medical card became editable, end to end.
 //           ONE SHEET, NOT A PAGE PER CATEGORY. Asked for, and right: this is
