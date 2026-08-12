@@ -41,6 +41,16 @@ export interface MobileAuthService extends AuthServiceContract {
    * `auth/session.ts`, where the reasoning lives.
    */
   revalidate(): Promise<RefreshOutcome>;
+  /**
+   * Is there a credential on this device, whoever it belongs to?
+   *
+   * Separate from `restore()` because `restore()` may not touch the
+   * network and this is the one thing it therefore cannot always answer.
+   * The gate uses it to tell "nobody has signed in here" from "somebody
+   * is signed in and we do not yet know who" — and only the second of
+   * those is worth holding a splash for.
+   */
+  hasStoredSession(): Promise<boolean>;
   /** Null when this device has no account to offer biometric re-entry to. */
   rememberedAccount(): Promise<RememberedAccount | null>;
   /** Open the remembered account's session. The BIOMETRIC CHECK IS THE
@@ -61,6 +71,8 @@ export interface MobileAuthService extends AuthServiceContract {
     either side of the wire yet — see AUTH_ROUTES_PLANNED in @cyphix/shared. */
 export const MOCK_SMS_CODE = '000000';
 
+// v1.2.0 — Adds `hasStoredSession()`: the question restore() cannot answer off
+//          the disk alone, and the one the gate needs before it shows a door.
 // v1.1.0 — Adds `revalidate()`: restoring a session (a disk read) and
 //          confirming it (a round trip) are now two calls, which is what lets
 //          the app open offline without pretending the server agreed.

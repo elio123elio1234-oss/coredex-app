@@ -1,7 +1,42 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.40.2';
-export const APP_BUILD_LABEL = 'No Face ID on every launch; offline recovers on its own';
+export const APP_VERSION = '0.40.3';
+export const APP_BUILD_LABEL = 'A force-quit no longer lands on the sign-in screen';
+
+// v0.40.3 - Reported: force-quit from the app switcher, reopen, straight to the
+//           login screen. This is a bug v0.40.2 SHIPPED, and it is the same bug
+//           v0.40.0 set out to kill, recreated one layer up by the fix for it.
+//           v0.40.2 added a migration path: a device with a refresh token but no
+//           persisted principal (every install that was already signed in before
+//           v0.40.0) resolves who it belongs to with one refresh. I put that
+//           refresh INSIDE `restore()` - i.e. I made restore await the network
+//           again, which is the precise thing v0.40.0 exists to have stopped.
+//           `AuthGate`'s 4 s ceiling then raced it, and against a Render
+//           container that takes ~50 s to wake that race is not close: the
+//           ceiling fires, `user` is still null because the thunk is still
+//           pending, and the gate shows the door to somebody holding a valid
+//           credential. Deterministic on a cold server, which is exactly what a
+//           force-quit produces.
+//           ★ THE REAL LESSON, and it is why the ceiling was wrong rather than
+//           merely too short: 4 000 ms was chosen to bound a DISK READ. Putting
+//           a network call behind a timeout sized for storage is not a tuning
+//           error, it is two different waits sharing one number. They are now
+//           two numbers with two reasons - RESTORE_TIMEOUT_MS still bounds the
+//           enclave, and RECOVERY_TIMEOUT_MS (20 s) bounds the lookup.
+//           HOW IT IS BUILT NOW: `restore()` is a pure disk read again and never
+//           touches the network. It reports `hasStoredSession` instead, the slice
+//           latches `recovering`, and the GATE holds the splash and drives the
+//           refresh - because a wait that must be bounded belongs where the bound
+//           lives. Costs at most one launch per install; the refresh writes the
+//           principal and every launch after it is instant.
+//           ★ AND A DIAGNOSTIC, because two rounds were spent guessing at this
+//           phone's state from Windows and each guess cost a release. Settings >
+//           About now prints what the ENCLAVE holds: "token + principal",
+//           "token only", "no stored session", "enclave unreadable". A fact
+//           about the device, never advice, and it names no secret - whether a
+//           token exists, not what it is. Same reasoning that put the resolved
+//           glass material on that screen.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.40.2 - Three reports, and two of them were my bugs.
 //           ★ (1) FACE ID ON EVERY ENTRY. The lock gated every cold start,

@@ -285,6 +285,7 @@ export const en = {
   setDevRole: 'Preview as role',
   setDevRoleDesc: 'Debug only. Draws the app as this role — it grants nothing, the server still decides what is allowed.',
   setDevRoleReal: 'Actual',
+  setAboutSession: 'Session storage',
   setAppLock: 'Lock when unattended',
   /* Says what it protects and — just as important — what it does not.
      "Your record on this phone" is the honest scope: it is a lock on

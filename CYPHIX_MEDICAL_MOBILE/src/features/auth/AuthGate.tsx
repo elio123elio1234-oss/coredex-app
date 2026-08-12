@@ -67,6 +67,26 @@ const SPLASH_MS = 900;
 const RESTORE_TIMEOUT_MS = 4000;
 
 /**
+ * Longest the splash is held while we find out WHO a stored credential
+ * belongs to (`auth.recovering`).
+ *
+ * ★ A different wait from the one above, with a different thing behind
+ * it, which is exactly why it needs its own number. `RESTORE_TIMEOUT_MS`
+ * bounds a disk read and 4 s is generous for one. This bounds a round
+ * trip to a server that may be COLD — the free tier takes ~50 s to wake
+ * (web CHANGELOG v1.46.1) — and 4 s against that is not a timeout, it is
+ * a guaranteed loss. That is precisely how v0.40.2 put a signed-in
+ * patient on the sign-in screen.
+ *
+ * 20 s is the compromise, and it is a compromise: long enough for a warm
+ * server and a slow network, short enough that a truly dead one does not
+ * hold someone on a logo indefinitely. It costs at most one launch per
+ * install — the refresh writes the principal, and every launch after it
+ * takes the instant path.
+ */
+const RECOVERY_TIMEOUT_MS = 20_000;
+
+/**
  * How long the app may sit in the background before the lock goes back up.
  *
  * ★ Not zero, and 60 s was still too short. Half of what people do in
@@ -101,6 +121,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const user = useAppSelector((s) => s.auth.user);
   const locked = useAppSelector((s) => s.auth.locked);
   const sessionMode = useAppSelector((s) => s.auth.sessionMode);
+  const recovering = useAppSelector((s) => s.auth.recovering);
   /* Registration writes the account — and therefore the user — one screen
      BEFORE the flow is over. Without this the app would appear over the
      top of "Profile created" and nobody would ever see it. */
@@ -120,6 +141,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [cacheOwner, setCacheOwner] = useState<string | null>(null);
   /** Wall-clock instant the app was last backgrounded, for the relock. */
   const backgroundedAt = useRef<number | null>(null);
+  const [recoveryGaveUp, setRecoveryGaveUp] = useState(false);
 
   useEffect(() => {
     void dispatch(restoreSession());
@@ -163,9 +185,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
    * interrupted is correct, because the session genuinely ended.
    */
   useEffect(() => {
-    if (!user || locked) return;
+    if (locked) return;
+    /* `recovering` is the migration case: a credential with no principal,
+       where the refresh is not a confirmation but the only way to learn
+       who is signed in at all. Same call, same single flight. */
+    if (!user && !recovering) return;
     void dispatch(revalidateSession());
-  }, [dispatch, user?.id, locked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dispatch, user?.id, locked, recovering]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Back from the background: put the lock up if we were away long
      enough, and re-ask the server either way. A phone that has been in a
@@ -221,6 +247,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [dispatch, user, locked, offline, retryStep]);
 
+  /* The ceiling on the recovery splash. Armed only while one is actually
+     running, so an ordinary launch schedules nothing. */
+  useEffect(() => {
+    if (!recovering) return;
+    const timer = setTimeout(() => setRecoveryGaveUp(true), RECOVERY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [recovering]);
+
   const unlock = useCallback(() => dispatch(appUnlocked()), [dispatch]);
   const signOutFromLock = useCallback(() => {
     void dispatch(logoutUser());
@@ -228,6 +262,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   const stillChecking = status === 'restoring' && !gaveUp;
   if (!splashDone || stillChecking) return <BootSplash />;
+
+  /* ★ Somebody IS signed in here; we are still finding out who. Showing
+     the onboarding flow now would be showing a door to a person who holds
+     the key — which is the bug that was reported twice. Bounded by
+     `recoveryGaveUp`, so a dead server ends on the door rather than on a
+     logo forever. */
+  if (recovering && !user && !recoveryGaveUp) return <BootSplash />;
 
   const signedIn = user && !justRegistered;
   /* Holding the splash rather than rendering the app: see `cacheOwner`.
@@ -254,6 +295,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return signedIn ? <>{children}</> : <OnboardingScreen />;
 }
 
+// v2.2.0 — Holds the splash while a stored credential's owner is being looked
+//          up (`auth.recovering`), on its own 20 s ceiling. The 4 s restore
+//          ceiling bounds a DISK READ; against a cold server it is a guaranteed
+//          loss, and racing it is how v0.40.2 put a signed-in patient on the
+//          sign-in screen after a force-quit. Two waits, two numbers.
 // v2.1.0 — Two fixes reported from the phone.
 //          (1) While offline, knocks on a backoff (4 s → 60 s). The transport
 //          reports reachability now, but an app on a screen that has all its

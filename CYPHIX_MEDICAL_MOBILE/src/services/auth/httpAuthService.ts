@@ -181,31 +181,34 @@ export class HttpAuthService implements MobileAuthService {
     }
 
     /**
-     * ★ THE MIGRATION PATH — and the bug that made v0.40.0 still land on
-     * the sign-in screen "sometimes".
+     * No principal. That does NOT mean no session — see
+     * `hasStoredSession` below — and this method deliberately does not
+     * find out, because finding out costs a round trip.
      *
-     * Before v0.40.0 the enclave held a refresh token and NOTHING ELSE:
-     * the principal was whatever the server had just said, and was never
-     * written down. So every phone that was already signed in when the
-     * update arrived had a perfectly valid token, no principal, and
-     * therefore `readPrincipal()` → null → the door. It looked
-     * intermittent because it happened exactly once per install, and
-     * signing in again repaired it — which is the worst kind of bug
-     * report to receive, because the fix erases the evidence.
-     *
-     * If a token is there, we simply do not yet know WHO it belongs to.
-     * One refresh answers that and writes the principal, after which
-     * every later launch takes the fast path above. Deliberately the only
-     * place `restore` is allowed to await the network, and it is
-     * self-erasing: it can happen at most once per device.
+     * ⚠️ v0.40.2 DID await a refresh here, and it recreated the exact bug
+     * this release exists to kill, one layer up: `AuthGate`'s 4 s ceiling
+     * raced the request, won against a cold server every single time, and
+     * showed the sign-in screen while the refresh was still in flight.
+     * Reported as "I force-quit the app and it goes straight to login".
+     * The gate now drives the recovery itself and holds the splash for
+     * it — a wait it can bound, which is not something this method can do
+     * from down here.
      */
-    const refreshToken = await readRefreshToken();
-    if (!refreshToken) return null;
+    return null;
+  }
 
-    const outcome = await refreshSession();
-    if (outcome.kind !== 'refreshed') return null;
-    await remember(outcome.user);
-    return { user: outcome.user, token: getAccessToken() ?? '', profile: {} };
+  /**
+   * Is there a credential on this device, whoever it belongs to?
+   *
+   * The question `restore()` cannot answer without the network. It exists
+   * so the gate can tell "nobody has ever signed in here" (→ show the
+   * door immediately) from "somebody is signed in and we have not yet
+   * learned who" (→ hold the splash and ask). Before v0.40.0 the enclave
+   * held only this token and no principal, so every phone already signed
+   * in when that update landed lands in the second case exactly once.
+   */
+  async hasStoredSession(): Promise<boolean> {
+    return (await readRefreshToken()) !== null;
   }
 
   /**
@@ -343,6 +346,13 @@ export class HttpAuthService implements MobileAuthService {
   }
 }
 
+// v2.2.0 — `restore()` is a pure disk read again. v0.40.2 had it await a refresh
+//          when a token existed with no principal (the pre-v0.40.0 migration),
+//          and AuthGate's 4 s ceiling raced that request and won against every
+//          cold server — the sign-in screen appearing while the refresh was
+//          still in flight, which is the bug this release began by fixing.
+//          `hasStoredSession()` lets the GATE drive that recovery, where the
+//          wait can actually be bounded.
 // v2.0.0 — `restore()` no longer touches the network: it answers from the
 //          enclave, so a cold start takes the same time with the server up,
 //          asleep or absent. Whether the session is still real is settled

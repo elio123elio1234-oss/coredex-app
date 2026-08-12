@@ -148,6 +148,14 @@ class MockAuthService implements MobileAuthService {
     return { kind: 'offline' };
   }
 
+  /** The device mock keeps its session pointer in AsyncStorage, and
+      `restore()` above reads it directly — so this is only ever consulted
+      to decide whether a splash is worth holding, and the honest answer
+      is the same pointer. */
+  async hasStoredSession(): Promise<boolean> {
+    return (await readJson<StoredSessionPointer>(SESSION_KEY)) !== null;
+  }
+
   async login({ email, password }: Credentials): Promise<AuthSession> {
     await this.settle();
     const account = (await this.accounts()).find((a) => a.email === normalizeEmail(email));

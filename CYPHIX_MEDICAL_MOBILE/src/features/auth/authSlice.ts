@@ -101,6 +101,25 @@ export interface AuthState {
   /** Has the patient asked for an app lock? Read from the enclave on
       restore, so nothing has to re-read it on every foreground. */
   appLockEnabled: boolean;
+  /**
+   * There is a credential on this device but no principal yet, so we know
+   * SOMEONE is signed in and not who.
+   *
+   * ★ Exists so the gate can hold the splash instead of showing a door to
+   * a person who is signed in. It happens exactly once per install — on
+   * the first launch after v0.40.0, which introduced the persisted
+   * principal that earlier builds never wrote — and once the refresh
+   * lands, `storeSession` writes the principal and it never happens
+   * again.
+   *
+   * ⚠️ v0.40.2 tried to resolve this inside `restore()` by awaiting the
+   * refresh there, and the gate's 4 s ceiling raced it and won against
+   * every cold server: the sign-in screen appeared while the request was
+   * still in flight. Reported as "I force-quit the app and it goes
+   * straight to login". A wait that has to be BOUNDED belongs where the
+   * bound is, which is the gate.
+   */
+  recovering: boolean;
 }
 
 const initialState: AuthState = {
@@ -118,6 +137,7 @@ const initialState: AuthState = {
   revalidating: false,
   locked: false,
   appLockEnabled: false,
+  recovering: false,
 };
 
 function auditSignIn(user: SessionUser, detail: string): void {
@@ -145,7 +165,11 @@ function auditSignIn(user: SessionUser, detail: string): void {
 export const restoreSession = createAsyncThunk('auth/restore', async () => {
   const session = await authService.restore();
   const appLockEnabled = await readAppLock();
-  return { session, appLockEnabled };
+  /* Only asked when the disk had no principal. It is what tells "nobody
+     has ever signed in on this phone" apart from "somebody is signed in
+     and we have not yet learned who" — see `recovering`. */
+  const hasStoredSession = session !== null || (await authService.hasStoredSession());
+  return { session, appLockEnabled, hasStoredSession };
 });
 
 /**
@@ -260,7 +284,10 @@ const authSlice = createSlice({
         state.status = 'restoring';
       })
       .addCase(restoreSession.fulfilled, (state, action) => {
-        const { session, appLockEnabled } = action.payload;
+        const { session, appLockEnabled, hasStoredSession } = action.payload;
+        /* A credential with nobody attached to it yet. The gate holds the
+           splash on this, and `revalidateSession` resolves it. */
+        state.recovering = session === null && hasStoredSession;
         state.user = session?.user ?? null;
         state.profile = session?.profile ?? {};
         state.status = 'idle';
@@ -301,12 +328,17 @@ const authSlice = createSlice({
         state.user = null;
         state.status = 'idle';
         state.locked = false;
+        state.recovering = false;
       })
       .addCase(revalidateSession.pending, (state) => {
         state.revalidating = true;
       })
       .addCase(revalidateSession.fulfilled, (state, action) => {
         state.revalidating = false;
+        /* Whatever the answer, the question has been asked. `offline`
+           clears it too: we cannot learn who this is without a server, so
+           holding the splash any longer would be holding it forever. */
+        state.recovering = false;
         switch (action.payload.kind) {
           case 'refreshed':
             /* The server answered and re-issued. This is the only place
@@ -332,6 +364,7 @@ const authSlice = createSlice({
         }
       })
       .addCase(revalidateSession.rejected, (state) => {
+        state.recovering = false;
         /* The thunk itself threw — a bug, not an answer from a server. It
            is emphatically not grounds to end a session: an exception in
            our own code must never be able to sign a patient out. */
@@ -345,6 +378,7 @@ const authSlice = createSlice({
         if (!action.payload) state.locked = false;
       })
       .addCase(logoutUser.fulfilled, (state) => {
+        state.recovering = false;
         state.user = null;
         state.profile = {};
         state.status = 'idle';
@@ -390,6 +424,7 @@ const authSlice = createSlice({
         state.user = action.payload;
       })
       .addCase(sessionExpired, (state) => {
+        state.recovering = false;
         state.user = null;
         state.profile = {};
         state.status = 'idle';
@@ -436,6 +471,11 @@ export const { appRelocked, appUnlocked, clearAuthError, debugRoleSet, welcomeAc
   authSlice.actions;
 export default authSlice.reducer;
 
+// v2.3.0 — Adds `recovering`: a credential on the device with no principal yet.
+//          The gate holds the splash for it rather than showing a door to
+//          somebody who IS signed in. v0.40.2 resolved this inside restore() by
+//          awaiting the refresh, and the gate's 4 s ceiling beat it every time
+//          against a cold server — "I force-quit and it goes straight to login".
 // v2.2.0 — The app lock no longer gates a COLD START — reported as asking for
 //          Face ID on every entry, with Dexcom named as the counter-example, and
 //          the objection is correct: you unlocked the phone to open the app, so a

@@ -61,6 +61,7 @@ import type { CareMode, ThemeChoice } from '@/features/preferences/preferencesSl
 import { useTranslation } from '@/i18n/useTranslation';
 import { debugRoleSet, setAppLockEnabled } from '@/features/auth/authSlice';
 import { canUseAppLock } from '@/services/auth/biometrics';
+import { sessionDiagnostic } from '@/services/api/tokenStore';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import type { Role } from '@/types/rbac';
 import type { TranslationKey } from '@/i18n/config';
@@ -129,10 +130,17 @@ export default function SettingsScreen() {
      used to decide whether the row exists. See the row itself for why a
      switch that cannot be honoured is worse than no switch. */
   const [canLock, setCanLock] = useState(false);
+  /* What the enclave holds. A FACT about this device, for a bug report —
+     never advice, and it names no secret (whether a token exists, not
+     what it is). Same reason `GLASS_MATERIAL` is on this screen. */
+  const [sessionState, setSessionState] = useState('…');
   useEffect(() => {
     let cancelled = false;
     void canUseAppLock().then((ok) => {
       if (!cancelled) setCanLock(ok);
+    });
+    void sessionDiagnostic().then((d) => {
+      if (!cancelled) setSessionState(d);
     });
     return () => {
       cancelled = true;
@@ -507,6 +515,9 @@ export default function SettingsScreen() {
               for the same reason as the build label: a bug report should quote
               the string the changelog uses. */}
           <SettingsRow label={tr('setAboutMaterial')} value={GLASS_MATERIAL} />
+          {/* English like the build label and the material, so a bug report
+              quotes a string that can be grepped for. */}
+          <SettingsRow label={tr('setAboutSession')} value={sessionState} />
           <SettingsRow label={tr('setAboutCompliance')} value={tr('setAboutComplianceValue')} />
         </SettingsSection>
       </ScrollView>
@@ -546,6 +557,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v2.4.0 — About reports what the ENCLAVE holds (`sessionDiagnostic`). Two
+//          rounds of "it sent me to the sign-in screen" were spent guessing
+//          between four indistinguishable causes, at a release each.
 // v2.3.0 — Adds the app-lock row (Account), offered only where the OS can
 //          honour it: a security switch that silently does nothing is worse
 //          than no switch, because the patient believes in it.

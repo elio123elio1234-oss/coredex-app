@@ -1,5 +1,62 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.40.3 - 2026-08-12 - a force-quit no longer lands on the sign-in screen
+
+Reported: force-quit from the app switcher, reopen, straight to login.
+
+**This is a bug v0.40.2 shipped, and it is the same bug v0.40.0 set out to kill,
+recreated one layer up by the fix for it.**
+
+### What I did wrong
+
+v0.40.2 added a migration path. A device with a refresh token but no persisted
+principal — every install that was already signed in before v0.40.0 — resolves
+who it belongs to with one refresh.
+
+I put that refresh **inside `restore()`**. Which is to say: I made restore await
+the network again, the precise thing v0.40.0 exists to have stopped.
+
+`AuthGate`'s 4 s ceiling then raced it. Against a Render container that takes
+~50 s to wake, that race is not close — the ceiling fires, `user` is still null
+because the thunk is still pending, and the gate shows the door to somebody
+holding a perfectly valid credential. Deterministic on a cold server, which is
+exactly what a force-quit produces.
+
+### The lesson, which is why the ceiling was *wrong* and not merely too short
+
+4 000 ms was chosen to bound a **disk read**. Putting a network call behind a
+timeout sized for storage is not a tuning mistake — it is two different waits
+sharing one number, and the second one inherits a bound that was never about it.
+
+They are two numbers with two reasons now: `RESTORE_TIMEOUT_MS` still bounds the
+enclave, and `RECOVERY_TIMEOUT_MS` (20 s) bounds the lookup.
+
+### How it is built now
+
+`restore()` is a pure disk read again and never touches the network. It reports
+`hasStoredSession` instead; the slice latches `recovering`; and the **gate** holds
+the splash and drives the refresh — because a wait that has to be bounded belongs
+where the bound lives.
+
+It costs at most one launch per install: the refresh writes the principal, and
+every launch after it takes the instant path.
+
+### A diagnostic, so this stops being guesswork
+
+Two rounds were spent guessing at one phone's state from a Windows machine, and
+each guess cost a release. **Settings › About now prints what the enclave holds** —
+`token + principal`, `token only — will recover on next launch`, `no stored
+session`, `token + EXPIRED principal`, `enclave unreadable`.
+
+"It sent me to the sign-in screen" has four indistinguishable causes and only the
+device can say which. A fact about the device, never advice, and it names no
+secret: whether a token exists, not what it is. Same reasoning that put the
+resolved glass material on that screen.
+
+`tsc --noEmit` clean; both bundles export. **OTA** — TypeScript only, `app.json`
+stays at 0.34.0.
+
+
 ## v0.40.2 - 2026-08-12 - no Face ID on every launch, and offline recovers on its own
 
 Three reports from the phone. Two were my bugs; the third was a design call I got

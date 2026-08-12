@@ -187,6 +187,37 @@ export async function clearSession(): Promise<void> {
   ]);
 }
 
+/**
+ * What the enclave actually holds, as one short line for Settings › About.
+ *
+ * ★ The same reasoning that put `GLASS_MATERIAL` on that screen: "it sent
+ * me to the sign-in screen" has several indistinguishable causes — no
+ * token, a token with no principal, an expired principal, a Keychain that
+ * will not answer — and from a Windows machine none of them can be told
+ * apart. Two rounds of this were spent guessing, and each guess cost a
+ * release. It is a fact about the device, never advice, and it names no
+ * secret: whether a token exists, not what it is.
+ */
+export async function sessionDiagnostic(): Promise<string> {
+  let token: string | null;
+  try {
+    token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    return 'enclave unreadable';
+  }
+  let raw: string | null = null;
+  try {
+    raw = await SecureStore.getItemAsync(PRINCIPAL_KEY);
+  } catch {
+    return token ? 'token, principal unreadable' : 'no token, principal unreadable';
+  }
+  if (!token && !raw) return 'no stored session';
+  if (token && !raw) return 'token only — will recover on next launch';
+  if (!token && raw) return '⚠ principal without token';
+  const usable = (await readPrincipal()) !== null;
+  return usable ? 'token + principal' : 'token + EXPIRED principal';
+}
+
 /* ── The exchange ────────────────────────────────────────────────── */
 
 /**
@@ -286,6 +317,11 @@ async function doRefresh(): Promise<RefreshOutcome> {
   };
 }
 
+// v2.1.0 — An enclave that will not ANSWER is no longer read as a server that
+//          REFUSED: a transient Keychain error used to surface as `rejected`
+//          and sign the patient out. Adds `sessionDiagnostic()` for Settings ›
+//          About, because "it sent me to sign-in" has four indistinguishable
+//          causes and guessing at them costs a release each time.
 // v2.0.0 — Refresh reports THREE outcomes instead of two, and the principal is
 //          persisted beside the token. `SessionUser | null` could not say
 //          "offline" — so every caller read it as signed-out, and a cold start

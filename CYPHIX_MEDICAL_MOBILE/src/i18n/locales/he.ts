@@ -277,6 +277,7 @@ export const he: Record<TranslationKey, string> = {
   setDevRole: 'תצוגה כתפקיד',
   setDevRoleDesc: 'לדיבאג בלבד. מציג את האפליקציה כמו לתפקיד הזה — זה לא מעניק שום הרשאה, השרת עדיין מחליט מה מותר.',
   setDevRoleReal: 'האמיתי',
+  setAboutSession: 'אחסון החיבור',
   setAppLock: 'נעילה כשלא בשימוש',
   setAppLockDesc: 'אחרי חמש דקות מחוץ לאפליקציה, לבקש Face ID, טביעת אצבע או קוד לפני הצגת התיק שוב. פתיחת האפליקציה לא מבקשת — פתיחת הטלפון כבר ביקשה.',
   setAccountSignOut: 'התנתקות',
