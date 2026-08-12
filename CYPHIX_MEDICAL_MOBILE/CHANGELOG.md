@@ -1,5 +1,144 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.41.0 — 2026-08-12 — one study can no longer own your ECG ID
+
+*"It looks like one measurement carries a lot of weight and the rest barely
+affect it… look at the picture, one study captured most of the volume of the
+patient's ID."*
+
+The reading was correct. What made it hard to see is that **one picture had four
+independent causes**, and only two of them were in the weighting.
+
+### ① The chart was throwing the data away — and this was most of the picture
+
+`similarity` is stretched from a correlation floor so that the last two decimal
+places, where serial ECGs actually differ, are visible at all. That floor was
+**0.90**. Meanwhile `SimilarityTimeline` drew a **80–100** axis it had chosen for
+itself, in a different file, with nobody owning the pair.
+
+Work the arithmetic through and the chart's *entire visible range* was
+**r ∈ [0.971, 1.000]**. A study matching its baseline at 0.96 — an excellent
+serial match — was drawn as exactly the same 6 px stub as one at 0.80. A normal
+history could only ever render as one tall bar in a row of identical dashes.
+
+| true r | similarity | bar |
+|---|---|---|
+| 0.930 | 51 % | 6 px — floor |
+| 0.950 | 65 % | 6 px — floor |
+| 0.970 | 79 % | 6 px — floor |
+| 0.990 | 93 % | 48 px |
+
+`SIMILARITY_FLOOR` and `SIMILARITY_AXIS_FLOOR` are now exported together from
+`ecgIdentity.ts`, and the chart takes both its scale and its axis labels from
+them. A chart that picks its own floor for a score computed elsewhere is
+asserting something about that score's distribution it has no way to know.
+
+### ② The agreement weight was a winner-take-all amplifier
+
+`consensus = clamp01((r − 0.8) / 0.2)` — a linear ramp off a fixed constant with
+a hard zero. It turns a 0.05 difference in correlation into a **10×** difference
+in weight, and deletes everything below 0.80 outright. The enrollment boost was
+never the culprit: at 2:1 across five studies it could not have been.
+
+Replaced by a **one-sided Tukey biweight** on a robust z-score against the
+cohort's *own* spread, so the point at which down-weighting begins is measured
+rather than chosen — plus a **hard per-study cap** (`weightCap`, a third of the
+total at most). The cap is the structural guarantee: whatever the agreement
+maths concludes, an identity may not rest on one recording.
+
+`nEff` — Kish's effective sample size, `(Σw)²/Σw²` — is now computed and shown
+when it materially disagrees with the study count. It is the only field that can
+reveal concentration; a contributor count cannot, and a mean agreement cannot.
+
+### ③ Electrode placement was being scored as cardiac morphology
+
+The screen was reporting `Shape · 3 leads` while the two **measured** leads sat
+silent, alongside an amplitude change on exactly those two. That is not a heart
+finding — it is a signature.
+
+III, aVR, aVL and aVF are *linear combinations* of I and II. Correlation is
+gain-invariant, so pads placed a couple of centimetres differently leave I and II
+correlating ~0.99 while `III = II − I`, a **difference** of two channels whose
+gains moved apart, genuinely changes shape. Those studies were being struck as
+outliers, and the baseline was quietly becoming "the sessions where the pads
+happened to match".
+
+New `CYPHIX_SHARED/src/ecg/leadCalibration.ts` fits that linear remap out before
+agreement is judged. ⚠️ **Its safety argument is the whole file, and it is
+this:** a placement change and a real frontal-axis change are *not separable*
+from the waveform. So the remap is used **only** to answer "is this the same beat
+shape" — the question that decides whether a study may shape the baseline, where
+placement is a nuisance. It never touches what the deviations report: the axis is
+still measured independently by the DSP and reported in degrees, the amplitude in
+mV, both from the untouched trace. Removing the nuisance from the *weighting*
+while leaving it in the *reporting* is the design. The panel says so on any study
+where it fired, because a corrected number handed over silently is worse than an
+uncorrected one.
+
+It is also self-limiting: an implausible or unhelpful fit is refused, and the
+identity then behaves exactly as if the file did not exist.
+
+### ④ There was no time in the model at all
+
+A study from two years ago weighed the same as yesterday's. Worse, a slowly
+changing heart was **guaranteed** to fall below the agreement floor and be
+labelled an outlier — the baseline locked onto the past and called the present
+noise. The one thing the feature exists to do, it structurally could not do.
+
+"The first studies define you" and "the baseline must follow slow change" are
+both right and cannot both be true of one number. So there are now two:
+
+- **anchor** — the enrollment cohort (target raised 5 → **10**), no time decay.
+- **tracker** — time-weighted toward now (180-day half-life). This is the ECG ID
+  the screen draws and what a new study is scored against.
+- **drift** — the distance between them, as a **per-year rate**. A trend, drawn
+  as data, never as an alert. A living person drifts; alarming about it teaches
+  the reader to dismiss the screen.
+
+Scoring also moved to a **local** leave-one-out baseline: every *other* study,
+weighted by how close in time it is. Leave-one-out stops a study being graded
+against its own reflection; making it local stops slow drift retroactively
+condemning old recordings — a study from two years ago is now compared with the
+heart of two years ago, which is the only comparison that was ever meaningful.
+
+### ⑤ And one study is never an alert
+
+`IdentityAlert`: a single threshold crossing is `watch`; the **same kind** of
+difference on two consecutive studies is `marked`. That squares a per-study
+false-positive rate at a cost of at most one measurement's delay on anything
+real — a real change is still there tomorrow.
+
+### What was measured
+
+Synthetic **vectorcardiogram** cohorts (each wave with its own axis — a
+single-dipole model makes every lead a scaled copy and hides the whole problem),
+24 studies of one stable heart, sweeping how much the electrode placement varied
+between sessions. `nEff`, higher is better:
+
+| placement spread | ×1 | ×2 | ×2.5 | ×3 | ×4 |
+|---|---|---|---|---|---|
+| old | 22.2 | 18.7 | 13.1 | 9.2 | 6.8 |
+| **new** | 22.1 | 19.6 | **16.2** | **13.8** | **20.2** |
+
+They agree while the data is clean and separate exactly where a real history
+sits. Also verified: one genuinely different study (axis −50°, QRS 94 → 132 ms)
+in an otherwise stable cohort is the *only* one struck and scores lowest;
+a cohort drifting at a known +7 ms/yr QRS reports +8.9 ms/yr as drift with no
+per-study alarm; the same widening on the last two studies is `marked` and on the
+last one only is `watch`.
+
+⚠️ **The "one study held 54 % of the weight, nEff 2.5" figure quoted while
+diagnosing this is a MODEL, not a measurement of the patient's data** — it is the
+old formula run over a correlation distribution consistent with the screenshot.
+What was measured directly is the table above. The code comments say so too; a
+number that came from a model must not be allowed to harden into a fact.
+
+### Not yet verified on a device
+
+Typechecks and bundles; the maths is exercised by the cohorts above. Nobody has
+opened Insights on a phone with a real history since the change — `PARITY.md`
+keeps these rows 🔬.
+
 ## v0.40.5 - 2026-08-12 - a locked screen no longer signs you out
 
 *"Sometimes I'm in the app and suddenly, on its own, it goes to the login page —

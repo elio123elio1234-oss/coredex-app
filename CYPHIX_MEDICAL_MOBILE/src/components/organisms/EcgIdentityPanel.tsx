@@ -88,7 +88,9 @@ import {
   type DeviationKind,
   type EcgLeadName,
   type ExclusionReason,
+  type IdentityAlert,
   type IdentityDeviation,
+  type IdentityDrift,
   type IdentityMatch,
   type MeasurementStats,
 } from '@cyphix/shared';
@@ -272,6 +274,15 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
     return { beats: onLead.rejected, accepted: onLead.samples, total: onLead.beatsRejected };
   }, [selected, view, lead]);
 
+  /* Only the drift that has cleared this person's own repeatability. The
+     model reports every measurement's drift including the still ones, on
+     purpose — a caller may want the whole table — but a screen listing
+     "PR: unchanged" four times is a section the reader learns to skip. */
+  const driftRows = useMemo(
+    () => (identity?.drift ?? []).filter((d) => d.beyondRepeatability),
+    [identity],
+  );
+
   const fmtDate = useCallback(
     (iso: string) =>
       iso ? new Date(iso).toLocaleDateString(lang, { day: '2-digit', month: 'short' }) : '—',
@@ -380,6 +391,17 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             {established ? tr('insMatEstablished') : tr('insMatEnrolling')}
             {' · '}
             {tr('insBuiltFrom', { n: String(identity.enrolled) })}
+            {/* ★ The EFFECTIVE count, shown only when it materially
+                disagrees with the raw one. "24 studies" is a comfortable
+                number and it was a lie on real data: one recording held
+                54 % of the weight and the honest count was 2.5. Printing
+                `nEff` unconditionally beside a healthy identity would be
+                a second number saying the same thing; printing it when
+                they diverge is the only warning the reader will ever get
+                that their baseline is thinner than its row count. */}
+            {identity.nEff > 0 && identity.nEff < identity.enrolled * 0.7
+              ? ` · ${tr('insEffective', { n: identity.nEff.toFixed(1) })}`
+              : ''}
           </Text>
         </View>
 
@@ -398,6 +420,15 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
           {tr('insEnrollHint', { n: String(remaining) })}
         </Text>
       )}
+
+      {/* ══ The one line that answers "has anything changed?" ══════
+          Placed above the trace because it is the question the reader
+          came with; everything below it is the evidence. It is a LINE,
+          not a card, and never red — `marked` here means "the same
+          difference showed up twice", not "something is wrong", and the
+          panel is not permitted to reach the second conclusion. */}
+      <AlertLine alert={identity.alert} align={align} />
+
 
       {/* The caliper readout, above the trace and never on it: a readout
           floating on the waveform covers the deflections whose position it
@@ -528,7 +559,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
           selectedId={selected?.recordingId ?? null}
           onSelect={setPicked}
           rtl={rtl}
-          labels={{ top: '100', floor: '80', excluded: tr('insExcludedShort') }}
+          labels={{ excluded: tr('insExcludedShort') }}
         />
 
         {selected && (
@@ -586,6 +617,24 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
                 </Text>
               </>
             )}
+
+            {/* ★ Where the pads were, when it mattered.
+                Shown only when the remap was actually applied, because
+                otherwise it is a sentence about a correction that did
+                nothing. It exists so the reader is never silently handed
+                a corrected number: the shape score above was computed
+                after this much geometry was divided out, and the axis and
+                amplitude chips above were NOT — they are measured on the
+                untouched trace. Saying so is what keeps the correction
+                honest rather than invisible. */}
+            {selected.calibration?.applied && (
+              <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+                {tr('insCalibrated', {
+                  deg: selected.calibration.rotationDeg.toFixed(0),
+                  pct: String(Math.round((selected.calibration.scale - 1) * 100)),
+                })}
+              </Text>
+            )}
           </Pressable>
         )}
 
@@ -638,6 +687,35 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         </View>
       </View>
 
+      {/* ══ 3B. How far it has moved since enrollment ═════════════
+          ⚠️ A TREND, NOT AN ALERT — and the section is built to make
+          that unmistakable: neutral ink, no severity colour, no chip,
+          and every row carries a per-year RATE. "+14 ms" is not a fact
+          about a person until you know whether it happened over three
+          weeks or three years, and a screen that shows the delta without
+          the duration is inviting the reader to supply the wrong one.
+
+          Rows that have not moved beyond this person's own measured
+          repeatability are dropped: a drift table that lists five
+          unchanged numbers teaches the reader to skip the section, and
+          the one row that eventually matters goes with it. */}
+      {driftRows.length > 0 && (
+        <>
+          <Rule bleed={paddingHorizontal} />
+          <View style={styles.block}>
+            <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+              {tr('insDriftTitle')}
+            </Text>
+            {driftRows.map((d) => (
+              <DriftRow key={d.kind} drift={d} label={tr(DEVIATION_LABEL[d.kind])} rtl={rtl} />
+            ))}
+            <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+              {tr('insDriftMeaning')}
+            </Text>
+          </View>
+        </>
+      )}
+
       {/* ══ 4. The habit that produced all of it ═════════════════ */}
       {view.stats && (
         <>
@@ -682,6 +760,78 @@ function Empty({
       <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>{title}</Text>
       <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>{body}</Text>
       {children}
+    </View>
+  );
+}
+
+/**
+ * The alert line — one sentence, above the trace, or nothing at all.
+ *
+ * ★ THE TWO STATES ARE NOT "BAD" AND "WORSE". `watch` means one study
+ * crossed a threshold; `marked` means the same kind of difference is
+ * still there on the next one. That is a statement about PERSISTENCE, and
+ * it is the only thing this panel is allowed to say — it renders in the
+ * attention colour at most, never red, and it never names a cause.
+ *
+ * Nothing is drawn when there is nothing to say. An always-present "all
+ * clear" strip is the fastest way to make the row invisible on the day it
+ * finally changes: a reader who has skipped the same green line forty
+ * times does not read the forty-first.
+ */
+function AlertLine({ alert, align }: { alert: IdentityAlert; align: 'left' | 'right' }) {
+  const t = useTheme();
+  const { t: tr } = useTranslation();
+  if (alert.state === 'none') return null;
+
+  const kinds = alert.kinds.map((k) => tr(DEVIATION_LABEL[k])).join(' · ');
+  return (
+    <Text
+      style={[
+        styles.alert,
+        {
+          color: alert.state === 'marked' ? t.attention : t.textSecondary,
+          textAlign: align,
+        },
+      ]}
+    >
+      {alert.state === 'marked'
+        ? tr('insAlertRepeated', { n: String(alert.consecutive), kinds })
+        : tr('insAlertSingle', { kinds })}
+    </Text>
+  );
+}
+
+/**
+ * One drift row: what it was, what it is, and — the part that makes it
+ * readable — how fast.
+ *
+ * Deliberately styled as data and not as a warning. It shares no ink with
+ * `DeviationChip`, because the two mean opposite things: a deviation is
+ * an event, a drift is the expected behaviour of a person who is ageing.
+ */
+function DriftRow({ drift, label, rtl }: { drift: IdentityDrift; label: string; rtl: boolean }) {
+  const t = useTheme();
+  const { t: tr } = useTranslation();
+  const decimals = drift.unit === 'ratio' ? 2 : 0;
+  const sign = drift.delta > 0 ? '+' : '';
+
+  return (
+    <View style={[styles.rowBetween, rtl && styles.rowRtl]}>
+      <Text style={[styles.driftLabel, { color: t.textSecondary }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.driftValue, { color: t.textPrimary }]} numberOfLines={1}>
+        {drift.anchor.toFixed(decimals)} → {drift.current.toFixed(decimals)}
+        <Text style={[styles.driftRate, { color: t.textTertiary }]}>
+          {'  '}
+          {drift.perYear !== null
+            ? tr('insDriftPerYear', {
+                v: `${sign}${drift.perYear.toFixed(decimals === 0 ? 1 : 2)}`,
+                unit: drift.unit === 'ratio' ? '' : drift.unit,
+              })
+            : `${sign}${drift.delta.toFixed(decimals)}`}
+        </Text>
+      </Text>
     </View>
   );
 }
@@ -871,6 +1021,15 @@ const styles = StyleSheet.create({
   },
   flagDate: { fontSize: 13.5, fontWeight: '700' },
 
+  /* One line, no box. A bordered banner would be a card, and this panel
+     has none — see the header — but more to the point a box around it
+     would make it look like a verdict rather than an observation. */
+  alert: { fontSize: 12.5, lineHeight: 18, fontWeight: '600' },
+
+  driftLabel: { fontSize: 12.5, flexShrink: 1 },
+  driftValue: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  driftRate: { fontSize: 11.5, fontWeight: '600' },
+
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, rowGap: 10 },
   stat: { gap: 1 },
   statLabel: { fontSize: 9.5, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase' },
@@ -885,6 +1044,26 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
 });
 
+// v4.0.0 — Surfaces the ECG ID's second generation, and the three additions are
+//          each here to stop the screen being quietly optimistic:
+//          • `nEff` beside the study count, but ONLY when they materially
+//            disagree. "24 studies" is a comfortable number and it can be a
+//            lie; printing the effective count unconditionally would be a
+//            second number saying the same thing on a healthy identity, and
+//            printing it on divergence is the only warning a reader ever gets
+//            that their baseline is thinner than its row count.
+//          • ONE alert line, above the trace, or nothing. Never red, never a
+//            cause, and no "all clear" strip — a reader who has skipped the
+//            same reassuring line forty times does not read the forty-first.
+//          • A DRIFT section that shares no ink with the deviation chips,
+//            because the two mean opposite things: a deviation is an event, a
+//            drift is the expected behaviour of a person who is ageing. Every
+//            row carries a per-year rate; "+14 ms" without a duration invites
+//            the reader to supply the wrong one.
+//          Also states, on any study whose electrode geometry was corrected
+//          for, what that correction touched and what it deliberately did not.
+//          A corrected number handed over silently is worse than an
+//          uncorrected one.
 // v3.2.0 — Insights is drawn in the brand TEAL rather than `accentLive`, a
 //          generic UI blue meaning "live" that was doing a job it was never
 //          chosen for. "Early studies that disagree" is gone: it asked the

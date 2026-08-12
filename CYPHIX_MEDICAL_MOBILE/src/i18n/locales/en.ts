@@ -497,8 +497,29 @@ export const en = {
     'Measured against your own earlier studies, not a normal range. A difference is something to look at with your doctor.',
 
 
+  /* ★ The effective study count. Deliberately worded as a correction to
+     the number beside it rather than as a statistic of its own — "of
+     which 2.5 effective" reads as "that 24 is optimistic", which is the
+     only thing a reader needs to take from it. */
+  insEffective: '{n} effective',
+  /* One study crossed a threshold. NOT an alarm — that is the whole point
+     of the two-state rule (`IdentityAlert`), and the copy has to carry it
+     or the distinction dies at the UI. */
+  insAlertSingle: 'This study differs from your baseline: {kinds}. One study on its own is not a trend.',
+  insAlertRepeated: 'The same difference on {n} studies in a row: {kinds}. Worth showing your doctor.',
+  /* Says a correction was applied AND what it did not touch. A corrected
+     number handed over silently is the thing this line exists to prevent. */
+  insCalibrated:
+    'Electrode position differed here ({deg}°, {pct}% gain); the shape match allows for it. The axis and amplitude figures do not.',
+
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',
+  insDriftTitle: 'Change since you started',
+  insDriftPerYear: '{v} {unit}/yr',
+  /* Why this section is not the section above it. Both show differences;
+     only one of them is an event. */
+  insDriftMeaning:
+    'How your baseline has moved since your first studies. Slow change over months is ordinary — the rate is the part worth watching.',
   insCadenceTitle: 'When you measure',
   insCadenceStudies: '{n} studies',
   insCadencePerWeek: '{n} a week',
@@ -853,6 +874,11 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.16.0 — ECG ID v2 copy: the effective study count, the two alert states
+//           (one study is "look at this", the same difference twice is worth
+//           showing a doctor), the drift section, and the line stating that a
+//           study's electrode geometry was corrected for the SHAPE match and
+//           deliberately not for the axis and amplitude figures.
 // v1.15.0 — Copy for the app lock and the connection strip. "Offline · showing
 //           saved data" rather than "no internet": what the patient needs to
 //           know is what is on their screen, not what the radio is doing.

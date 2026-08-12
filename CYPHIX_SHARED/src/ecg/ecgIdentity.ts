@@ -16,7 +16,31 @@
    lays them on top. All this does is make it happen every time, and keep
    the arithmetic visible afterwards.
 
-   ══ FIVE DECISIONS THAT MAKE IT TRUSTWORTHY ══
+   ══ ★ TWO BASELINES, BECAUSE THE BRIEF CONTAINS A CONTRADICTION ★ ══
+   "The first studies should define the person" and "the baseline must
+   follow their heart's slow changes" are both correct and cannot both be
+   true of one number. Weight the past and the reference can never learn;
+   weight the present and there is nothing left to deviate from.
+
+   So there are two, and the split is the design:
+
+     ANCHOR   the enrollment cohort, no time decay at all. Later studies
+              contribute a small tail so it keeps refining, but the first
+              `ENROLLMENT_TARGET` studies own it. "The heart as we met it."
+
+     TRACKER  time-decayed toward now (`TRACKER_HALF_LIFE_DAYS`). This is
+              `leads` — the ECG ID the screen draws and what a new study
+              is scored against. "The heart as it is."
+
+     DRIFT    the distance between them, as a per-year RATE. A trend,
+              never an alert.
+
+   That is Phase I / Phase II from statistical process control, and it is
+   what makes an ALERT and a TREND separable events. A single baseline
+   reports a slowly-drifting patient as permanently deviant on every study
+   forever, which is both wrong and unactionable.
+
+   ══ SIX DECISIONS THAT MAKE IT TRUSTWORTHY ══
 
    1. NOT EVERY STUDY MAY DEFINE YOU. Simulator output, low-SQI strips and
       recordings with too few clean beats are barred, each with a stated
@@ -24,32 +48,43 @@
       baseline: it moves the reference, so the GOOD studies then score as
       deviant and the real change hides in the noise.
 
-   2. THE EARLY STUDIES WEIGH MORE — AND ARE WATCHED HARDEST. Enrollment
-      is when the reference is decided, exactly as with a fingerprint. So
-      the first studies carry a boost, and *because* they do, an early
-      study that disagrees with its own cohort is FLAGGED by name rather
-      than absorbed. Without the flag, one loose electrode on day one
-      would poison every comparison that follows, permanently and
-      invisibly.
+   2. WHERE THE PADS WERE IS NOT WHAT THE HEART DID. Before any study is
+      judged for agreement, the linear (I, II) channel remap that
+      electrode displacement produces is fitted out (`leadCalibration.ts`).
+      Skipping this was a real, measured defect: pads a couple of
+      centimetres off change the three DERIVED leads' shapes while the two
+      measured leads stay perfect, and the identity was deleting those
+      studies as outliers. The remap's clinical content — axis, amplitude
+      — is still measured and reported independently. It is removed from
+      the WEIGHTING and never from the REPORTING.
 
-   3. STUDIES THAT DISAGREE ARE DOWN-WEIGHTED, NOT AVERAGED IN. A second
-      pass re-weights each study by how well it agrees with the provisional
-      baseline. A study that correlates below the floor contributes
-      nothing — it is still SCORED, and still shown, it simply does not get
-      to redefine the person.
+   3. DISAGREEMENT IS DOWN-WEIGHTED SMOOTHLY, AND NO STUDY MAY DOMINATE.
+      Agreement scaling is a Tukey biweight on a robust z-score against
+      the cohort's OWN spread, and every weight is then capped at
+      `WEIGHT_CAP` of the total. Both replace a hard linear ramp off a
+      fixed constant, and the reason is measured, not aesthetic — see the
+      failure note at the foot of this file. `nEff` reports what is left.
 
-   4. A STUDY IS NEVER SCORED AGAINST A BASELINE IT HELPED BUILD.
-      Every match uses a LEAVE-ONE-OUT baseline — that study's own
-      contribution subtracted. Skipping this is the classic way a system
-      like this fools itself: with few studies, each one drags the mean
-      toward itself and then reports an excellent match with what is
-      largely its own reflection. Outliers would be the LEAST likely
-      thing to be caught, which is backwards.
+   4. A STUDY IS SCORED AGAINST ITS TEMPORAL NEIGHBOURS, NEVER ITSELF.
+      Each match uses a LOCAL leave-one-out baseline: every OTHER study,
+      weighted by how close in time it is. Leaving the study out is what
+      stops a system like this fooling itself — with few studies each one
+      drags the mean toward itself and then reports an excellent match
+      with its own reflection. Making it LOCAL is what stops slow drift
+      retroactively condemning old studies: a recording from two years ago
+      is compared with the heart of two years ago, which is the only
+      comparison that was ever meaningful.
 
    5. THE CORRIDOR IS MEASURED, NOT CHOSEN. How far a trace may move
       before it counts as moved comes from this person's own repeatability
       — the spread between their studies plus the spread within them —
       never from a constant somebody picked.
+
+   6. ONE STUDY IS NEVER AN ALERT. A threshold crossing on a single study
+      is `watch`; the same kind of difference on two consecutive studies
+      is `marked`. See `IdentityAlert` for the arithmetic — it turns a
+      per-study false-positive rate into its square at a cost of at most
+      one measurement's delay.
 
    ══ ⚠️ NO INTERPRETATION. NONE. ⚠️ ══
    Every output is a distance from a baseline, carrying the value, the
@@ -63,15 +98,33 @@
    simply gains six more leads, each with its own coverage count. Limb-only
    studies keep contributing to the limb leads and are not penalised for
    the leads they never had.
+
+   ══ WHERE THE POPULATION PRIOR WILL GO ══
+   A population mean, when there is one, enters as a prior with a small
+   pseudo-weight `w₀` inside `accumulate` — a phantom study of about two
+   studies' worth. It shrinks the baseline toward the population while N
+   is tiny (which is exactly the case the enrollment cohort cannot defend
+   itself against: a first recording taken during ischaemia) and vanishes
+   on its own as real studies arrive. Nothing else in this file changes,
+   which is the reason the accumulator is written as sums rather than as a
+   running mean.
    ================================================================== */
 
 import { correlate, TEMPLATE_FS, TEMPLATE_PRE_SAMPLES, TEMPLATE_SAMPLES } from './beatTemplate';
+import {
+  applyChannelTransform,
+  fitChannelTransform,
+  IDENTITY_TRANSFORM,
+  type ChannelTransform,
+} from './leadCalibration';
 import { TWELVE_LEAD_ORDER, type EcgLeadName } from '../types/ecg';
 import type {
   BeatTemplate,
   EcgIdentity,
   ExclusionReason,
+  IdentityAlert,
   IdentityDeviation,
+  IdentityDrift,
   IdentityLead,
   IdentityMatch,
   IdentityMaturity,
@@ -81,10 +134,54 @@ import type {
 
 /* ══════════════════ Tunables, named and justified ══════════════════ */
 
-/** Studies needed before the baseline stops being called provisional. */
-export const ENROLLMENT_TARGET = 5;
-/** Weight multiplier the very first eligible study carries; it decays to 1. */
-const ENROLLMENT_BOOST = 2;
+/**
+ * Studies that own the enrollment anchor, and the target `maturity` and
+ * `confidence` are measured against.
+ *
+ * Ten, not five. Five was chosen when the weighting was gentler; with the
+ * anchor now genuinely frozen against later studies it has to be built
+ * from enough recordings that one bad session cannot define a person, and
+ * five is not enough for that when the tail weight is small.
+ */
+export const ENROLLMENT_TARGET = 10;
+
+/**
+ * What a study contributes to the ANCHOR once enrollment is over.
+ *
+ * Not zero. Zero would freeze the anchor permanently at ten recordings,
+ * which throws away every later confirmation of what the person's beat
+ * looks like — and would make the anchor MORE fragile over time, not
+ * less, since nothing could ever dilute an enrollment study that turned
+ * out to be poor. A tenth each means twenty later studies eventually
+ * carry about as much as the cohort, but slowly enough that the anchor is
+ * still recognisably "the heart as we met it".
+ */
+const ANCHOR_TAIL = 0.1;
+
+/**
+ * ★ How fast the TRACKER forgets. A study this many days old carries half
+ * the weight of one taken today.
+ *
+ * Six months is chosen to sit between the two things it has to balance:
+ * long enough that a fortnight of unusually noisy sessions cannot capture
+ * the baseline, short enough that a year-old heart is not still the
+ * reference a reading today is judged against. It is the one constant
+ * here that is a genuine judgement call rather than a measurement, and it
+ * is the first thing to revisit against real longitudinal data.
+ */
+export const TRACKER_HALF_LIFE_DAYS = 180;
+
+/**
+ * How local the leave-one-out scoring baseline is, in days.
+ *
+ * Wider than the tracker's half-life on purpose. The tracker answers
+ * "what is normal NOW", where recency is the point; scoring answers "was
+ * this study normal for its own time", and it needs enough neighbours on
+ * both sides to have a baseline at all. Too narrow and a study taken
+ * during a three-month gap is scored against almost nothing, which shows
+ * up as a wild score for a perfectly ordinary recording.
+ */
+const SCORING_HALF_LIFE_DAYS = 365;
 
 /** A study below this rhythm-steadiness index may not shape the baseline. */
 const MIN_SQI = 50;
@@ -94,10 +191,61 @@ const MIN_BEATS = 3;
 const BEATS_FOR_FULL_WEIGHT = 8;
 
 /**
- * Agreement floor. A study correlating this poorly with the provisional
- * baseline gets zero weight — it is scored and shown, never averaged in.
+ * ★ NO STUDY MAY CARRY MORE THAN THIS SHARE OF THE TOTAL WEIGHT.
+ *
+ * The single most important line in this file, and the direct fix for the
+ * defect that prompted the rewrite. The trigger was a screenshot of a
+ * real 24-study history in which one study dominated; the arithmetic
+ * below was then reproduced by running the OLD weight formula over a
+ * correlation distribution consistent with it (a tight clique plus a
+ * scattered majority) — one study held 54 % of the total, nineteen were
+ * struck as outliers, `nEff` came out 2.5. That figure is therefore a
+ * MODEL of the failure, not a measurement of that patient's data; what
+ * was measured directly, on synthetic vectorcardiogram cohorts, is that
+ * the old formula loses effective studies faster than this one at every
+ * level of electrode-placement variability, and collapses where the real
+ * history appears to sit.
+ *
+ * The cap is applied by redistribution, so it is a statement about
+ * STRUCTURE rather than about any particular study: whatever the
+ * agreement maths concludes, an identity is not permitted to rest on one
+ * recording. `2 / n` keeps it meaningful while a history is small (with
+ * three studies no one may exceed two-thirds) and the floor keeps it from
+ * becoming absurd (with two studies a 50 % share is unavoidable).
  */
-const CONSENSUS_FLOOR = 0.8;
+const weightCap = (n: number): number => Math.max(1 / 3, Math.min(1, 2 / Math.max(1, n)));
+
+/** Redistribution passes. Two is enough in practice; five is free insurance. */
+const CAP_PASSES = 5;
+
+/**
+ * Tukey's biweight tuning constant, in robust-σ units.
+ *
+ * The standard value. A study 1 σ below the cohort median keeps 94 % of
+ * its weight, 3 σ keeps 56 %, and 6 σ — genuinely a different beat —
+ * keeps none. What matters is the SHAPE: smooth, bounded, and derived
+ * from the cohort's own spread, where the constant it replaced was a
+ * linear ramp from a fixed 0.80 that turned a 0.05 difference in
+ * correlation into a 10× difference in weight.
+ */
+const BIWEIGHT_C = 6;
+
+/**
+ * The robust σ used to scale that z-score may not fall below this.
+ *
+ * Without a floor, a cohort that agrees to within 0.002 makes σ ≈ 0.002
+ * and then a study at 0.985 against a median of 0.995 sits 5 σ out and is
+ * nearly deleted — for a difference no cardiologist would look at twice.
+ * Robustness must not turn into hair-triggering when the data is good.
+ */
+const MIN_AGREEMENT_SIGMA = 0.02;
+
+/**
+ * Correlation below which a study gets no weight whatever the cohort's
+ * spread says. This is not an outlier test — it is "that is not the same
+ * beat", which happens with reversed electrodes or a dead channel.
+ */
+const ABSOLUTE_AGREEMENT_FLOOR = 0.5;
 
 /**
  * ★ Below this many eligible studies, the agreement pass DOES NOT RUN.
@@ -114,14 +262,28 @@ const CONSENSUS_FLOOR = 0.8;
 const MIN_FOR_CONSENSUS = 3;
 
 /**
- * The similarity score is stretched from this floor, not from zero.
+ * ★ The similarity score is stretched from this floor, not from zero, and
+ * `SIMILARITY_AXIS_FLOOR` below is where any chart of it must start.
  *
- * Two recordings of one healthy heart correlate at 0.98–0.999, so a raw
+ * Two recordings of one healthy heart correlate at 0.95–0.999, so a raw
  * correlation printed as a percentage would read 98 % for everything and
- * discriminate nothing. Anchoring the scale at 0.90 makes the last two
- * decimal places — which is where the signal actually lives — visible.
+ * discriminate nothing. Anchoring the scale makes the last two decimal
+ * places — which is where the signal actually lives — visible.
+ *
+ * ⚠️ THESE TWO CONSTANTS MUST TRAVEL TOGETHER, AND ONCE DID NOT. The
+ * floor was 0.90 while the timeline chart drew a 80–100 axis it had
+ * chosen for itself. The consequence was not subtle: the entire visible
+ * range of that chart was r ∈ [0.971, 1.000], so a study at r = 0.96 —
+ * an excellent match — was drawn as the identical 6 px stub as one at
+ * 0.80, and a whole history rendered as one tall bar in a row of dashes.
+ * The chart looked like a weighting bug. It was two constants in two
+ * files that had to agree and nobody owned. They live here now.
  */
-const SIMILARITY_FLOOR = 0.9;
+export const SIMILARITY_FLOOR = 0.8;
+/** The axis floor a similarity chart MUST use. Derived, not chosen: with a
+ *  clean corridor this is r ≈ 0.886, so the drawn range is the range where
+ *  serial ECGs of one person actually vary. */
+export const SIMILARITY_AXIS_FLOOR = 60;
 
 /** Nothing measured on this hardware is repeatable below ~20 µV. */
 const MIN_TOLERANCE_MV = 0.02;
@@ -183,6 +345,9 @@ const RATE_BPM_WATCH = 20;
 /** QRS amplitude is measured peak-to-peak over this window either side of R. */
 const AMPLITUDE_WINDOW_MS = 60;
 
+const MS_PER_DAY = 86_400_000;
+const DAYS_PER_YEAR = 365.25;
+
 /* ══════════════════ Small numeric helpers ══════════════════ */
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -198,6 +363,19 @@ function round(value: number | null, decimals = 0): number | null {
   return Math.round(value * f) / f;
 }
 
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const s = [...values].sort((a, b) => a - b);
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/** MAD scaled to a σ-equivalent. Same constant `beatTemplate` uses. */
+function robustSigma(values: number[], centre: number): number {
+  if (values.length === 0) return 0;
+  return median(values.map((v) => Math.abs(v - centre))) * 1.4826;
+}
+
 /** Weighted median — robust to an outlier the way a weighted mean is not. */
 function weightedMedian(pairs: { value: number; weight: number }[]): number | null {
   const clean = pairs.filter((p) => Number.isFinite(p.value) && p.weight > 0);
@@ -210,6 +388,65 @@ function weightedMedian(pairs: { value: number; weight: number }[]): number | nu
     if (acc >= total / 2) return p.value;
   }
   return clean[clean.length - 1].value;
+}
+
+/**
+ * Tukey's biweight, one-sided.
+ *
+ * ONE-SIDED is not a detail. A two-sided version would down-weight a
+ * study for agreeing with the cohort BETTER than the median does, which
+ * is the opposite of what a robustness weight is for — the cleanest
+ * recording the patient ever made would be treated as suspicious.
+ */
+function biweight(zBelowCentre: number): number {
+  if (zBelowCentre <= 0) return 1;
+  if (zBelowCentre >= BIWEIGHT_C) return 0;
+  const u = zBelowCentre / BIWEIGHT_C;
+  return (1 - u * u) ** 2;
+}
+
+/**
+ * Kish's effective sample size: `(Σw)² / Σw²`.
+ *
+ * With equal weights it is exactly n. With one study holding everything
+ * it is 1. It is the number that answers "how many studies is this
+ * baseline really made of", and the reason it is computed rather than
+ * inferred is that nothing else in the output can reveal concentration —
+ * a count of contributors cannot, and a mean agreement cannot.
+ */
+function effectiveN(weights: number[]): number {
+  let sum = 0;
+  let sumSq = 0;
+  for (const w of weights) {
+    if (w <= 0) continue;
+    sum += w;
+    sumSq += w * w;
+  }
+  return sumSq > 0 ? (sum * sum) / sumSq : 0;
+}
+
+/**
+ * Enforce `weightCap` by redistribution.
+ *
+ * Capping changes the total, which changes the cap, which can push
+ * another study over it — so it iterates. Excess is not discarded: it is
+ * left with the uncapped studies by simple renormalisation, because the
+ * cap is a statement about concentration, not a penalty on the study that
+ * hit it.
+ */
+function capWeights(weights: Map<string, number>): void {
+  const ids = [...weights.keys()].filter((id) => (weights.get(id) ?? 0) > 0);
+  if (ids.length < 2) return;
+  const cap = weightCap(ids.length);
+
+  for (let pass = 0; pass < CAP_PASSES; pass++) {
+    const total = ids.reduce((s, id) => s + (weights.get(id) ?? 0), 0);
+    if (total <= 0) return;
+    const ceiling = cap * total;
+    const over = ids.filter((id) => (weights.get(id) ?? 0) > ceiling + 1e-12);
+    if (over.length === 0) return;
+    for (const id of over) weights.set(id, ceiling);
+  }
 }
 
 function meanOf(values: Float32Array): number {
@@ -238,6 +475,19 @@ function grade(magnitude: number, [watch, marked]: [number, number]) {
   if (magnitude >= marked) return 'marked' as const;
   if (magnitude >= watch) return 'watch' as const;
   return null;
+}
+
+/** Epoch ms, or NaN for an unparseable timestamp (which then decays to nothing). */
+function epoch(iso: string): number {
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? t : NaN;
+}
+
+/** Exponential decay by half-life, in days. Unknown dates get no decay. */
+function decay(fromMs: number, toMs: number, halfLifeDays: number): number {
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return 1;
+  const days = Math.abs(toMs - fromMs) / MS_PER_DAY;
+  return 2 ** (-days / halfLifeDays);
 }
 
 /* ══════════════════ Eligibility ══════════════════ */
@@ -272,122 +522,6 @@ function newAccumulator(): LeadAccumulator {
     contributors: 0,
   };
 }
-
-/* ══════════════════ THE ENTRY POINT ══════════════════ */
-
-export interface BuildIdentityOptions {
-  /** Studies needed before the identity is `established`. */
-  enrollmentTarget?: number;
-  /** Recording ids the reader has explicitly struck from the baseline. */
-  excludedIds?: readonly string[];
-}
-
-/**
- * Fuse a patient's recording templates into their ECG ID and score each.
- *
- * `templates` may arrive in any order — they are sorted into time order
- * here, because "the early studies weigh more" is meaningless otherwise.
- */
-export function buildEcgIdentity(
-  templates: readonly RecordingTemplate[],
-  options: BuildIdentityOptions = {},
-): EcgIdentity {
-  const enrollmentTarget = options.enrollmentTarget ?? ENROLLMENT_TARGET;
-  const struck = new Set(options.excludedIds ?? []);
-
-  const ordered = [...templates].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
-
-  const empty: EcgIdentity = {
-    maturity: 'none',
-    confidence: 0,
-    enrolled: 0,
-    enrollmentTarget,
-    considered: ordered.length,
-    leads: {},
-    sampleRate: TEMPLATE_FS,
-    rIndex: TEMPLATE_PRE_SAMPLES,
-    intervals: { prMs: null, qrsMs: null, qtcMs: null, axisDegrees: null, bpm: null },
-    matches: [],
-    coverage: TWELVE_LEAD_ORDER.map((lead) => ({ lead, studies: 0, meanToleranceMv: null })),
-    updatedAt: null,
-  };
-
-  /* ── 1. Eligibility, and the enrollment ranking ────────────────── */
-  const exclusions = new Map<string, ExclusionReason | null>();
-  const eligible: RecordingTemplate[] = [];
-  for (const t of ordered) {
-    const reason = struck.has(t.recordingId) ? ('outlier' as const) : exclusionOf(t);
-    exclusions.set(t.recordingId, reason);
-    if (!reason) eligible.push(t);
-  }
-
-  if (eligible.length === 0) {
-    return { ...empty, matches: scoreWithoutBaseline(ordered, exclusions) };
-  }
-
-  /* ── 2. Prior weights: enrollment position × quality ────────────
-     Position is taken over the ELIGIBLE studies, not over all of them —
-     otherwise two rejected simulator runs on day one would burn the
-     enrollment slots that the first real recordings deserve. */
-  const priors = new Map<string, number>();
-  eligible.forEach((t, i) => {
-    const enrollment =
-      1 + (ENROLLMENT_BOOST - 1) * Math.max(0, (enrollmentTarget - i) / enrollmentTarget);
-    const quality = (t.sqi / 100) * Math.min(1, t.beatsUsed / BEATS_FOR_FULL_WEIGHT);
-    priors.set(t.recordingId, enrollment * Math.max(0.05, quality));
-  });
-
-  /* ── 3. Pass one: the provisional baseline ─────────────────────
-     A per-sample weighted MEDIAN, and the choice is load-bearing. */
-  const provisional = provisionalBaseline(eligible, (t) => priors.get(t.recordingId) ?? 0);
-
-  /* ── 4. Pass two: agreement re-weighting ────────────────────────
-     Each study is compared with the provisional baseline and its weight
-     scaled by how well it agrees. This is one round of robust
-     re-weighting; a second round buys almost nothing here because the
-     first already zeroes the studies that were pulling hardest. */
-  const agreement = new Map<string, number>();
-  const finalWeights = new Map<string, number>();
-  const consensusPossible = eligible.length >= MIN_FOR_CONSENSUS;
-
-  for (const t of eligible) {
-    const r = meanCorrelation(t, provisional);
-    agreement.set(t.recordingId, r);
-    if (!consensusPossible) {
-      finalWeights.set(t.recordingId, priors.get(t.recordingId) ?? 0);
-      continue;
-    }
-    const consensus = clamp01((r - CONSENSUS_FLOOR) / (1 - CONSENSUS_FLOOR));
-    const w = (priors.get(t.recordingId) ?? 0) * consensus;
-    finalWeights.set(t.recordingId, w);
-    if (w <= 0) exclusions.set(t.recordingId, 'outlier');
-  }
-
-  const contributors = eligible.filter((t) => (finalWeights.get(t.recordingId) ?? 0) > 0);
-  if (contributors.length === 0) {
-    /* Everyone disagreed with everyone — which happens with two studies of
-       genuinely different quality, and would leave the patient with no
-       baseline at all. Rather than promote one of them to "the truth",
-       fall back to the quality-weighted fusion and halve the confidence.
-       The `outlier` marks from this pass are withdrawn with it: they were
-       relative to a baseline that has just been discarded, and leaving
-       them would tell the reader every study is an outlier. */
-    for (const t of eligible) exclusions.set(t.recordingId, null);
-    const fallback = accumulate(eligible, (t) => priors.get(t.recordingId) ?? 0);
-    return finalise(ordered, eligible, priors, agreement, fallback, exclusions, {
-      enrollmentTarget,
-      degraded: true,
-    });
-  }
-
-  const final = accumulate(contributors, (t) => finalWeights.get(t.recordingId) ?? 0);
-  return finalise(ordered, eligible, finalWeights, agreement, final, exclusions, {
-    enrollmentTarget,
-    degraded: false,
-  });
-}
-
-/* ══════════════════ Accumulation ══════════════════ */
 
 interface Accumulated {
   leads: Partial<Record<EcgLeadName, LeadAccumulator>>;
@@ -425,6 +559,259 @@ function accumulate(
   return { leads, totalWeight };
 }
 
+/** The weighted-mean beat of one accumulator. */
+function baselineOf(acc: LeadAccumulator): Float32Array {
+  const out = new Float32Array(TEMPLATE_SAMPLES);
+  if (acc.weight <= 0) return out;
+  for (let i = 0; i < TEMPLATE_SAMPLES; i++) out[i] = acc.sum[i] / acc.weight;
+  return out;
+}
+
+/**
+ * The tolerance corridor: between-study spread and within-study spread,
+ * added in quadrature because they are independent sources of variation.
+ *
+ * A single contributor has no between-study spread at all — its corridor
+ * is entirely its own beat-to-beat repeatability, which is exactly the
+ * right answer and is why the floor below matters most on day one.
+ */
+function toleranceOf(acc: LeadAccumulator): Float32Array {
+  const out = new Float32Array(TEMPLATE_SAMPLES);
+  if (acc.weight <= 0) return out.fill(MIN_TOLERANCE_MV);
+  for (let i = 0; i < TEMPLATE_SAMPLES; i++) {
+    const mean = acc.sum[i] / acc.weight;
+    const between = Math.max(0, acc.sumSq[i] / acc.weight - mean * mean);
+    const within = Math.max(0, acc.sumWithin[i] / acc.weight);
+    out[i] = Math.max(MIN_TOLERANCE_MV, Math.sqrt(between + within));
+  }
+  return out;
+}
+
+/** An `Accumulated` rendered as the identity leads a caller can read. */
+function leadsOf(acc: Accumulated): Partial<Record<EcgLeadName, IdentityLead>> {
+  const leads: Partial<Record<EcgLeadName, IdentityLead>> = {};
+  for (const [name, a] of Object.entries(acc.leads) as [EcgLeadName, LeadAccumulator][]) {
+    if (!a || a.weight <= 0) continue;
+    leads[name] = {
+      samples: baselineOf(a),
+      tolerance: toleranceOf(a),
+      contributors: a.contributors,
+    };
+  }
+  return leads;
+}
+
+/** Weighted median of one interval across studies. See the note in `finalise`. */
+function medianInterval(
+  withWeights: readonly { t: RecordingTemplate; w: number }[],
+  get: (t: RecordingTemplate) => number | null,
+): number | null {
+  return weightedMedian(
+    withWeights
+      .map(({ t, w }) => ({ value: get(t) as number, weight: w }))
+      .filter((p) => p.value !== null && p.value !== undefined),
+  );
+}
+
+function intervalsOf(withWeights: readonly { t: RecordingTemplate; w: number }[]) {
+  return {
+    prMs: round(medianInterval(withWeights, (t) => t.intervals.prMs)),
+    qrsMs: round(medianInterval(withWeights, (t) => t.intervals.qrsMs)),
+    qtcMs: round(medianInterval(withWeights, (t) => t.intervals.qtcMs)),
+    axisDegrees: round(medianInterval(withWeights, (t) => t.intervals.axisDegrees)),
+    bpm: round(medianInterval(withWeights, (t) => t.intervals.bpm)),
+  };
+}
+
+/* ══════════════════ THE ENTRY POINT ══════════════════ */
+
+export interface BuildIdentityOptions {
+  /** Studies needed before the identity is `established`. */
+  enrollmentTarget?: number;
+  /** Recording ids the reader has explicitly struck from the baseline. */
+  excludedIds?: readonly string[];
+  /**
+   * "Now", for the tracker's time decay. Defaults to the newest study.
+   *
+   * Defaulting to the newest study rather than the wall clock is
+   * deliberate: it makes the identity a PURE function of its inputs, so
+   * the same history builds the same baseline today and next month. A
+   * patient who stops measuring for a year should find their ECG ID
+   * exactly as they left it, not decayed to nothing by the passage of
+   * time alone — nothing was learned in that year.
+   */
+  nowMs?: number;
+}
+
+/**
+ * Fuse a patient's recording templates into their ECG ID and score each.
+ *
+ * `templates` may arrive in any order — they are sorted into time order
+ * here, because both "the early studies own the anchor" and "the tracker
+ * decays with age" are meaningless otherwise.
+ */
+export function buildEcgIdentity(
+  templates: readonly RecordingTemplate[],
+  options: BuildIdentityOptions = {},
+): EcgIdentity {
+  const enrollmentTarget = options.enrollmentTarget ?? ENROLLMENT_TARGET;
+  const struck = new Set(options.excludedIds ?? []);
+
+  const ordered = [...templates].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
+
+  const noIntervals = { prMs: null, qrsMs: null, qtcMs: null, axisDegrees: null, bpm: null };
+  const quietAlert: IdentityAlert = { state: 'none', kinds: [], since: null, consecutive: 0 };
+  const empty: EcgIdentity = {
+    maturity: 'none',
+    confidence: 0,
+    enrolled: 0,
+    enrollmentTarget,
+    nEff: 0,
+    considered: ordered.length,
+    leads: {},
+    anchor: {},
+    drift: [],
+    alert: quietAlert,
+    sampleRate: TEMPLATE_FS,
+    rIndex: TEMPLATE_PRE_SAMPLES,
+    intervals: noIntervals,
+    anchorIntervals: noIntervals,
+    matches: [],
+    coverage: TWELVE_LEAD_ORDER.map((lead) => ({ lead, studies: 0, meanToleranceMv: null })),
+    updatedAt: null,
+  };
+
+  /* ── 1. Eligibility ─────────────────────────────────────────────── */
+  const exclusions = new Map<string, ExclusionReason | null>();
+  const eligible: RecordingTemplate[] = [];
+  for (const t of ordered) {
+    const reason = struck.has(t.recordingId) ? ('outlier' as const) : exclusionOf(t);
+    exclusions.set(t.recordingId, reason);
+    if (!reason) eligible.push(t);
+  }
+
+  if (eligible.length === 0) {
+    return { ...empty, matches: scoreWithoutBaseline(ordered, exclusions) };
+  }
+
+  /* ── 2. Quality prior ───────────────────────────────────────────
+     Quality ONLY. Enrollment position and recency are no longer folded
+     in here, because they now pull in opposite directions and belong to
+     the two different baselines that need them. */
+  const quality = new Map<string, number>();
+  for (const t of eligible) {
+    const q = (t.sqi / 100) * Math.min(1, t.beatsUsed / BEATS_FOR_FULL_WEIGHT);
+    quality.set(t.recordingId, Math.max(0.05, q));
+  }
+
+  /* ── 3. Pass one: the provisional baseline ─────────────────────
+     A per-sample weighted MEDIAN, and the choice is load-bearing. */
+  const provisional = provisionalBaseline(eligible, (t) => quality.get(t.recordingId) ?? 0);
+
+  /* ── 4. Remove the nuisance, THEN measure agreement ─────────────
+     Each study is fitted against the provisional baseline for the linear
+     channel remap that electrode displacement produces, and its
+     agreement is measured on what is LEFT — the part of the difference
+     no placement change can explain. Without this step the identity
+     grades studies on where the pads were (`leadCalibration.ts`). */
+  const calibration = new Map<string, ChannelTransform>();
+  const agreement = new Map<string, number>();
+  for (const t of eligible) {
+    const fit = fitChannelTransform(t.leads, provisional);
+    calibration.set(t.recordingId, fit);
+    const leads = fit.applied ? applyChannelTransform(t.leads, fit.m) : undefined;
+    agreement.set(t.recordingId, meanCorrelation(t, provisional, leads));
+  }
+
+  /* ── 5. Agreement → a bounded, cohort-relative weight ───────────
+     A Tukey biweight on a robust z-score against the cohort's own
+     spread. What it replaced — `clamp01((r − 0.8) / 0.2)` — was a linear
+     ramp off a constant, and it behaved as a winner-take-all amplifier:
+     see the failure note at the foot of this file. */
+  const consensusPossible = eligible.length >= MIN_FOR_CONSENSUS;
+  const rValues = eligible.map((t) => agreement.get(t.recordingId) ?? 0);
+  const rCentre = median(rValues);
+  const rSigma = Math.max(MIN_AGREEMENT_SIGMA, robustSigma(rValues, rCentre));
+
+  const consensus = new Map<string, number>();
+  for (const t of eligible) {
+    const r = agreement.get(t.recordingId) ?? 0;
+    if (r < ABSOLUTE_AGREEMENT_FLOOR) {
+      consensus.set(t.recordingId, 0);
+      continue;
+    }
+    consensus.set(t.recordingId, consensusPossible ? biweight((rCentre - r) / rSigma) : 1);
+  }
+
+  /* ── 6. The two weightings ──────────────────────────────────────
+     Same evidence, two different questions about time. */
+  const newestMs = Math.max(...eligible.map((t) => epoch(t.recordedAt)).filter(Number.isFinite));
+  const nowMs = options.nowMs ?? (Number.isFinite(newestMs) ? newestMs : Date.now());
+
+  const anchorWeights = new Map<string, number>();
+  const trackerWeights = new Map<string, number>();
+  eligible.forEach((t, i) => {
+    const base = (quality.get(t.recordingId) ?? 0) * (consensus.get(t.recordingId) ?? 0);
+    // The anchor: enrollment position, no calendar. Later studies keep a
+    // tail so it can still be corrected, slowly.
+    anchorWeights.set(t.recordingId, base * (i < enrollmentTarget ? 1 : ANCHOR_TAIL));
+    // The tracker: the calendar, and nothing else.
+    trackerWeights.set(
+      t.recordingId,
+      base * decay(epoch(t.recordedAt), nowMs, TRACKER_HALF_LIFE_DAYS),
+    );
+  });
+
+  capWeights(anchorWeights);
+  capWeights(trackerWeights);
+
+  /* A study that the agreement pass reduced to nothing is named as an
+     outlier — it is still scored and still shown, it simply does not get
+     to define the person. */
+  for (const t of eligible) {
+    if ((consensus.get(t.recordingId) ?? 0) <= 0) exclusions.set(t.recordingId, 'outlier');
+  }
+
+  const contributors = eligible.filter((t) => (trackerWeights.get(t.recordingId) ?? 0) > 0);
+  if (contributors.length === 0) {
+    /* Everyone disagreed with everyone — which happens with two studies of
+       genuinely different quality, and would leave the patient with no
+       baseline at all. Rather than promote one of them to "the truth",
+       fall back to the quality-weighted fusion and halve the confidence.
+       The `outlier` marks from this pass are withdrawn with it: they were
+       relative to a baseline that has just been discarded, and leaving
+       them would tell the reader every study is an outlier. */
+    for (const t of eligible) exclusions.set(t.recordingId, null);
+    const fallback = new Map(eligible.map((t) => [t.recordingId, quality.get(t.recordingId) ?? 0]));
+    capWeights(fallback);
+    return finalise({
+      all: ordered,
+      eligible,
+      trackerWeights: fallback,
+      anchorWeights: fallback,
+      agreement,
+      calibration,
+      exclusions,
+      enrollmentTarget,
+      degraded: true,
+    });
+  }
+
+  return finalise({
+    all: ordered,
+    eligible,
+    trackerWeights,
+    anchorWeights,
+    agreement,
+    calibration,
+    exclusions,
+    enrollmentTarget,
+    degraded: false,
+  });
+}
+
+/* ══════════════════ The provisional baseline ══════════════════ */
+
 /**
  * ★ The provisional baseline: a per-sample WEIGHTED MEDIAN across studies.
  *
@@ -447,10 +834,10 @@ function accumulate(
  * the middle one is still the agreed value. The disagreeing study then
  * measures its own distance from the majority and zeroes itself out.
  *
- * The FINAL baseline is still a weighted mean (`accumulate`) — once the
- * outliers carry zero weight, the mean is the better estimator of what is
- * left, because it uses every sample instead of the middle one. Median to
- * find the inliers, mean to combine them.
+ * The FINAL baselines are still weighted means (`accumulate`) — once the
+ * outliers carry little weight, the mean is the better estimator of what
+ * is left, because it uses every sample instead of the middle one. Median
+ * to find the inliers, mean to combine them.
  */
 function provisionalBaseline(
   templates: readonly RecordingTemplate[],
@@ -487,44 +874,23 @@ function provisionalBaseline(
   return out;
 }
 
-/** The weighted-mean beat of one accumulator. */
-function baselineOf(acc: LeadAccumulator): Float32Array {
-  const out = new Float32Array(TEMPLATE_SAMPLES);
-  if (acc.weight <= 0) return out;
-  for (let i = 0; i < TEMPLATE_SAMPLES; i++) out[i] = acc.sum[i] / acc.weight;
-  return out;
-}
-
 /**
- * The tolerance corridor: between-study spread and within-study spread,
- * added in quadrature because they are independent sources of variation.
+ * Mean per-lead correlation of a study against a baseline, over shared leads.
  *
- * A single contributor has no between-study spread at all — its corridor
- * is entirely its own beat-to-beat repeatability, which is exactly the
- * right answer and is why the floor below matters most on day one.
+ * `calibrated` overrides the study's own samples when a channel remap was
+ * accepted — so this measures the RESIDUAL disagreement, the part that
+ * electrode placement cannot explain.
  */
-function toleranceOf(acc: LeadAccumulator): Float32Array {
-  const out = new Float32Array(TEMPLATE_SAMPLES);
-  if (acc.weight <= 0) return out.fill(MIN_TOLERANCE_MV);
-  for (let i = 0; i < TEMPLATE_SAMPLES; i++) {
-    const mean = acc.sum[i] / acc.weight;
-    const between = Math.max(0, acc.sumSq[i] / acc.weight - mean * mean);
-    const within = Math.max(0, acc.sumWithin[i] / acc.weight);
-    out[i] = Math.max(MIN_TOLERANCE_MV, Math.sqrt(between + within));
-  }
-  return out;
-}
-
-/** Mean per-lead correlation of a study against a baseline, over shared leads. */
 function meanCorrelation(
   t: RecordingTemplate,
   leads: Partial<Record<EcgLeadName, Float32Array>>,
+  calibrated?: Partial<Record<EcgLeadName, Float32Array>>,
 ): number {
   const scores: number[] = [];
   for (const [name, template] of leadEntries(t)) {
     const baseline = leads[name];
     if (!template || !baseline) continue;
-    scores.push(correlate(template.samples, baseline));
+    scores.push(correlate(calibrated?.[name] ?? template.samples, baseline));
   }
   if (scores.length === 0) return 0;
   return scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -619,6 +985,7 @@ function scoreWithoutBaseline(
     recordingId: t.recordingId,
     recordedAt: t.recordedAt,
     similarity: 0,
+    calibration: null,
     correlation: {},
     deviations: [],
     contributed: false,
@@ -628,65 +995,79 @@ function scoreWithoutBaseline(
   }));
 }
 
-interface FinaliseOptions {
+interface FinaliseInput {
+  /** Every study considered, in time order — including the excluded ones. */
+  all: readonly RecordingTemplate[];
+  eligible: readonly RecordingTemplate[];
+  trackerWeights: Map<string, number>;
+  anchorWeights: Map<string, number>;
+  agreement: Map<string, number>;
+  calibration: Map<string, ChannelTransform>;
+  exclusions: Map<string, ExclusionReason | null>;
   enrollmentTarget: number;
   degraded: boolean;
 }
 
-function finalise(
-  /** Every study considered, in time order — including the excluded ones. */
-  all: readonly RecordingTemplate[],
-  eligible: readonly RecordingTemplate[],
-  weights: Map<string, number>,
-  agreement: Map<string, number>,
-  acc: Accumulated,
-  exclusions: Map<string, ExclusionReason | null>,
-  opts: FinaliseOptions,
-): EcgIdentity {
-  const leads: Partial<Record<EcgLeadName, IdentityLead>> = {};
-  for (const [name, a] of Object.entries(acc.leads) as [EcgLeadName, LeadAccumulator][]) {
-    if (!a || a.weight <= 0) continue;
-    leads[name] = {
-      samples: baselineOf(a),
-      tolerance: toleranceOf(a),
-      contributors: a.contributors,
-    };
-  }
+function finalise(input: FinaliseInput): EcgIdentity {
+  const { all, eligible, trackerWeights, anchorWeights, agreement, calibration, exclusions } = input;
+
+  const trackerAcc = accumulate(eligible, (t) => trackerWeights.get(t.recordingId) ?? 0);
+  const anchorAcc = accumulate(eligible, (t) => anchorWeights.get(t.recordingId) ?? 0);
+  const leads = leadsOf(trackerAcc);
+  const anchorLeads = leadsOf(anchorAcc);
 
   /* ── Baseline intervals: weighted MEDIAN, not mean ──────────────
      One study whose T end was mis-delineated produces a QT 120 ms out.
      A mean carries that into the reference every later study is judged
      against; a median does not notice it. */
-  const withWeights = eligible
-    .map((t) => ({ t, w: weights.get(t.recordingId) ?? 0 }))
+  const trackerWith = eligible
+    .map((t) => ({ t, w: trackerWeights.get(t.recordingId) ?? 0 }))
+    .filter((x) => x.w > 0);
+  const anchorWith = eligible
+    .map((t) => ({ t, w: anchorWeights.get(t.recordingId) ?? 0 }))
     .filter((x) => x.w > 0);
 
-  const pick = (get: (t: RecordingTemplate) => number | null): number | null =>
-    weightedMedian(
-      withWeights
-        .map(({ t, w }) => ({ value: get(t) as number, weight: w }))
-        .filter((p) => p.value !== null && p.value !== undefined),
-    );
+  const intervals = intervalsOf(trackerWith);
+  const anchorIntervals = intervalsOf(anchorWith);
 
-  const intervals = {
-    prMs: round(pick((t) => t.intervals.prMs)),
-    qrsMs: round(pick((t) => t.intervals.qrsMs)),
-    qtcMs: round(pick((t) => t.intervals.qtcMs)),
-    axisDegrees: round(pick((t) => t.intervals.axisDegrees)),
-    bpm: round(pick((t) => t.intervals.bpm)),
-  };
-
-  /* ── Per-study matching, each against a LEAVE-ONE-OUT baseline ── */
-  const contributorCount = withWeights.length;
+  /* ── Per-study matching, each against a LOCAL leave-one-out baseline ──
+     See decision 4 in the header: the study itself is excluded, and the
+     others are weighted by how close in time they are, so neither
+     self-reflection nor slow drift can distort the score. */
   const matches: IdentityMatch[] = eligible.map((t, index) => {
-    const w = weights.get(t.recordingId) ?? 0;
+    const own = trackerWeights.get(t.recordingId) ?? 0;
+    const atMs = epoch(t.recordedAt);
+    const localAcc = accumulate(eligible, (other) => {
+      if (other.recordingId === t.recordingId) return 0;
+      const w = trackerWeights.get(other.recordingId) ?? 0;
+      if (w <= 0) return 0;
+      // Re-weighted around THIS study's date rather than around now.
+      return w * decay(epoch(other.recordedAt), atMs, SCORING_HALF_LIFE_DAYS);
+    });
+    const localLeads = leadsOf(localAcc);
+    const localWith = eligible
+      .filter((other) => other.recordingId !== t.recordingId)
+      .map((other) => ({
+        t: other,
+        w:
+          (trackerWeights.get(other.recordingId) ?? 0) *
+          decay(epoch(other.recordedAt), atMs, SCORING_HALF_LIFE_DAYS),
+      }))
+      .filter((x) => x.w > 0);
+
+    /* Nobody else has any weight — a first study, or the only survivor.
+       Comparing it with itself would report a perfect match with its own
+       reflection, so the whole-identity baseline is used instead and
+       `maturity`/`nEff` are left to say how little that means. */
+    const haveLocal = Object.keys(localLeads).length > 0;
+
     return scoreOne(t, {
-      acc,
-      leads,
-      intervals,
-      ownWeight: w,
+      leads: haveLocal ? localLeads : leads,
+      intervals: haveLocal && localWith.length > 0 ? intervalsOf(localWith) : intervals,
+      ownWeight: own,
+      calibration: calibration.get(t.recordingId) ?? IDENTITY_TRANSFORM,
       excluded: exclusions.get(t.recordingId) ?? null,
-      isEnrollment: index < opts.enrollmentTarget,
+      isEnrollment: index < input.enrollmentTarget,
     });
   });
 
@@ -699,6 +1080,7 @@ function finalise(
         recordingId: id,
         recordedAt: t?.recordedAt ?? '',
         similarity: 0,
+        calibration: null,
         correlation: {},
         deviations: [],
         contributed: false,
@@ -726,53 +1108,274 @@ function finalise(
     };
   });
 
-  /* ── Maturity and confidence ────────────────────────────────────
-     Confidence is how much a reader should lean on this baseline: how
-     many studies stand behind it, and how well they agreed. Both matter
-     — forty studies that disagree are not a confident baseline, and two
-     that agree perfectly are not one either. */
+  /* ── Maturity and confidence, off the EFFECTIVE count ────────────
+     `nEff`, not the number of contributors. A baseline where one study
+     holds most of the weight is not a ten-study baseline however many
+     rows it has, and this is the only place the difference can be
+     noticed before it does damage. */
+  const nEff = effectiveN([...trackerWeights.values()]);
+  const nEffAnchor = effectiveN([...anchorWeights.values()]);
+  const contributorCount = trackerWith.length;
   const maturity: IdentityMaturity =
-    contributorCount === 0
-      ? 'none'
-      : contributorCount < opts.enrollmentTarget
-        ? 'enrolling'
-        : 'established';
+    contributorCount === 0 ? 'none' : nEff >= input.enrollmentTarget ? 'established' : 'enrolling';
 
-  const agreementScores = withWeights.map(({ t }) =>
+  const agreementScores = trackerWith.map(({ t }) =>
     clamp01(((agreement.get(t.recordingId) ?? 0) - SIMILARITY_FLOOR) / (1 - SIMILARITY_FLOOR)),
   );
   const meanAgreement = agreementScores.length
     ? agreementScores.reduce((a, b) => a + b, 0) / agreementScores.length
     : 0;
-  const countFactor = Math.min(1, contributorCount / opts.enrollmentTarget);
-  const confidence = Math.round(100 * countFactor * meanAgreement * (opts.degraded ? 0.5 : 1));
+  const countFactor = Math.min(1, nEff / input.enrollmentTarget);
+  const confidence = Math.round(100 * countFactor * meanAgreement * (input.degraded ? 0.5 : 1));
 
   const updatedAt =
-    withWeights.length > 0
-      ? withWeights.map(({ t }) => t.recordedAt).sort((a, b) => b.localeCompare(a))[0]
+    trackerWith.length > 0
+      ? trackerWith.map(({ t }) => t.recordedAt).sort((a, b) => b.localeCompare(a))[0]
       : null;
 
   return {
     maturity,
     confidence,
     enrolled: contributorCount,
-    enrollmentTarget: opts.enrollmentTarget,
+    enrollmentTarget: input.enrollmentTarget,
+    nEff: round(nEff, 1) ?? 0,
     considered: all.length,
     leads,
+    anchor: anchorLeads,
+    drift: measureDrift(
+      anchorWith,
+      trackerWith,
+      anchorIntervals,
+      intervals,
+      anchorLeads,
+      leads,
+      nEffAnchor,
+      nEff,
+    ),
+    alert: raiseAlert(matches),
     sampleRate: TEMPLATE_FS,
     rIndex: TEMPLATE_PRE_SAMPLES,
     intervals,
+    anchorIntervals,
     matches,
     coverage,
     updatedAt,
   };
 }
 
+/* ══════════════════ Drift: the anchor → the tracker ══════════════════ */
+
+/** The weighted centre of a set of studies in time — the "when" of a baseline. */
+function centreMs(withWeights: readonly { t: RecordingTemplate; w: number }[]): number {
+  let sum = 0;
+  let weight = 0;
+  for (const { t, w } of withWeights) {
+    const ms = epoch(t.recordedAt);
+    if (!Number.isFinite(ms) || w <= 0) continue;
+    sum += ms * w;
+    weight += w;
+  }
+  return weight > 0 ? sum / weight : NaN;
+}
+
+/**
+ * ★ How much a threshold shrinks when it is applied to an AGGREGATE.
+ *
+ * Every `[watch, marked]` pair in this file is calibrated for ONE study
+ * against a baseline: it has to clear the noise of a single ten-second
+ * recording, which is why 10 ms of QRS is the smallest change worth
+ * naming. Drift is not that comparison. It is the difference between two
+ * baselines, each of which already averaged ten or more studies, so its
+ * noise is smaller by roughly √n — and reusing the single-study threshold
+ * there is not conservatism, it is a bug with a safe-sounding name: it
+ * hides precisely the slow change the anchor/tracker split exists to
+ * find. Measured on a cohort drifting at a known +7 ms/year, the drift
+ * was computed correctly as +8.9 ms/year and then suppressed, because
+ * 8 ms of movement between two 12-study means did not clear a threshold
+ * built for one noisy strip.
+ *
+ * The floor at a third stops it running away: however many studies stand
+ * behind the two baselines, the delineation itself quantises to a couple
+ * of milliseconds, and a drift row that fires on rounding is a row that
+ * teaches the reader to stop reading the section.
+ */
+const AGGREGATE_THRESHOLD_FLOOR = 1 / 3;
+function aggregateScale(nAnchor: number, nTracker: number): number {
+  const n = Math.max(1, Math.min(nAnchor, nTracker));
+  return Math.max(AGGREGATE_THRESHOLD_FLOOR, 1 / Math.sqrt(n));
+}
+
+/**
+ * How far the current baseline has walked from the enrollment anchor, as
+ * a rate.
+ *
+ * ⚠️ This is NOT a deviation and must not be rendered as one. The
+ * thresholds here decide one thing only — whether the movement is bigger
+ * than this person's own measurement repeatability, i.e. whether it is
+ * worth showing at all. A living person drifts. The number is a trend
+ * line, and the interesting quantity is the SLOPE: "+6 ms/year" is a
+ * sentence, and "+14 ms" without a duration is not.
+ */
+function measureDrift(
+  anchorWith: readonly { t: RecordingTemplate; w: number }[],
+  trackerWith: readonly { t: RecordingTemplate; w: number }[],
+  anchorIntervals: EcgIdentity['anchorIntervals'],
+  intervals: EcgIdentity['intervals'],
+  anchorLeads: Partial<Record<EcgLeadName, IdentityLead>>,
+  leads: Partial<Record<EcgLeadName, IdentityLead>>,
+  nAnchor: number,
+  nTracker: number,
+): IdentityDrift[] {
+  const scale = aggregateScale(nAnchor, nTracker);
+  const from = centreMs(anchorWith);
+  const to = centreMs(trackerWith);
+  const years =
+    Number.isFinite(from) && Number.isFinite(to) && to > from
+      ? (to - from) / MS_PER_DAY / DAYS_PER_YEAR
+      : null;
+
+  // Under about a month between the two centres there is no separation
+  // between "the anchor" and "now", so a rate would be a division by
+  // nearly nothing dressed up as a trend.
+  const rateable = years !== null && years >= 1 / 12;
+
+  const out: IdentityDrift[] = [];
+  const add = (
+    kind: IdentityDrift['kind'],
+    anchor: number | null,
+    current: number | null,
+    thresholds: [number, number],
+    unit: IdentityDrift['unit'],
+    decimals = 0,
+  ) => {
+    if (anchor === null || current === null) return;
+    const delta = current - anchor;
+    out.push({
+      kind,
+      anchor,
+      current,
+      delta: round(delta, decimals) ?? 0,
+      perYear: rateable ? round(delta / (years as number), decimals + 1) : null,
+      unit,
+      beyondRepeatability: Math.abs(delta) >= thresholds[0] * scale,
+    });
+  };
+
+  add('qrsDuration', anchorIntervals.qrsMs, intervals.qrsMs, QRS_MS, 'ms');
+  add('qtcInterval', anchorIntervals.qtcMs, intervals.qtcMs, QTC_MS, 'ms');
+  add('prInterval', anchorIntervals.prMs, intervals.prMs, PR_MS, 'ms');
+  add('rate', anchorIntervals.bpm, intervals.bpm, [RATE_BPM_WATCH, RATE_BPM_WATCH], 'bpm');
+
+  if (anchorIntervals.axisDegrees !== null && intervals.axisDegrees !== null) {
+    // Axis is an angle: 350° and 10° are 20° apart, not 340°.
+    let delta = intervals.axisDegrees - anchorIntervals.axisDegrees;
+    while (delta > 180) delta -= 360;
+    while (delta < -180) delta += 360;
+    out.push({
+      kind: 'axis',
+      anchor: anchorIntervals.axisDegrees,
+      current: intervals.axisDegrees,
+      delta: round(delta) ?? 0,
+      perYear: rateable ? round(delta / (years as number), 1) : null,
+      unit: 'deg',
+      beyondRepeatability: Math.abs(delta) >= AXIS_DEG[0] * scale,
+    });
+  }
+
+  /* Shape drift: how well the anchor beat still describes the current
+     one, on the best-covered lead. One number, because six correlations
+     between two baselines is a table nobody reads — and if the shape has
+     genuinely moved, it has moved on more than one lead. */
+  let bestLead: EcgLeadName | null = null;
+  let bestContributors = 0;
+  for (const name of Object.keys(leads) as EcgLeadName[]) {
+    const l = leads[name];
+    if (l && anchorLeads[name] && l.contributors > bestContributors) {
+      bestContributors = l.contributors;
+      bestLead = name;
+    }
+  }
+  if (bestLead) {
+    const r = correlate(leads[bestLead]!.samples, anchorLeads[bestLead]!.samples);
+    out.push({
+      kind: 'morphology',
+      anchor: 1,
+      current: round(r, 3) ?? 0,
+      delta: round(r - 1, 3) ?? 0,
+      perYear: rateable ? round((r - 1) / (years as number), 3) : null,
+      unit: 'ratio',
+      // Same aggregate scaling, read from the other end: the shape of two
+      // averaged baselines should agree far more closely than one study
+      // agrees with a baseline, so the bar for "it moved" is higher.
+      beyondRepeatability: 1 - r >= (1 - MORPHOLOGY_R[0]) * scale,
+    });
+  }
+
+  return out;
+}
+
+/* ══════════════════ The alert, and its persistence rule ══════════════════ */
+
+/**
+ * Whether the newest study is asking for attention.
+ *
+ * ★ THE RULE: one study crossing a threshold is `watch`. The SAME kind of
+ * difference on two consecutive studies is `marked`. See `IdentityAlert`
+ * in the types for why — briefly, a per-study false-positive rate becomes
+ * its square, at a cost of at most one measurement's delay on anything
+ * real, and a badge that fires on noise is a badge that gets ignored.
+ *
+ * Excluded studies are skipped rather than breaking a run: a simulator
+ * session between two real ones is not evidence that the difference went
+ * away.
+ */
+function raiseAlert(matches: readonly IdentityMatch[]): IdentityAlert {
+  const quiet: IdentityAlert = { state: 'none', kinds: [], since: null, consecutive: 0 };
+  // `matches` is newest-first. Only studies that were actually scored can
+  // carry evidence; a struck or unusable one has no deviations to speak of.
+  const scored = matches.filter((m) => m.deviations.length > 0 || m.excluded === null);
+  const newest = scored[0];
+  if (!newest) return quiet;
+
+  const markedKinds = [
+    ...new Set(newest.deviations.filter((d) => d.severity === 'marked').map((d) => d.kind)),
+  ];
+
+  if (markedKinds.length === 0) {
+    const watchKinds = [...new Set(newest.deviations.map((d) => d.kind))];
+    if (watchKinds.length === 0) return quiet;
+    return { state: 'watch', kinds: watchKinds, since: newest.recordedAt, consecutive: 1 };
+  }
+
+  /* Walk back while the same kind keeps appearing — at ANY severity. A
+     difference that drops from `marked` to `watch` has not resolved, it
+     has become slightly smaller, and treating that as the end of the run
+     would reset the counter every time the noise breathed. */
+  let consecutive = 1;
+  let since = newest.recordedAt;
+  for (let i = 1; i < scored.length; i++) {
+    const kinds = new Set(scored[i].deviations.map((d) => d.kind));
+    if (!markedKinds.some((k) => kinds.has(k))) break;
+    consecutive++;
+    since = scored[i].recordedAt;
+  }
+
+  return {
+    state: consecutive >= 2 ? 'marked' : 'watch',
+    kinds: markedKinds,
+    since,
+    consecutive,
+  };
+}
+
+/* ══════════════════ One study against its local baseline ══════════════════ */
+
 interface ScoreContext {
-  acc: Accumulated;
+  /** The LOCAL leave-one-out baseline this study is measured against. */
   leads: Partial<Record<EcgLeadName, IdentityLead>>;
   intervals: EcgIdentity['intervals'];
   ownWeight: number;
+  calibration: ChannelTransform;
   excluded: ExclusionReason | null;
   isEnrollment: boolean;
 }
@@ -784,23 +1387,28 @@ function scoreOne(t: RecordingTemplate, ctx: ScoreContext): IdentityMatch {
   const shapeScores: number[] = [];
   const corridorScores: number[] = [];
 
+  /* The remap was fitted against the PROVISIONAL baseline, not this local
+     one, and it is reused rather than refitted. Refitting per study would
+     let the geometry be re-estimated from a handful of temporal
+     neighbours, which is both noisier and circular — the fit would start
+     absorbing the very local differences the score is meant to find. */
+  const calibrated = ctx.calibration.applied
+    ? applyChannelTransform(t.leads, ctx.calibration.m)
+    : undefined;
+
   for (const [name, template] of leadEntries(t)) {
-    const acc = ctx.acc.leads[name];
     const lead = ctx.leads[name];
-    if (!template || !acc || !lead || acc.weight <= 0) continue;
+    if (!template || !lead) continue;
 
-    /* ── Leave-one-out ───────────────────────────────────────────
-       Subtract this study's own contribution before comparing. With
-       three studies, a study left in the baseline is comparing itself
-       against a third of itself and scores accordingly — the outliers
-       would be the last thing this ever caught. */
-    const remaining = acc.weight - ctx.ownWeight;
-    const reference =
-      ctx.ownWeight > 0 && remaining > 1e-9
-        ? subtractOne(acc, template.samples, ctx.ownWeight, remaining)
-        : lead.samples;
-
-    const r = correlate(template.samples, reference);
+    const reference = lead.samples;
+    /* ★ Shape is judged on the CALIBRATED trace and everything else on
+       the raw one. That asymmetry is the safety argument of
+       `leadCalibration.ts` in one line: placement is a nuisance for the
+       question "is this the same beat", and is exactly the finding for
+       the questions "did the axis move" and "did the amplitude change" —
+       which are measured below, from the untouched data. */
+    const shapeSamples = calibrated?.[name] ?? template.samples;
+    const r = correlate(shapeSamples, reference);
     correlation[name] = round(r, 4) ?? 0;
     shapeScores.push(clamp01((r - SIMILARITY_FLOOR) / (1 - SIMILARITY_FLOOR)));
 
@@ -838,7 +1446,8 @@ function scoreOne(t: RecordingTemplate, ctx: ScoreContext): IdentityMatch {
     }
 
     // Amplitude: a gain change, an electrode change, or a real one — the
-    // ratio says how much, never which.
+    // ratio says how much, never which. Measured on the RAW trace, since
+    // the calibration is precisely what would erase it.
     const own = qrsAmplitude(template.samples);
     const ref = qrsAmplitude(reference);
     const noiseFloor = AMPLITUDE_NOISE_SIGMA * meanOf(lead.tolerance);
@@ -927,6 +1536,12 @@ function scoreOne(t: RecordingTemplate, ctx: ScoreContext): IdentityMatch {
     recordingId: t.recordingId,
     recordedAt: t.recordedAt,
     similarity,
+    calibration: {
+      applied: ctx.calibration.applied,
+      rotationDeg: round(ctx.calibration.rotationDeg, 1) ?? 0,
+      scale: round(ctx.calibration.scale, 3) ?? 1,
+      improvement: round(ctx.calibration.improvement, 3) ?? 0,
+    },
     correlation,
     deviations: deviations.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'marked' ? -1 : 1)),
     contributed: ctx.ownWeight > 0,
@@ -938,20 +1553,6 @@ function scoreOne(t: RecordingTemplate, ctx: ScoreContext): IdentityMatch {
        is what keeps it fixable. */
     flaggedAtEnrollment: ctx.isEnrollment && (marked || ctx.ownWeight <= 0),
   };
-}
-
-/** The baseline with one study's weighted contribution removed. */
-function subtractOne(
-  acc: LeadAccumulator,
-  own: Float32Array,
-  ownWeight: number,
-  remaining: number,
-): Float32Array {
-  const out = new Float32Array(TEMPLATE_SAMPLES);
-  for (let i = 0; i < TEMPLATE_SAMPLES; i++) {
-    out[i] = (acc.sum[i] - ownWeight * (own[i] ?? 0)) / remaining;
-  }
-  return out;
 }
 
 interface Excursion {
@@ -999,6 +1600,59 @@ function longestExcursion(
   return best;
 }
 
+// v2.0.0 — ★ FOUR MEASURED DEFECTS, AND WHAT REPLACED THEM. All four were
+//          visible in one screenshot of a real 24-study history that rendered
+//          as a single tall bar in a row of identical dashes.
+//
+//          (1) THE AGREEMENT RAMP WAS A WINNER-TAKE-ALL AMPLIFIER.
+//              `clamp01((r − 0.8) / 0.2)` turns a 0.05 difference in
+//              correlation into a 10× difference in weight and deletes
+//              everything under 0.80 outright. The enrollment boost was never
+//              the culprit; at 2:1 it could not have been. Replaced by a
+//              one-sided Tukey biweight scaled by the cohort's OWN robust
+//              spread, plus `weightCap`, which makes single-study dominance
+//              structurally impossible whatever the agreement maths concludes.
+//              ★ MEASURED, on synthetic vectorcardiogram cohorts of 24
+//                studies of one stable heart, sweeping how much the electrode
+//                placement varied between sessions (`nEff`, higher is better):
+//                  placement spread   ×1    ×2    ×2.5   ×3    ×4
+//                  OLD               22.2  18.7   13.1   9.2   6.8
+//                  NEW               22.1  19.6   16.2  13.8  20.2
+//                The two agree while the data is clean and separate exactly
+//                where a real history sits. The non-monotonic dip at ×3 is the
+//                calibration's plausibility bounds refusing fits that a ×4
+//                cohort makes unambiguous — robust statistics, not a defect,
+//                but it is the reason those bounds must not be widened
+//                casually to "improve" the middle of that row.
+//
+//          (2) ELECTRODE PLACEMENT WAS BEING SCORED AS CARDIAC MORPHOLOGY.
+//              `Shape · 3 leads` with the two MEASURED leads silent is the
+//              signature of pads moved a couple of centimetres: the derived
+//              leads are differences of two channels whose gains drifted
+//              apart. Those studies were being struck as outliers. The linear
+//              remap is now fitted out before agreement is measured
+//              (`leadCalibration.ts`) and never out of what the deviations
+//              report — the axis and amplitude findings are untouched.
+//
+//          (3) THE SIMILARITY SCALE AND THE CHART AXIS DISAGREED. Scores were
+//              stretched from r = 0.90 while the timeline drew an 80–100 axis
+//              it had chosen for itself, so the chart's whole visible range
+//              was r ∈ [0.971, 1.000] and an excellent 0.96 study was drawn
+//              identically to a poor one. `SIMILARITY_FLOOR` and
+//              `SIMILARITY_AXIS_FLOOR` are exported together so they cannot
+//              drift apart again.
+//
+//          (4) THERE WAS NO TIME IN THE MODEL AT ALL. A study from two years
+//              ago weighed the same as yesterday's, and a slowly drifting
+//              heart was therefore guaranteed to fall below the agreement
+//              floor and be labelled an outlier — the baseline locked onto
+//              the past and called the present noise. Now: an `anchor` that
+//              does not move, a time-decayed tracker that does, `drift`
+//              between them as a per-year rate, and scoring against a LOCAL
+//              leave-one-out baseline so an old study is compared with its
+//              own era. Plus `IdentityAlert`, so a single threshold crossing
+//              is a `watch` and only a repeated one is an alarm.
+//
 // v1.0.0 — The ECG ID: eligibility gates with stated reasons, enrollment-
 //          weighted fusion, one round of agreement re-weighting, a measured
 //          (never chosen) tolerance corridor, leave-one-out scoring so no study

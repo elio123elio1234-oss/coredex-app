@@ -93,9 +93,18 @@ export * from './types/healthCatalogue';
 
 export * from './types/ecgIdentity';
 export * from './ecg/beatTemplate';
+/* Separates WHERE THE PADS WERE from what the heart did. The identity
+   uses it to stop grading studies on electrode placement; it deliberately
+   does NOT alter what any deviation reports. Read its header before
+   touching it — the safety argument is the whole file. */
+export * from './ecg/leadCalibration';
 export * from './ecg/ecgIdentity';
 export * from './ecg/measurementStats';
 
+// v1.11.0 — Adds ecg/leadCalibration: separates WHERE THE PADS WERE from what
+//           the heart did, so the identity stops grading studies on electrode
+//           placement. Read its header before touching it — the reason it may
+//           influence weighting and may NEVER influence reporting is the file.
 // v1.10.0 — Adds auth/session: what "still signed in" means with no server —
 //           the three-outcome refresh contract, the persisted principal a cold
 //           start opens from, and the refresh-token ceiling that bounds it.

@@ -211,6 +211,35 @@ export interface IdentityDeviation {
   unit: 'ms' | 'mV' | 'deg' | 'bpm' | 'ratio' | '%';
 }
 
+/**
+ * What the linear channel remap said about one study.
+ *
+ * The two measured channels (I, II) fully determine the four derived limb
+ * leads, so a change in where the pads sat shows up as a shape change in
+ * the DERIVED leads while the measured ones stay perfect. This records
+ * whether that remap was fitted, how big it was, and how much of the
+ * apparent disagreement it explained. See `leadCalibration.ts` — including
+ * the safety argument for why this may influence WEIGHTING and may never
+ * influence what the deviations report.
+ */
+export interface MatchCalibration {
+  /** True when the fit was plausible as a placement change AND helped. */
+  applied: boolean;
+  /** Implied frontal rotation, degrees. Reported, never used to explain away. */
+  rotationDeg: number;
+  /** Implied overall channel gain. 1.0 = unchanged. */
+  scale: number;
+  /**
+   * Mean per-lead correlation the remap bought.
+   *
+   * ★ This is the evidence for the whole placement hypothesis. If studies
+   * across a real history show a large `improvement`, their disagreement
+   * was geometry. If it is near zero everywhere, it was not, and nothing
+   * in the identity has been altered by trying.
+   */
+  improvement: number;
+}
+
 /** How one recording compares with the identity built from the others. */
 export interface IdentityMatch {
   recordingId: string;
@@ -219,8 +248,18 @@ export interface IdentityMatch {
    * 0–100. A blend of per-lead shape correlation and how far the trace
    * strayed outside the tolerance corridor. 100 is "indistinguishable from
    * your baseline", not "healthy".
+   *
+   * ★ Anchored at `SIMILARITY_FLOOR`, and any chart drawing it MUST take
+   * its axis floor from `SIMILARITY_AXIS_FLOOR` rather than choosing one.
+   * Those two constants disagreeing is a real bug this codebase shipped:
+   * the score was stretched from r = 0.90 while the timeline's axis
+   * started at 80, so the entire visible range of the chart was
+   * r ∈ [0.971, 1.000] and every study below that — including excellent
+   * ones at r = 0.96 — was drawn as the same 6 px stub.
    */
   similarity: number;
+  /** What the channel remap found for this study, or null when unfitted. */
+  calibration: MatchCalibration | null;
   /** Per-lead Pearson correlation against the baseline beat. */
   correlation: Partial<Record<EcgLeadName, number>>;
   deviations: IdentityDeviation[];
@@ -253,6 +292,91 @@ export type ExclusionReason =
   /** Disagreed with the cohort so strongly it was given no weight. */
   | 'outlier';
 
+/* ══════════════════ 2A. Two baselines, and the space between them ══════════════════
+   ★ THE SPLIT THIS TYPE FILE EXISTS TO EXPRESS ★
+
+   "The first studies define you" and "the baseline must follow slow
+   change" are both right and they contradict each other. One weighted
+   average cannot do both: weight the past and it can never learn; weight
+   the present and there is no identity left to deviate FROM.
+
+   The resolution is not a compromise between them — it is two objects
+   with two jobs, which is how statistical process control has always
+   handled this (Phase I establishes the reference, Phase II monitors
+   against it) and how biometric systems handle template update.
+
+     ANCHOR   built from the enrollment cohort, no time decay.
+              "the heart as it was when we met it."
+              Answers: has anything changed SINCE ENROLLMENT?
+
+     TRACKER  time-decayed, weighted toward now. This is `leads` — the
+              ECG ID the screen draws and the thing a new study is scored
+              against. Answers: did TODAY deviate from the recent normal?
+
+     DRIFT    the distance between them, expressed as a RATE.
+              Answers: which way is this person moving, and how fast?
+
+   The clinical payoff of separating them is that an ALERT and a TREND
+   stop being the same event. A study that jumps away from the tracker is
+   acute — something happened. A tracker that has walked slowly away from
+   the anchor is chronic — the person is changing. Only the first is worth
+   interrupting someone about, and a single-baseline design cannot tell
+   them apart: it reports the slow walk as a permanent, unfixable
+   deviation on every study forever. */
+
+/**
+ * One measurement's journey from the enrollment anchor to where it sits
+ * now — a trend, deliberately NOT a deviation.
+ *
+ * It carries a per-year rate because that is the only form in which slow
+ * change is interpretable: "QTc +14 ms" says nothing without knowing it
+ * happened over three weeks or three years.
+ *
+ * ⚠️ A drift row must never be rendered as an alert. It is the expected
+ * behaviour of a living person, and a screen that alarms about it teaches
+ * the reader to dismiss the screen.
+ */
+export interface IdentityDrift {
+  kind: DeviationKind;
+  /** What the enrollment anchor holds. */
+  anchor: number;
+  /** What the current, time-weighted baseline holds. */
+  current: number;
+  /** current − anchor. */
+  delta: number;
+  /** delta ÷ years between the anchor's centre and the tracker's, or null. */
+  perYear: number | null;
+  unit: IdentityDeviation['unit'];
+  /** True when |delta| exceeds the same threshold a deviation would need. */
+  beyondRepeatability: boolean;
+}
+
+/**
+ * Whether the NEWEST study is asking for attention, and why.
+ *
+ * ══ WHY A SINGLE STUDY IS NEVER AN ALERT ══
+ * Every threshold in this system fires occasionally on a clean recording
+ * — that is what a threshold is. With a patient measuring twice a week,
+ * a 5 % per-study false-positive rate is an alert every ten weeks that
+ * means nothing, and the third one of those teaches the reader that the
+ * badge is noise. Requiring the SAME kind of difference on two
+ * consecutive studies squares that rate (5 % → 0.25 %) while costing at
+ * most one measurement's delay on a change that is real, because a real
+ * change is still there tomorrow.
+ *
+ * So `watch` is "one study did this — look at it", and `marked` is "it is
+ * still doing it". The distinction is the entire point.
+ */
+export interface IdentityAlert {
+  state: 'none' | 'watch' | 'marked';
+  /** Which kinds triggered it. Empty when `none`. */
+  kinds: DeviationKind[];
+  /** ISO date of the oldest study in the run that produced it. */
+  since: string | null;
+  /** How many consecutive recent studies carry the same kind. */
+  consecutive: number;
+}
+
 /** Per-lead honesty about how much evidence stands behind each baseline. */
 export interface LeadCoverage {
   lead: EcgLeadName;
@@ -270,15 +394,55 @@ export interface EcgIdentity {
   /** Studies used / studies needed before `established`. */
   enrolled: number;
   enrollmentTarget: number;
+  /**
+   * ★ The EFFECTIVE number of studies behind the baseline (Kish, 1965):
+   * `(Σw)² / Σw²`. Never rounded up, and it is the honest count.
+   *
+   * ══ WHY THIS FIELD IS THE MOST IMPORTANT ONE HERE ══
+   * `enrolled` counts studies with any weight at all, and it lies exactly
+   * when it matters. Under the weighting this replaced, a 24-study
+   * history could reach a state where one recording carried most of the
+   * total weight — an ECG ID that was, in substance, a single recording
+   * wearing the costume of a history. `enrolled` would say 24, and
+   * nothing else in the output could contradict it: a contributor count
+   * cannot reveal concentration, and neither can a mean agreement. This
+   * can, and it does so before anyone has to suspect anything is wrong.
+   *
+   * A UI showing `enrolled` without `nEff` beside it is showing a number
+   * the maths knows to be optimistic.
+   */
+  nEff: number;
   /** Every study looked at, including the excluded ones. */
   considered: number;
-  /** The signature, per lead that has one. */
+  /**
+   * The signature, per lead that has one — the TRACKER (see §2A): the
+   * time-weighted baseline that follows slow change and that a new study
+   * is scored against.
+   */
   leads: Partial<Record<EcgLeadName, IdentityLead>>;
+  /**
+   * The enrollment ANCHOR: the same leads, built from the enrollment
+   * cohort with no time decay. Empty until there is a cohort to build it
+   * from. This is what `leads` is drifting away FROM.
+   */
+  anchor: Partial<Record<EcgLeadName, IdentityLead>>;
+  /** Anchor → tracker, as rates. A trend, never an alert. See `IdentityDrift`. */
+  drift: IdentityDrift[];
+  /** Whether the newest study is asking for attention. See `IdentityAlert`. */
+  alert: IdentityAlert;
   /** Canonical grid: sample rate and where R sits in it. */
   sampleRate: number;
   rIndex: number;
-  /** Baseline intervals — the weighted median across contributing studies. */
+  /** Tracker intervals — the weighted median across contributing studies. */
   intervals: {
+    prMs: number | null;
+    qrsMs: number | null;
+    qtcMs: number | null;
+    axisDegrees: number | null;
+    bpm: number | null;
+  };
+  /** The same figures as the enrollment anchor holds them. */
+  anchorIntervals: {
     prMs: number | null;
     qrsMs: number | null;
     qtcMs: number | null;
@@ -345,6 +509,14 @@ export interface MeasurementPoint {
   value: number | null;
 }
 
+// v2.0.0 — The identity is now TWO baselines, not one: an enrollment `anchor`
+//          that does not move and a time-weighted tracker (`leads`) that
+//          follows slow change, with `drift` as the rate between them. Adds
+//          `nEff` (Kish effective sample size — the field that would have shown
+//          one study holding 54 % of a 24-study identity), `alert` with its
+//          two-consecutive-studies persistence rule so a single threshold
+//          crossing is never an alarm, and `MatchCalibration` recording the
+//          electrode-placement remap that was separated out of the shape score.
 // v1.0.0 — ECG ID domain types: per-recording beat templates, the weighted
 //          personal baseline, typed deviations that state their own arithmetic,
 //          per-lead coverage, and the measurement-cadence statistics. Nothing

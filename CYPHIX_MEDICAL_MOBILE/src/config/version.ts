@@ -1,7 +1,41 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.40.5';
-export const APP_BUILD_LABEL = 'A locked screen no longer signs you out';
+export const APP_VERSION = '0.41.0';
+export const APP_BUILD_LABEL = 'One study can no longer own your ECG ID';
+
+// v0.41.0 - "It looks like one measurement carries a lot of weight and the rest
+//           barely matter." That reading was right, and there were FOUR separate
+//           causes behind the one picture:
+//           (1) THE CHART WAS THROWING THE DATA AWAY. Similarity was stretched
+//               from a correlation of 0.90 while the timeline drew an axis it
+//               had chosen for itself starting at 80 - so the whole visible
+//               range of that chart was r 0.971-1.000, and an excellent 0.96
+//               study was drawn as the identical 6 px stub as a poor one. Most
+//               of "one tall bar in a row of dashes" was this, not the maths.
+//               `SIMILARITY_FLOOR` and `SIMILARITY_AXIS_FLOOR` are now exported
+//               together so two files cannot disagree about one scale again.
+//           (2) THE AGREEMENT WEIGHT WAS A WINNER-TAKE-ALL RAMP. A linear
+//               `(r - 0.8) / 0.2` turns a 0.05 difference in correlation into a
+//               10x difference in weight and deletes everything below 0.80
+//               outright. Replaced by a Tukey biweight against the cohort's own
+//               spread, plus a hard cap: no study may hold more than a third of
+//               the total, whatever the arithmetic concludes.
+//           (3) ELECTRODE PLACEMENT WAS BEING SCORED AS HEART MORPHOLOGY. The
+//               four derived limb leads are linear combinations of the two
+//               measured channels, so pads a couple of centimetres off change
+//               THEIR shapes while I and II stay perfect - exactly the
+//               "Shape - 3 leads" the screen was reporting. Those studies were
+//               being struck as outliers. The placement remap is now fitted out
+//               before agreement is judged, and never out of what the deviations
+//               report: the axis and amplitude findings are untouched.
+//           (4) THERE WAS NO TIME IN THE MODEL AT ALL, so a slowly changing
+//               heart was guaranteed to drift below the floor and be called an
+//               outlier. Now two baselines - a frozen enrollment ANCHOR and a
+//               time-weighted TRACKER - with the distance between them reported
+//               as a per-year rate, and a new-study alert that needs the same
+//               difference TWICE before it stops being "look at this".
+//           ★ `nEff` is the number to watch: the effective study count. It is
+//             what would have said "24 studies, 2.5 of them effective".
 
 // v0.40.5 - "Sometimes I'm in the app and suddenly, on its own, it goes to the
 //           login page - literally while I'm signed in."
