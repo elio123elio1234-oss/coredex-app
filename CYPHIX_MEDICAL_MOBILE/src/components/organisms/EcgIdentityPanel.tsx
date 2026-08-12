@@ -88,7 +88,6 @@ import {
   type DeviationKind,
   type EcgLeadName,
   type ExclusionReason,
-  type IdentityAlert,
   type IdentityDeviation,
   type IdentityDrift,
   type IdentityMatch,
@@ -421,13 +420,26 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         </Text>
       )}
 
-      {/* ══ The one line that answers "has anything changed?" ══════
-          Placed above the trace because it is the question the reader
-          came with; everything below it is the evidence. It is a LINE,
-          not a card, and never red — `marked` here means "the same
-          difference showed up twice", not "something is wrong", and the
-          panel is not permitted to reach the second conclusion. */}
-      <AlertLine alert={identity.alert} align={align} />
+      {/* ⚠️ THERE IS NO ALERT LINE HERE, AND THAT IS DELIBERATE — v0.41.1.
+          One was added in v0.41.0 and removed after one day on a real
+          history, where it read:
+
+            "The same difference on 26 studies in a row: Shape · Amplitude."
+
+          Twenty-six of twenty-six. The persistence rule counted back while
+          the same deviation KIND kept appearing, and `morphology` and
+          `amplitude` fire against the local baseline on very nearly every
+          study — so the run never terminated and the banner had been true
+          since the patient's first recording.
+
+          The lesson is not "tune the rule". It is that a persistence rule
+          cannot sit on top of per-study thresholds that fire constantly:
+          the alert inherits their false-positive rate no matter how many
+          repeats it demands, and an alarm that has been on since day one
+          is indistinguishable from a decoration. Anything put back here
+          has to be built on a residual whose quiet state is actually
+          quiet, and that has to be demonstrated on real serial data
+          BEFORE a sentence is printed above a patient's ECG. */}
 
 
       {/* The caliper readout, above the trace and never on it: a readout
@@ -765,43 +777,6 @@ function Empty({
 }
 
 /**
- * The alert line — one sentence, above the trace, or nothing at all.
- *
- * ★ THE TWO STATES ARE NOT "BAD" AND "WORSE". `watch` means one study
- * crossed a threshold; `marked` means the same kind of difference is
- * still there on the next one. That is a statement about PERSISTENCE, and
- * it is the only thing this panel is allowed to say — it renders in the
- * attention colour at most, never red, and it never names a cause.
- *
- * Nothing is drawn when there is nothing to say. An always-present "all
- * clear" strip is the fastest way to make the row invisible on the day it
- * finally changes: a reader who has skipped the same green line forty
- * times does not read the forty-first.
- */
-function AlertLine({ alert, align }: { alert: IdentityAlert; align: 'left' | 'right' }) {
-  const t = useTheme();
-  const { t: tr } = useTranslation();
-  if (alert.state === 'none') return null;
-
-  const kinds = alert.kinds.map((k) => tr(DEVIATION_LABEL[k])).join(' · ');
-  return (
-    <Text
-      style={[
-        styles.alert,
-        {
-          color: alert.state === 'marked' ? t.attention : t.textSecondary,
-          textAlign: align,
-        },
-      ]}
-    >
-      {alert.state === 'marked'
-        ? tr('insAlertRepeated', { n: String(alert.consecutive), kinds })
-        : tr('insAlertSingle', { kinds })}
-    </Text>
-  );
-}
-
-/**
  * One drift row: what it was, what it is, and — the part that makes it
  * readable — how fast.
  *
@@ -1021,11 +996,6 @@ const styles = StyleSheet.create({
   },
   flagDate: { fontSize: 13.5, fontWeight: '700' },
 
-  /* One line, no box. A bordered banner would be a card, and this panel
-     has none — see the header — but more to the point a box around it
-     would make it look like a verdict rather than an observation. */
-  alert: { fontSize: 12.5, lineHeight: 18, fontWeight: '600' },
-
   driftLabel: { fontSize: 12.5, flexShrink: 1 },
   driftValue: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   driftRate: { fontSize: 11.5, fontWeight: '600' },
@@ -1044,6 +1014,13 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
 });
 
+// v4.0.1 — The alert line is gone. On a real history it said "the same
+//          difference on 26 studies in a row", which is not a finding about a
+//          heart — the persistence rule behind it counted backwards while the
+//          same deviation KIND recurred, and morphology/amplitude recur on
+//          nearly every study, so it had been true since the first recording.
+//          A comment stands where it was, stating what may and may not be put
+//          back there.
 // v4.0.0 — Surfaces the ECG ID's second generation, and the three additions are
 //          each here to stop the screen being quietly optimistic:
 //          • `nEff` beside the study count, but ONLY when they materially

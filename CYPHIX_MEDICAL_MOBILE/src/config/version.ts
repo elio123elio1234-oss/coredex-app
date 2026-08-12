@@ -1,7 +1,30 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.41.0';
-export const APP_BUILD_LABEL = 'One study can no longer own your ECG ID';
+export const APP_VERSION = '0.41.1';
+export const APP_BUILD_LABEL = 'The alert banner is gone - it was on since day one';
+
+// v0.41.1 - "Get rid of this line, it gives me no added value." It read:
+//           "The same difference on 26 studies in a row: Shape - Amplitude.
+//           Worth showing your doctor."
+//           ★ 26 OF 26 IS NOT A FINDING ABOUT A HEART, IT IS A BROKEN RULE.
+//           The persistence rule counted backwards while the same deviation
+//           KIND kept appearing, and `morphology` and `amplitude` fire against
+//           the local baseline on very nearly every study - so the run never
+//           terminated and the banner had been true since the patient's first
+//           recording. Removed: the line, the `IdentityAlert` model behind it,
+//           and its copy, rather than left computed and unrendered.
+//           The lesson is NOT "tune the rule". A persistence rule cannot rescue
+//           per-study thresholds that fire constantly - it inherits their
+//           false-positive rate however many repeats it demands, and an alarm
+//           that has been on since day one is indistinguishable from a
+//           decoration. Anything put back has to rest on a residual whose quiet
+//           state is genuinely quiet, shown on real serial data first.
+//           ⚠️ My synthetic cohorts never caught this: they are clean enough
+//           that only ~11 of 24 studies carry any deviation, so the backward
+//           run terminated and the two tests I wrote for the rule both passed.
+//           The per-study deviation chips are unaffected and stay - they are
+//           checkable arithmetic about one recording, which is a different
+//           claim from "something is happening to you".
 
 // v0.41.0 - "It looks like one measurement carries a lot of weight and the rest
 //           barely matter." That reading was right, and there were FOUR separate

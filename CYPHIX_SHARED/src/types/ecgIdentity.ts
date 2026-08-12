@@ -351,31 +351,30 @@ export interface IdentityDrift {
   beyondRepeatability: boolean;
 }
 
-/**
- * Whether the NEWEST study is asking for attention, and why.
- *
- * ══ WHY A SINGLE STUDY IS NEVER AN ALERT ══
- * Every threshold in this system fires occasionally on a clean recording
- * — that is what a threshold is. With a patient measuring twice a week,
- * a 5 % per-study false-positive rate is an alert every ten weeks that
- * means nothing, and the third one of those teaches the reader that the
- * badge is noise. Requiring the SAME kind of difference on two
- * consecutive studies squares that rate (5 % → 0.25 %) while costing at
- * most one measurement's delay on a change that is real, because a real
- * change is still there tomorrow.
- *
- * So `watch` is "one study did this — look at it", and `marked` is "it is
- * still doing it". The distinction is the entire point.
- */
-export interface IdentityAlert {
-  state: 'none' | 'watch' | 'marked';
-  /** Which kinds triggered it. Empty when `none`. */
-  kinds: DeviationKind[];
-  /** ISO date of the oldest study in the run that produced it. */
-  since: string | null;
-  /** How many consecutive recent studies carry the same kind. */
-  consecutive: number;
-}
+/* ⚠️ THERE IS NO `IdentityAlert` HERE ANY MORE — v0.41.1, and the reason
+   is worth more than the type was.
+
+   v0.41.0 shipped one: `watch` for a single threshold crossing, `marked`
+   for the same kind of difference on two consecutive studies. The
+   arithmetic was right — requiring persistence squares a per-study
+   false-positive rate at a cost of at most one measurement's delay. It
+   lasted one day on a real history, where it rendered:
+
+     "The same difference on 26 studies in a row: Shape · Amplitude."
+
+   Twenty-six of twenty-six. `morphology` and `amplitude` fire against the
+   local baseline on very nearly every study, so the backward run never
+   terminated and the banner had been true since the first recording.
+
+   ★ A persistence rule cannot rescue thresholds that fire constantly. It
+   inherits their false-positive rate however many repeats it demands, and
+   an alarm that has been on since day one is indistinguishable from a
+   decoration — arguably worse, because it occupies the space a real one
+   would have needed. Anything reintroduced here must rest on a residual
+   whose quiet state is genuinely quiet, demonstrated on real serial data
+   first. The per-study `IdentityDeviation`s stay: they are checkable
+   arithmetic about one recording, which is a materially different claim
+   from "something is happening to you". */
 
 /** Per-lead honesty about how much evidence stands behind each baseline. */
 export interface LeadCoverage {
@@ -428,8 +427,6 @@ export interface EcgIdentity {
   anchor: Partial<Record<EcgLeadName, IdentityLead>>;
   /** Anchor → tracker, as rates. A trend, never an alert. See `IdentityDrift`. */
   drift: IdentityDrift[];
-  /** Whether the newest study is asking for attention. See `IdentityAlert`. */
-  alert: IdentityAlert;
   /** Canonical grid: sample rate and where R sits in it. */
   sampleRate: number;
   rIndex: number;

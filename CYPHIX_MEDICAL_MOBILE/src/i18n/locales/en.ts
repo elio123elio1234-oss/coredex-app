@@ -502,11 +502,6 @@ export const en = {
      which 2.5 effective" reads as "that 24 is optimistic", which is the
      only thing a reader needs to take from it. */
   insEffective: '{n} effective',
-  /* One study crossed a threshold. NOT an alarm — that is the whole point
-     of the two-state rule (`IdentityAlert`), and the copy has to carry it
-     or the distinction dies at the UI. */
-  insAlertSingle: 'This study differs from your baseline: {kinds}. One study on its own is not a trend.',
-  insAlertRepeated: 'The same difference on {n} studies in a row: {kinds}. Worth showing your doctor.',
   /* Says a correction was applied AND what it did not touch. A corrected
      number handed over silently is the thing this line exists to prevent. */
   insCalibrated:
@@ -874,6 +869,9 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.17.0 — The two alert strings are gone with the banner they served; it was
+//           reporting "the same difference on 26 studies in a row", i.e. since
+//           the beginning. The rest of the ECG ID v2 copy stands.
 // v1.16.0 — ECG ID v2 copy: the effective study count, the two alert states
 //           (one study is "look at this", the same difference twice is worth
 //           showing a doctor), the drift section, and the line stating that a

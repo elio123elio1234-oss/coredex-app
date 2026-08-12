@@ -80,11 +80,30 @@
       — the spread between their studies plus the spread within them —
       never from a constant somebody picked.
 
-   6. ONE STUDY IS NEVER AN ALERT. A threshold crossing on a single study
-      is `watch`; the same kind of difference on two consecutive studies
-      is `marked`. See `IdentityAlert` for the arithmetic — it turns a
-      per-study false-positive rate into its square at a cost of at most
-      one measurement's delay.
+   6. ⚠️ THIS FILE DOES NOT RAISE ALERTS, AND THAT IS A DECISION.
+      v0.41.0 added one: a threshold crossing on a single study was
+      `watch`, the same kind of difference on two consecutive studies was
+      `marked`. The arithmetic was sound — requiring persistence squares a
+      per-study false-positive rate — and it was removed after one day on
+      a real history, where it reported:
+
+        "The same difference on 26 studies in a row: Shape · Amplitude."
+
+      Twenty-six of twenty-six. `morphology` and `amplitude` fire against
+      the local baseline on very nearly every study, so the run counting
+      backwards never terminated and the banner had been true since the
+      patient's first recording.
+
+      ★ The lesson is NOT "tune the rule". A persistence rule cannot sit on
+      top of per-study thresholds that fire constantly: it inherits their
+      false-positive rate however many repeats it demands, and an alarm
+      that has been on since day one is indistinguishable from a
+      decoration. Anything reintroduced here must be built on a residual
+      whose QUIET STATE IS ACTUALLY QUIET, and that has to be demonstrated
+      on real serial data before a sentence is printed above a patient's
+      ECG. The deviations themselves remain — they are per-study
+      arithmetic a reader can check, which is a different claim from
+      "something is happening to you".
 
    ══ ⚠️ NO INTERPRETATION. NONE. ⚠️ ══
    Every output is a distance from a baseline, carrying the value, the
@@ -122,7 +141,6 @@ import type {
   BeatTemplate,
   EcgIdentity,
   ExclusionReason,
-  IdentityAlert,
   IdentityDeviation,
   IdentityDrift,
   IdentityLead,
@@ -660,7 +678,6 @@ export function buildEcgIdentity(
   const ordered = [...templates].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
 
   const noIntervals = { prMs: null, qrsMs: null, qtcMs: null, axisDegrees: null, bpm: null };
-  const quietAlert: IdentityAlert = { state: 'none', kinds: [], since: null, consecutive: 0 };
   const empty: EcgIdentity = {
     maturity: 'none',
     confidence: 0,
@@ -671,7 +688,6 @@ export function buildEcgIdentity(
     leads: {},
     anchor: {},
     drift: [],
-    alert: quietAlert,
     sampleRate: TEMPLATE_FS,
     rIndex: TEMPLATE_PRE_SAMPLES,
     intervals: noIntervals,
@@ -1152,7 +1168,6 @@ function finalise(input: FinaliseInput): EcgIdentity {
       nEffAnchor,
       nEff,
     ),
-    alert: raiseAlert(matches),
     sampleRate: TEMPLATE_FS,
     rIndex: TEMPLATE_PRE_SAMPLES,
     intervals,
@@ -1312,60 +1327,6 @@ function measureDrift(
   }
 
   return out;
-}
-
-/* ══════════════════ The alert, and its persistence rule ══════════════════ */
-
-/**
- * Whether the newest study is asking for attention.
- *
- * ★ THE RULE: one study crossing a threshold is `watch`. The SAME kind of
- * difference on two consecutive studies is `marked`. See `IdentityAlert`
- * in the types for why — briefly, a per-study false-positive rate becomes
- * its square, at a cost of at most one measurement's delay on anything
- * real, and a badge that fires on noise is a badge that gets ignored.
- *
- * Excluded studies are skipped rather than breaking a run: a simulator
- * session between two real ones is not evidence that the difference went
- * away.
- */
-function raiseAlert(matches: readonly IdentityMatch[]): IdentityAlert {
-  const quiet: IdentityAlert = { state: 'none', kinds: [], since: null, consecutive: 0 };
-  // `matches` is newest-first. Only studies that were actually scored can
-  // carry evidence; a struck or unusable one has no deviations to speak of.
-  const scored = matches.filter((m) => m.deviations.length > 0 || m.excluded === null);
-  const newest = scored[0];
-  if (!newest) return quiet;
-
-  const markedKinds = [
-    ...new Set(newest.deviations.filter((d) => d.severity === 'marked').map((d) => d.kind)),
-  ];
-
-  if (markedKinds.length === 0) {
-    const watchKinds = [...new Set(newest.deviations.map((d) => d.kind))];
-    if (watchKinds.length === 0) return quiet;
-    return { state: 'watch', kinds: watchKinds, since: newest.recordedAt, consecutive: 1 };
-  }
-
-  /* Walk back while the same kind keeps appearing — at ANY severity. A
-     difference that drops from `marked` to `watch` has not resolved, it
-     has become slightly smaller, and treating that as the end of the run
-     would reset the counter every time the noise breathed. */
-  let consecutive = 1;
-  let since = newest.recordedAt;
-  for (let i = 1; i < scored.length; i++) {
-    const kinds = new Set(scored[i].deviations.map((d) => d.kind));
-    if (!markedKinds.some((k) => kinds.has(k))) break;
-    consecutive++;
-    since = scored[i].recordedAt;
-  }
-
-  return {
-    state: consecutive >= 2 ? 'marked' : 'watch',
-    kinds: markedKinds,
-    since,
-    consecutive,
-  };
 }
 
 /* ══════════════════ One study against its local baseline ══════════════════ */
@@ -1650,8 +1611,7 @@ function longestExcursion(
 //              does not move, a time-decayed tracker that does, `drift`
 //              between them as a per-year rate, and scoring against a LOCAL
 //              leave-one-out baseline so an old study is compared with its
-//              own era. Plus `IdentityAlert`, so a single threshold crossing
-//              is a `watch` and only a repeated one is an alarm.
+//              own era.
 //
 // v1.0.0 — The ECG ID: eligibility gates with stated reasons, enrollment-
 //          weighted fusion, one round of agreement re-weighting, a measured

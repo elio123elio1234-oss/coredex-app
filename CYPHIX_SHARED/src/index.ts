@@ -101,6 +101,9 @@ export * from './ecg/leadCalibration';
 export * from './ecg/ecgIdentity';
 export * from './ecg/measurementStats';
 
+// v1.12.0 — `IdentityAlert` is gone from types/ecgIdentity: a persistence rule
+//           cannot rescue per-study thresholds that fire constantly, and this
+//           one had been raising an alarm since the patient's first recording.
 // v1.11.0 — Adds ecg/leadCalibration: separates WHERE THE PADS WERE from what
 //           the heart did, so the identity stops grading studies on electrode
 //           placement. Read its header before touching it — the reason it may

@@ -1,5 +1,52 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.41.1 — 2026-08-12 — the alert banner is gone; it had been on since day one
+
+*"Get rid of this line, it gives me no added value."*
+
+It read: **"The same difference on 26 studies in a row: Shape · Amplitude. Worth
+showing your doctor."**
+
+Twenty-six of twenty-six. That is not a finding about a heart — it is a broken
+rule announcing itself.
+
+### What went wrong
+
+`raiseAlert` counted backwards through the history while the same deviation
+**kind** kept appearing. But `morphology` and `amplitude` fire against the local
+baseline on very nearly *every* study, so the run never terminated: the banner
+had been true since the patient's first recording, and would have stayed true
+forever.
+
+### Why the fix is removal and not a tuning pass
+
+★ **A persistence rule cannot rescue per-study thresholds that fire
+constantly.** It inherits their false-positive rate however many repeats it
+demands. Demanding three, or five, or ten would have changed the number in the
+sentence and nothing else. And an alarm that has been on since day one is not
+merely useless — it is worse than absent, because it occupies the space a real
+one would have needed.
+
+Removed: the line, the `IdentityAlert` model behind it, and its copy. Not left
+computed-but-unrendered — a wrong field that nothing consumes is a landmine for
+whoever picks it up next believing it works.
+
+Anything reintroduced here has to rest on a residual whose **quiet state is
+genuinely quiet**, demonstrated on real serial data *before* a sentence is
+printed above a patient's ECG. The per-study deviation chips are untouched and
+stay: they are checkable arithmetic about one recording, which is a materially
+different claim from "something is happening to you".
+
+### ⚠️ Why the tests I wrote for it passed
+
+Both of them — same widening on the last two studies → `marked`, on the last one
+only → `watch` — passed, and the rule was still broken. The synthetic cohorts are
+clean enough that only ~11 of 24 studies carry any deviation at all, so the
+backward run terminated there. Real serial data does not look like that. A
+generated cohort can prove a rule's arithmetic and cannot prove its **base
+rate**, and a rule whose whole job is counting how often something repeats lives
+or dies on exactly that.
+
 ## v0.41.0 — 2026-08-12 — one study can no longer own your ECG ID
 
 *"It looks like one measurement carries a lot of weight and the rest barely
