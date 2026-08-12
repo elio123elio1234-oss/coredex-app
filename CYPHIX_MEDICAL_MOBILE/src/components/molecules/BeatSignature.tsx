@@ -94,6 +94,20 @@ export const SCREEN_LIGHT = {
   gridMajor: 'rgba(13, 32, 65, 0.15)',
   trace: '#0A2540',
   marker: 'rgba(13, 32, 65, 0.34)',
+  /* ★ THE PAPER IS BACK — v0.44.0, reported as "the rounded rectangle
+     with no outline and no shadow behind it doesn't look professional".
+     Both halves of that are right, and the fix is NOT the white card
+     v0.33.0 removed. What was wrong then was a white sheet inside a white
+     CARD on a grey page — three nested rectangles. What is wrong now is
+     the opposite extreme: a grid floating on the page with no edge at
+     all, so it reads as a texture rather than as a recording.
+
+     A sheet needs (a) a ground of its own, (b) an EDGE, (c) somewhere to
+     sit. Paper, a hairline, and a soft shadow. The grid keeps the brand's
+     navy tint rather than clinical pink — chosen deliberately, because
+     pink reads as a hospital printout and this is the patient's app. */
+  paper: '#FFFFFF',
+  edge: 'rgba(13, 32, 65, 0.13)',
 };
 export const SCREEN_DARK = {
   gridMinor: 'rgba(159, 180, 216, 0.10)',
@@ -107,6 +121,12 @@ export const SCREEN_DARK = {
      differ. The report keeps its own palette; this is not the report. */
   trace: '#E8EEF7',
   marker: 'rgba(159, 180, 216, 0.42)',
+  /* In dark there is no "paper" to imitate — a white sheet at night is a
+     torch. The ground is one step LIFTED off the page instead, which is
+     the same signal (this surface is a thing) in the register the dark
+     theme already speaks. */
+  paper: '#141D30',
+  edge: 'rgba(159, 180, 216, 0.16)',
 };
 
 /** What the caliper is sitting on right now. Null when it is parked. */
@@ -404,9 +424,23 @@ export default function BeatSignature({
         Math.max(-geometry.clipMm, Math.min(geometry.clipMm, baseline[cursor] * mmPerMv));
 
   const sheet = (
-    /* No background fill and no rounded corners: the sheet IS the page
-       here. A `backgroundColor` would put the rectangle straight back. */
-    <View style={{ width, height }}>
+    /* ★ The shadow lives on the WRAPPER, not on the Svg. A native SVG
+       view does not cast one on either platform, and `elevation` on it is
+       silently ignored on Android — so the sheet would have looked framed
+       in the simulator and flat on a phone, which is exactly the class of
+       defect a bundle waves through. */
+    <View
+      style={[
+        styles.sheet,
+        {
+          width,
+          height,
+          borderRadius: rxMm * pxPerMm,
+          backgroundColor: c.paper,
+          shadowColor: dark ? '#000000' : '#0A2540',
+        },
+      ]}
+    >
       <Svg
         width={width}
         height={height}
@@ -423,6 +457,9 @@ export default function BeatSignature({
         {/* Everything drawn lives inside the rounded sheet — including the
             caliper, which must stop at the same edge the grid does. */}
         <G clipPath={`url(#${clipId})`}>
+        {/* The paper itself. Inside the clip so the corners are the
+            sheet's, and under everything so the grid sits ON it. */}
+        <Rect x={0} y={0} width={geometry.widthMm} height={heightMm} fill={c.paper} />
         {/* Dimmed against the report's grid — context, not the subject. */}
         <Path d={geometry.grid.minor} fill="none" stroke={c.gridMinor} strokeWidth={0.07} opacity={0.55} />
         <Path d={geometry.grid.major} fill="none" stroke={c.gridMajor} strokeWidth={0.14} opacity={0.7} />
@@ -484,6 +521,22 @@ export default function BeatSignature({
           </>
         )}
         </G>
+
+        {/* ★ The edge, OUTSIDE the clip and drawn last. Inside it, half the
+            stroke would be clipped away and the hairline would render at
+            half weight — visibly thinner than every other rule on the
+            screen, which is worse than having no edge at all. */}
+        <Rect
+          x={0.05}
+          y={0.05}
+          width={geometry.widthMm - 0.1}
+          height={heightMm - 0.1}
+          rx={rxMm}
+          ry={rxMm}
+          fill="none"
+          stroke={c.edge}
+          strokeWidth={0.1}
+        />
       </Svg>
 
       <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
@@ -503,6 +556,16 @@ export default function BeatSignature({
 }
 
 const styles = StyleSheet.create({
+  /* Soft and LOW: a sheet resting on the page, not a card floating above
+     it. A large blur with a big offset is the "web dashboard" shadow the
+     de-carding was about; 6 pt of blur at 2 pt down is the difference
+     between an object having weight and an object being pasted on. */
+  sheet: {
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
   /* Inset from the sheet EDGE, not from a card's padding: this thing is
      full-bleed. The inset clears the corner RADIUS as well as the screen
      edge — a label tucked at 2 pt sits in the arc that was just cut away
@@ -525,6 +588,19 @@ const styles = StyleSheet.create({
   },
 });
 
+// v4.0.0 — The sheet is PAPER again: a ground of its own, a hairline edge and
+//          a low soft shadow. Reported as "the rounded rectangle with no
+//          outline and no shadow behind it doesn't look professional", and both
+//          halves of that are right. ⚠️ This is NOT the white card v0.33.0
+//          removed — what was wrong then was a white sheet inside a white CARD
+//          on a grey page, three nested rectangles. What was wrong after it is
+//          the opposite: a grid floating with no edge at all, which reads as a
+//          texture rather than as a recording. The grid keeps the brand's navy
+//          tint rather than going clinical pink: pink reads as a hospital
+//          printout, and this is the patient's app. The shadow is on the
+//          wrapper View, never the Svg — a native SVG view casts none on either
+//          platform and ignores `elevation` on Android, so it would have looked
+//          framed in the simulator and flat on a phone.
 // v3.1.0 — Rounded sheet corners, as an SVG ClipPath rather than a View's
 //          `overflow: hidden` + `borderRadius`: clipping a native SVG child to
 //          a parent's rounded corners is a place iOS and Android have

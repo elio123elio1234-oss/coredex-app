@@ -1,7 +1,39 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.43.0';
-export const APP_BUILD_LABEL = 'Compare any study against your own typical heartbeat';
+export const APP_VERSION = '0.44.0';
+export const APP_BUILD_LABEL = 'Insights is the ECG first, and almost nothing else';
+
+// v0.44.0 - "I don't like the Insights design, it feels like you just piled
+//           more information on me instead of minimalism. In the end a patient
+//           doesn't know what that 'agree' in the green circle is and I don't
+//           care about it either."
+//           Fair, and v0.42.0 earned it: answering "make it useful for a
+//           patient" by ADDING a verdict band, three figures and a three-line
+//           explainer is how a screen gets fuller while getting no clearer.
+//           WHAT IS GONE: the confidence ring ("82 - agree"), the three
+//           figures, the explainer, the caliper readout strip, the beat
+//           builder, the legend row, the standalone baseline numbers, every
+//           explanatory paragraph, and "Changes since you started".
+//           WHAT IS FIRST: the ECG. The trace and the lead buttons are sized
+//           to ONE viewport, so the recording is never half-visible.
+//           ★ THE SHEET IS PAPER AGAIN - a ground, a hairline edge and a low
+//             soft shadow. Reported as "the rounded rectangle with no outline
+//             and no shadow behind it doesn't look professional", and both
+//             halves were right. This is NOT the white card v0.33.0 removed:
+//             that was a white sheet inside a white CARD on a grey page. The
+//             grid keeps the brand's navy rather than clinical pink.
+//           ★ EVERY MEASUREMENT, EVERY TIME, under the chart - heart rate, PR,
+//             QRS, QTc, axis, each beside what that person usually holds, with
+//             colour as the ONLY difference. Showing only what moved made the
+//             screen's content depend on whether anything was wrong, so the
+//             layout jumped and an empty space was ambiguous between
+//             "everything agreed" and "nothing could be measured".
+//           ★ A WEEKLY GOAL in "When you measure", as seven rings against the
+//             number of reminder times already set. No second setting: a goal
+//             and a schedule are one intention said twice. It never scolds.
+//           The plain reading moved under the lead buttons and lost its tick -
+//           a green check is a PASS MARK and this layer does not pass anything.
+//           Type is up throughout: no small text, for an older reader.
 
 // v0.43.0 - "When comparing old ECG studies, there should also be an option to
 //           bring the patient's representative beat and put it on the ECG graph

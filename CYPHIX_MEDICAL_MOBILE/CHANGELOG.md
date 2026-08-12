@@ -1,5 +1,99 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.44.0 - 2026-08-12 - Insights is the ECG first, and almost nothing else
+
+*"I don't like the Insights design - it feels like you just piled more
+information on me instead of minimalism. In the end a patient doesn't know what
+that 'agree' in the green circle is, and I don't care about it either."*
+
+Fair, and v0.42.0 earned it. Asked to make the screen useful for a patient, the
+last release answered by **adding** - a verdict band, three figures, a three-line
+explainer. That is how a screen gets fuller while getting no clearer.
+
+### What is gone
+
+The confidence ring (`82 - agree`), the three figures, the three-line explainer,
+the caliper readout strip, the step-by-step beat builder, the legend row, the
+standalone baseline numbers, every explanatory paragraph under the chart, and
+"Changes since you started".
+
+The rule the screen now holds to is stricter than "prose is one line or it is
+deleted": **if a line does not change what the reader does next, it is not on
+the screen.**
+
+### What is first
+
+The ECG. The trace and the lead buttons are sized to **one viewport**, measured
+from the window and the dock rather than guessed, so the recording is never
+half-visible and nobody has to scroll to find out what it said.
+
+### The sheet is paper again
+
+Reported as *"the rounded rectangle with no outline and no shadow behind it
+doesn't look professional"*. Both halves of that are right: a sheet needs a
+ground of its own, an edge, and somewhere to sit. It now has paper, a hairline
+border and a low soft shadow.
+
+This is **not** the white card v0.33.0 removed. What was wrong then was a white
+sheet inside a white *card* on a grey page - three nested rectangles. What was
+wrong after it is the opposite extreme: a grid floating with no edge at all,
+which reads as a texture rather than as a recording. The grid keeps the brand's
+navy tint rather than going clinical pink - pink reads as a hospital printout,
+and this is the patient's app.
+
+The shadow is on the wrapper View, never the Svg: a native SVG view casts none
+on either platform and ignores `elevation` on Android, so it would have looked
+framed in the simulator and flat on a phone.
+
+### Every measurement, every time
+
+*"I always want to see that recording's averages against the current average -
+not only the ones that disagree, but tell them apart by colour."*
+
+Heart rate, PR, QRS, QTc and axis, each beside what that person usually holds,
+with colour as the only difference. It also fixes a defect that was there from
+the start: showing only the rows that **moved** made the screen's content depend
+on whether anything was wrong, so the layout jumped between recordings, the eye
+could not learn where to look, and an empty space was ambiguous between
+"everything agreed" and "nothing could be measured".
+
+### A weekly goal
+
+Seven rings in "When you measure", against the number of reminder times already
+set. There is deliberately **no second setting**: a goal and a reminder schedule
+are one intention said twice, and two places to state it is two places for them
+to disagree - after which the app is telling someone they missed a target they
+never set.
+
+It never scolds. An empty day is an empty ring in the ordinary border colour -
+not red, not amber, no "missed" - and days later in the week than today carry no
+count at all, because a Thursday reading 0/3 on a Tuesday is reporting a miss
+that has not happened. There is no reward state either: "you did four instead of
+three" is not better care, and implying it is would push people toward measuring
+for the app rather than for themselves.
+
+### The plain reading moved, and lost its tick
+
+*"Put it under the V1-6 buttons, without that check mark, make it feel native
+and not like an attendance system."*
+
+Exactly right, for a reason worth keeping: a green check is a **pass mark**, and
+this layer does not get to pass anything. The tinted band around it made it a
+status widget sitting on the page instead of the page speaking. It is now a large
+plain sentence under the lead buttons - which is also the right order for the
+argument: the picture, then what it says.
+
+### Type
+
+Up throughout - section headers 13.5 -> 15, body 14 -> 16, hints 11.5 -> 13.5,
+the disclaimer 10.5 -> 12.5. The brief is explicit and it is the right one: this
+app is aimed at an older reader, and no text on the screen may need good eyes.
+
+### Not verified on a device
+
+Typechecks and bundles on both platforms. The whole change is layout, which is
+precisely what `tsc` cannot check - `PARITY.md` keeps these rows marked.
+
 ## v0.43.0 - 2026-08-12 - compare any study against your own typical heartbeat
 
 *"When comparing old ECG studies, there should also be an option to bring the

@@ -568,6 +568,30 @@ export const en = {
   ovIdBorrowsRhythm: 'It borrows this recording’s timing, so compare the SHAPE — never measure an interval off the grey trace.',
   ovIdCrowded: 'Your beats are close together here, so each drawn beat is cut short at the end — compare the QRS rather than the T wave.',
 
+
+  /* ── The study readout (v0.44.0) ─────────────────────────────────
+     Every measurement, every time. The unit is stated once, on the
+     study's own value: repeating it on the baseline doubles the ink for
+     no information and turns a comparison into a spec sheet. */
+  insRowRate: 'Heart rate',
+  insUsually: 'usually {v}',
+  insUsuallyUnknown: 'no usual yet',
+
+  /* ── The weekly goal (v0.44.0) ───────────────────────────────────
+     The goal is the number of reminder times the patient set. There is
+     deliberately no second setting: a goal and a schedule are one
+     intention said twice, and two places to say it is two places for
+     them to disagree. */
+  insGoalTitle: 'This week',
+  insGoalNone: 'Set reminder times to see a weekly goal.',
+  insGoalMon: 'M',
+  insGoalTue: 'T',
+  insGoalWed: 'W',
+  insGoalThu: 'T',
+  insGoalFri: 'F',
+  insGoalSat: 'S',
+  insGoalSun: 'S',
+
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',
   insDriftTitle: 'Change since you started',
@@ -930,6 +954,9 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.20.0 — Copy for the study readout ("usually 128") and the weekly goal.
+//           The three-line explainer's strings and the facts captions are gone
+//           with the blocks they served.
 // v1.19.0 — Copy for comparing a strip against the patient's own typical beat:
 //           the picker row, the status line, and the two sentences the ghost's
 //           construction makes necessary — it borrows this recording's timing

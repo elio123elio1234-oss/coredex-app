@@ -4,26 +4,23 @@
    Where the Studies tab answers "what do I have", this answers the
    question a list cannot: **has anything changed?**
 
-     ECG ID                                        ╭───╮
-     BASELINE ESTABLISHED · 24 STUDIES             │ 82│
-                                                   ╰───╯
-     ╭──────────────────────────────────────────╮
-     │ ✓  Your last recording looks like you    │  ← the answer, first
-     │    24 of your 26 look like your usual    │     and in words
-     ╰──────────────────────────────────────────╯
-      72 bpm        26            4
-      YOUR USUAL    RECORDINGS    MONTHS TRACKED
-     ╭──────────────────────────────────────────╮
-     │ II                          ⌇            │  ← wider than the
-     │ ─────────╱▔╲──╮   ╭──────────────────────│     column, but not
-     │               ╰───╯      50 mm/s·10 mm/mV│     flush to the edge
-     ╰──────────────────────────────────────────╯
-      ▌▌▌▌▌▌▌▌▌▌▌   I  II  III  aVR aVL aVF
-     ① Every heartbeat draws the same shape…
+     ECG ID
+     ┌──────────────────────────────────────────┐
+     │▒▒▒▒▒▒▒╱▔╲▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│  ← paper: ground,
+     │▒▒▒──╱──╮▒╭───────────────────────────▒▒▒▒│    hairline edge,
+     │▒▒▒▒▒▒▒▒╰─╯▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│    soft shadow
+     └──────────────────────────────────────────┘
+      I  II  III  aVR  aVL  aVF                    ← ONE screenful,
+                                                     ends here
+     Your last recording looks like you
+     22 of your 26 look like your usual ones
      ─────────────────────────────────────────────
      Match over time
-      ▇▇▆▇▂▇▇▇▇▇▇        ← tap a bar to pick a study
-     7 Aug · This one looks like your usual ones   ›
+      ▇▇▆▇▂▇▇▇▇▇▇
+     7 Aug                              97 %    ›
+     Heart rate     68        usually 66
+     PR            189 ms     usually 128         ← amber: this moved
+     QRS            94 ms     usually 96
 
    ══ ★ WHO THIS SCREEN IS FOR — CHANGED IN v0.42.0 ★ ══
    It was built for a clinician and it showed. The first thing on the
@@ -118,7 +115,6 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  buildBaselineSequence,
   CORRIDOR_BAND_SIGMA,
   plainVerdictOf,
   summariseIdentityPlainly,
@@ -126,26 +122,23 @@ import {
   type EcgLeadName,
   type ExclusionReason,
   type IdentityDeviation,
-  type IdentityDrift,
   type IdentityMatch,
   type MeasurementStats,
 } from '@cyphix/shared';
-import BeatBuilder from '@/components/molecules/BeatBuilder';
 import BeatSignature, {
   pickGain,
   SHEET_MARGIN,
   type CaliperReading,
 } from '@/components/molecules/BeatSignature';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
-import DeviationChip from '@/components/molecules/DeviationChip';
-import HowItWorks from '@/components/molecules/HowItWorks';
-import IdentityRing from '@/components/molecules/IdentityRing';
+import GoalWeek from '@/components/molecules/GoalWeek';
 import LeadCoverageGrid from '@/components/molecules/LeadCoverageGrid';
-import PatientFacts, { type PatientFact } from '@/components/molecules/PatientFacts';
 import PlainVerdict from '@/components/molecules/PlainVerdict';
 import RejectedBeats from '@/components/molecules/RejectedBeats';
+import StudyReadout, { type ReadoutRow } from '@/components/molecules/StudyReadout';
 import SimilarityTimeline from '@/components/molecules/SimilarityTimeline';
 import { useEcgIdentity } from '@/features/insights/useEcgIdentity';
+import { useReminders } from '@/features/reminders/useReminders';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { TranslationKey } from '@/i18n/config';
 import { dockFootprint } from '@/navigation/dockMetrics';
@@ -169,7 +162,11 @@ interface Props {
   onOpenStudy: (recordingId: string) => void;
 }
 
-/** Short chip labels. Full names (`iQRS` etc.) are too long for a chip row. */
+/**
+ * Row labels for `StudyReadout`, and the map that says which deviation
+ * KIND each row corresponds to — that is what colours a row amber, so the
+ * table and the model can never disagree about what moved.
+ */
 const DEVIATION_LABEL: Record<DeviationKind, TranslationKey> = {
   morphology: 'insDevShape',
   corridor: 'insDevBand',
@@ -181,6 +178,21 @@ const DEVIATION_LABEL: Record<DeviationKind, TranslationKey> = {
   rate: 'insDevRate',
 };
 
+/**
+ * Everything on the first screen that is NOT the sized block: the panel's
+ * own title line, the scroll padding above it, and the gap under the
+ * block. Subtracted from the window so the trace plus the lead buttons
+ * plus the plain reading land inside one screenful.
+ *
+ * A constant rather than an `onLayout` measurement on purpose: measuring
+ * would make the block's height depend on a render that has already
+ * happened, which is a frame of visible resize on every mount. This is
+ * the one place a magic number is the calmer answer, and it is generous
+ * — being 10 pt short shows a sliver of the next section, being 10 pt
+ * long clips the reading the section exists for.
+ */
+const FIRST_SCREEN_CHROME = 96;
+
 const EXCLUSION_LABEL: Record<ExclusionReason, TranslationKey> = {
   simulated: 'insExSimulated',
   tooFewBeats: 'insExFewBeats',
@@ -188,53 +200,16 @@ const EXCLUSION_LABEL: Record<ExclusionReason, TranslationKey> = {
   outlier: 'insExOutlier',
 };
 
-interface DeviationGroup {
-  key: string;
-  /** The largest of the group — same kind means same unit, so |delta| sorts. */
-  worst: IdentityDeviation;
-  /** Which leads it fired on. Empty for whole-study numbers. */
-  leads: string[];
-}
-
-/**
- * Collapse per-lead deviations of the same kind into one chip.
- *
- * A study whose axis has genuinely moved produces `morphology` on all six
- * leads, `corridor` on all six and `amplitude` on three — fourteen chips
- * saying one thing. Grouped it is three. Nothing is hidden: the chip still
- * carries the WORST member's arithmetic and the lead count says how
- * widespread it was.
- */
-function groupDeviations(deviations: readonly IdentityDeviation[]): DeviationGroup[] {
-  const groups = new Map<string, DeviationGroup>();
-  for (const d of deviations) {
-    const existing = groups.get(d.kind);
-    if (!existing) {
-      groups.set(d.kind, { key: d.kind, worst: d, leads: d.lead ? [d.lead] : [] });
-      continue;
-    }
-    if (d.lead) existing.leads.push(d.lead);
-    if (Math.abs(d.delta) > Math.abs(existing.worst.delta)) existing.worst = d;
-    if (d.severity === 'marked') existing.worst = { ...existing.worst, severity: 'marked' };
-  }
-  return [...groups.values()].sort((a, b) => {
-    if (a.worst.severity !== b.worst.severity) return a.worst.severity === 'marked' ? -1 : 1;
-    return b.leads.length - a.leads.length;
-  });
-}
-
 export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenStudy }: Props) {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height: screenH, width: screenW } = useWindowDimensions();
   const view = useEcgIdentity(patientId);
+  const reminders = useReminders();
 
   const [lead, setLead] = useState<EcgLeadName>('II');
-  const [compare, setCompare] = useState(true);
   const [caliper, setCaliper] = useState<CaliperReading | null>(null);
-  /** How many studies the builder is averaging. null = all of them. */
-  const [built, setBuilt] = useState<number | null>(null);
   /** Which study the timeline is showing detail for. null = the newest. */
   const [picked, setPicked] = useState<string | null>(null);
 
@@ -277,32 +252,16 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
     return pickGain(peak);
   }, [identity, latest, view]);
 
-  /* The baseline as it stood after each study — what the builder scrubs
-     through. Incremental, so it costs about one extra pass. */
-  const sequence = useMemo(() => {
-    if (!identity) return [];
-    const weights = new Map(identity.matches.map((m) => [m.recordingId, m.weight]));
-    const templates = identity.matches
-      .map((m) => view.templateOf(m.recordingId))
-      .filter((x): x is NonNullable<typeof x> => x !== null);
-    return buildBaselineSequence(templates, (x) => weights.get(x.recordingId) ?? 0, lead);
-  }, [identity, view, lead]);
-
-  /** The signature actually drawn: the finished baseline, or a partial one. */
-  const shown = useMemo(() => {
-    const full = identity?.leads[lead] ?? null;
-    if (!full) return null;
-    if (built === null || sequence.length === 0) return full;
-    return sequence[Math.min(sequence.length, Math.max(1, built)) - 1] ?? full;
-  }, [identity, lead, built, sequence]);
+  /** The finished signature for the chosen lead. */
+  const shown = useMemo(() => identity?.leads[lead] ?? null, [identity, lead]);
 
   const overlay = useMemo(() => {
     // A partial baseline is being explained, not compared — laying a study
     // over "the first three studies" invites a reading of a thing that is
     // not the patient's baseline.
-    if (!compare || built !== null || !identity || !latest) return null;
+    if (!identity || !latest) return null;
     return view.templateOf(latest.recordingId)?.leads[lead]?.samples ?? null;
-  }, [compare, built, identity, latest, lead, view]);
+  }, [identity, latest, lead, view]);
 
   /** The SELECTED study's discarded beats — evidence about that study. */
   const rejected = useMemo(() => {
@@ -328,26 +287,76 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
     [plain, selected],
   );
 
-  /* "4 months" / "18 days" — one figure, whichever unit the person would
-     actually use for that span. A patient who has been measuring for four
-     months does not think "127 days", and a patient on day nine does not
-     think "0.3 months". */
-  const trackedFact = useMemo((): PatientFact => {
-    const days = view.stats?.daysTracked ?? 0;
-    if (days >= 60) {
-      return { value: String(Math.round(days / 30.44)), caption: tr('insFactMonths') };
-    }
-    if (days >= 14) return { value: String(Math.round(days / 7)), caption: tr('insFactWeeks') };
-    return { value: String(days), caption: tr('insFactDays') };
-  }, [view.stats, tr]);
+  /* ★ Every measurement of the selected study beside the baseline's own.
+     Built here rather than in the component because deciding what counts
+     as "moved" is a judgement about the DATA — a row is amber when the
+     identity raised a deviation of that kind, which is the same test the
+     chips used, so the colour and the model can never disagree. */
+  const readoutRows = useMemo((): ReadoutRow[] => {
+    if (!identity || !selected) return [];
+    const template = view.templateOf(selected.recordingId);
+    const iv = template?.intervals;
+    const base = identity.intervals;
+    const moved = new Set(selected.deviations.map((d) => d.kind));
+    const usually = (v: number | null) =>
+      v === null ? tr('insUsuallyUnknown') : tr('insUsually', { v: String(v) });
 
-  /* Only the drift that has cleared this person's own repeatability. The
-     model reports every measurement's drift including the still ones, on
-     purpose — a caller may want the whole table — but a screen listing
-     "PR: unchanged" four times is a section the reader learns to skip. */
-  const driftRows = useMemo(
-    () => (identity?.drift ?? []).filter((d) => d.beyondRepeatability),
-    [identity],
+    const row = (
+      key: ReadoutRow['key'],
+      kind: DeviationKind,
+      label: string,
+      value: number | null | undefined,
+      baseline: number | null,
+      unit?: string,
+    ): ReadoutRow => ({
+      key,
+      label,
+      value: value === null || value === undefined ? '—' : String(Math.round(value)),
+      unit,
+      usually: usually(baseline),
+      moved: moved.has(kind),
+    });
+
+    return [
+      row('bpm', 'rate', tr('insRowRate'), iv?.bpm, base.bpm),
+      row('pr', 'prInterval', tr('insDevPr'), iv?.prMs, base.prMs, ' ms'),
+      row('qrs', 'qrsDuration', tr('insDevQrs'), iv?.qrsMs, base.qrsMs, ' ms'),
+      row('qtc', 'qtcInterval', tr('insDevQtc'), iv?.qtcMs, base.qtcMs, ' ms'),
+      row('axis', 'axis', tr('insDevAxis'), iv?.axisDegrees, base.axisDegrees, '°'),
+    ];
+  }, [identity, selected, view, tr]);
+
+  /* ★ The goal is the patient's own reminder schedule — see `GoalWeek`.
+     Deriving it rather than adding a setting is what stops the app ever
+     telling someone they missed a target they never set. */
+  const dailyGoal = reminders.schedule.enabled ? reminders.schedule.slots.length : 0;
+
+  /* Recordings per day for the CURRENT week, Monday first, in the
+     reader's own timezone — "I measured on Tuesday" is a statement about
+     their Tuesday, the same rule `summariseMeasurementHistory` follows. */
+  const weekCounts = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - mondayFirstIndex(now));
+    for (const r of view.studies) {
+      const at = new Date(r.recordedAt);
+      if (Number.isNaN(at.getTime()) || at < start) continue;
+      const day = Math.floor((at.getTime() - start.getTime()) / 86_400_000);
+      if (day >= 0 && day < 7) counts[day] += 1;
+    }
+    return counts;
+  }, [view.studies]);
+
+  /* ★ The height of the FIRST SCREEN, measured rather than guessed.
+     The scroll view already reserves the dock's footprint at the bottom
+     of its content; what this block needs is what is left of the window
+     once the dock and the safe areas are out of it. A hard-coded number
+     here would be right on one handset and wrong on every other. */
+  const firstScreenHeight = Math.max(
+    260,
+    screenH - insets.top - dockFootprint(insets.bottom, screenH) - FIRST_SCREEN_CHROME,
   );
 
   const fmtDate = useCallback(
@@ -441,59 +450,75 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
          this the scroll view steals them the moment a finger slides. */
       directionalLockEnabled
     >
-      {/* ══ 1. What it says, before what it is ════════════════════
-          ★ THE ORDER CHANGED IN v0.42.0 AND THAT IS THE REDESIGN.
-          This used to open with "ECG ID / BASELINE ESTABLISHED · 24
-          STUDIES" — letterspaced small caps, a ring showing 82, and then
-          a waveform. Every one of those is addressed to someone who
-          already knows what the feature is. A patient opening this screen
-          has one question, and the screen answered it somewhere around
-          the fourth block, in percentages.
+      {/* ══ 1. THE RECORDING, FIRST AND WHOLE ═══════════════════
+          ★ v0.44.0. The screen opens on the ECG and nothing else, and
+          everything down to the lead buttons is sized to ONE viewport —
+          `firstScreen` below. Reported as "I don't like it, it feels like
+          you just piled more information on me instead of minimalism".
 
-          So the answer comes first, in a sentence, and the instrument
-          identifies itself underneath it. Nothing was deleted — the ring,
-          the state line and every clinical figure are all still here,
-          lower down, where someone looking for them will look. */}
-      <View style={[styles.head, rtl && styles.rowRtl]}>
-        {/* `flexShrink` + `minWidth: 0` is what keeps this column out from
-            under the ring. A Text in a row does not wrap — it overflows
-            its parent and prints straight through whatever is beside it,
-            which is precisely what "Confidence 48 %" did. */}
-        <View style={styles.headText}>
-          <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
-            {tr('insTitle')}
-          </Text>
-          <Text
-            style={[styles.state, { color: t.textSecondary, textAlign: align }]}
-            numberOfLines={2}
-          >
-            {established ? tr('insMatEstablished') : tr('insMatEnrolling')}
-            {' · '}
-            {tr('insBuiltFrom', { n: String(identity.enrolled) })}
-            {/* ★ The EFFECTIVE count, shown only when it materially
-                disagrees with the raw one. "24 studies" is a comfortable
-                number and it can be a lie — one recording holding most of
-                the weight. Printing `nEff` unconditionally beside a
-                healthy identity would be a second number saying the same
-                thing; printing it when they diverge is the only warning
-                the reader will ever get that their baseline is thinner
-                than its row count. */}
-            {identity.nEff > 0 && identity.nEff < identity.enrolled * 0.7
-              ? ` · ${tr('insEffective', { n: identity.nEff.toFixed(1) })}`
-              : ''}
-          </Text>
+          What went, and why each one was right to go:
+            • THE CONFIDENCE RING. "82 · agree" — a patient does not know
+              what agreement is and said so in as many words. It was the
+              most prominent number on the screen and the least usable.
+            • THE THREE FIGURES and THE THREE-LINE EXPLAINER. Added in
+              v0.42.0 in good faith and they were the pile: a reader who
+              opens this wants their heart, not a tutorial about it.
+            • EVERY EXPLANATORY PARAGRAPH under the chart. Reported as
+              "look how much this rambles, and it is stressful to look at".
+              Prose that sits between a patient and their own trace is not
+              neutral — it reads as the app hedging.
+            • "CHANGES SINCE YOU STARTED". Correct, and not the goal.
+
+          The rule this screen now holds to, and it is stricter than
+          "prose is one line or it is deleted": if a line does not change
+          what the reader does next, it is not on the screen. */}
+      {/* The caliper readout row is gone with the rest of the chrome.
+          The caliper itself still works — dragging the trace still reads
+          it out through `onCaliper` — but a fixed 30 pt strip of figures
+          above the ECG, present whether or not anyone is measuring, is
+          exactly the kind of always-on instrumentation this screen was
+          asked to stop being. */}
+      {/* ★ ONE VIEWPORT. Everything from the trace to the plain reading
+          is given exactly the height of the first screen, so the ECG is
+          never half-visible and the reader never has to scroll to find
+          out what it said. Measured from the window and the dock rather
+          than guessed — see `firstScreen`. */}
+      <View style={[styles.firstScreen, { minHeight: firstScreenHeight }]}>
+      {shown && (
+        <View style={bleedStyle}>
+          <BeatSignature
+            baseline={shown.samples}
+            tolerance={shown.tolerance}
+            sampleRate={identity.sampleRate}
+            rIndex={identity.rIndex}
+            overlay={overlay}
+            width={sheetWidth}
+            mmPerMv={mmPerMv}
+            label={lead}
+            onCaliper={setCaliper}
+          />
         </View>
+      )}
 
-        <IdentityRing
-          enrolled={identity.enrolled}
-          target={identity.enrollmentTarget}
-          confidence={identity.confidence}
-          established={established}
-          caption={established ? tr('insRingAgreement') : tr('insRingStudies')}
-          accessibilityLabel={tr('insEnrollLabel')}
-        />
-      </View>
+      {/* The step-by-step builder and the legend row went with the
+          chrome. Both were good explanations of a thing nobody had asked
+          to have explained, and both put a control between the reader and
+          the trace on the one screen that is supposed to BE the trace. */}
+      <LeadCoverageGrid
+        coverage={identity.coverage}
+        selected={lead}
+        onSelect={(l) => setLead(l as EcgLeadName)}
+        rtl={rtl}
+      />
 
+      {/* ★ The plain reading, UNDER the lead buttons — v0.44.0.
+          It sat at the top with a green tick beside it, which was
+          reported as feeling like an attendance system rather than
+          something native. A tick is a PASS mark, and this layer does not
+          get to pass anything; putting it under the trace also puts it
+          where it belongs in the argument — the picture first, then what
+          it says. No icon, no fill, no box: a sentence in the app's own
+          voice, sized to be read across a room. */}
       <PlainVerdict
         verdict={plain.verdict}
         rtl={rtl}
@@ -511,172 +536,10 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             ? remaining > 0
               ? tr('insPlainLearningMore', { n: String(remaining) })
               : tr('insPlainLearningSoon')
-            : /* "24 of 26 look like your usual ones" — a count, not a
-                 grade. It is the sentence that turns a percentage nobody
-                 can place into a proportion everybody can. */
-              tr('insPlainTypical', {
-                k: String(plain.typical),
-                n: String(plain.scored),
-              })
+            : tr('insPlainTypical', { k: String(plain.typical), n: String(plain.scored) })
         }
       />
-
-      <PatientFacts
-        rtl={rtl}
-        facts={[
-          {
-            value: plain.restingBpm === null ? '—' : String(plain.restingBpm),
-            unit: plain.restingBpm === null ? null : ' bpm',
-            caption: tr('insFactRate'),
-          },
-          { value: String(view.stats?.total ?? identity.considered), caption: tr('insFactStudies') },
-          trackedFact,
-        ]}
-      />
-
-      {/* ⚠️ THERE IS NO ALERT LINE HERE, AND THAT IS DELIBERATE — v0.41.1.
-          One was added in v0.41.0 and removed after one day on a real
-          history, where it read:
-
-            "The same difference on 26 studies in a row: Shape · Amplitude."
-
-          Twenty-six of twenty-six. The persistence rule counted back while
-          the same deviation KIND kept appearing, and `morphology` and
-          `amplitude` fire against the local baseline on very nearly every
-          study — so the run never terminated and the banner had been true
-          since the patient's first recording.
-
-          The lesson is not "tune the rule". It is that a persistence rule
-          cannot sit on top of per-study thresholds that fire constantly:
-          the alert inherits their false-positive rate no matter how many
-          repeats it demands, and an alarm that has been on since day one
-          is indistinguishable from a decoration. Anything put back here
-          has to be built on a residual whose quiet state is actually
-          quiet, and that has to be demonstrated on real serial data
-          BEFORE a sentence is printed above a patient's ECG. */}
-
-
-      {/* The caliper readout, above the trace and never on it: a readout
-          floating on the waveform covers the deflections whose position it
-          reports (History's calipers, v0.16.0). Fixed height, so landing
-          the caliper does not shift the sheet under the finger. */}
-      <View style={[styles.readout, rtl && styles.rowRtl]}>
-        {caliper ? (
-          <>
-            <ReadoutCell
-              label={tr('insCalMs')}
-              value={`${caliper.msFromR > 0 ? '+' : ''}${Math.round(caliper.msFromR)}`}
-            />
-            <ReadoutCell label={tr('insCalMv')} value={caliper.baselineMv.toFixed(2)} />
-            <ReadoutCell label={tr('insCalBand')} value={`±${caliper.toleranceMv.toFixed(2)}`} />
-            {caliper.overlayMv !== null && (
-              <ReadoutCell
-                label={tr('insCalLatest')}
-                value={caliper.overlayMv.toFixed(2)}
-                tint={t.signalInk}
-              />
-            )}
-          </>
-        ) : (
-          <Text style={[styles.hint, { color: t.textTertiary }]} numberOfLines={1}>
-            {tr('insCalHint')}
-          </Text>
-        )}
       </View>
-
-      {shown && (
-        <View style={bleedStyle}>
-          <BeatSignature
-            baseline={shown.samples}
-            tolerance={shown.tolerance}
-            sampleRate={identity.sampleRate}
-            rIndex={identity.rIndex}
-            overlay={overlay}
-            width={sheetWidth}
-            mmPerMv={mmPerMv}
-            label={lead}
-            onCaliper={setCaliper}
-          />
-        </View>
-      )}
-
-      {/* Drag to build the average study by study. It is the one control
-          that EXPLAINS what an ECG ID is instead of describing it. */}
-      {sequence.length > 1 && (
-        <BeatBuilder
-          total={sequence.length}
-          value={built ?? sequence.length}
-          onChange={(v) => setBuilt(v >= sequence.length ? null : v)}
-          rtl={rtl}
-          caption={
-            built === null
-              ? tr('insBuiltAll', { n: String(sequence.length) })
-              : tr('insBuiltPartial', { k: String(built), n: String(sequence.length) })
-          }
-          resetLabel={tr('insBuiltReset')}
-        />
-      )}
-
-      {/* Explained only once the control has actually been pulled back —
-          printed up front it is a paragraph about a thing nobody has
-          touched, which is exactly the background text that was in the
-          way. */}
-      {built !== null && (
-        <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-          {tr('insBuiltMeaning')}
-        </Text>
-      )}
-
-      <View style={[styles.legendRow, rtl && styles.rowRtl]}>
-        <View style={[styles.legend, rtl && styles.rowRtl]}>
-          <Legend colour={t.textTertiary} label={tr('insLegendBand')} rtl={rtl} />
-          {overlay && <Legend colour={t.signal} label={tr('insLegendLatest')} rtl={rtl} />}
-        </View>
-        {latest && built === null && (
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityState={{ checked: compare }}
-            onPress={() => {
-              void Haptics.selectionAsync();
-              setCompare((v) => !v);
-            }}
-            hitSlop={10}
-            style={({ pressed }) => [styles.toggle, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons
-              name={compare ? 'eye' : 'eye-off-outline'}
-              size={15}
-              color={compare ? t.signal : t.textTertiary}
-            />
-            <Text style={[styles.toggleText, { color: compare ? t.signalInk : t.textTertiary }]}>
-              {tr('insCompareLatest')}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      <LeadCoverageGrid
-        coverage={identity.coverage}
-        selected={lead}
-        onSelect={(l) => setLead(l as EcgLeadName)}
-        rtl={rtl}
-      />
-
-      {/* ══ 1B. What the reader has just been looking at ══════════
-          After the curve, never before it — see `HowItWorks`. Three lines
-          carrying the one idea the picture cannot state, which is what
-          the picture IS. Without them the screen is a green curve, a row
-          of percentages and some Latin, and a reader who has not got that
-          idea cannot use anything below. */}
-      <Rule bleed={paddingHorizontal} />
-      <HowItWorks
-        rtl={rtl}
-        steps={[
-          tr('insHow1'),
-          tr('insHow2', { n: String(identity.enrolled) }),
-          tr('insHow3'),
-        ]}
-      />
 
       {/* ══ 2. Every study against the baseline — and the one picked ══
           ★ This used to be TWO sections: a "Latest study" card and a
@@ -732,81 +595,21 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
               </View>
             </View>
 
-            {/* ★ THE SENTENCE COMES BEFORE THE CHIPS — v0.42.0.
-                "67 % match" tells a patient nothing: they have no idea
-                what a good percentage is, and 67 sounds like a failing
-                exam grade when it may be an entirely ordinary recording
-                for them. This line says where the study sits in THEIR OWN
-                distribution, which is the only comparison that was ever
-                available, and it is deliberately placed above the chips
-                so the plain reading is the first one.
+            {/* ★ EVERY MEASUREMENT, EVERY TIME — v0.44.0, at the user's
+                request: "I always want to see that recording's averages
+                against the current average, not only the ones that
+                disagree, but tell them apart by colour."
 
-                Null when there is no established spread yet: "we cannot
-                say" and "it is typical" are different claims, and only
-                one of them is supported by four recordings. */}
-            {selectedPlain && (
-              <Text
-                style={[
-                  styles.plainLine,
-                  {
-                    color: selectedPlain.verdict === 'consistent' ? t.signalInk : t.textPrimary,
-                    textAlign: align,
-                  },
-                ]}
-              >
-                {selectedPlain.verdict === 'consistent'
-                  ? tr('insStudyUsual')
-                  : selectedPlain.verdict === 'slightlyDifferent'
-                    ? tr('insStudySlightly')
-                    : tr('insStudyDifferent')}
-              </Text>
-            )}
+                It also fixes a defect that was there from the start.
+                Showing only the rows that MOVED made the screen's content
+                depend on whether anything was wrong: a good recording
+                showed empty space, a bad one showed chips, so the layout
+                jumped and the eye could not learn where to look. And an
+                empty space is ambiguous between "everything agreed" and
+                "nothing could be measured", which are not the same claim.
 
-            {selected.deviations.length === 0 ? (
-              <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
-                {tr('insNoDeviations')}
-              </Text>
-            ) : (
-              <>
-                <View style={[styles.chips, rtl && styles.rowRtl]}>
-                  {groupDeviations(selected.deviations).map((g) => (
-                    <DeviationChip
-                      key={g.key}
-                      deviation={g.worst}
-                      rtl={rtl}
-                      label={`${tr(DEVIATION_LABEL[g.worst.kind])}${leadSuffix(g, tr)}`}
-                      severityLabel={
-                        g.worst.severity === 'marked' ? tr('insSevMarked') : tr('insSevWatch')
-                      }
-                    />
-                  ))}
-                </View>
-                {/* ★ Kept when almost everything else was cut. A number
-                    nobody can interpret is worse than no number — it
-                    worries without informing. */}
-                <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-                  {tr('insDeviationMeaning')}
-                </Text>
-              </>
-            )}
-
-            {/* ★ Where the pads were, when it mattered.
-                Shown only when the remap was actually applied, because
-                otherwise it is a sentence about a correction that did
-                nothing. It exists so the reader is never silently handed
-                a corrected number: the shape score above was computed
-                after this much geometry was divided out, and the axis and
-                amplitude chips above were NOT — they are measured on the
-                untouched trace. Saying so is what keeps the correction
-                honest rather than invisible. */}
-            {selected.calibration?.applied && (
-              <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-                {tr('insCalibrated', {
-                  deg: selected.calibration.rotationDeg.toFixed(0),
-                  pct: String(Math.round((selected.calibration.scale - 1) * 100)),
-                })}
-              </Text>
-            )}
+                The prose that used to sit here is gone entirely. */}
+            <StudyReadout rows={readoutRows} rtl={rtl} />
           </Pressable>
         )}
 
@@ -841,58 +644,19 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         )}
       </View>
 
-      {/* ══ 3. The numbers the baseline holds ════════════════════ */}
-      <Rule bleed={paddingHorizontal} />
-      <View style={styles.block}>
-        <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
-          {tr('insBaselineTitle')}
-        </Text>
-        {/* A plain row of figures, not bordered tiles. Twelve boxes in a
-            grid was the same "everything is a rectangle" problem one level
-            down, and these are five numbers, not five controls. */}
-        <View style={[styles.stats, rtl && styles.rowRtl]}>
-          <Stat label={tr('mBpm')} value={identity.intervals.bpm} unit={tr('bpm')} />
-          <Stat label={tr('insDevPr')} value={identity.intervals.prMs} unit="ms" />
-          <Stat label={tr('insDevQrs')} value={identity.intervals.qrsMs} unit="ms" />
-          <Stat label={tr('insDevQtc')} value={identity.intervals.qtcMs} unit="ms" />
-          <Stat label={tr('insDevAxis')} value={identity.intervals.axisDegrees} unit="°" />
-        </View>
-      </View>
+      {/* The standalone baseline row is gone: `StudyReadout` above now
+          prints every baseline figure beside the study's own, so a
+          separate list of the same numbers was the screen saying one
+          thing twice.
 
-      {/* ══ 3B. How far it has moved since enrollment ═════════════
-          ⚠️ A TREND, NOT AN ALERT — and the section is built to make
-          that unmistakable: neutral ink, no severity colour, no chip,
-          and every row carries a per-year RATE. "+14 ms" is not a fact
-          about a person until you know whether it happened over three
-          weeks or three years, and a screen that shows the delta without
-          the duration is inviting the reader to supply the wrong one.
-
-          Rows that have not moved beyond this person's own measured
-          repeatability are dropped: a drift table that lists five
-          unchanged numbers teaches the reader to skip the section, and
-          the one row that eventually matters goes with it. */}
-      {driftRows.length > 0 && (
-        <>
-          <Rule bleed={paddingHorizontal} />
-          <View style={styles.block}>
-            <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
-              {tr('insDriftTitle')}
-            </Text>
-            {driftRows.map((d) => (
-              <DriftRow key={d.kind} drift={d} label={tr(DEVIATION_LABEL[d.kind])} rtl={rtl} />
-            ))}
-            <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-              {tr('insDriftMeaning')}
-            </Text>
-          </View>
-        </>
-      )}
-
+          "Changes since you started" is gone at the user's request — the
+          drift is still computed and still correct, it is simply not what
+          this screen is for. */}
       {/* ══ 4. The habit that produced all of it ═════════════════ */}
       {view.stats && (
         <>
           <Rule bleed={paddingHorizontal} />
-          <CadenceCard stats={view.stats} rtl={rtl} />
+          <CadenceCard stats={view.stats} weekCounts={weekCounts} goal={dailyGoal} rtl={rtl} />
         </>
       )}
 
@@ -908,6 +672,17 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
    React unmounts and remounts its whole subtree each time — which here
    would tear down and rebuild the cadence chart every time the caliper
    moved. */
+
+/**
+ * Monday-first weekday index, 0–6.
+ *
+ * `getDay()` is Sunday-first, and a week drawn Sunday-first would put
+ * today in the wrong column for most of the world. One line, but the kind
+ * that is wrong in exactly one place until someone looks at a Monday.
+ */
+function mondayFirstIndex(d: Date): number {
+  return (d.getDay() + 6) % 7;
+}
 
 /** A full-bleed hairline. What used to be a card edge is now this. */
 function Rule({ bleed }: { bleed: number }) {
@@ -932,41 +707,6 @@ function Empty({
       <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>{title}</Text>
       <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>{body}</Text>
       {children}
-    </View>
-  );
-}
-
-/**
- * One drift row: what it was, what it is, and — the part that makes it
- * readable — how fast.
- *
- * Deliberately styled as data and not as a warning. It shares no ink with
- * `DeviationChip`, because the two mean opposite things: a deviation is
- * an event, a drift is the expected behaviour of a person who is ageing.
- */
-function DriftRow({ drift, label, rtl }: { drift: IdentityDrift; label: string; rtl: boolean }) {
-  const t = useTheme();
-  const { t: tr } = useTranslation();
-  const decimals = drift.unit === 'ratio' ? 2 : 0;
-  const sign = drift.delta > 0 ? '+' : '';
-
-  return (
-    <View style={[styles.rowBetween, rtl && styles.rowRtl]}>
-      <Text style={[styles.driftLabel, { color: t.textSecondary }]} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text style={[styles.driftValue, { color: t.textPrimary }]} numberOfLines={1}>
-        {drift.anchor.toFixed(decimals)} → {drift.current.toFixed(decimals)}
-        <Text style={[styles.driftRate, { color: t.textTertiary }]}>
-          {'  '}
-          {drift.perYear !== null
-            ? tr('insDriftPerYear', {
-                v: `${sign}${drift.perYear.toFixed(decimals === 0 ? 1 : 2)}`,
-                unit: drift.unit === 'ratio' ? '' : drift.unit,
-              })
-            : `${sign}${drift.delta.toFixed(decimals)}`}
-        </Text>
-      </Text>
     </View>
   );
 }
@@ -1019,7 +759,19 @@ function Stat({ label, value, unit }: { label: string; value: number | null; uni
   );
 }
 
-function CadenceCard({ stats, rtl }: { stats: MeasurementStats; rtl: boolean }) {
+function CadenceCard({
+  stats,
+  weekCounts,
+  goal,
+  rtl,
+}: {
+  stats: MeasurementStats;
+  /** Monday-first counts for the current week. */
+  weekCounts: number[];
+  /** Recordings a day the reminder schedule asks for. 0 = none set. */
+  goal: number;
+  rtl: boolean;
+}) {
   const t = useTheme();
   const { t: tr } = useTranslation();
   const align = rtl ? ('right' as const) : ('left' as const);
@@ -1049,6 +801,37 @@ function CadenceCard({ stats, rtl }: { stats: MeasurementStats; rtl: boolean }) 
       <Text style={[styles.facts, { color: t.textSecondary, textAlign: align }]}>
         {facts.join(' · ')}
       </Text>
+      {/* ★ The goal, above the hour histogram — v0.44.0.
+          "How am I doing this week" is a question with an answer a
+          patient can act on; "which hour do I usually measure at" is a
+          fact about them that they already know. The actionable one goes
+          first, and it is the only thing on this screen that looks
+          forward rather than back. */}
+      {goal > 0 ? (
+        <GoalWeek
+          counts={weekCounts}
+          goal={goal}
+          todayIndex={mondayFirstIndex(new Date())}
+          dayLetters={[
+            tr('insGoalMon'),
+            tr('insGoalTue'),
+            tr('insGoalWed'),
+            tr('insGoalThu'),
+            tr('insGoalFri'),
+            tr('insGoalSat'),
+            tr('insGoalSun'),
+          ]}
+          rtl={rtl}
+        />
+      ) : (
+        /* No schedule, no goal — and no invented default. A target the
+           patient never set is the app deciding how often someone should
+           measure their own heart, which is advice. */
+        <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+          {tr('insGoalNone')}
+        </Text>
+      )}
+
       <CadenceStrip
         byHour={stats.byHour}
         highlight={stats.busiestBlock}
@@ -1065,16 +848,6 @@ function CadenceCard({ stats, rtl }: { stats: MeasurementStats; rtl: boolean }) 
       )}
     </View>
   );
-}
-
-/** " · II" for one lead, " · 6 leads" for many, nothing for a study-wide number. */
-function leadSuffix(
-  g: DeviationGroup,
-  tr: (k: TranslationKey, v?: Record<string, string>) => string,
-): string {
-  if (g.leads.length === 0) return '';
-  if (g.leads.length === 1) return ` · ${g.leads[0]}`;
-  return ` · ${tr('insDevLeads', { n: String(g.leads.length) })}`;
 }
 
 /**
@@ -1106,6 +879,11 @@ const styles = StyleSheet.create({
 
   /* A section is a label, its content, and a rule. There is no box. */
   block: { gap: 8 },
+  /* The sized first screen. `justifyContent: 'center'` so that on a tall
+     handset the extra room is shared above and below the trace instead
+     of pooling under it — a block pinned to the top of a screenful reads
+     as a short page, not as a full one. */
+  firstScreen: { justifyContent: 'center', gap: 12 },
   rule: { height: StyleSheet.hairlineWidth, marginTop: 8 },
   empty: { gap: 8, paddingVertical: 20 },
 
@@ -1121,10 +899,14 @@ const styles = StyleSheet.create({
      secondary colour. It is still quieter than the data it introduces,
      which was the real requirement; it is no longer quieter than the
      background. */
-  sectionTitle: { fontSize: 13.5, fontWeight: '700', letterSpacing: -0.1 },
-  body: { fontSize: 14, lineHeight: 20 },
+  /* ★ 15 pt, not 13.5 — v0.44.0. This app is aimed at an older reader
+     and the brief is explicit: no small text anywhere. A section header
+     that needs good eyes is a header that does not organise the page for
+     the person it was organised for. */
+  sectionTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.1 },
+  body: { fontSize: 16, lineHeight: 22 },
   meta: { fontSize: 12.5, flexShrink: 1 },
-  hint: { fontSize: 11.5, lineHeight: 16 },
+  hint: { fontSize: 13.5, lineHeight: 19 },
 
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 2 },
   headText: { flex: 1, flexShrink: 1, minWidth: 0, gap: 3 },
@@ -1162,9 +944,9 @@ const styles = StyleSheet.create({
   /* The patient's reading of the selected study. Sized between the date
      row and the body text: it is the sentence, not a caption on one. */
   plainLine: { fontSize: 14.5, fontWeight: '700', lineHeight: 20 },
-  detailDate: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  detailDate: { fontSize: 16.5, fontWeight: '700', flexShrink: 1 },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  score: { fontSize: 17, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  score: { fontSize: 18, fontWeight: '800', fontVariant: ['tabular-nums'] },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
 
   flagRow: {
@@ -1186,14 +968,28 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 19, fontWeight: '800', fontVariant: ['tabular-nums'] },
   statUnit: { fontSize: 11, fontWeight: '600' },
 
-  facts: { fontSize: 12, lineHeight: 17 },
+  facts: { fontSize: 14.5, lineHeight: 20 },
 
   reasons: { gap: 3, marginTop: 4 },
-  reason: { fontSize: 11.5, fontVariant: ['tabular-nums'] },
+  reason: { fontSize: 13.5, fontVariant: ['tabular-nums'] },
 
-  disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
+  disclaimer: { fontSize: 12.5, lineHeight: 17, paddingTop: 2, textAlign: 'center' },
 });
 
+// v6.0.0 — The ECG first, and almost nothing else. Reported as "it feels like
+//          you just piled more information on me instead of minimalism, and a
+//          patient doesn't know what that 'agree' in the green circle is" —
+//          which v5.0.0 earned by answering "make it useful for a patient" with
+//          ADDITIONS. Gone: the confidence ring, the three figures, the
+//          explainer, the caliper readout strip, the builder, the legend, the
+//          standalone baseline numbers, every explanatory paragraph, and
+//          "Changes since you started". The trace and the lead buttons are
+//          sized to ONE viewport. Under the chart, every measurement is now
+//          printed every time with colour as the only difference — showing
+//          only what moved made the content depend on whether anything was
+//          wrong, so the layout jumped and an empty space was ambiguous.
+//          The rule this screen holds to now: if a line does not change what
+//          the reader does next, it is not on the screen.
 // v5.0.0 — ★ THE PATIENT'S HALF. Reported as "it feels dated, the colours are
 //          old, and it isn't very practical — add useful information for a
 //          patient who understands nothing about ECG." All three were the same

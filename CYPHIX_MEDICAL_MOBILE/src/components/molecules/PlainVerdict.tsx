@@ -7,7 +7,21 @@
      │    24 of 26 recordings match your signature  │
      ╰──────────────────────────────────────────────╯
 
-   ══ WHY IT IS A TINTED BAND AND NOT A CARD ══
+   ⚠️ v0.44.0: THE TICK AND THE TINTED BAND ARE BOTH GONE, and the
+   component moved out from the top of the screen to sit under the lead
+   buttons. Reported as reading like an attendance system rather than
+   something native — and that was exactly right for a reason worth
+   keeping: a green ✓ is a PASS MARK, and this layer does not get to pass
+   anything. The band around it made it a status widget on top of the
+   page instead of the page speaking.
+
+   What is left is a sentence in the app's own type, large enough to read
+   at arm's length, with colour on the SECOND line only and only when
+   there is something to look at. Under the trace rather than above it,
+   which is also the right order for the argument: the picture, then what
+   it says.
+
+   ══ THE OLD RATIONALE, KEPT BECAUSE THE CARD RULE STILL HOLDS ══
    Insights has no cards, and that is not a style preference — it came
    from a device report that white ECG paper inside a white card on a grey
    page "looks like a drawing, not like information" (`EcgIdentityPanel`
@@ -31,10 +45,8 @@
    load-bearing rather than fussy.
    ================================================================== */
 
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import type { PlainVerdict as Verdict } from '@cyphix/shared';
-import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -50,54 +62,46 @@ export default function PlainVerdict({ verdict, title, detail, rtl }: Props) {
   const t = useTheme();
   const align = rtl ? ('right' as const) : ('left' as const);
 
-  /* `learning` is deliberately NEUTRAL rather than amber. An app that has
-     not finished getting to know someone is not raising a concern about
-     them, and tinting that state with the attention colour would teach
-     the reader to read amber as "the app is unsure" — which then dilutes
-     it on the day it means "look at this recording". */
-  const calm = verdict === 'consistent';
-  const neutral = verdict === 'learning';
-  const fill = neutral ? t.surfaceHover : calm ? t.signalSoft : t.attentionSoft;
-  const mark = neutral ? t.textTertiary : calm ? t.signal : t.attention;
-  const icon = neutral ? 'ellipsis-horizontal' : calm ? 'checkmark-circle' : 'eye-outline';
+  /* ★ COLOUR ONLY ON THE SECOND LINE, and only when there is something
+     to look at. The headline is always the ordinary text colour, so the
+     sentence reads as the app talking rather than as a status being
+     reported at the reader. */
+  const calm = verdict === 'consistent' || verdict === 'learning';
 
   return (
     <View
-      style={[styles.band, rtl && styles.rtl, { backgroundColor: fill }]}
+      style={styles.block}
       accessibilityRole="summary"
       accessibilityLabel={detail ? `${title}. ${detail}` : title}
     >
-      <Ionicons name={icon} size={20} color={mark} style={styles.icon} />
-      <View style={styles.text}>
-        <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>{title}</Text>
-        {detail && (
-          <Text style={[styles.detail, { color: t.textSecondary, textAlign: align }]}>
-            {detail}
-          </Text>
-        )}
-      </View>
+      <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>{title}</Text>
+      {detail && (
+        <Text
+          style={[styles.detail, { color: calm ? t.textSecondary : t.attention, textAlign: align }]}
+        >
+          {detail}
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  band: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 11,
-    paddingVertical: 14,
-    paddingHorizontal: 15,
-    borderRadius: RADIUS.lg,
-  },
-  rtl: { flexDirection: 'row-reverse' },
-  /* Nudged down to sit on the first line's optical centre rather than its
-     box's — an icon vertically centred against a two-line block floats. */
-  icon: { marginTop: 1 },
-  text: { flex: 1, flexShrink: 1, minWidth: 0, gap: 3 },
-  title: { fontSize: 16.5, fontWeight: '700', lineHeight: 22, letterSpacing: -0.2 },
-  detail: { fontSize: 13, lineHeight: 18.5 },
+  block: { gap: 4 },
+  /* Large, because this is the sentence the screen exists to say and the
+     reader may be holding the phone at arm's length. Sized against the
+     panel title rather than against body text. */
+  title: { fontSize: 21, fontWeight: '700', lineHeight: 27, letterSpacing: -0.4 },
+  detail: { fontSize: 15, lineHeight: 20.5 },
 });
 
+// v2.0.0 — No tick, no tinted band, and it lives under the lead buttons
+//          instead of at the top. Reported as feeling like an attendance
+//          system: a green ✓ is a pass mark and this layer may not pass
+//          anything, while the band made it a widget sitting ON the page
+//          rather than the page speaking. Now a large plain sentence, with
+//          colour on the supporting line only and only when there is
+//          something to look at.
 // v1.0.0 — The plain-language answer, as a tinted band rather than a card: a
 //          soft fill of the colour that already carries the meaning, so it
 //          reads as the page speaking rather than as an object on the page.
