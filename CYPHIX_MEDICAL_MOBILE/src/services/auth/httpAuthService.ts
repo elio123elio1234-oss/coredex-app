@@ -220,11 +220,87 @@ export class HttpAuthService implements MobileAuthService {
    * always "yes". The three outcomes are passed straight up — the caller
    * (`authSlice`) is where the policy lives, and flattening them here
    * would recreate the exact bug this release removes.
+   *
+   * ══ ★ IT NO LONGER ROTATES A TOKEN TO ASK A QUESTION (v2.3.0) ══
+   * This used to be `refreshSession()` and nothing else, which meant every
+   * caller of it ROTATED the refresh token. `AuthGate` calls it on every
+   * return from the background and again on a 4 s→60 s backoff for as long
+   * as the app believes it is offline — so the app was spending its most
+   * fragile credential over and over, most often on exactly the flaky
+   * network that makes a rotation's reply go missing. Each of those is a
+   * chance to end up holding a token the server has already retired, which
+   * is the mid-session sign-out this release exists to remove (the other
+   * half is server-side: CYPHIX_SERVER migration 0003).
+   *
+   * So: ask with the ACCESS token first, which proves the same two things
+   * the caller actually wants — the server is reachable, and this session
+   * is still recognised — and costs nothing if it fails. Only fall through
+   * to a real rotation when there is no other way to learn: no access
+   * token at all (a cold start), or one the server no longer accepts. The
+   * result is one rotation per ~15 minutes of use rather than one per
+   * foreground, and NONE at all while offline.
    */
   async revalidate(): Promise<RefreshOutcome> {
+    const probed = await this.probe();
+    if (probed) return probed;
     const outcome = await refreshSession();
     if (outcome.kind === 'refreshed') await remember(outcome.user);
     return outcome;
+  }
+
+  /**
+   * Confirm the session with the access token we already hold.
+   *
+   * Returns null for "this could not answer the question" — no token to
+   * ask with, or a server that would not say — and the caller then does
+   * the full rotation, i.e. exactly what it did before this existed. That
+   * is the design: every unexpected reply degrades to the old behaviour
+   * rather than to a guess.
+   *
+   * ⚠️ A 401 here is NOT a rejection and must never be reported as one. It
+   * means this ~15-minute access token has aged out, which is ordinary and
+   * says nothing about the session — the refresh token is what answers
+   * that, and `refreshSession()` is what asks it.
+   */
+  private async probe(): Promise<RefreshOutcome | null> {
+    const token = getAccessToken();
+    /* No access token is the cold-start case. Only a rotation can produce
+       one, so there is nothing to be saved by asking first. */
+    if (!token) return null;
+    /* The principal carries the refresh token's expiry, which `refreshed`
+       has to state and which a probe does not learn. Its absence means the
+       enclave has nothing to confirm against. */
+    const principal = await readPrincipal();
+    if (!principal) return null;
+
+    let res: Response;
+    try {
+      res = await fetch(`${apiRoot()}${AUTH_ROUTES.me}`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+    } catch {
+      /* Nothing came back, so nothing is known — the one thing this may
+         never do is let a lost signal end a session. */
+      return { kind: 'offline' };
+    }
+
+    if (res.status === 401) return null; // aged-out access token → rotate
+    /* A 5xx is the server unable to serve, not the server refusing us:
+       Render answers a sleeping container this way while it wakes. */
+    if (res.status >= 500) return { kind: 'offline' };
+    if (!res.ok) return null; // 403/404/anything else → ask the old way
+
+    let user: SessionUser;
+    try {
+      user = (await res.json()) as SessionUser;
+    } catch {
+      /* 200 with a body we cannot read — a captive portal, classically. */
+      return { kind: 'offline' };
+    }
+    if (!user?.id) return null;
+
+    await remember(user);
+    return { kind: 'refreshed', user, refreshExpiresAt: principal.refreshExpiresAt };
   }
 
   async login(credentials: Credentials): Promise<AuthSession> {
@@ -346,6 +422,16 @@ export class HttpAuthService implements MobileAuthService {
   }
 }
 
+// v2.3.0 — `revalidate()` stops ROTATING a refresh token merely to ask whether
+//          the server is there. AuthGate calls it on every foreground and on a
+//          4 s→60 s backoff while offline, so the app was spending its most
+//          fragile credential precisely on the flaky networks that lose a
+//          rotation's reply — and a lost reply leaves the phone holding a token
+//          the server has retired, which is the spontaneous mid-session logout.
+//          It now asks with the access token it already has (GET /auth/me) and
+//          rotates only when that cannot answer: no token (cold start) or a 401.
+//          One rotation per ~15 min of use instead of one per foreground, and
+//          none at all while offline. Server half: CYPHIX_SERVER migration 0003.
 // v2.2.0 — `restore()` is a pure disk read again. v0.40.2 had it await a refresh
 //          when a token existed with no principal (the pre-v0.40.0 migration),
 //          and AuthGate's 4 s ceiling raced that request and won against every

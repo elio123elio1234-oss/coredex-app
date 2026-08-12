@@ -1,7 +1,35 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.44.0';
-export const APP_BUILD_LABEL = 'Insights is the ECG first, and almost nothing else';
+export const APP_VERSION = '0.45.0';
+export const APP_BUILD_LABEL = 'the app stops spending its session to ask if the server is there';
+
+// v0.45.0 - "sometimes I'm in the app and it suddenly switches to the login
+//           screen and disconnects me on its own."
+//           Third time on this bug, and the first two fixes were both right -
+//           they just could not reach it. tokenStore v2.1.0 and v2.2.0 fixed
+//           real causes on THIS side (the Keychain accessibility class, the
+//           retried enclave write, an empty read beside a live principal).
+//           The cause that survived them lives in the SERVER, and the other
+//           half of this release is CYPHIX_SERVER v0.5.0 + migration 0003.
+//           ★ THE SERVER HALF: rotation retired a token before its replacement
+//             could reach the phone, so any dropped reply left the enclave
+//             holding a token the server had already killed. Presenting it
+//             read as THEFT and revoked the entire family - an unrecoverable
+//             logout, minutes later, for a patient who did nothing. The server
+//             now records which token replaced which, and a successor that was
+//             never presented proves the reply never landed.
+//           ★ THE APP HALF, and it is this file's release: `revalidate()` no
+//             longer ROTATES A TOKEN JUST TO ASK A QUESTION. AuthGate calls it
+//             on every return from the background and again on a 4s->60s
+//             backoff for as long as the app believes it is offline - so the
+//             app was spending its most fragile credential over and over, on
+//             exactly the flaky network that loses a rotation's reply. It now
+//             asks with the access token it already holds (GET /auth/me) and
+//             rotates only when that cannot answer: no access token at all (a
+//             cold start) or a 401. One rotation per ~15 minutes of use
+//             instead of one per foreground, and NONE while offline.
+//           Nothing about revocation is weakened here: a server that answers
+//           and refuses still ends the session, on the same path as before.
 
 // v0.44.0 - "I don't like the Insights design, it feels like you just piled
 //           more information on me instead of minimalism. In the end a patient

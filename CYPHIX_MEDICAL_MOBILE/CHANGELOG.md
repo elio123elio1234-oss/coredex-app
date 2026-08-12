@@ -1,5 +1,79 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.45.0 - 2026-08-12 - the app stops spending its session to ask if the server is there
+
+*"Sometimes I'm in the app and it suddenly switches to the login screen and
+disconnects me on its own."*
+
+This is the third release to go after that sentence, and the honest thing to
+write down is that **the first two were both correct and neither could reach
+it.** `tokenStore` v2.1.0 stopped a Keychain that would not answer from reading
+as a server that refused. v2.2.0 fixed two more real causes: the
+`WHEN_UNLOCKED` accessibility default that made the enclave unwritable while
+the screen was locked, and an empty token read beside a live principal. Every
+one of those was a genuine way to lose a session, and every one of them is
+still fixed.
+
+The cause that survived all of it was never in this app. It is in the server,
+and it could not have been found or fixed from here.
+
+### What was actually happening
+
+`rotateRefreshToken` retired the token it was handed and issued a successor in
+the same breath. From that instant the old token was a trap: if the reply did
+not reach the enclave, the phone went on holding a token the server had already
+killed. On a phone there are four ordinary ways for that to happen — the socket
+drops after the server committed, the body is unreadable through a captive
+portal, the app is suspended between the response and the enclave write, iOS
+refuses the Keychain write while the screen is locked.
+
+The next refresh presented that token. The server's reuse detection called it
+theft and **revoked the whole family**. There was no recovery: 401 on
+everything, `sessionExpired`, the door — minutes after the event that caused it,
+with nothing on screen connecting the two. The fix is `CYPHIX_SERVER` v0.5.0 and
+migration `0003_refresh_grace.sql`; the reasoning is in that changelog.
+
+### What this app changes
+
+The server fix removes the failure. This one removes most of the *exposure* to
+it, because the app was making the dangerous move far more often than it needed
+to.
+
+`revalidate()` was `refreshSession()` and nothing else — so **every caller of it
+rotated the refresh token.** `AuthGate` calls it on every return from the
+background, and again on a 4 s→60 s backoff for as long as the app believes it
+is offline. The app was therefore spending its most fragile credential over and
+over, and doing it most eagerly on exactly the flaky network that loses a
+rotation's reply. Switch to Messages and back: a rotation. Walk through a
+tunnel: a rotation every few seconds.
+
+It now asks with the access token it already holds — `GET /auth/me`, which
+proves the same two things the caller actually wants (the server is reachable,
+this session is still recognised) and costs nothing if it fails. A rotation
+happens only when the probe cannot answer: no access token at all (a cold
+start), or a 401 because the ~15-minute access token aged out. That is **one
+rotation per ~15 minutes of use instead of one per foreground, and none at all
+while offline.**
+
+Every unexpected reply degrades to the old behaviour rather than to a guess: a
+403, a 404, an unreadable 200 all fall through to the full refresh. And a 401
+from the probe is explicitly **not** a rejection — it says an access token
+expired, which is ordinary and says nothing about the session.
+
+Nothing about revocation is weakened. A server that answers and refuses still
+ends the session, on the same path, immediately.
+
+### What is not claimed
+
+Both halves typecheck and both bundles build; the server's rotation logic is
+covered by a 17-case behaviour matrix (ordinary rotation, retransmission,
+reuse-after-successor-used, replay outside the window, pre-migration rows).
+None of that is a phone. The bug is intermittent by nature — it needs a lost
+reply — so the only real confirmation is **days of ordinary use without being
+thrown to the sign-in screen**, and the row stays `🔬` until then. If it does
+happen again, Settings › About now carries `sessionDiagnostic()`, and the line
+it prints is the first thing to read.
+
 ## v0.44.0 - 2026-08-12 - Insights is the ECG first, and almost nothing else
 
 *"I don't like the Insights design - it feels like you just piled more
