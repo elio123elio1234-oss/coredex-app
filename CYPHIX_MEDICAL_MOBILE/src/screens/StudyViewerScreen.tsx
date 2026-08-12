@@ -92,6 +92,7 @@ import {
   useOverlayRecording,
   type OverlayAlignMode,
 } from '@/features/history/hooks/useOverlayRecording';
+import { IDENTITY_OVERLAY_ID, useIdentityGhost } from '@/features/history/hooks/useIdentityGhost';
 import { useRecordingNote } from '@/features/history/hooks/useRecordingNote';
 import { useRecordingView } from '@/features/history/hooks/useRecordingView';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
@@ -226,12 +227,35 @@ export default function StudyViewerScreen() {
   }, [navigation, fullscreen]);
 
   const view = useRecordingView(recording, settings);
-  const overlay = useOverlayRecording(
-    features.has('compare') ? settings.overlayId : null,
+
+  /* ★ TWO SOURCES, ONE GHOST — v0.43.0.
+     The comparison can now be either another STUDY or the patient's own
+     representative beat, and the screen deliberately keeps one ghost
+     concept rather than growing a second comparison feature: both hooks
+     return an `OverlayView`, and everything downstream — the strip, the
+     nudge, the legend, the status line — is untouched.
+
+     Comparing against one prior study compares against that study's noise
+     as well. Comparing against the ECG ID compares against the signal
+     that survived every clean study the patient has, which is the better
+     reference and was sitting one screen away, unreachable from the place
+     people actually look at waveforms. */
+  const comparingIdentity =
+    features.has('compare') && settings.overlayId === IDENTITY_OVERLAY_ID;
+
+  const studyOverlay = useOverlayRecording(
+    features.has('compare') && !comparingIdentity ? settings.overlayId : null,
     settings,
     view,
     alignMode,
   );
+  const identityGhost = useIdentityGhost(
+    comparingIdentity,
+    subject,
+    view,
+    view?.sampleRate ?? 0,
+  );
+  const overlay = comparingIdentity ? identityGhost : studyOverlay;
   const overlayActive = Boolean(
     features.has('compare') && settings.overlayId && overlay && !overlay.isLoading,
   );
@@ -784,7 +808,13 @@ export default function StudyViewerScreen() {
                 ms: String(Math.round(ghostMovedMs)),
                 mv: ghostMovedMv.toFixed(2),
               })}`
-            : `${tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} · ${alignmentSaid}`}
+            : comparingIdentity
+              ? /* Not a date — the identity is not FROM a day, it is the
+                   average of every clean study. Printing `recordedAt`
+                   here would name the newest contributing study and read
+                   as "you are comparing with that one". */
+                tr('ovIdComparing')
+              : `${tr('ovComparing', { when: fmtWhen(overlay.recordedAt) })} · ${alignmentSaid}`}
         </Text>
       </Pressable>
     ) : null;
@@ -850,6 +880,21 @@ export default function StudyViewerScreen() {
           visible={sheet === 'compare'}
           onClose={() => setSheet('none')}
           studies={compareStudies}
+          /* Offered only when there is more than this one study to have
+             averaged. With a single recording the "identity" would be
+             that recording, and comparing a strip with itself is a
+             perfect match that means nothing. */
+          identityOption={
+            (list.data?.length ?? 0) > 1
+              ? {
+                  id: IDENTITY_OVERLAY_ID,
+                  label: tr('ovIdLabel'),
+                  hint: tr('ovIdHint'),
+                }
+              : null
+          }
+          isIdentity={comparingIdentity}
+          identityCrowded={comparingIdentity && (overlay?.anchorCount ?? 0) > 0}
           overlayId={settings.overlayId}
           onPick={(id) => patch({ overlayId: id })}
           active={overlayActive}
@@ -1440,6 +1485,15 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v4.3.0 — The comparison ghost has TWO SOURCES now: another study, or the
+//          patient's OWN representative beat. Both hooks return an
+//          `OverlayView`, so the screen keeps one ghost concept and the strip,
+//          the nudge, the legend and the drag capsule are untouched — the
+//          difference between adding a comparison and adding a second
+//          comparison feature. The identity ghost is built only when selected,
+//          and its alignment modes are not offered: every beat is stamped on
+//          this strip's own R peaks, so the fit is exact and the RHYTHM is this
+//          strip's, which the sheet states rather than leaves to be discovered.
 // v4.2.0 — Three performance and correctness fixes from one device session:
 //          the strip palette is MEMOISED (rebuilt inline it defeated every
 //          EcgReviewStrip memo, so every sheet-open rebuilt 24-48 SVG paths),

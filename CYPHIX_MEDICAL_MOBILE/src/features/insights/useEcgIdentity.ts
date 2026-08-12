@@ -93,9 +93,29 @@ export interface EcgIdentityView {
   refresh: () => void;
 }
 
-export function useEcgIdentity(patientId?: string): EcgIdentityView {
+export interface UseEcgIdentityOptions {
+  /**
+   * ★ Off by default nowhere, but switchable — because this hook is no
+   * longer only used by the screen that IS the ECG ID.
+   *
+   * The study viewer can now lay the identity over a strip, and it must
+   * not pay for that until the reader asks: a cold first pass decodes,
+   * filters and Pan-Tompkins every study in the history. On the Insights
+   * tab that cost is the point and the screen shows progress for it; in
+   * the viewer it would be seconds of work for a comparison nobody
+   * selected. `false` skips the list query AND the backfill entirely, so
+   * mounting the hook costs nothing at all.
+   */
+  enabled?: boolean;
+}
+
+export function useEcgIdentity(
+  patientId?: string,
+  options: UseEcgIdentityOptions = {},
+): EcgIdentityView {
+  const enabled = options.enabled ?? true;
   const dispatch = useAppDispatch();
-  const list = useListRecordingsQuery({ patientId, limit: HISTORY_PAGE_SIZE });
+  const list = useListRecordingsQuery({ patientId, limit: HISTORY_PAGE_SIZE }, { skip: !enabled });
 
   const [templates, setTemplates] = useState<RecordingTemplate[] | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -118,7 +138,7 @@ export function useEcgIdentity(patientId?: string): EcgIdentityView {
   }, []);
 
   useEffect(() => {
-    if (!list.data) return;
+    if (!enabled || !list.data) return;
     const rows = list.data;
     let handle: { cancel: () => void } | null = null;
     let stop = false;
@@ -206,7 +226,7 @@ export function useEcgIdentity(patientId?: string): EcgIdentityView {
     /* `ids` is the identity of the work, not `list.data`. `nonce` is the
        manual refresh. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ids, nonce, dispatch]);
+  }, [ids, nonce, dispatch, enabled]);
 
   const identity = useMemo(
     () => (templates && templates.length > 0 ? buildEcgIdentity(templates) : null),
@@ -241,7 +261,10 @@ export function useEcgIdentity(patientId?: string): EcgIdentityView {
     stats,
     studies: list.data ?? [],
     templateOf,
-    isBuilding: templates === null && !list.isError,
+    /* A disabled hook is not "building" — it is idle. Reporting otherwise
+       would leave a caller that never enabled it showing a spinner
+       forever, waiting for a pass that will never start. */
+    isBuilding: enabled && templates === null && !list.isError,
     progress,
     isLoading: list.isLoading,
     isError: list.isError,
@@ -249,6 +272,13 @@ export function useEcgIdentity(patientId?: string): EcgIdentityView {
   };
 }
 
+// v1.1.0 — An `enabled` option. The hook is no longer used only by the screen
+//          that IS the ECG ID: the study viewer can lay the identity over a
+//          strip, and a cold first pass decodes and re-analyses every study in
+//          the history. On Insights that cost is the point and progress is
+//          shown for it; in the viewer it must not be paid until the reader
+//          selects the comparison. Disabled skips the list query and the
+//          backfill, so mounting costs nothing.
 // v1.0.0 — Builds the ECG ID off the render path: cached templates first, a
 //          yielding one-study-at-a-time backfill for the rest with visible
 //          progress, waveforms released as soon as they are used, and the pure

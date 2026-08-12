@@ -1,4 +1,79 @@
-# CHANGELOG — CYPHIX Medical Mobile
+# CHANGELOG - CYPHIX Medical Mobile
+
+## v0.43.0 - 2026-08-12 - compare any study against your own typical heartbeat
+
+*"When comparing old ECG studies, there should also be an option to bring the
+patient's representative beat and put it on the ECG graph, and compare it
+against a specific measurement."*
+
+The viewer could already ghost one **study** behind another. It could not
+compare a strip against the **patient**. That is the more useful comparison and
+the reference was already built: comparing against one prior study compares
+against that study's noise as well, while the ECG ID is the signal that survived
+every clean recording they have. It was one screen away and unreachable from the
+place people actually look at waveforms.
+
+### How one beat becomes a 30-second ghost
+
+    foreground   -.,--------.,--------.,----------.,--
+    R peaks       ^         ^          ^           ^
+    identity      |         |          |           |    one template,
+                  '---------'----------'-----------'    drawn at each
+
+It is **stamped at every R peak of the strip it is laid over**. So alignment is
+exact by construction - there is no beat-shift to accumulate error and no
+fiducial warp to distort intervals. The three alignment modes are not offered
+for it, and not because they were awkward: they exist to reconcile two
+independent timelines, and this ghost has none of its own.
+
+### The rhythm is the strip's, and the screen says so
+
+An RR measured off the ghost is the strip's own RR read twice. It carries
+**shape** - P, QRS, ST, T - and the trace underneath carries time. What replaces
+the mode picker is exactly that sentence, because a ghost that silently supplied
+its own rhythm would be the most misleading thing in this application.
+
+Above about **130 bpm** the beats are closer together than the 700 ms template is
+long, so each stamp is necessarily cut short at the T wave. That is stated too:
+across 45-100 bpm the ghost tracks the strip to within **0.04 mV**, and at
+140 bpm that becomes **0.30 mV**, entirely in the truncated region. A reader
+comparing T waves there would be shown a difference the *drawing* invented.
+
+### Two bugs the measurement caught that reasoning did not
+
+1. **The stamp must remove the template's own isoelectric before adding the
+   strip's.** Without it the whole ghost floats by whatever the template's PR
+   window holds - 0.13 mV on the test cohort, larger than the wander the
+   levelling exists to cancel. For templates this app builds that value is
+   already ~0, which is exactly why it has to be explicit: invisible on our own
+   data, load-bearing for anything imported, and an invariant that is true only
+   by luck breaks silently.
+2. **The gaps between beats must HOLD the neighbouring stamp's edge**, not be
+   written at the strip's measured level. Those are different numbers - the PR
+   window this levels on still contains part of the P wave at an ordinary PR
+   interval, a bias that cancels *inside* a stamp and does not cancel in a gap
+   filled independently. The result was a 0.13 mV **step** at every beat-window
+   edge: a visible staircase, and 0.998 -> 0.972 correlation with the trace
+   underneath. Holding the edge cannot step, by construction.
+
+Measured after both fixes, ghost vs the strip it was laid over:
+
+| bpm | 45 | 60 | 75 | 100 | 140 | 175 |
+|---|---|---|---|---|---|---|
+| overall r | 0.985 | 0.994 | 0.997 | 0.998 | 0.967 | 0.987 |
+| max deviation in-beat (mV) | 0.038 | 0.038 | 0.035 | 0.028 | 0.303 | 0.162 |
+
+### Cost
+
+The identity is built **only when the comparison is selected** - `useEcgIdentity`
+gained an `enabled` gate. A cold pass re-analyses the whole history, which is the
+point on the Insights tab and would be seconds of unasked work in the viewer.
+
+### Not verified on a device
+
+Typechecks, both bundles, 18/18 `expo-doctor`, and the stamping is exercised
+across six heart rates above. Nobody has laid the ghost over a real strip on a
+phone; `PARITY.md` keeps the row as needs-device-verify.
 
 ## v0.42.0 — 2026-08-12 — Insights, rewritten for the person whose heart it is
 

@@ -1,7 +1,34 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.42.0';
-export const APP_BUILD_LABEL = 'Insights, rewritten for the person whose heart it is';
+export const APP_VERSION = '0.43.0';
+export const APP_BUILD_LABEL = 'Compare any study against your own typical heartbeat';
+
+// v0.43.0 - "When comparing old ECG studies, there should also be an option to
+//           bring the patient's representative beat and put it on the ECG graph
+//           to compare against a specific measurement."
+//           The viewer could already ghost one STUDY behind another. It could
+//           not compare a strip against the PATIENT - and comparing against one
+//           prior study compares against that study's noise as well, while the
+//           ECG ID is the signal that survived every clean recording they have.
+//           The better reference was one screen away and unreachable from the
+//           place people actually look at waveforms.
+//           ★ HOW ONE BEAT BECOMES A 30-SECOND GHOST: it is STAMPED at every R
+//             peak of the strip it is laid over, so alignment is exact by
+//             construction - no beat-shift to accumulate error, no fiducial
+//             warp to distort intervals. The three alignment modes are not
+//             shown for it, because they exist to reconcile two independent
+//             timelines and this ghost has none of its own.
+//           ⚠️ WHICH MEANS ITS RHYTHM IS THE STRIP'S OWN, and the sheet says
+//             so: compare the SHAPE, never measure an interval off the grey
+//             trace. Above ~130 bpm the beats are closer together than the
+//             700 ms template is long, so each stamp is necessarily cut short -
+//             stated too, because a truncation read as a T-wave change is a
+//             difference the DRAWING invented.
+//           Two bugs found by measurement rather than reasoning: the stamp has
+//           to remove the TEMPLATE's own isoelectric before adding the strip's,
+//           and the gaps between beats have to HOLD the neighbouring stamp's
+//           edge rather than be written at the strip's measured level - the two
+//           are different numbers and the difference was a 0.13 mV staircase.
 
 // v0.42.0 - "Design the Insights tab in a more modern way, it feels dated with
 //           old colour choices and isn't very practical - add useful, nice

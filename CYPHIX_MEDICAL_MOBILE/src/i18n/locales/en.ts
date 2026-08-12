@@ -553,6 +553,21 @@ export const en = {
   insStudySlightly: 'This one is a little different from your usual.',
   insStudyDifferent: 'This one stands out from your usual recordings.',
 
+
+  /* ── The ECG ID as a comparison overlay (v0.43.0) ────────────────
+     Listed above the studies because it is not one more study — it is
+     the average of all of them. */
+  ovIdLabel: 'Your own typical heartbeat',
+  ovIdHint: 'Averaged from all your recordings',
+  ovIdComparing: 'Comparing with your own typical heartbeat',
+  ovIdSection: 'How it lines up',
+  ovIdExactFit: 'Your typical beat is drawn on every heartbeat of this recording, so it lines up exactly — there is nothing to align by hand.',
+  /* ⚠️ NOT decoration. The ghost is stamped on this strip's own R peaks,
+     so its rhythm IS this strip's rhythm; an interval measured off it is
+     this recording's interval read twice. */
+  ovIdBorrowsRhythm: 'It borrows this recording’s timing, so compare the SHAPE — never measure an interval off the grey trace.',
+  ovIdCrowded: 'Your beats are close together here, so each drawn beat is cut short at the end — compare the QRS rather than the T wave.',
+
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',
   insDriftTitle: 'Change since you started',
@@ -915,6 +930,11 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.19.0 — Copy for comparing a strip against the patient's own typical beat:
+//           the picker row, the status line, and the two sentences the ghost's
+//           construction makes necessary — it borrows this recording's timing
+//           (so compare shape, never measure an interval off it), and at a fast
+//           rate each drawn beat is cut short.
 // v1.18.0 — The patient's half of Insights: the plain-language verdicts, the
 //           three recognisable figures, the three-line explainer, and the
 //           per-study sentence that goes ABOVE the chips. Two rules the wording

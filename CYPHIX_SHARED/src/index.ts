@@ -103,8 +103,17 @@ export * from './ecg/ecgIdentity';
    against THAT PATIENT'S OWN spread rather than an absolute threshold —
    read its header for why that distinction is the whole file. */
 export * from './ecg/ecgIdentitySummary';
+/* The identity as a viewer OVERLAY: the representative beat stamped at
+   every R peak of the strip it is laid over. Alignment is exact by
+   construction, and for the same reason its rhythm is the foreground's —
+   read the header before letting any UI measure an interval off it. */
+export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.14.0 — Adds ecg/identityGhost: the identity as a viewer overlay, stamped
+//           at every R peak of the strip it is laid over. Alignment is exact by
+//           construction and its rhythm is therefore the strip's own — read the
+//           header before letting any UI measure an interval off it.
 // v1.13.0 — Adds ecg/ecgIdentitySummary: the identity in words a patient can
 //           use. Judges every study against THAT PATIENT'S OWN spread rather
 //           than an absolute threshold, which is the whole point of the file.

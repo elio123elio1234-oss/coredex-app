@@ -74,6 +74,19 @@ interface Props {
   onDragOnStrip: () => void;
   /** The colour the ghost is actually drawn in, so the legend cannot lie. */
   ghostColor: string;
+  /**
+   * The patient's own representative beat, offered alongside the studies.
+   *
+   * `null` when there is no identity to offer — a first study, or a
+   * history with nothing eligible. Absent rather than disabled: a greyed
+   * row invites a tap and then explains why it did nothing, which is a
+   * worse answer than not raising the question.
+   */
+  identityOption: { id: string; label: string; hint: string } | null;
+  /** True while the ECG ID is the chosen comparison. */
+  isIdentity: boolean;
+  /** Beats too close together for the template to fit — see `ovIdCrowded`. */
+  identityCrowded: boolean;
 }
 
 export default function CompareSheet({
@@ -92,6 +105,9 @@ export default function CompareSheet({
   onReset,
   onDragOnStrip,
   ghostColor,
+  identityOption,
+  isIdentity,
+  identityCrowded,
 }: Props) {
   const t = useTheme();
   const { t: tr, rtl } = useTranslation();
@@ -192,12 +208,56 @@ export default function CompareSheet({
             </Text>
             <View accessibilityRole="radiogroup">
               {choice(null, tr('ovNone'))}
+              {/* ★ ABOVE the studies, not at the bottom of them. It is not
+                  one more study — it is the average of all of them, so
+                  comparing against it compares against the signal that
+                  survived every recording rather than against one
+                  recording's noise. Listing it after a date-ordered run of
+                  studies would file it as the oldest one. */}
+              {identityOption &&
+                choice(identityOption.id, identityOption.label, identityOption.hint)}
               {studies.map((s) => choice(s.id, s.label, s.hint))}
             </View>
           </>
         )}
 
-        {active && (
+        {/* ⚠️ THE ALIGNMENT MODES DO NOT APPLY TO THE ECG ID, and are not
+            shown for it rather than shown and ignored. They exist because
+            two recordings have two independent timelines; the identity
+            has none of its own — every beat is stamped ON this strip's own
+            R peaks, so the fit is exact by construction.
+
+            The same fact has a consequence the reader must be told, so it
+            replaces the mode picker instead of simply removing it: the
+            ghost's RHYTHM is this recording's, and an interval measured
+            off it is this recording's interval read twice. It carries
+            SHAPE. */}
+        {active && isIdentity && (
+          <>
+            <Text style={[styles.section, { color: t.textSecondary, textAlign: align }]}>
+              {tr('ovIdSection')}
+            </Text>
+            <Text style={[styles.modeHint, { color: t.textSecondary, textAlign: align }]}>
+              {tr('ovIdExactFit')}
+            </Text>
+            <Text style={[styles.warn, { color: t.attention, textAlign: align }]}>
+              {tr('ovIdBorrowsRhythm')}
+            </Text>
+            {/* ⚠️ At a fast rate the beats are closer together than the
+                700 ms template is long, so each stamp is necessarily cut
+                short — the tail of the T wave and the head of the next P.
+                Measured at 0.30 mV of invented difference at 140 bpm,
+                against 0.04 mV at resting rates. Silence here would let a
+                reader read a truncation as a T-wave change. */}
+            {identityCrowded && (
+              <Text style={[styles.warn, { color: t.attention, textAlign: align }]}>
+                {tr('ovIdCrowded')}
+              </Text>
+            )}
+          </>
+        )}
+
+        {active && !isIdentity && (
           <>
             <Text style={[styles.section, { color: t.textTertiary, textAlign: align }]}>
               {tr('ovAlignSection')}
@@ -231,6 +291,11 @@ export default function CompareSheet({
               </Text>
             )}
 
+          </>
+        )}
+
+        {active && (
+          <>
             <Text style={[styles.section, { color: t.textTertiary, textAlign: align }]}>
               {tr('ovMoveTitle')}
             </Text>
@@ -383,6 +448,14 @@ const styles = StyleSheet.create({
   doneText: { fontSize: 16, fontWeight: '700' },
 });
 
+// v3.0.0 — The patient's own representative beat is offered as a comparison,
+//          listed ABOVE the studies because it is not one more study — it is
+//          the average of all of them, and filing it after a date-ordered run
+//          would read as the oldest one. The alignment modes are not shown for
+//          it: they exist because two recordings have two timelines, and the
+//          identity has none of its own. What replaces them is the sentence
+//          that fact makes necessary — the ghost borrows this recording's
+//          rhythm, so it carries shape and nothing about time.
 // v2.0.0 — The arrow pad is gone. Moving the ghost belongs on the paper, where
 //          the eye judges the fit; this sheet explains, picks and aligns, then
 //          gets out of the way with one primary action that closes it and makes
