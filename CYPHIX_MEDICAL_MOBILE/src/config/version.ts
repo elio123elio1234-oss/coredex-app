@@ -1,7 +1,52 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.40.4';
-export const APP_BUILD_LABEL = 'The connection line loses its capsule — the words are enough';
+export const APP_VERSION = '0.40.5';
+export const APP_BUILD_LABEL = 'A locked screen no longer signs you out';
+
+// v0.40.5 - "Sometimes I'm in the app and suddenly, on its own, it goes to the
+//           login page - literally while I'm signed in."
+//           ★ ONE ROOT CAUSE, TWO ROUTES OUT OF IT, AND NEITHER WAS VISIBLE
+//           FROM A TYPECHECK. `expo-secure-store` defaults to `WHEN_UNLOCKED`,
+//           and nothing in this app had ever set `keychainAccessible`. That
+//           attribute makes the keychain item unreadable AND UNWRITABLE while
+//           the screen is locked - which, combined with rotating refresh
+//           tokens, is a spontaneous sign-out generator:
+//           ① a refresh runs while the device is locked, the READ comes back
+//           empty, the exchange reads that as "there is no token" and answers
+//           `rejected` -> the door.
+//           ② far worse: the refresh SUCCEEDS, the server rotates the old token
+//           out, and the WRITE of the new one fails because the screen is
+//           locked. `storeSession` swallowed that in an empty catch. The
+//           enclave now holds a token the server has ALREADY REVOKED, and the
+//           next refresh presents it - which the server correctly treats as a
+//           replay, so it kills the entire token family and answers 401. One
+//           swallowed write; total logout, minutes later, with nothing on
+//           screen connecting the two.
+//           Every keychain call now passes AFTER_FIRST_UNLOCK - still
+//           device-bound, still hardware-encrypted, still unreadable on a phone
+//           that has not been unlocked since boot. It gives up only "locked
+//           right this second", which is the exact window that was breaking
+//           this. Accessibility is fixed at WRITE time, so this heals itself on
+//           the first refresh after the update.
+//           ⚠️ I APPLIED THIS FIX WRONG THE FIRST TIME and caught it on review:
+//           the pass covered every keychain READ and missed the refresh-token
+//           WRITE - i.e. it fixed the mild cause and left the dangerous one
+//           exactly as it was.
+//           Two more, because one setting should not be the only thing standing
+//           between a locked screen and a logout:
+//           * the token write is RETRIED once and RECORDED when it still fails.
+//           With rotation, silently keeping a revoked token is the worst
+//           possible outcome, so it may not be swallowed.
+//           * an empty token read BESIDE A LIVE PRINCIPAL is now `offline`, not
+//           `rejected`. The two are written together and cleared together, so
+//           that combination is a failed read and never a revocation.
+//           ★ AND A LOGOUT CAN NOW EXPLAIN ITSELF. `noteSessionEvent` records
+//           the last thing that happened to the session - in AsyncStorage
+//           deliberately, so it SURVIVES the sign-out that clears the enclave,
+//           which is the moment anyone would want to read it. Settings > About
+//           appends it: "no stored session - last: refresh refused by server
+//           (401) @ 14:02". No credential, no secret; what happened and when.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.40.4 - "While it's connecting the text is enough, it doesn't need the
 //           capsule around it." Right, and it is the third and last step of the

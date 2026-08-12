@@ -1,5 +1,73 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.40.5 - 2026-08-12 - a locked screen no longer signs you out
+
+*"Sometimes I'm in the app and suddenly, on its own, it goes to the login page —
+literally while I'm signed in."*
+
+One root cause, two routes out of it, and **neither was visible from a typecheck,
+a bundle or `expo-doctor`.**
+
+### The cause
+
+`expo-secure-store` defaults to **`WHEN_UNLOCKED`**, and nothing in this app had
+ever set `keychainAccessible`. That attribute makes the keychain item unreadable
+**and unwritable** while the screen is locked. Combine it with rotating refresh
+tokens and it is a spontaneous sign-out generator:
+
+**① The read.** A refresh runs while the device is locked → the read comes back
+empty → the exchange reads that as "there is no token" → `rejected` → the door.
+
+**② The write — far worse.** The refresh *succeeds*. The server rotates the old
+token out. The write of the new one fails because the screen is locked, and
+`storeSession` swallowed that in an empty `catch`. The enclave now holds a token
+**the server has already revoked** — and the next refresh presents it. The server
+correctly treats a replayed rotated-out token as theft, kills the entire family,
+and answers 401.
+
+One swallowed write; total logout, minutes later, with nothing on screen
+connecting the two.
+
+Our own rotation policy — which is right, and is what makes a stolen token
+survivable — is what turns a silent write failure into a total sign-out. An empty
+`catch` was never acceptable there.
+
+### The fix
+
+Every keychain call now passes **`AFTER_FIRST_UNLOCK`**: still device-bound, still
+hardware-encrypted, still unreadable on a phone that has not been unlocked since
+boot. It gives up only "locked *right this second*", which is the exact window
+that was breaking this. Accessibility is fixed at write time, so it heals itself
+on the first refresh after the update.
+
+> ⚠️ **I applied this fix wrong the first time and caught it on review.** The pass
+> covered every keychain *read* and missed the refresh-token **write** — that is,
+> it fixed the mild cause and left the dangerous one exactly as it was. Worth
+> recording, because the write is the one that matters and it is the one that
+> looks least like a security setting.
+
+Two more, because one attribute should not be the only thing standing between a
+locked screen and a logout:
+
+- the token write is **retried once and recorded** when it still fails. With
+  rotation, silently keeping a revoked token is the worst available outcome, so
+  it may not be swallowed;
+- an empty token read **beside a live principal** is now `offline`, not
+  `rejected`. The two are written together and cleared together, so that
+  combination is a failed read and never a revocation.
+
+### A logout can now explain itself
+
+`noteSessionEvent` records the last thing that happened to the session — in
+**AsyncStorage deliberately**, so it survives the sign-out that clears the
+enclave, which is precisely the moment anyone would want to read it.
+
+Settings › About appends it: `no stored session · last: refresh refused by server
+(401) @ 14:02`. No credential, no secret — what happened and when.
+
+`tsc --noEmit` clean. **OTA** — TypeScript only, `app.json` stays at 0.34.0.
+
+
 ## v0.40.4 - 2026-08-12 - the connection line loses its capsule
 
 From the phone, after v0.40.3 landed and the session behaviour was confirmed

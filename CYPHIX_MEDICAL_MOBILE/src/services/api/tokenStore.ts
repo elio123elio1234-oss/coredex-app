@@ -35,6 +35,7 @@
    is the device cache, which `claimCacheFor` governs separately.
    ================================================================== */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import {
   API_VERSION_PATH,
@@ -47,6 +48,37 @@ import {
   type RefreshOutcome,
 } from '@cyphix/shared';
 import { ENV } from '@/config/env';
+
+/**
+ * ★ WHY EVERY KEYCHAIN CALL BELOW PASSES THIS, AND WHAT IT COST NOT TO.
+ *
+ * `expo-secure-store` defaults to `WHEN_UNLOCKED`, which means the item
+ * is unreadable AND UNWRITABLE while the screen is locked. Combined with
+ * rotating refresh tokens, that default produces a spontaneous sign-out
+ * by two separate routes — reported as "I'm using the app and suddenly it
+ * jumps to the login screen on its own":
+ *
+ *   ① a refresh runs while the device is locked → the READ comes back
+ *     empty → the exchange reads it as "there is no token" → `rejected`
+ *     → the door.
+ *   ② worse: the refresh SUCCEEDS, the server rotates the old token out,
+ *     and the WRITE of the new one fails because the device is locked.
+ *     The enclave keeps a token the server has already revoked, and the
+ *     next refresh presents it — which the server correctly treats as a
+ *     replay, kills the entire token family, and answers 401. One
+ *     swallowed write, total logout, minutes later, for no visible reason.
+ *
+ * `AFTER_FIRST_UNLOCK` is the standard choice for a credential that must
+ * work when the app is not in the foreground: still device-bound, still
+ * hardware-encrypted, still unreadable on a phone that has not been
+ * unlocked since boot. It gives up only "locked right now", which is
+ * exactly the window that was breaking this.
+ *
+ * iOS-only; Android ignores it. Accessibility is fixed at WRITE time, so
+ * existing items keep the old attribute until the next successful write —
+ * i.e. this heals itself on the first refresh after the update.
+ */
+const KEYCHAIN = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK } as const;
 
 const REFRESH_TOKEN_KEY = 'cyphix.refreshToken';
 /** The principal that refresh token belongs to. Same enclave, on purpose
@@ -83,7 +115,7 @@ export function setAccessToken(token: string | null): void {
 export async function readPrincipal(): Promise<PersistedPrincipal | null> {
   let raw: string | null;
   try {
-    raw = await SecureStore.getItemAsync(PRINCIPAL_KEY);
+    raw = await SecureStore.getItemAsync(PRINCIPAL_KEY, KEYCHAIN);
   } catch {
     return null;
   }
@@ -103,7 +135,7 @@ export async function readPrincipal(): Promise<PersistedPrincipal | null> {
 
 async function writePrincipal(principal: PersistedPrincipal): Promise<void> {
   try {
-    await SecureStore.setItemAsync(PRINCIPAL_KEY, JSON.stringify(principal));
+    await SecureStore.setItemAsync(PRINCIPAL_KEY, JSON.stringify(principal), KEYCHAIN);
   } catch {
     /* A device that refuses the enclave keeps a working session for as
        long as the app is open; only "stay signed in" is lost. Failing the
@@ -126,7 +158,7 @@ async function writePrincipal(principal: PersistedPrincipal): Promise<void> {
  */
 export async function readAppLock(): Promise<boolean> {
   try {
-    return (await SecureStore.getItemAsync(APP_LOCK_STORAGE_KEY)) === '1';
+    return (await SecureStore.getItemAsync(APP_LOCK_STORAGE_KEY, KEYCHAIN)) === '1';
   } catch {
     /* An enclave that will not answer is not a reason to drop a security
        control the patient switched on — but it is also not evidence one
@@ -137,7 +169,7 @@ export async function readAppLock(): Promise<boolean> {
 
 export async function setAppLock(enabled: boolean): Promise<void> {
   try {
-    if (enabled) await SecureStore.setItemAsync(APP_LOCK_STORAGE_KEY, '1');
+    if (enabled) await SecureStore.setItemAsync(APP_LOCK_STORAGE_KEY, '1', KEYCHAIN);
     else await SecureStore.deleteItemAsync(APP_LOCK_STORAGE_KEY);
   } catch {
     /* Reported to the caller as a failed write would be better; there is
@@ -151,11 +183,35 @@ export async function setAppLock(enabled: boolean): Promise<void> {
 export async function storeSession(tokens: AuthTokens): Promise<void> {
   accessToken = tokens.accessToken;
   const now = Date.now();
-  try {
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken);
-  } catch {
-    /* see writePrincipal */
+
+  /**
+   * ★ THIS WRITE IS NOT ALLOWED TO FAIL QUIETLY, AND IT USED TO.
+   *
+   * With rotating tokens the server has ALREADY revoked the previous one
+   * by the time we get here. So a swallowed failure does not mean "we
+   * lost the new token" — it means the enclave still holds a REVOKED one,
+   * and presenting that is precisely what the server's theft detection
+   * looks for: it kills the whole token family and answers 401. One
+   * silent write failure therefore produced a total sign-out minutes
+   * later, with nothing on screen connecting the two. Reported as "I'm in
+   * the app and suddenly it jumps to the login screen on its own".
+   *
+   * Retried once, because the overwhelming cause is transient — the
+   * screen was locked for the moment the write landed — and recorded when
+   * it still fails, so the diagnostic can name it instead of leaving
+   * another unexplained logout.
+   */
+  let stored = false;
+  for (let attempt = 0; attempt < 2 && !stored; attempt++) {
+    try {
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken, KEYCHAIN);
+      stored = true;
+    } catch {
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
   }
+  if (!stored) await noteSessionEvent('enclave write failed — token not persisted');
+
   await writePrincipal({
     user: tokens.user,
     refreshExpiresAt: refreshExpiryFrom(tokens.refreshExpiresInSec, now),
@@ -165,7 +221,7 @@ export async function storeSession(tokens: AuthTokens): Promise<void> {
 
 export async function readRefreshToken(): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY, KEYCHAIN);
   } catch {
     return null;
   }
@@ -188,6 +244,32 @@ export async function clearSession(): Promise<void> {
 }
 
 /**
+ * The last thing that happened to this session, in plain words.
+ *
+ * ★ AsyncStorage, deliberately, and not the enclave: it has to survive a
+ * sign-out — which clears the enclave — because "why am I looking at this
+ * screen?" is the exact question it exists to answer. It holds no
+ * credential and names no secret, only what happened and at what time.
+ */
+const LAST_EVENT_KEY = 'cyphix.lastSessionEvent';
+
+export async function noteSessionEvent(what: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(LAST_EVENT_KEY, `${what} @ ${new Date().toISOString().slice(11, 19)}`);
+  } catch {
+    /* A diagnostic that cannot be written is not worth failing over. */
+  }
+}
+
+async function lastSessionEvent(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(LAST_EVENT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * What the enclave actually holds, as one short line for Settings › About.
  *
  * ★ The same reasoning that put `GLASS_MATERIAL` on that screen: "it sent
@@ -201,21 +283,28 @@ export async function clearSession(): Promise<void> {
 export async function sessionDiagnostic(): Promise<string> {
   let token: string | null;
   try {
-    token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY, KEYCHAIN);
   } catch {
     return 'enclave unreadable';
   }
   let raw: string | null = null;
   try {
-    raw = await SecureStore.getItemAsync(PRINCIPAL_KEY);
+    raw = await SecureStore.getItemAsync(PRINCIPAL_KEY, KEYCHAIN);
   } catch {
     return token ? 'token, principal unreadable' : 'no token, principal unreadable';
   }
-  if (!token && !raw) return 'no stored session';
-  if (token && !raw) return 'token only — will recover on next launch';
-  if (!token && raw) return '⚠ principal without token';
+  /* The last event is appended to every answer, because the enclave's
+     CURRENT contents and the reason it got that way are two different
+     facts and a bug report needs both. "no stored session · last: refresh
+     rejected by server @ 14:02" says what "no stored session" alone
+     cannot. */
+  const last = await lastSessionEvent();
+  const tail = last ? ` · last: ${last}` : '';
+  if (!token && !raw) return `no stored session${tail}`;
+  if (token && !raw) return `token only — will recover on next launch${tail}`;
+  if (!token && raw) return `⚠ principal without token${tail}`;
   const usable = (await readPrincipal()) !== null;
-  return usable ? 'token + principal' : 'token + EXPIRED principal';
+  return `${usable ? 'token + principal' : 'token + EXPIRED principal'}${tail}`;
 }
 
 /* ── The exchange ────────────────────────────────────────────────── */
@@ -260,13 +349,31 @@ async function doRefresh(): Promise<RefreshOutcome> {
    */
   let refreshToken: string | null;
   try {
-    refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY, KEYCHAIN);
   } catch {
     return { kind: 'offline' };
   }
-  /* Genuinely nothing to present. Not a refusal either, but unlike
-     `offline` no amount of waiting will produce one. */
-  if (!refreshToken) return { kind: 'rejected' };
+  if (!refreshToken) {
+    /**
+     * ★ An empty read is not automatically "there is no session".
+     *
+     * The token and the principal are written together and cleared
+     * together — always, and `clearSession` is the only thing that removes
+     * either. So a principal sitting there with no token beside it is not
+     * a revoked session; it is a read that did not work, and on iOS the
+     * overwhelming reason is that the screen was locked when it ran.
+     * Reporting `rejected` here signed people out mid-session for exactly
+     * that.
+     *
+     * Both absent IS the real "nobody is signed in" — and unlike
+     * `offline`, no amount of waiting will change it.
+     */
+    if ((await readPrincipal()) !== null) {
+      await noteSessionEvent('token unreadable beside a live principal — treated as offline');
+      return { kind: 'offline' };
+    }
+    return { kind: 'rejected' };
+  }
 
   let res: Response;
   try {
@@ -295,6 +402,10 @@ async function doRefresh(): Promise<RefreshOutcome> {
    */
   if (!res.ok) {
     if (res.status >= 500) return { kind: 'offline' };
+    /* The one path that genuinely ends a session. Recorded before the
+       enclave is cleared, so the sign-in screen can say WHY it is being
+       shown rather than leaving another unexplained logout. */
+    await noteSessionEvent(`refresh refused by server (${res.status})`);
     await clearSession();
     return { kind: 'rejected' };
   }
@@ -317,6 +428,18 @@ async function doRefresh(): Promise<RefreshOutcome> {
   };
 }
 
+// v2.2.0 — Fixes a spontaneous MID-SESSION sign-out with two causes, both from
+//          expo-secure-store defaulting to WHEN_UNLOCKED — the keychain item is
+//          unreadable AND UNWRITABLE while the screen is locked. Every call now
+//          passes AFTER_FIRST_UNLOCK, ★ including the refresh-token WRITE, which
+//          the first pass at this missed and which is the dangerous one: with
+//          rotation, a swallowed write leaves a REVOKED token in the enclave,
+//          the next refresh presents it, and the server's replay detection kills
+//          the whole family. That write is now retried and recorded, never
+//          swallowed. Beyond that, an empty token read beside a LIVE principal
+//          is `offline`, not `rejected` — they are written and cleared together,
+//          so that combination is a failed read, not a revocation. Plus
+//          `noteSessionEvent`, so a logout can say why it happened.
 // v2.1.0 — An enclave that will not ANSWER is no longer read as a server that
 //          REFUSED: a transient Keychain error used to surface as `rejected`
 //          and sign the patient out. Adds `sessionDiagnostic()` for Settings ›
