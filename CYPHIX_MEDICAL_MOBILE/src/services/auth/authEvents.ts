@@ -29,6 +29,32 @@ export const sessionExpired = createAction('auth/sessionExpired');
  */
 export const sessionConfirmed = createAction<SessionUser>('auth/sessionConfirmed');
 
+/**
+ * A request reached the server and came back. The server is up and this
+ * device can talk to it, whatever it answered about the resource.
+ *
+ * ★ Why this is the reachability signal, rather than a connectivity API.
+ * `@react-native-community/netinfo` is a NATIVE module and so cannot
+ * reach an installed build over the air (mobile CLAUDE.md §5A.1) — and it
+ * would answer the wrong question anyway. "The radio has an IP address"
+ * is not "CYPHIX is reachable": a captive portal, a sleeping container
+ * and a DNS failure all report a healthy connection. The transport is the
+ * only layer that knows the truth, because it is the one actually
+ * talking.
+ */
+export const serverReachable = createAction('auth/serverReachable');
+
+/**
+ * A request did not come back — no answer, or an answer that means the
+ * server itself could not serve it (5xx). The device is on its own copy.
+ *
+ * Deliberately NOT dispatched for a 4xx: a 403 or a 404 is the server
+ * being perfectly reachable and telling us something true, and treating
+ * it as "offline" would put a notice on screen saying the opposite of
+ * what happened.
+ */
+export const serverUnreachable = createAction('auth/serverUnreachable');
+
 // v1.1.0 — Adds sessionConfirmed, so a refresh that succeeds anywhere in the
 //          app reaches the slice. Without it, reconnecting was invisible.
 // v1.0.0 — sessionExpired action bridging services → auth slice.

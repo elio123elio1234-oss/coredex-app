@@ -1,7 +1,59 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.40.1';
-export const APP_BUILD_LABEL = 'The connection notice is glass, and says nothing when all is well';
+export const APP_VERSION = '0.40.2';
+export const APP_BUILD_LABEL = 'No Face ID on every launch; offline recovers on its own';
+
+// v0.40.2 - Three reports, and two of them were my bugs.
+//           ★ (1) FACE ID ON EVERY ENTRY. The lock gated every cold start,
+//           which is what "require unlock" literally means and is not what
+//           anyone wants from a health app. The counter-example offered was
+//           DEXCOM, and it is the right one: a CGM showing live glucose does
+//           not ask for a face each time you open it, and neither does MyChart
+//           by default. Nothing in HIPAA or the MDR requires a per-launch
+//           biometric on a patient's own phone - because the OS lock screen
+//           already IS that check. You unlocked the phone to reach the app, so
+//           a second prompt re-asks what the device just answered.
+//           It now guards only the gap the OS cannot: an ALREADY-UNLOCKED phone
+//           handed over with the app resident, five minutes after it went to
+//           the background (was 60 s - shorter than fetching a code from
+//           Messages, so it fired during ordinary use). Renamed to "Lock when
+//           unattended", and the description now says opening the app does not
+//           ask. Honest cost, written down: a cold start on an unlocked phone
+//           somebody else is holding is not gated.
+//           ⚠️ The asked-for version - "Face ID only after 30 days" - is not
+//           implementable, and pretending otherwise would have been worse than
+//           saying so. After 30 days the refresh token is DEAD; no gesture can
+//           revive it, because only the server can issue new tokens and it wants
+//           the password. Biometrics can gate a session that still exists; they
+//           cannot resurrect one.
+//           ★ (2) OFFLINE NEVER RECOVERED WITHOUT A RESTART. Real, and mine.
+//           Nothing was watching for the network coming BACK: the boot
+//           revalidation runs once per account, the sync engine refreshes on
+//           foreground, and neither fires when the radio reconnects under an app
+//           already open. Two halves to the fix, and both were needed -
+//           `httpBaseQuery` now reports reachability from EVERY request (the
+//           only layer that actually knows; NetInfo is native and cannot ship
+//           over the air, and "the radio has an IP" is not "CYPHIX is
+//           reachable" anyway), and AuthGate knocks on a backoff (4 s -> 60 s)
+//           while offline, because an app on a screen that has all its data
+//           makes no requests to report from. `sessionMode` moves in both
+//           directions now, so the strip reads ONE true signal instead of two
+//           stale ones.
+//           ★ (3) STILL SOMETIMES THE LOGIN SCREEN - and this one was a
+//           migration bug I shipped. Before v0.40.0 the enclave held a refresh
+//           token and NOTHING ELSE; the principal was never written down. So
+//           every phone already signed in when the update landed had a valid
+//           token, no principal, and `readPrincipal()` -> null -> the door. It
+//           looked intermittent because it happened exactly once per install and
+//           signing in again repaired it - the worst kind of report to get,
+//           because the fix erases the evidence. `restore()` now falls back to
+//           one refresh when a token exists with no principal, which writes the
+//           principal and never runs again.
+//           Second cause, same class: `readRefreshToken` swallowed a SecureStore
+//           failure into null, which read as "no token" and therefore as
+//           REJECTED - so a transient Keychain error signed the patient out. An
+//           enclave that will not answer is not a server that refused.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.40.1 - Reported on the phone: the "Connected" capsule that popped up at
 //           the top was ugly and did not feel native. Three faults, and the

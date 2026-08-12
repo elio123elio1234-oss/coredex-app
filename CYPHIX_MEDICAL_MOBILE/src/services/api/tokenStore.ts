@@ -217,9 +217,24 @@ async function doRefresh(): Promise<RefreshOutcome> {
      issued. */
   if (!ENV.hasBackend) return { kind: 'offline' };
 
-  const refreshToken = await readRefreshToken();
-  /* Nothing to present is not the same as being refused, but it does mean
-     there is no session — and unlike `offline`, waiting will not help. */
+  /**
+   * ★ An enclave that will not ANSWER is not a server that refused.
+   *
+   * `readRefreshToken` swallows a SecureStore failure into `null`, which
+   * read here as "there is no token" and therefore as `rejected` — i.e. a
+   * transient Keychain error signed the patient out. That is the same
+   * mistake this whole release exists to remove, one layer down, and it
+   * is why the door still appeared "sometimes". Read it directly so the
+   * failure and the absence can be told apart.
+   */
+  let refreshToken: string | null;
+  try {
+    refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    return { kind: 'offline' };
+  }
+  /* Genuinely nothing to present. Not a refusal either, but unlike
+     `offline` no amount of waiting will produce one. */
   if (!refreshToken) return { kind: 'rejected' };
 
   let res: Response;

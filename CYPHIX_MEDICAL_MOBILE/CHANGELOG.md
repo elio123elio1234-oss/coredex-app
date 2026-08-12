@@ -1,5 +1,93 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.40.2 - 2026-08-12 - no Face ID on every launch, and offline recovers on its own
+
+Three reports from the phone. Two were my bugs; the third was a design call I got
+wrong and the counter-example given was the right one.
+
+### 1. It asked for Face ID on every entry
+
+v0.40.0's lock gated every cold start. That is what "require unlock" literally
+means, and it is not what anyone wants from a health app.
+
+**Dexcom was named as the counter-example, and it is the correct one.** A CGM
+showing live glucose does not ask for a face each time you open it. MyChart does
+not by default either. Nothing in HIPAA or the MDR requires a per-launch
+biometric on a patient's own phone — and the reason is structural: **the OS lock
+screen already is that check.** You unlocked the phone to reach the app at all,
+so a launch prompt re-asks a question the device just answered, and a lock that
+fires on every entry is a lock people switch off within a day. A switched-off
+lock protects nothing.
+
+It now guards only the gap the OS cannot cover: an **already-unlocked phone,
+handed to someone, with the app still resident**. Five minutes after the app goes
+to the background — up from 60 s, which is shorter than fetching a code out of
+Messages and so fired during completely ordinary use.
+
+Renamed **"Lock when unattended"**, and the description now says outright that
+opening the app does not ask.
+
+The honest cost, written down rather than glossed: a cold start on an unlocked
+phone somebody else is holding is not gated. If that becomes the threat worth
+covering, the changelog and the code both say exactly where the line goes back.
+
+> ⚠️ **The version actually asked for — "Face ID only after 30 days" — is not
+> implementable, and pretending otherwise would have been worse than saying so.**
+> After 30 days the refresh token is *dead*. No gesture can revive it, because
+> only the server can issue new tokens and it wants the password to do that.
+> Biometrics can gate a session that still exists; they cannot resurrect one.
+
+### 2. Offline never recovered without restarting the app
+
+Real, and mine. **Nothing was watching for the network coming back.** The boot
+revalidation runs once per account, the sync engine refreshes on foreground, and
+neither of those fires when the radio quietly reconnects under an app that is
+already open.
+
+Two halves, and both were needed:
+
+- **`httpBaseQuery` now reports reachability from every request**, in both
+  directions. It is the only layer that actually knows. `@react-native-community/netinfo`
+  is a *native* module and so cannot reach an installed build over the air
+  (§5A.1) — and it answers the wrong question anyway: "the radio has an IP
+  address" is not "CYPHIX is reachable", as any captive portal demonstrates. A
+  4xx counts as *reached*: a 403 is the server being present and telling us
+  something true.
+- **`AuthGate` knocks on a backoff** (4 s → 8 → 15 → 30 → 60) while offline,
+  because an app sitting on a screen that already has its data makes no requests
+  for the transport to report from. Backoff rather than a fixed interval because
+  the common offline case is a tunnel (seconds) and the other is a flight
+  (hours), and one number cannot serve both.
+
+`sessionMode` therefore moves in **both** directions now, and the strip is back to
+reading one true signal instead of two stale ones.
+
+### 3. It still sometimes went to the login screen — a migration bug I shipped
+
+Before v0.40.0 the enclave held a refresh token and **nothing else**; the
+principal was whatever the server had just said and was never written down. So
+every phone that was already signed in when the update landed had a perfectly
+valid token, no principal, and `readPrincipal()` → `null` → the door.
+
+It looked intermittent because it happened **exactly once per install**, and
+signing in again repaired it — the worst kind of bug report to receive, because
+the fix erases the evidence.
+
+`restore()` now falls back to a single refresh when a token exists with no
+principal. That writes the principal and never runs again: self-healing, and the
+only place `restore` is allowed to touch the network.
+
+**A second cause, same class of mistake one layer down:** `readRefreshToken`
+swallowed a SecureStore failure into `null`, which read as "there is no token"
+and therefore as `rejected` — so a transient Keychain error signed the patient
+out. An enclave that will not *answer* is not a server that *refused*. That is the
+exact distinction this whole release was about, and I had left it unfixed
+underneath the fix.
+
+`tsc --noEmit` clean; both bundles export. **OTA** — TypeScript only, `app.json`
+stays at 0.34.0.
+
+
 ## v0.40.1 - 2026-08-12 - the connection notice is glass, and says nothing when all is well
 
 Reported from the phone about v0.40.0: *"the Connected capsule that pops up at the

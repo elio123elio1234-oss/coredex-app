@@ -285,11 +285,11 @@ export const en = {
   setDevRole: 'Preview as role',
   setDevRoleDesc: 'Debug only. Draws the app as this role — it grants nothing, the server still decides what is allowed.',
   setDevRoleReal: 'Actual',
-  setAppLock: 'Require unlock',
+  setAppLock: 'Lock when unattended',
   /* Says what it protects and — just as important — what it does not.
      "Your record on this phone" is the honest scope: it is a lock on
      what this device draws, not on what the server will answer. */
-  setAppLockDesc: 'Ask for Face ID, a fingerprint or your passcode before opening your record on this phone',
+  setAppLockDesc: 'After five minutes away, ask for Face ID, a fingerprint or your passcode before showing your record again. Opening the app does not ask — unlocking your phone already did.',
   setAccountSignOut: 'Sign out',
   setAccountSignOutDesc: 'Ends this session on this phone',
   setSignOutBody: 'You will need your password — or Face ID — to open your readings again. Nothing is deleted.',

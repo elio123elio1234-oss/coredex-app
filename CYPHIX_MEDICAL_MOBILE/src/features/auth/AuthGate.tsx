@@ -69,21 +69,38 @@ const RESTORE_TIMEOUT_MS = 4000;
 /**
  * How long the app may sit in the background before the lock goes back up.
  *
- * ★ Not zero, and that is a considered trade rather than laxity. Half of
- * what people do in this app involves leaving it for a few seconds — a
- * one-time code in Messages, a photo in the camera roll, a phone call
- * from the clinic — and a lock that fires on every one of those gets
- * switched off within a day, which protects nothing. A minute is long
- * enough to cover the errand and short enough that a phone left on a
- * table is locked by the time anyone picks it up.
+ * ★ Not zero, and 60 s was still too short. Half of what people do in
+ * this app involves leaving it for a moment — a code in Messages, a photo
+ * in the camera roll, a call from the clinic — and a lock that fires on
+ * every one of those gets switched off within a day, which protects
+ * nothing. Five minutes covers the errand and still locks a phone left on
+ * a table before anyone wanders past it.
  */
-const RELOCK_AFTER_BACKGROUND_MS = 60_000;
+const RELOCK_AFTER_BACKGROUND_MS = 300_000;
+
+/**
+ * While we believe we are offline, ask again on a backoff.
+ *
+ * ★ This is the other half of "the internet came back and it stayed
+ * offline until I restarted". `httpBaseQuery` now reports reachability
+ * from every request — but an app sitting on a screen that has all its
+ * data makes NO requests, so there is nothing to report from. Something
+ * has to knock.
+ *
+ * Backoff rather than a fixed interval, because the common offline case
+ * is a tunnel (seconds) and the other common one is a flight (hours), and
+ * one number cannot serve both without either missing the first or
+ * burning the battery through the second. Only ever runs while the notice
+ * is actually up; a live session schedules nothing at all.
+ */
+const OFFLINE_RETRY_MS = [4_000, 8_000, 15_000, 30_000, 60_000] as const;
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.auth.status);
   const user = useAppSelector((s) => s.auth.user);
   const locked = useAppSelector((s) => s.auth.locked);
+  const sessionMode = useAppSelector((s) => s.auth.sessionMode);
   /* Registration writes the account — and therefore the user — one screen
      BEFORE the flow is over. Without this the app would appear over the
      top of "Profile created" and nobody would ever see it. */
@@ -186,6 +203,24 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [dispatch]);
 
+  /* Knock, on a backoff, for as long as we think we are offline. Cleared
+     the moment `sessionMode` goes live — the dependency array does it,
+     because the effect simply stops re-arming. */
+  const offline = sessionMode === 'offline';
+  const [retryStep, setRetryStep] = useState(0);
+  useEffect(() => {
+    if (!user || locked || !offline) {
+      setRetryStep(0);
+      return;
+    }
+    const wait = OFFLINE_RETRY_MS[Math.min(retryStep, OFFLINE_RETRY_MS.length - 1)]!;
+    const timer = setTimeout(() => {
+      void dispatch(revalidateSession());
+      setRetryStep((n) => n + 1);
+    }, wait);
+    return () => clearTimeout(timer);
+  }, [dispatch, user, locked, offline, retryStep]);
+
   const unlock = useCallback(() => dispatch(appUnlocked()), [dispatch]);
   const signOutFromLock = useCallback(() => {
     void dispatch(logoutUser());
@@ -219,6 +254,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return signedIn ? <>{children}</> : <OnboardingScreen />;
 }
 
+// v2.1.0 — Two fixes reported from the phone.
+//          (1) While offline, knocks on a backoff (4 s → 60 s). The transport
+//          reports reachability now, but an app on a screen that has all its
+//          data makes no requests — so there was nothing to report from, and
+//          "offline" survived until a restart.
+//          (2) The relock grace is 60 s → 5 min. A minute is shorter than
+//          fetching a code from Messages, so the lock fired on ordinary use;
+//          see the changelog for why the launch gate itself is the real issue.
 // v2.0.0 — Opens on the session the ENCLAVE holds instead of waiting for a
 //          refresh to come back. A cold start with no signal, or against a
 //          server still waking up, no longer lands on the sign-in screen and no

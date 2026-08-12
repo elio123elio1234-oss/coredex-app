@@ -171,13 +171,41 @@ export class HttpAuthService implements MobileAuthService {
    */
   async restore(): Promise<AuthSession | null> {
     const principal = await readPrincipal();
-    if (!principal) return null;
-    await remember(principal.user);
-    /* No access token yet — it is memory-only and this is a cold start.
-       Every request will 401 and drive the single-flight refresh, which
-       is the same path a 15-minute-old token takes. Nothing is granted
-       by opening here that the server has not been asked about. */
-    return { user: principal.user, token: getAccessToken() ?? '', profile: {} };
+    if (principal) {
+      await remember(principal.user);
+      /* No access token yet — it is memory-only and this is a cold start.
+         Every request will 401 and drive the single-flight refresh, which
+         is the same path a 15-minute-old token takes. Nothing is granted
+         by opening here that the server has not been asked about. */
+      return { user: principal.user, token: getAccessToken() ?? '', profile: {} };
+    }
+
+    /**
+     * ★ THE MIGRATION PATH — and the bug that made v0.40.0 still land on
+     * the sign-in screen "sometimes".
+     *
+     * Before v0.40.0 the enclave held a refresh token and NOTHING ELSE:
+     * the principal was whatever the server had just said, and was never
+     * written down. So every phone that was already signed in when the
+     * update arrived had a perfectly valid token, no principal, and
+     * therefore `readPrincipal()` → null → the door. It looked
+     * intermittent because it happened exactly once per install, and
+     * signing in again repaired it — which is the worst kind of bug
+     * report to receive, because the fix erases the evidence.
+     *
+     * If a token is there, we simply do not yet know WHO it belongs to.
+     * One refresh answers that and writes the principal, after which
+     * every later launch takes the fast path above. Deliberately the only
+     * place `restore` is allowed to await the network, and it is
+     * self-erasing: it can happen at most once per device.
+     */
+    const refreshToken = await readRefreshToken();
+    if (!refreshToken) return null;
+
+    const outcome = await refreshSession();
+    if (outcome.kind !== 'refreshed') return null;
+    await remember(outcome.user);
+    return { user: outcome.user, token: getAccessToken() ?? '', profile: {} };
   }
 
   /**

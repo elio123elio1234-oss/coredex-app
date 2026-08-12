@@ -19,7 +19,12 @@ import { fetchBaseQuery, type BaseQueryFn } from '@reduxjs/toolkit/query';
 import type { ApiError, ApiRequest } from '@cyphix/shared';
 import { API_VERSION_PATH } from '@cyphix/shared';
 import { ENV } from '@/config/env';
-import { sessionConfirmed, sessionExpired } from '@/services/auth/authEvents';
+import {
+  serverReachable,
+  serverUnreachable,
+  sessionConfirmed,
+  sessionExpired,
+} from '@/services/auth/authEvents';
 import { clearSession, getAccessToken, refreshSession } from './tokenStore';
 
 /**
@@ -92,14 +97,37 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError, object, H
     etag: response?.headers.get('etag') ?? undefined,
   };
 
+  /**
+   * ★ Report reachability, in BOTH directions, from the one layer that
+   * actually knows.
+   *
+   * This is what fixes "I was offline, the internet came back, and it
+   * stayed offline until I restarted the app". Nothing was watching: the
+   * boot revalidation runs once, the sync engine refreshes on foreground,
+   * and neither of those fires when the radio quietly reconnects under an
+   * app that is already open. Every request the app makes is evidence,
+   * and it was being thrown away.
+   *
+   * A 4xx counts as REACHED — a 403 is the server being perfectly present
+   * and telling us something true. Only "no answer" (normalised to 0) and
+   * a 5xx mean we are on our own.
+   */
   if (result.error) {
     const status = typeof result.error.status === 'number' ? result.error.status : 0;
+    api.dispatch(status === 0 || status >= 500 ? serverUnreachable() : serverReachable());
     const data = result.error.data as { error?: { message?: string } } | undefined;
     return { error: { status, message: data?.error?.message ?? 'Request failed' }, meta };
   }
+  api.dispatch(serverReachable());
   return { data: result.data, meta };
 };
 
+// v1.3.0 — Reports reachability in BOTH directions (`serverReachable` /
+//          `serverUnreachable`) from every request. Nothing was watching for the
+//          network coming BACK under an app already open — the boot revalidation
+//          runs once and the sync engine refreshes on foreground — so "offline"
+//          persisted until a restart. A 4xx counts as reached: a 403 is the
+//          server being present and telling us something true.
 // v1.2.0 — A 401 whose refresh comes back `offline` no longer signs the patient
 //          out. Only `rejected` — a server that ANSWERED and refused — ends a
 //          session; a refresh that never reached anyone teaches us nothing and

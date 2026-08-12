@@ -27,7 +27,12 @@ import {
 } from '@cyphix/shared';
 import { authService } from '@/services/auth/authService';
 import { readAppLock, setAppLock } from '@/services/api/tokenStore';
-import { sessionConfirmed, sessionExpired } from '@/services/auth/authEvents';
+import {
+  serverReachable,
+  serverUnreachable,
+  sessionConfirmed,
+  sessionExpired,
+} from '@/services/auth/authEvents';
 import { logAudit } from '@/services/audit/auditLogger';
 import type { Role } from '@/types/rbac';
 
@@ -266,7 +271,30 @@ const authSlice = createSlice({
            said LAST TIME. `revalidateSession` is what earns `live`. */
         state.sessionMode = 'offline';
         state.appLockEnabled = appLockEnabled;
-        state.locked = session !== null && appLockEnabled;
+        /**
+         * ★ A COLD START IS NO LONGER LOCKED. Reported, and right.
+         *
+         * v0.40.0 gated every launch, which is what "require unlock"
+         * literally means and is not what anyone wants from a health app.
+         * The comparison offered was Dexcom, and it is the correct one:
+         * a CGM showing live glucose does not ask for a face each time
+         * you open it. Neither does MyChart by default. Nothing in HIPAA
+         * or the MDR requires a per-launch biometric on a patient's own
+         * phone, and the reason is that the OS lock screen already IS
+         * that check — you unlocked the phone to reach the app at all, so
+         * a second prompt re-asks a question the device just answered.
+         *
+         * What the OS canNOT cover is the gap this now guards instead:
+         * an ALREADY-UNLOCKED phone, handed to someone, with the app
+         * still resident. That is `appRelocked`, five minutes after the
+         * app went to the background.
+         *
+         * The honest cost, written down rather than glossed: a cold start
+         * on an unlocked phone somebody else is holding is not gated. If
+         * that becomes the threat worth covering, this line is where it
+         * goes back.
+         */
+        state.locked = false;
       })
       .addCase(restoreSession.rejected, (state) => {
         // A device we cannot read is a device with no session — show the door.
@@ -340,6 +368,22 @@ const authSlice = createSlice({
          restored session normally finds the server again. Same landing as
          `revalidateSession.fulfilled` with `refreshed`, because it is the
          same evidence: a server answered and re-issued. */
+      /* The transport reached the server, or failed to. This is the ONLY
+         thing that moves `sessionMode` back to `offline` once it is live —
+         and its absence is why "the internet came back and it stayed
+         offline until I restarted" was real: the boot revalidation runs
+         once per account and the sync engine refreshes on foreground, so
+         under an app already open nothing was watching at all.
+         ★ It touches reachability and NOTHING else. It is not evidence
+         about the session's validity — a 404 proves the server is up and
+         proves nothing about whether we are still signed in — so it may
+         never clear the principal. Only `rejected` does that. */
+      .addCase(serverReachable, (state) => {
+        if (state.user) state.sessionMode = 'live';
+      })
+      .addCase(serverUnreachable, (state) => {
+        state.sessionMode = 'offline';
+      })
       .addCase(sessionConfirmed, (state, action) => {
         if (!state.user) return; // signed out mid-flight; nothing to confirm
         state.sessionMode = 'live';
@@ -392,6 +436,18 @@ export const { appRelocked, appUnlocked, clearAuthError, debugRoleSet, welcomeAc
   authSlice.actions;
 export default authSlice.reducer;
 
+// v2.2.0 — The app lock no longer gates a COLD START — reported as asking for
+//          Face ID on every entry, with Dexcom named as the counter-example, and
+//          the objection is correct: you unlocked the phone to open the app, so a
+//          launch prompt re-asks what the OS just answered. It now guards the gap
+//          the OS cannot: an already-unlocked phone handed over with the app
+//          resident (`appRelocked`, 5 min after backgrounding).
+// v2.1.0 — Handles `serverReachable` / `serverUnreachable` from the transport, so
+//          `sessionMode` moves in BOTH directions. Before this it only ever went
+//          towards live, and only from the boot revalidation — so an app already
+//          open when the network returned stayed "offline" until it was restarted.
+//          Reachability may never clear the principal: a 404 proves the server is
+//          up and proves nothing about the session.
 // v2.0.0 — A restored session no longer depends on reaching the server.
 //          `restoreSession` reads the enclave and resolves at once;
 //          `revalidateSession` asks afterwards and is the only thing that can

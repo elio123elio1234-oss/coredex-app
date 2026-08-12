@@ -99,21 +99,27 @@ export default function ConnectionStrip() {
   }, []);
 
   /**
-   * ★ Reachability is BOTH signals, and it has to be.
+   * ★ ONE signal, fed from the transport, and that is the fix.
    *
-   * `sessionMode` only ever moves towards `live` — a confirmed session
-   * stays confirmed, because losing signal does not un-confirm anything
-   * the server said. So on its own it could not report a phone that went
-   * live at boot and walked into a basement an hour later. The sync
-   * engine's phase is the one that goes the other way: it is what has
-   * actually tried to reach the server most recently. Reading only one of
-   * them leaves one direction of the truth unsayable.
+   * v1.1.0 read `sessionMode` AND the sync engine's phase, because
+   * `sessionMode` only ever moved towards `live` and could not report a
+   * phone that connected at boot and walked into a basement. Reading two
+   * half-truths did not make a whole one: the sync phase only changes
+   * when a sync RUNS (account resolve, foreground, pull-to-refresh), so
+   * when the network came back under an app already open, neither signal
+   * moved and the notice sat there until the app was restarted. Reported,
+   * and correctly.
+   *
+   * `sessionMode` now moves in both directions, dispatched by
+   * `httpBaseQuery` from every single request — the only layer that
+   * actually knows, and the one thing that cannot go stale while the app
+   * is being used. So there is one signal here again, and it is the true
+   * one.
    */
   const enabled = ENV.hasBackend && signedIn && settled;
-  const reachable = sessionMode === 'live' && sync.phase !== 'offline';
   const state: Strip | null = !enabled
     ? null
-    : reachable
+    : sessionMode === 'live'
       ? null
       : revalidating || sync.phase === 'syncing'
         ? 'connecting'
@@ -223,6 +229,11 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '500', letterSpacing: 0.1 },
 });
 
+// v1.2.0 — Reads ONE signal (`auth.sessionMode`) again, now that the transport
+//          moves it in both directions. Pairing it with the sync engine's phase
+//          was meant to cover the basement case and did not: the phase only
+//          changes when a sync RUNS, so a network that returned under an open app
+//          moved neither signal and the notice stayed up until a restart.
 // v1.1.0 — Reported as ugly and un-native, and three things were wrong. The
 //          green "Connected" badge is GONE — reconnecting is not an achievement,
 //          and the honest confirmation is the notice disappearing. The coloured
