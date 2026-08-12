@@ -285,6 +285,11 @@ export const en = {
   setDevRole: 'Preview as role',
   setDevRoleDesc: 'Debug only. Draws the app as this role — it grants nothing, the server still decides what is allowed.',
   setDevRoleReal: 'Actual',
+  setAppLock: 'Require unlock',
+  /* Says what it protects and — just as important — what it does not.
+     "Your record on this phone" is the honest scope: it is a lock on
+     what this device draws, not on what the server will answer. */
+  setAppLockDesc: 'Ask for Face ID, a fingerprint or your passcode before opening your record on this phone',
   setAccountSignOut: 'Sign out',
   setAccountSignOutDesc: 'Ends this session on this phone',
   setSignOutBody: 'You will need your password — or Face ID — to open your readings again. Nothing is deleted.',
@@ -691,6 +696,25 @@ export const en = {
   authUseFaceId: 'Use Face ID',
   authUseTouchId: 'Use Touch ID',
   authUseBiometrics: 'Unlock with biometrics',
+
+  /* ── The app lock ──
+     Deliberately does NOT say "signed out" or "session expired": the
+     session is intact and the patient is being asked to prove they are
+     holding their own phone. Words that imply otherwise would send
+     someone hunting for a password they do not need. */
+  lockSubtitle: 'Unlock to open your record',
+  lockUnlock: 'Unlock',
+  lockPrompt: 'Unlock CYPHIX',
+  lockSignOut: 'Sign in as someone else',
+
+  /* ── Connection strip ──
+     "Showing saved data" rather than "no internet": what the patient
+     needs to know is what is on their screen, not what their radio is
+     doing. It is also the truthful claim — the app IS showing the copy on
+     this phone, whatever the reason the server could not be reached. */
+  connOffline: 'Offline · showing saved data',
+  connConnecting: 'Connecting to CYPHIX…',
+  connLive: 'Connected',
   authBiometricPrompt: 'Unlock CYPHIX',
   authBack: 'Back',
 
@@ -825,6 +849,9 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.15.0 — Copy for the app lock and the connection strip. "Offline · showing
+//           saved data" rather than "no internet": what the patient needs to
+//           know is what is on their screen, not what the radio is doing.
 // v1.14.0 — The Insights tab (ECG ID). The copy rules for the block are written
 //           INTO the block, because it is the one place in this app where a
 //           careless adjective turns a measurement into a diagnosis.

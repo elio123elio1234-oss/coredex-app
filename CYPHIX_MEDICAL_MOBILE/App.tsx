@@ -2,11 +2,12 @@
    app-lifetime BLE client, navigation. No business logic here. */
 
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { OverlayPortalHost } from '@/components/atoms/OverlayPortal';
+import ConnectionStrip from '@/components/organisms/ConnectionStrip';
 import { AuthGate } from '@/features/auth/AuthGate';
 import { BleProvider } from '@/features/ble/BleProvider';
 import { PreferencesGate } from '@/features/preferences/PreferencesGate';
@@ -58,7 +59,18 @@ export default function App() {
                       there is one. It renders nothing — it decides when
                       the device asks the server what changed. */}
                   <SyncProvider>
-                    <RootNavigator />
+                    {/* The navigator and one floating line of chrome. The
+                        View exists only to give the strip something to be
+                        absolute WITHIN — the navigator fills it, the strip
+                        sits over it and cannot take a touch. */}
+                    <View style={styles.root}>
+                      <RootNavigator />
+                      {/* ★ INSIDE SyncProvider, because half of what it
+                          reports is the sync engine's phase, and inside
+                          AuthGate because a strip about a session is
+                          nonsense before there is one. */}
+                      <ConnectionStrip />
+                    </View>
                   </SyncProvider>
                 </AuthGate>
                 {/* ★ LAST, and that is the whole point. Sheets and dialogs
@@ -87,6 +99,10 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v2.8.0 — Mounts ConnectionStrip over the navigator: the app can now open on a
+//          session restored from this device, and a patient reading a record is
+//          entitled to know whether it was just confirmed or is the phone's own
+//          copy. pointerEvents none — it is information, never a control.
 // v2.7.0 — Mounts OverlayPortalHost after the navigator: sheets and dialogs are
 //          rendered at the root so they are ABOVE the floating dock. Inside a
 //          screen they could not be — the dock is the navigator's tab bar, a

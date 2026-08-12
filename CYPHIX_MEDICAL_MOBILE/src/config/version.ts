@@ -1,7 +1,76 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.39.2';
-export const APP_BUILD_LABEL = 'Sheets open above the dock, and rise in one piece';
+export const APP_VERSION = '0.40.0';
+export const APP_BUILD_LABEL = 'You stay signed in — offline is not signed out';
+
+// v0.40.0 - Reported from the phone: "close the app for a while, open it again
+//           and it throws me straight to the sign-in screen - and it only signs
+//           me in once the server wakes up."
+//           BOTH HALVES WERE ONE BUG, AND THE BUG WAS A TYPE.
+//           `refreshSession(): Promise<SessionUser | null>` had TWO outcomes for
+//           THREE situations: it collapsed "the server revoked you" and "the
+//           request never left the phone" into the same `null`. The caller could
+//           not tell them apart, so it picked the harsh reading - and that
+//           reading revokes NOTHING (the refresh token stays in the enclave
+//           either way, because nothing was revoked), it only stops a patient
+//           reading the record already on their own phone. Security theatre that
+//           costs usability and buys nothing.
+//           The "it connects when the server comes up" half was the same file:
+//           `restore()` AWAITED that refresh, so a Render container still waking
+//           up meant the 4 s ceiling in AuthGate fired first (-> the sign-in
+//           screen) and the reply landed forty seconds later (-> the app,
+//           suddenly). Exactly what was described, in that order.
+//           ★ THREE OUTCOMES NOW, named in @cyphix/shared `auth/session.ts` so
+//           no platform can re-flatten them: `refreshed` | `rejected` |
+//           `offline`. Only `rejected` - a server that ANSWERED and refused -
+//           ends a session. A 5xx counts as unreachable, not refused, which
+//           matters here specifically because that is what a sleeping Render
+//           service answers while it wakes.
+//           ★ RESTORE NO LONGER TOUCHES THE NETWORK. It reads the principal
+//           beside the token in the enclave and resolves in milliseconds; the
+//           app opens on it. Whether the server still agrees is settled
+//           afterwards, behind the rendered app, and on every foreground.
+//           A cold start is now the same length with the server up, asleep or
+//           absent.
+//           ── AND THE SECURITY, BECAUSE THAT WAS THE ASK ──
+//           An offline session grants NOTHING new. The access token is
+//           memory-only, so it is gone after a cold start and every request 401s
+//           until a real refresh succeeds - the server stays the sole authority
+//           over data. What opening early unlocks is the device's own cache,
+//           which was already on the device. Revocation still lands the instant
+//           the phone has signal, and it is now STRONGER than before: `rejected`
+//           clears the enclave, where the old bounce-to-sign-in left the token
+//           sitting there. Bounded by the refresh token's own lifetime - and the
+//           server now STATES that lifetime (`refreshExpiresInSec`, CYPHIX_SERVER
+//           v0.4.0) instead of the client hard-coding 30 days and never learning
+//           we changed it.
+//           ★ AN APP LOCK, which is what actually pays for opening offline.
+//           Face ID / fingerprint / device passcode in front of a restored
+//           session - Settings > Account, off by default, offered only where the
+//           OS can honour it (a switch that silently does nothing is worse than
+//           no switch). It goes back up after 60 s in the background, not
+//           instantly: a lock that fires when you fetch an SMS code gets
+//           switched off within a day and then protects nothing. Rendered BEFORE
+//           the navigator mounts, not over it. It is a gate on RENDERING and is
+//           described as one - anyone who can beat the OS's own check can read
+//           the cache files directly.
+//           ★ A CONNECTION STRIP at the top: "Connecting…" / "Offline - showing
+//           saved data" / "Connected" for a moment, then silence. The steady
+//           state draws nothing, because a permanent badge stops being read
+//           within a day and then is not read on the day it matters. It reads
+//           BOTH `sessionMode` and the sync engine's phase - the first only ever
+//           moves towards live, so on its own it could never report a phone that
+//           connected at boot and walked into a basement an hour later.
+//           ⚠️ One hole found while reviewing this and closed: `sessionMode`
+//           was set only by the boot revalidation, which runs once per account.
+//           An app that opened while the server was asleep and reconnected two
+//           minutes later through any ordinary query's 401 -> refresh -> retry
+//           had no way to tell the slice, and would have sat on "Offline" over
+//           data it had just fetched. `sessionConfirmed` (the mirror of
+//           `sessionExpired`) now carries that upward.
+//           OTA: TypeScript only - expo-local-authentication and
+//           expo-secure-store are both already in the 0.34.0 binary. app.json
+//           stays at 0.34.0.
 
 // v0.39.2 - v0.39.1 fixed the clipping and the button was STILL not reachable,
 //           because the last cause was never inside the sheet at all.

@@ -1,5 +1,120 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.40.0 - 2026-08-12 - you stay signed in, and offline is not signed out
+
+Reported from the phone: *"when I close the app for a while and then go back in,
+it takes me straight to the login screen — and only when the server comes up does
+it suddenly sign me in. It looks completely unprofessional. Like Instagram: it
+doesn't log me out every time there's no internet. But it has to be done
+properly, with no security hole."*
+
+Both halves of that were one bug, and the bug was a **type**.
+
+### `SessionUser | null` had two outcomes for three situations
+
+`refreshSession()` answered `null` for *"the server revoked you"* **and** for
+*"the request never left the phone"*. Having no way to tell those apart, the
+caller had to pick one — and it picked signed-out.
+
+That choice revokes **nothing**. The refresh token stays in the enclave either
+way, because nothing was revoked; `tokenStore` was already careful about that and
+even said so in a comment. So the bounce to the sign-in screen ended no session,
+protected no data, and cost the patient access to the record already sitting on
+their own phone. Security theatre, paid for in usability.
+
+The second half was the same file. `restore()` **awaited** that refresh, so a
+Render container still waking up meant `AuthGate`'s 4 s ceiling fired first (→
+the sign-in screen) and the server's reply landed forty seconds later (→ the app,
+apparently out of nowhere). Exactly what was described, in exactly that order.
+
+### Three outcomes, named where nobody can re-flatten them
+
+`RefreshOutcome` in `@cyphix/shared` `auth/session.ts`:
+
+| outcome | meaning | what it does |
+|---|---|---|
+| `refreshed` | a server issued a new pair | session is live |
+| `rejected` | a server **answered and refused** — revoked, expired, rotated out, family killed on a replay | clears the enclave, signs out. **The only thing that ends a session.** |
+| `offline` | no answer came back | changes nothing at all |
+
+A **5xx is `offline`, not `rejected`** — and that distinction is not academic
+here: a sleeping Render service answers with a 5xx while it wakes, which is the
+common case on this deployment rather than an exotic one.
+
+### Restore no longer touches the network
+
+The principal is now persisted beside the refresh token in the enclave, so
+`restore()` is a disk read. It resolves in milliseconds, the app opens on it, and
+whether the server still agrees is settled afterwards — behind the rendered app,
+and again on every foreground. **A cold start is now the same length with the
+server up, asleep, or absent.**
+
+### The security, since that was the actual question
+
+An offline session grants **nothing new**:
+
+- the access token is memory-only, so it is gone after a cold start and every
+  request 401s until a real refresh succeeds. The server remains the only
+  authority over data; this changes what the client *renders*, never what it is
+  *allowed to fetch*;
+- what opening early unlocks is the device's own cache — data already on this
+  device;
+- **revocation is stronger than before, not weaker.** `rejected` clears the
+  enclave. The old bounce-to-sign-in left the refresh token sitting in it;
+- it is bounded by the refresh token's own lifetime, and the server now **states**
+  that lifetime (`refreshExpiresInSec`, CYPHIX_SERVER v0.4.0) rather than the
+  client hard-coding 30 days and never learning we had changed it.
+
+### An app lock, which is what actually pays for opening offline
+
+Face ID / fingerprint / device passcode in front of a restored session.
+Settings › Account, **off by default**, and offered only where the OS can honour
+it — a security switch that silently does nothing is worse than no switch,
+because the patient believes in it.
+
+- It goes back up after **60 s** in the background, not instantly. A lock that
+  fires every time you fetch an SMS code gets switched off within a day, and
+  then protects nothing.
+- It renders **before** the navigator mounts, not over it. A lock with the record
+  drawn underneath is one screenshot or one slow commit away from not being a
+  lock.
+- It is a gate on **rendering**, and is described as one. Anyone who can defeat
+  the OS's own check can read the cache files directly and never meet it.
+- The flag lives in the secure enclave, not `AsyncStorage`: plain storage is a
+  file, and a security control a file edit can disable is decoration.
+
+### A line at the top saying which you are looking at
+
+`Connecting…` / `Offline · showing saved data` / `Connected` for a moment, then
+silence. **The steady state draws nothing** — a permanent "online" badge stops
+being read within a day, and then it is not read on the day it matters either.
+
+It reads both `sessionMode` *and* the sync engine's phase, because `sessionMode`
+only ever moves *towards* live: a confirmed session stays confirmed, so on its own
+it could never report a phone that connected at boot and walked into a basement
+an hour later.
+
+### ⚠️ One hole found while reviewing this, and closed
+
+`sessionMode` was set only by the boot revalidation, which runs once per account.
+An app that opened while the server was asleep and reconnected two minutes later
+— through any ordinary query's 401 → refresh → retry, which is most of them — had
+no way to tell the slice, and would have sat on "Offline · showing saved data"
+over data it had just successfully fetched. `sessionConfirmed`, the mirror of the
+existing `sessionExpired`, now carries that upward from the transport.
+
+### Verified
+
+`tsc --noEmit` clean on mobile, web and server; `expo export` bundles for iOS and
+Android; `expo-doctor` 18/18. That proves the code is **well-formed**, not that it
+works — per `CLAUDE.md` §6.4, the cold-start behaviour, the lock and the strip stay
+🔬 in `PARITY.md` until someone has closed the app, left it, and reopened it on a
+handset.
+
+**OTA.** TypeScript only — `expo-local-authentication` and `expo-secure-store` are
+both already in the 0.34.0 binary — so `app.json` stays at 0.34.0 (§5A.2).
+
+
 ## v0.39.2 - 2026-08-09 - sheets open above the dock, and rise in one piece
 
 Reported after v0.39.1: *"the confirm is still hidden underneath, and the

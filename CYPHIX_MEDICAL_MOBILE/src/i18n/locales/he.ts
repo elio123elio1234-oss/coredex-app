@@ -277,6 +277,8 @@ export const he: Record<TranslationKey, string> = {
   setDevRole: 'תצוגה כתפקיד',
   setDevRoleDesc: 'לדיבאג בלבד. מציג את האפליקציה כמו לתפקיד הזה — זה לא מעניק שום הרשאה, השרת עדיין מחליט מה מותר.',
   setDevRoleReal: 'האמיתי',
+  setAppLock: 'נעילה בכניסה',
+  setAppLockDesc: 'לבקש Face ID, טביעת אצבע או קוד לפני פתיחת התיק שלך בטלפון הזה',
   setAccountSignOut: 'התנתקות',
   setAccountSignOutDesc: 'מסיים את החיבור בטלפון הזה',
   setSignOutBody: 'כדי לפתוח את המדידות שוב תצטרכו את הסיסמה — או Face ID. שום דבר לא נמחק.',
@@ -662,6 +664,17 @@ export const he: Record<TranslationKey, string> = {
   authUseFaceId: 'כניסה עם Face ID',
   authUseTouchId: 'כניסה עם Touch ID',
   authUseBiometrics: 'כניסה בזיהוי ביומטרי',
+
+  /* ── נעילת האפליקציה ── */
+  lockSubtitle: 'לפתיחת התיק הרפואי שלך',
+  lockUnlock: 'פתיחה',
+  lockPrompt: 'פתיחת CYPHIX',
+  lockSignOut: 'כניסה עם חשבון אחר',
+
+  /* ── רצועת החיבור ── */
+  connOffline: 'לא מקוון · מוצג מידע שמור',
+  connConnecting: 'מתחבר ל‑CYPHIX…',
+  connLive: 'מחובר',
   authBiometricPrompt: 'פתיחת CYPHIX',
   authBack: 'חזרה',
 
@@ -793,6 +806,7 @@ export const he: Record<TranslationKey, string> = {
   exit: 'יציאה',
 };
 
+// v1.15.0 — עברית לנעילת האפליקציה ולרצועת החיבור, מפתח מול מפתח עם en.ts.
 // v1.14.0 — עברית לטאב התובנות (תעודת ה‑ECG), מפתח מול מפתח עם en.ts. כללי
 //           הניסוח תורגמו כ*כללים*, לא כהערה — מי שיוסיף כאן מחרוזת חדשה צריך
 //           לקרוא אותם באותה שפה שבה הוא כותב.

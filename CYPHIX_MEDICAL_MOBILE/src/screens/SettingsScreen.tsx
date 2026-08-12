@@ -26,7 +26,7 @@
    Text size is present but DIFFERENT on purpose: see the row's comment.
    ================================================================== */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -59,7 +59,8 @@ import { useReminders } from '@/features/reminders/useReminders';
 import { DEMO_CARD } from '@/features/profile/demoCard';
 import type { CareMode, ThemeChoice } from '@/features/preferences/preferencesSlice';
 import { useTranslation } from '@/i18n/useTranslation';
-import { debugRoleSet } from '@/features/auth/authSlice';
+import { debugRoleSet, setAppLockEnabled } from '@/features/auth/authSlice';
+import { canUseAppLock } from '@/services/auth/biometrics';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import type { Role } from '@/types/rbac';
 import type { TranslationKey } from '@/i18n/config';
@@ -123,6 +124,20 @@ export default function SettingsScreen() {
      one, which is how a demo becomes a false belief about an account. */
   const realRole: Role = sessionRole ?? 'clinician';
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const appLockEnabled = useAppSelector((st) => st.auth.appLockEnabled);
+  /* Whether the OS can honour a lock at all — asked once, on mount, and
+     used to decide whether the row exists. See the row itself for why a
+     switch that cannot be honoured is worse than no switch. */
+  const [canLock, setCanLock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void canUseAppLock().then((ok) => {
+      if (!cancelled) setCanLock(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const reminders = useReminders();
   const palette = shellPalette(prefs.background, dark);
 
@@ -433,6 +448,36 @@ export default function SettingsScreen() {
               value={<SettingsChip label={tr(ROLE_LABEL_KEY[realRole])} />}
             />
           )}
+          {/* ── The app lock ──
+              The app now opens on a session restored from this phone's
+              enclave rather than waiting for the server to confirm it,
+              which is what stopped a cold start with no signal from
+              dumping the patient on the sign-in screen. This is the
+              control that pays for it: a device unlock in front of that
+              restored session, so a phone somebody else is holding does
+              not open onto a medical record.
+
+              ★ Offered ONLY where it can be honoured. A switch that
+              silently does nothing on a phone with no passcode and no
+              enrolled biometric is worse than no switch — it is a
+              security control the patient believes in. Same rule the
+              sign-in screen's biometric button follows. */}
+          {canLock ? (
+            <SettingsRow
+              label={tr('setAppLock')}
+              description={tr('setAppLockDesc')}
+              control={
+                <Switch
+                  value={appLockEnabled}
+                  onValueChange={(next) => {
+                    void Haptics.selectionAsync();
+                    void dispatch(setAppLockEnabled(next));
+                  }}
+                  trackColor={{ true: t.accent, false: t.border }}
+                />
+              }
+            />
+          ) : null}
           {/* There IS something to sign out of now: the account created by
               the onboarding flow. Confirmed first — on a device-local
               account, signing out means the password is needed again (or
@@ -501,6 +546,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v2.3.0 — Adds the app-lock row (Account), offered only where the OS can
+//          honour it: a security switch that silently does nothing is worse
+//          than no switch, because the patient believes in it.
 // v2.2.0 — About names the frosted material this phone actually resolved.
 //          "It doesn't look like glass" has three indistinguishable causes and
 //          only the device can say which one it is.

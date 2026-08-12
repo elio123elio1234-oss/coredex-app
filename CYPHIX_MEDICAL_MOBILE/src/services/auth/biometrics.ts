@@ -62,6 +62,51 @@ export interface BiometricResult {
   cancelled: boolean;
 }
 
+/**
+ * Can this device stand behind an APP LOCK?
+ *
+ * Deliberately a different question from `canUseBiometrics` above, and the
+ * difference is the fallback. That one gates an OFFER — a button that must
+ * not be drawn if it cannot be honoured — so it insists on enrolled
+ * biometrics. This one gates a session the patient has already asked us to
+ * protect, and the device passcode is an entirely respectable way to prove
+ * you own the phone. Requiring a face here would mean someone who uses a
+ * passcode could not have an app lock at all.
+ *
+ * `isEnrolledAsync` covers passcode-only devices too on both platforms, so
+ * this is one call rather than a platform branch.
+ */
+export async function canUseAppLock(): Promise<boolean> {
+  try {
+    return await LocalAuthentication.isEnrolledAsync();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Prove the person holding the phone is the person it belongs to.
+ *
+ * ★ `disableDeviceFallback: false`, the opposite of the sign-in button
+ * below, and for the reason above: this is the ONLY way past the lock, so
+ * a wet thumb or a face the sensor will not take must not be a dead end.
+ * The device passcode is the OS's own fallback and is exactly as strong as
+ * the assertion being made here — "this phone is yours".
+ */
+export async function unlockApp(promptMessage: string): Promise<BiometricResult> {
+  try {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage,
+      disableDeviceFallback: false,
+    });
+    if (result.success) return { ok: true, cancelled: false };
+    const cancelled = result.error === 'user_cancel' || result.error === 'system_cancel';
+    return { ok: false, cancelled };
+  } catch {
+    return { ok: false, cancelled: false };
+  }
+}
+
 /** Prompt, and on success open the remembered account's session. */
 export async function unlockWithBiometrics(promptMessage: string): Promise<BiometricResult> {
   try {
@@ -82,4 +127,8 @@ export async function unlockWithBiometrics(promptMessage: string): Promise<Biome
   }
 }
 
+// v1.1.0 — Adds the APP LOCK pair (`canUseAppLock` / `unlockApp`), which allow
+//          the device passcode as a fallback where the sign-in offer does not:
+//          the lock is the only way in, so a sensor that will not read must not
+//          be a dead end.
 // v1.0.0 — Face ID / fingerprint unlock for the remembered account.

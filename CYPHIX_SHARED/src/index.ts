@@ -20,6 +20,12 @@ export * from './api/sync';
    belongs in both places (tracked in PARITY.md). */
 export * from './auth/contract';
 
+/* What "still signed in" means when the server cannot be reached: the
+   three-outcome refresh contract, the persisted principal a cold start
+   opens from, and the refresh-token ceiling that bounds it. Policy, not
+   transport — which is why it is here and not in either app. */
+export * from './auth/session';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -90,6 +96,9 @@ export * from './ecg/beatTemplate';
 export * from './ecg/ecgIdentity';
 export * from './ecg/measurementStats';
 
+// v1.10.0 — Adds auth/session: what "still signed in" means with no server —
+//           the three-outcome refresh contract, the persisted principal a cold
+//           start opens from, and the refresh-token ceiling that bounds it.
 // v1.9.0 — Adds the health catalogue + the PatientCardPatch contract.
 // v1.8.0 — Adds the measurement-reminder schedule (types/reminder.ts).
 // v1.7.0 — Adds the ECG ID stack (beat templates, the personal baseline, the

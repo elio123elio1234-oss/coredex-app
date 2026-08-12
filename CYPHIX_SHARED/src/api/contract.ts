@@ -70,9 +70,24 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresInSec: number;
+  /**
+   * How long the REFRESH token is good for, in seconds.
+   *
+   * ★ Optional because a client must keep working against a server that
+   * predates the field — but a client that has it should always prefer it.
+   * It is the server's own `REFRESH_TTL_DAYS`, and a device that persists
+   * a session across cold starts needs to know when that session is
+   * provably dead (`auth/session.ts`). Without this the client has to
+   * hard-code the number, and lowering the server's TTL would then leave
+   * every installed phone quietly believing in the old one.
+   */
+  refreshExpiresInSec?: number;
   user: SessionUser;
 }
 
+// v1.3.0 — AuthTokens states the REFRESH token's lifetime, so a client that
+//          persists a session across cold starts learns the ceiling from the
+//          server instead of hard-coding it (see auth/session.ts).
 // v1.2.0 — ApiRequest carries optional per-request headers, so a client can
 //          make a conditional GET (If-None-Match) without bypassing the
 //          transport's auth and refresh policy.

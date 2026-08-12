@@ -16,7 +16,7 @@
    they move to shared then — not before.
    ================================================================== */
 
-import type { AuthServiceContract, AuthSession } from '@cyphix/shared';
+import type { AuthServiceContract, AuthSession, RefreshOutcome } from '@cyphix/shared';
 
 /** The account this device last signed in as. Name only — it is shown
     above the biometric button so the patient knows WHOSE record is about
@@ -27,6 +27,20 @@ export interface RememberedAccount {
 }
 
 export interface MobileAuthService extends AuthServiceContract {
+  /**
+   * Ask the authority whether the session `restore()` just opened is
+   * still real, and report which of the three things happened.
+   *
+   * ★ Separate from `restore()` on purpose, and the separation is the
+   * whole offline-session design: restoring is a disk read that always
+   * succeeds or fails immediately, revalidating is a round trip that may
+   * never come back. Fusing them is what made a cold start with no signal
+   * — or with a server still waking up — land on the sign-in screen.
+   * `RefreshOutcome` is returned whole so the caller can tell "the server
+   * refused" from "there was no server to ask"; see @cyphix/shared
+   * `auth/session.ts`, where the reasoning lives.
+   */
+  revalidate(): Promise<RefreshOutcome>;
   /** Null when this device has no account to offer biometric re-entry to. */
   rememberedAccount(): Promise<RememberedAccount | null>;
   /** Open the remembered account's session. The BIOMETRIC CHECK IS THE
@@ -47,5 +61,8 @@ export interface MobileAuthService extends AuthServiceContract {
     either side of the wire yet — see AUTH_ROUTES_PLANNED in @cyphix/shared. */
 export const MOCK_SMS_CODE = '000000';
 
+// v1.1.0 — Adds `revalidate()`: restoring a session (a disk read) and
+//          confirming it (a round trip) are now two calls, which is what lets
+//          the app open offline without pretending the server agreed.
 // v1.0.0 — The two-implementation auth surface: shared contract + the device
 //          extras, so swapping mock ⇄ server is a compiler-checked change.

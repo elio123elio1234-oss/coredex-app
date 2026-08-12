@@ -22,10 +22,12 @@ import {
   type Credentials,
   type RegistrationInput,
   type RegistrationProfile,
+  type SessionMode,
   type SessionUser,
 } from '@cyphix/shared';
 import { authService } from '@/services/auth/authService';
-import { sessionExpired } from '@/services/auth/authEvents';
+import { readAppLock, setAppLock } from '@/services/api/tokenStore';
+import { sessionConfirmed, sessionExpired } from '@/services/auth/authEvents';
 import { logAudit } from '@/services/audit/auditLogger';
 import type { Role } from '@/types/rbac';
 
@@ -63,6 +65,37 @@ export interface AuthState {
    * of it.
    */
   justRegistered: boolean;
+  /**
+   * Whether a server has confirmed this session during THIS app run.
+   *
+   * `offline` is the honest state after a cold start that could not reach
+   * the server: the app is running on the principal in the enclave, which
+   * is what it was last told, not what it has just been told. It is
+   * surfaced in the UI (`ConnectionStrip`) because a patient reading their
+   * record is entitled to know which of the two they are looking at.
+   *
+   * It is NOT a permission level. Nothing in the app branches on it to
+   * decide what may be read or written — the server does that, on every
+   * request, exactly as before.
+   */
+  sessionMode: SessionMode;
+  /** A revalidation is in flight. Drives the "connecting…" strip. */
+  revalidating: boolean;
+  /**
+   * The session was restored from the enclave and the patient has not
+   * passed the app lock yet.
+   *
+   * ★ A gate on RENDERING, not on authorisation. The tokens are already
+   * in the enclave whatever this says, and the server is the only thing
+   * granting access to data; what the lock protects is the cached record
+   * on a phone somebody else is holding. It is latched in the store so
+   * every consumer sees one answer — a lock evaluated per screen is a
+   * lock with a hole in it.
+   */
+  locked: boolean;
+  /** Has the patient asked for an app lock? Read from the enclave on
+      restore, so nothing has to re-read it on every foreground. */
+  appLockEnabled: boolean;
 }
 
 const initialState: AuthState = {
@@ -74,6 +107,12 @@ const initialState: AuthState = {
   error: null,
   justRegistered: false,
   debugRole: null,
+  /* Nothing has been confirmed yet, and claiming `live` before a server
+     has answered is the lie the strip exists to prevent. */
+  sessionMode: 'offline',
+  revalidating: false,
+  locked: false,
+  appLockEnabled: false,
 };
 
 function auditSignIn(user: SessionUser, detail: string): void {
@@ -85,9 +124,53 @@ function auditSignIn(user: SessionUser, detail: string): void {
   });
 }
 
-/** Boot: bring back the stored session if there is one. */
+/**
+ * Boot: bring back the stored session if there is one.
+ *
+ * A disk read, and nothing else — see `HttpAuthService.restore`. It
+ * resolves in milliseconds whether or not there is a network, which is
+ * what makes the splash a fixed length instead of a hostage to the
+ * server's wake-up time. Whether the session is still real is
+ * `revalidateSession`'s question, asked afterwards.
+ *
+ * It also reports whether the app lock stands between the patient and the
+ * record, because both answers come off the same enclave and asking twice
+ * would let the app render for a frame between them.
+ */
 export const restoreSession = createAsyncThunk('auth/restore', async () => {
-  return authService.restore();
+  const session = await authService.restore();
+  const appLockEnabled = await readAppLock();
+  return { session, appLockEnabled };
+});
+
+/**
+ * Ask the server whether the restored session is still real.
+ *
+ * ★ THE POLICY LIVES HERE, and it is three lines long because the type
+ * finally allows it to be:
+ *
+ *   refreshed → the session is confirmed; go `live`.
+ *   rejected  → an authority refused us. Sign out, now. This is the ONLY
+ *               thing that ends a session, and it is not weakened by any
+ *               of the above: a revoked token is refused the moment the
+ *               phone has signal, and the enclave is cleared with it.
+ *   offline   → we learned nothing. Change nothing. Stay `offline`, keep
+ *               the token, keep rendering the device's own copy, and ask
+ *               again on the next foreground.
+ *
+ * Before this existed, `offline` and `rejected` were the same value and
+ * the app took the harsher reading — which revoked nothing (the token
+ * stays in the enclave either way) and cost the patient their session
+ * every time a lift, a tunnel or a sleeping container got in the way.
+ */
+export const revalidateSession = createAsyncThunk('auth/revalidate', async () => {
+  return authService.revalidate();
+});
+
+/** Turn the app lock on or off, and persist it to the enclave. */
+export const setAppLockEnabled = createAsyncThunk('auth/setAppLock', async (enabled: boolean) => {
+  await setAppLock(enabled);
+  return enabled;
 });
 
 export const loginUser = createAsyncThunk<
@@ -149,6 +232,22 @@ const authSlice = createSlice({
     welcomeAcknowledged(state) {
       state.justRegistered = false;
     },
+    /** The device unlock succeeded — let the app render. */
+    appUnlocked(state) {
+      state.locked = false;
+    },
+    /**
+     * Put the lock back up.
+     *
+     * Dispatched when the app returns from a long enough spell in the
+     * background — a lock that only ever ran at launch is one a handed-over
+     * phone walks straight past. Gated on `appLockEnabled` HERE rather
+     * than at the call site so no future caller can forget it and lock a
+     * patient out of a feature they never switched on.
+     */
+    appRelocked(state) {
+      if (state.user && state.appLockEnabled) state.locked = true;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -156,17 +255,66 @@ const authSlice = createSlice({
         state.status = 'restoring';
       })
       .addCase(restoreSession.fulfilled, (state, action) => {
-        state.user = action.payload?.user ?? null;
-        state.profile = action.payload?.profile ?? {};
+        const { session, appLockEnabled } = action.payload;
+        state.user = session?.user ?? null;
+        state.profile = session?.profile ?? {};
         state.status = 'idle';
         /* A restored session is one the patient has met before — there is
            nothing to celebrate and nothing holding the door. */
         state.justRegistered = false;
+        /* Restored from the enclave, which is a record of what a server
+           said LAST TIME. `revalidateSession` is what earns `live`. */
+        state.sessionMode = 'offline';
+        state.appLockEnabled = appLockEnabled;
+        state.locked = session !== null && appLockEnabled;
       })
       .addCase(restoreSession.rejected, (state) => {
         // A device we cannot read is a device with no session — show the door.
         state.user = null;
         state.status = 'idle';
+        state.locked = false;
+      })
+      .addCase(revalidateSession.pending, (state) => {
+        state.revalidating = true;
+      })
+      .addCase(revalidateSession.fulfilled, (state, action) => {
+        state.revalidating = false;
+        switch (action.payload.kind) {
+          case 'refreshed':
+            /* The server answered and re-issued. This is the only place
+               `live` is ever set, and it is set on evidence. */
+            state.sessionMode = 'live';
+            state.user = action.payload.user;
+            break;
+          case 'rejected':
+            /* An authority refused us: revoked, expired, or a replayed
+               token whose family was killed. The session is over, and the
+               enclave has already been cleared by the token store. */
+            state.user = null;
+            state.profile = {};
+            state.sessionMode = 'offline';
+            state.locked = false;
+            state.debugRole = null;
+            break;
+          case 'offline':
+            /* Nothing was learned, so nothing changes. Deliberately not
+               an error state: nothing the patient did failed, and there
+               is nothing for them to fix. */
+            break;
+        }
+      })
+      .addCase(revalidateSession.rejected, (state) => {
+        /* The thunk itself threw — a bug, not an answer from a server. It
+           is emphatically not grounds to end a session: an exception in
+           our own code must never be able to sign a patient out. */
+        state.revalidating = false;
+      })
+      .addCase(setAppLockEnabled.fulfilled, (state, action) => {
+        state.appLockEnabled = action.payload;
+        /* Turning the lock ON does not lock the app the patient is
+           already holding — they just proved they have it, by changing
+           the setting. It takes effect on the next launch or foreground. */
+        if (!action.payload) state.locked = false;
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
@@ -174,6 +322,10 @@ const authSlice = createSlice({
         state.status = 'idle';
         state.error = null;
         state.justRegistered = false;
+        state.sessionMode = 'offline';
+        /* Nothing to lock. Leaving this true would put the unlock screen
+           in front of the sign-in screen, which has nothing behind it. */
+        state.locked = false;
         /* A preview must not outlive the account it was previewed on: the
            next person to sign in would silently get someone else's chosen
            role drawn over their own. */
@@ -183,12 +335,24 @@ const authSlice = createSlice({
          replay detected server-side). Same landing as a sign-out, and
          NOT an error state: nothing the patient did failed — the session
          simply ended, so the door is the honest place to be. */
+      /* A refresh succeeded somewhere in the app — most often the first
+         401 after a cold start, which is how an app that opened on a
+         restored session normally finds the server again. Same landing as
+         `revalidateSession.fulfilled` with `refreshed`, because it is the
+         same evidence: a server answered and re-issued. */
+      .addCase(sessionConfirmed, (state, action) => {
+        if (!state.user) return; // signed out mid-flight; nothing to confirm
+        state.sessionMode = 'live';
+        state.user = action.payload;
+      })
       .addCase(sessionExpired, (state) => {
         state.user = null;
         state.profile = {};
         state.status = 'idle';
         state.error = null;
         state.justRegistered = false;
+        state.sessionMode = 'offline';
+        state.locked = false;
       })
       /* Sign-in and registration land the same way — except that
          registration also latches `justRegistered`, so they cannot share
@@ -198,6 +362,10 @@ const authSlice = createSlice({
         state.profile = action.payload.profile;
         state.status = 'idle';
         state.error = null;
+        /* A password was just checked BY the server, so this session is
+           confirmed by definition — the strongest evidence there is. */
+        state.sessionMode = 'live';
+        state.locked = false;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.user = action.payload.user;
@@ -206,6 +374,8 @@ const authSlice = createSlice({
         state.error = null;
         // Hold the gate on the flow until "Profile created" is dismissed.
         state.justRegistered = true;
+        state.sessionMode = 'live';
+        state.locked = false;
       })
       .addMatcher(isAnyOf(loginUser.pending, registerUser.pending), (state) => {
         state.status = 'loading';
@@ -218,9 +388,18 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthError, debugRoleSet, welcomeAcknowledged } = authSlice.actions;
+export const { appRelocked, appUnlocked, clearAuthError, debugRoleSet, welcomeAcknowledged } =
+  authSlice.actions;
 export default authSlice.reducer;
 
+// v2.0.0 — A restored session no longer depends on reaching the server.
+//          `restoreSession` reads the enclave and resolves at once;
+//          `revalidateSession` asks afterwards and is the only thing that can
+//          end a session — and only on `rejected`. Adds `sessionMode`
+//          (live/offline, surfaced in the UI) and the app lock's `locked`
+//          latch. Before this, "offline" and "revoked" were the same value and
+//          the app took the harsher reading, which revoked nothing and cost the
+//          patient their session on every lift, tunnel and cold start.
 // v1.1.0 — Handles sessionExpired from the HTTP layer (refresh exhausted → the
 //          onboarding gate), matching the web slice's v2.2.0 behaviour.
 // v1.0.0 — Session + sign-in lifecycle, mirroring the web auth slice, plus the

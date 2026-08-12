@@ -38,6 +38,7 @@ import {
   type AuthSession,
   type AuthTokens,
   type Credentials,
+  type RefreshOutcome,
   type RegistrationInput,
   type SessionUser,
 } from '@cyphix/shared';
@@ -47,6 +48,7 @@ import {
   apiRoot,
   clearSession,
   getAccessToken,
+  readPrincipal,
   readRefreshToken,
   refreshSession,
   storeSession,
@@ -145,18 +147,53 @@ async function forget(): Promise<void> {
 }
 
 export class HttpAuthService implements MobileAuthService {
-  /** Boot restore. The rotating refresh token in the enclave IS the
-      persisted session — there is nothing else to check. */
+  /**
+   * Boot restore — and it DOES NOT TOUCH THE NETWORK.
+   *
+   * ★ This is the fix for "closing the app for a while and reopening it
+   * dumps me on the sign-in screen, and it only signs me in once the
+   * server wakes up". The old version awaited a refresh: an unreachable
+   * or sleeping server therefore meant either a null (⇒ the door) or a
+   * boot that hung until the server answered forty seconds later — which
+   * is precisely what was seen.
+   *
+   * The enclave is the session. If a usable principal is in it, this
+   * answers instantly and the app opens; whether the server agrees is
+   * settled afterwards, in the background, by `revalidateSession` — and
+   * only a REJECTION ends the session. A cold start is now the same
+   * length with the server up, asleep or absent.
+   *
+   * `profile` is empty on purpose: the server owns the medical card and
+   * serves it from GET /patients/:id/card, which is a separate screen's
+   * query, not something to smuggle through the session. Registration
+   * still returns what the wizard just typed (below), so the review and
+   * success screens are unaffected.
+   */
   async restore(): Promise<AuthSession | null> {
-    const user = await refreshSession();
-    if (!user) return null;
-    await remember(user);
-    /* `profile` is empty on purpose: the server owns the medical card and
-       serves it from GET /patients/:id/card, which is a separate screen's
-       query, not something to smuggle through the session. Registration
-       still returns what the wizard just typed (below), so the review and
-       success screens are unaffected. */
-    return { user, token: getAccessToken() ?? '', profile: {} };
+    const principal = await readPrincipal();
+    if (!principal) return null;
+    await remember(principal.user);
+    /* No access token yet — it is memory-only and this is a cold start.
+       Every request will 401 and drive the single-flight refresh, which
+       is the same path a 15-minute-old token takes. Nothing is granted
+       by opening here that the server has not been asked about. */
+    return { user: principal.user, token: getAccessToken() ?? '', profile: {} };
+  }
+
+  /**
+   * Ask the server whether the restored session is still real.
+   *
+   * Split from `restore` so the app can open on what the device knows and
+   * correct itself when the answer arrives, rather than making the
+   * patient wait for a round trip to find out something that is almost
+   * always "yes". The three outcomes are passed straight up — the caller
+   * (`authSlice`) is where the policy lives, and flattening them here
+   * would recreate the exact bug this release removes.
+   */
+  async revalidate(): Promise<RefreshOutcome> {
+    const outcome = await refreshSession();
+    if (outcome.kind === 'refreshed') await remember(outcome.user);
+    return outcome;
   }
 
   async login(credentials: Credentials): Promise<AuthSession> {
@@ -278,6 +315,10 @@ export class HttpAuthService implements MobileAuthService {
   }
 }
 
+// v2.0.0 — `restore()` no longer touches the network: it answers from the
+//          enclave, so a cold start takes the same time with the server up,
+//          asleep or absent. Whether the session is still real is settled
+//          afterwards by `revalidate()`, and only a rejection ends it.
 // v1.1.0 — Uploads the portrait the sign-up wizard collected, once the account
 //          exists (it needs a patient id, which only the reply carries). Never
 //          able to fail a registration — see uploadPortrait.

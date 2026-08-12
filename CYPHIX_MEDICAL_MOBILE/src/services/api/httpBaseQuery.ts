@@ -19,7 +19,7 @@ import { fetchBaseQuery, type BaseQueryFn } from '@reduxjs/toolkit/query';
 import type { ApiError, ApiRequest } from '@cyphix/shared';
 import { API_VERSION_PATH } from '@cyphix/shared';
 import { ENV } from '@/config/env';
-import { sessionExpired } from '@/services/auth/authEvents';
+import { sessionConfirmed, sessionExpired } from '@/services/auth/authEvents';
 import { clearSession, getAccessToken, refreshSession } from './tokenStore';
 
 /**
@@ -53,17 +53,33 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError, object, H
   let result = await rawQuery(args, api, extraOptions);
 
   if (result.error && result.error.status === 401) {
-    const user = await refreshSession(); // single-flight across parallel 401s
-    if (user) {
+    const outcome = await refreshSession(); // single-flight across parallel 401s
+    if (outcome.kind === 'refreshed') {
+      /* Tell the slice a server just answered. Any request in the app can
+         be the one that reconnects — the app opens on a restored session
+         and the first 401 is the usual way it finds the server again —
+         and without this the app would keep saying "offline" over data it
+         had just fetched. Cheap: the refresh is single-flight, so this is
+         one dispatch per real exchange, not one per screen. */
+      api.dispatch(sessionConfirmed(outcome.user));
       result = await rawQuery(args, api, extraOptions);
-    } else {
-      /* The session is genuinely over (or unreachable). Clearing alone
-         would leave the app rendering a signed-in shell over 401s, so the
-         slice is told to drop the principal and show the door — the same
-         `sessionExpired` bridge the web uses. */
+    } else if (outcome.kind === 'rejected') {
+      /* The session is genuinely over. Clearing alone would leave the app
+         rendering a signed-in shell over 401s, so the slice is told to
+         drop the principal and show the door — the same `sessionExpired`
+         bridge the web uses. `clearSession` has already run inside the
+         token store; this call is the idempotent belt to its braces. */
       await clearSession();
       api.dispatch(sessionExpired());
     }
+    /* ★ `offline` deliberately does NOTHING.
+       The refresh never reached a server, so nothing is known about this
+       session and nothing about it may be changed. This branch used to be
+       folded in with `rejected` — a single `null` covered both — and that
+       is how a lost signal in the middle of a screen's 401 signed the
+       patient out. The request below still fails, the caching layer serves
+       the device's copy where it has one, and the next foreground asks
+       again. */
   }
 
   /* The response headers are the only place a validator can come from, and
@@ -84,6 +100,10 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError, object, H
   return { data: result.data, meta };
 };
 
+// v1.2.0 — A 401 whose refresh comes back `offline` no longer signs the patient
+//          out. Only `rejected` — a server that ANSWERED and refused — ends a
+//          session; a refresh that never reached anyone teaches us nothing and
+//          may therefore change nothing.
 // v1.1.0 — Reports HttpMeta (status + ETag) on both the success and the error
 //          path, so the caching layer above can make conditional requests and
 //          recognise a 304 for what it is.

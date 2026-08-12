@@ -37,6 +37,7 @@ import {
   MIN_PASSWORD_LENGTH,
   type AuthSession,
   type Credentials,
+  type RefreshOutcome,
   type RegistrationInput,
   type RegistrationProfile,
   type SessionUser,
@@ -134,6 +135,17 @@ class MockAuthService implements MobileAuthService {
     const token = newToken();
     setAccessToken(token);
     return toSession(account, token);
+  }
+
+  /**
+   * There is no authority to ask, so nothing can be confirmed and nothing
+   * can be refused — which is exactly what `offline` means. Reporting
+   * `rejected` here would have the slice tear down a session no server
+   * ever issued, on a build whose entire premise is that it works with no
+   * backend at all.
+   */
+  async revalidate(): Promise<RefreshOutcome> {
+    return { kind: 'offline' };
   }
 
   async login({ email, password }: Credentials): Promise<AuthSession> {
@@ -266,5 +278,8 @@ export const authService: MobileAuthService = ENV.hasBackend
   ? new HttpAuthService()
   : new MockAuthService();
 
+// v2.1.0 — The mock answers `revalidate()` with `offline`: with no server there
+//          is nothing to confirm and nothing to refuse, and reporting a refusal
+//          would sign a patient out of a build that has no backend by design.
 // v2.0.0 — Live swap point: HttpAuthService (CYPHIX_SERVER accounts, shared with
 //          the web app) when EXPO_PUBLIC_API_BASE_URL is set; device mock when not.
