@@ -1,7 +1,24 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.40.3';
-export const APP_BUILD_LABEL = 'A force-quit no longer lands on the sign-in screen';
+export const APP_VERSION = '0.40.4';
+export const APP_BUILD_LABEL = 'The connection line loses its capsule — the words are enough';
+
+// v0.40.4 - "While it's connecting the text is enough, it doesn't need the
+//           capsule around it." Right, and it is the third and last step of the
+//           same walk: coloured toast -> monochrome glass capsule -> nothing.
+//           The capsule was drawing a box around two words in order to announce
+//           that they were worth putting in a box. Once the text is legible the
+//           frame is pure decoration, and decoration on a status line is exactly
+//           what makes chrome read as bolted on.
+//           ★ THE ANIMATION HAD TO CHANGE WITH IT, and that is a consequence
+//           rather than a second opinion: a container can SETTLE - scale up a
+//           few per cent and read as a small object arriving - but bare words
+//           cannot, because scaling text reads as a zoom, which would be the
+//           loudest thing this line is capable of doing. Opacity only now.
+//           Everything else is untouched: same words, same spinner, same
+//           outline glyph, same fixed 14 pt slot so swapping one for the other
+//           cannot shift the label sideways, same silence when all is well.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.40.3 - Reported: force-quit from the app switcher, reopen, straight to the
 //           login screen. This is a bug v0.40.2 SHIPPED, and it is the same bug

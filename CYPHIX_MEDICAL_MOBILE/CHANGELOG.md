@@ -1,5 +1,38 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.40.4 - 2026-08-12 - the connection line loses its capsule
+
+From the phone, after v0.40.3 landed and the session behaviour was confirmed
+working: *"while it's connecting the text is enough — it doesn't need the capsule
+around it. What's there, just without the capsule, is perfect."*
+
+Right, and it is the third and last step of the same walk:
+
+| | |
+|---|---|
+| v0.40.0 | a coloured toast — `successSoft` plate, hairline border, status dot, sliding down from off-screen |
+| v0.40.1 | a monochrome glass capsule, the dock's own material |
+| **v0.40.4** | **nothing. The words alone.** |
+
+The capsule was drawing a box around two words in order to announce that they
+were worth putting in a box. Once the text is legible, the frame around it is
+pure decoration — and decoration on a status line is exactly what makes chrome
+read as bolted on rather than part of the app.
+
+### The animation had to change with it
+
+Not a second opinion — a consequence. A **container** can settle: scale up a few
+per cent and it reads as a small object arriving. **Bare words cannot.** Scaling
+text reads as a zoom, which would be the loudest thing this line is capable of
+doing. So it is opacity only.
+
+Everything else is untouched: same words, same spinner, same outline glyph, the
+same fixed 14 pt slot so swapping one for the other cannot shift the label
+sideways, and the same silence when all is well.
+
+`tsc --noEmit` clean. **OTA** — TypeScript only, `app.json` stays at 0.34.0.
+
+
 ## v0.40.3 - 2026-08-12 - a force-quit no longer lands on the sign-in screen
 
 Reported: force-quit from the app switcher, reopen, straight to login.
