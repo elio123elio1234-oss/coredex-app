@@ -1,5 +1,80 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.42.0 — 2026-08-12 — Insights, rewritten for the person whose heart it is
+
+*"Design the Insights tab in a more modern way — it feels dated, with old colour
+choices, and isn't very practical. Add useful, nice information for a patient who
+understands nothing about ECG."*
+
+Three complaints, one defect: **the screen was built for a clinician.** It opened
+with `ECG ID / BASELINE ESTABLISHED · 24 STUDIES` in letterspaced small caps,
+then a ring reading 82, then a waveform, then percentages and Latin. Every one of
+those is addressed to someone who already knows what the feature is.
+
+### The order inverted
+
+| before | after |
+|---|---|
+| ECG ID · small-caps state · ring | **"Your last recording looks like you"** — and *"24 of your 26 look like your usual ones"* |
+| the waveform | 72 bpm · 26 recordings · 4 months tracked |
+| percentages | the waveform |
+| Latin | ① ② ③ what the waveform *is* |
+
+Nothing was deleted. The ring, the state line, the coverage grid, the deviation
+chips, the drift table and every clinical figure are all still there, lower down,
+where someone looking for them will look. Insights is now two screens stacked in
+one column: the patient's, then the clinician's.
+
+### The "dated" feeling was the section headers
+
+They were 11 px, letterspaced, uppercase, in the **faintest** text colour. That
+was a deliberate choice — "the register an instrument labels its panels in" —
+and on a phone, six of them down one grey column, it fails: the labels are quiet
+to the point of unreadable, the eye gets no structure, and the page reads as a
+wall of grey. They are now legible sentence-case in the secondary colour — still
+quieter than the data they introduce, which was the real requirement, no longer
+quieter than the background.
+
+Gaps went 10 → 14 for a related reason: de-carding in v0.33.0 removed every box,
+which was right, but boxes had been doing the **spacing** as well as the framing.
+
+### The palette did not change — it was barely being spent
+
+Almost everything on the screen was one of three greys. `signalSoft` and
+`attentionSoft` exist to carry meaning and were essentially unused. The verdict
+band is a soft tint of whichever one applies; the explainer's numbered pips are
+another. ⚠️ Still **no cards** — a tinted, borderless band reads as *the page
+saying something*, where a white rectangle on grey reads as an object pasted onto
+it, which is what the v0.33.0 device report was actually about.
+
+### ⚠️ The verdict is measured against the patient, not against a threshold
+
+New `CYPHIX_SHARED/src/ecg/ecgIdentitySummary.ts`. The obvious implementation of
+"does this recording look like your usual ones" is to ask whether it carries a
+marked deviation — **and that is precisely how v0.41.0's alert banner was built,
+which told a real user their heart differed on 26 studies out of 26.** The
+per-study thresholds are calibrated for a clinician weighing one study; promoting
+them to a verdict addressed to the patient is the defect.
+
+So nothing in that file has an absolute threshold. A study is compared with the
+median and robust σ of **this patient's own** scores. By construction the quiet
+state is quiet — half of anyone's studies sit at or above their own median — and
+the sentence can only turn when a recording is unusual *for them*.
+
+Two rules the copy holds to, both already got wrong once in this codebase:
+
+- **It never grades.** "Looks like your usual ones" is a distance from a
+  baseline. "Looks healthy" is a diagnosis, and one word of reassurance would
+  change what this product legally is.
+- **It never implies a universal yardstick.** No "a healthy 95 %" — that would
+  describe a computation that does not happen.
+
+### Not verified on a device
+
+Typechecks and bundles on both platforms. Nobody has looked at the new layout on
+a phone; `PARITY.md` keeps these rows 🔬. Layout is exactly the class of thing
+`tsc` cannot check.
+
 ## v0.41.1 — 2026-08-12 — the alert banner is gone; it had been on since day one
 
 *"Get rid of this line, it gives me no added value."*

@@ -5,18 +5,53 @@
    question a list cannot: **has anything changed?**
 
      ECG ID                                        ╭───╮
-     BASELINE ESTABLISHED · 11 STUDIES             │ 71│
-     ───────────────────────────────────────────── ╰───╯
+     BASELINE ESTABLISHED · 24 STUDIES             │ 82│
+                                                   ╰───╯
+     ╭──────────────────────────────────────────╮
+     │ ✓  Your last recording looks like you    │  ← the answer, first
+     │    24 of your 26 look like your usual    │     and in words
+     ╰──────────────────────────────────────────╯
+      72 bpm        26            4
+      YOUR USUAL    RECORDINGS    MONTHS TRACKED
      ╭──────────────────────────────────────────╮
      │ II                          ⌇            │  ← wider than the
      │ ─────────╱▔╲──╮   ╭──────────────────────│     column, but not
      │               ╰───╯      50 mm/s·10 mm/mV│     flush to the edge
      ╰──────────────────────────────────────────╯
       ▌▌▌▌▌▌▌▌▌▌▌   I  II  III  aVR aVL aVF
+     ① Every heartbeat draws the same shape…
      ─────────────────────────────────────────────
-     MATCH OVER TIME
-      ▇▇▇▇▂▇▇▇▇▇▇        ← tap a bar to pick a study
-     7 Aug                              97 %    ›
+     Match over time
+      ▇▇▆▇▂▇▇▇▇▇▇        ← tap a bar to pick a study
+     7 Aug · This one looks like your usual ones   ›
+
+   ══ ★ WHO THIS SCREEN IS FOR — CHANGED IN v0.42.0 ★ ══
+   It was built for a clinician and it showed. The first thing on the
+   page was "ECG ID / BASELINE ESTABLISHED · 24 STUDIES" in letterspaced
+   small caps, then a ring reading 82, then a waveform, then percentages
+   and Latin. Every one of those is addressed to someone who already
+   knows what the feature is, and the person whose heart it describes was
+   never answered at all.
+
+   Reported as: *"add useful information for a patient who understands
+   nothing about ECG"*. So the order inverted — the ANSWER comes first,
+   in a sentence, then three figures anyone can place, then the curve,
+   then what the curve is. Nothing was deleted: the ring, the state line,
+   the coverage grid, the deviations and every clinical figure are all
+   still here, further down, where someone looking for them will look.
+
+   ⚠️ TWO THINGS THE PATIENT COPY MUST NEVER DO, both of which this
+   codebase has already got wrong once:
+     • It must not GRADE. "Looks like your usual ones" is a distance from
+       their own baseline. "Looks healthy" is a diagnosis, and one word of
+       reassurance would change what this product legally is.
+     • It must not rest on the per-study deviation thresholds. Those fire
+       on very nearly every recording — v0.41.0's alert banner was built
+       on them and told a real user their heart differed on 26 studies out
+       of 26. Every plain-language verdict here comes from
+       `summariseIdentityPlainly`, which judges a study against THAT
+       PATIENT'S OWN spread and therefore has a quiet state that is
+       actually quiet.
 
    ══ THERE ARE NO CARDS ══
    Everything used to be a white rounded rectangle on a grey page, with
@@ -85,6 +120,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   buildBaselineSequence,
   CORRIDOR_BAND_SIGMA,
+  plainVerdictOf,
+  summariseIdentityPlainly,
   type DeviationKind,
   type EcgLeadName,
   type ExclusionReason,
@@ -101,8 +138,11 @@ import BeatSignature, {
 } from '@/components/molecules/BeatSignature';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
 import DeviationChip from '@/components/molecules/DeviationChip';
+import HowItWorks from '@/components/molecules/HowItWorks';
 import IdentityRing from '@/components/molecules/IdentityRing';
 import LeadCoverageGrid from '@/components/molecules/LeadCoverageGrid';
+import PatientFacts, { type PatientFact } from '@/components/molecules/PatientFacts';
+import PlainVerdict from '@/components/molecules/PlainVerdict';
 import RejectedBeats from '@/components/molecules/RejectedBeats';
 import SimilarityTimeline from '@/components/molecules/SimilarityTimeline';
 import { useEcgIdentity } from '@/features/insights/useEcgIdentity';
@@ -273,6 +313,34 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
     return { beats: onLead.rejected, accepted: onLead.samples, total: onLead.beatsRejected };
   }, [selected, view, lead]);
 
+  /* The whole screen in patient language. Pure, so it is a memo rather
+     than a hook, and it lives in `@cyphix/shared` so the web port inherits
+     the wording logic instead of re-deriving it — including the part that
+     matters, which is that every judgement is made against this patient's
+     OWN spread of scores rather than any absolute threshold. */
+  const plain = useMemo(() => summariseIdentityPlainly(identity), [identity]);
+
+  /* Where the SELECTED study sits in this person's own distribution —
+     not just the newest one, because the timeline is a picker and the
+     sentence under it has to describe whatever bar was tapped. */
+  const selectedPlain = useMemo(
+    () => (selected ? plainVerdictOf(plain, selected.similarity) : null),
+    [plain, selected],
+  );
+
+  /* "4 months" / "18 days" — one figure, whichever unit the person would
+     actually use for that span. A patient who has been measuring for four
+     months does not think "127 days", and a patient on day nine does not
+     think "0.3 months". */
+  const trackedFact = useMemo((): PatientFact => {
+    const days = view.stats?.daysTracked ?? 0;
+    if (days >= 60) {
+      return { value: String(Math.round(days / 30.44)), caption: tr('insFactMonths') };
+    }
+    if (days >= 14) return { value: String(Math.round(days / 7)), caption: tr('insFactWeeks') };
+    return { value: String(days), caption: tr('insFactDays') };
+  }, [view.stats, tr]);
+
   /* Only the drift that has cleared this person's own repeatability. The
      model reports every measurement's drift including the still ones, on
      purpose — a caller may want the whole table — but a screen listing
@@ -373,7 +441,19 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
          this the scroll view steals them the moment a finger slides. */
       directionalLockEnabled
     >
-      {/* ══ 1. The signature ══════════════════════════════════════ */}
+      {/* ══ 1. What it says, before what it is ════════════════════
+          ★ THE ORDER CHANGED IN v0.42.0 AND THAT IS THE REDESIGN.
+          This used to open with "ECG ID / BASELINE ESTABLISHED · 24
+          STUDIES" — letterspaced small caps, a ring showing 82, and then
+          a waveform. Every one of those is addressed to someone who
+          already knows what the feature is. A patient opening this screen
+          has one question, and the screen answered it somewhere around
+          the fourth block, in percentages.
+
+          So the answer comes first, in a sentence, and the instrument
+          identifies itself underneath it. Nothing was deleted — the ring,
+          the state line and every clinical figure are all still here,
+          lower down, where someone looking for them will look. */}
       <View style={[styles.head, rtl && styles.rowRtl]}>
         {/* `flexShrink` + `minWidth: 0` is what keeps this column out from
             under the ring. A Text in a row does not wrap — it overflows
@@ -392,12 +472,12 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             {tr('insBuiltFrom', { n: String(identity.enrolled) })}
             {/* ★ The EFFECTIVE count, shown only when it materially
                 disagrees with the raw one. "24 studies" is a comfortable
-                number and it was a lie on real data: one recording held
-                54 % of the weight and the honest count was 2.5. Printing
-                `nEff` unconditionally beside a healthy identity would be
-                a second number saying the same thing; printing it when
-                they diverge is the only warning the reader will ever get
-                that their baseline is thinner than its row count. */}
+                number and it can be a lie — one recording holding most of
+                the weight. Printing `nEff` unconditionally beside a
+                healthy identity would be a second number saying the same
+                thing; printing it when they diverge is the only warning
+                the reader will ever get that their baseline is thinner
+                than its row count. */}
             {identity.nEff > 0 && identity.nEff < identity.enrolled * 0.7
               ? ` · ${tr('insEffective', { n: identity.nEff.toFixed(1) })}`
               : ''}
@@ -414,11 +494,45 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         />
       </View>
 
-      {remaining > 0 && (
-        <Text style={[styles.hint, { color: t.textSecondary, textAlign: align }]}>
-          {tr('insEnrollHint', { n: String(remaining) })}
-        </Text>
-      )}
+      <PlainVerdict
+        verdict={plain.verdict}
+        rtl={rtl}
+        title={
+          plain.verdict === 'learning'
+            ? tr('insPlainLearning')
+            : plain.verdict === 'consistent'
+              ? tr('insPlainConsistent')
+              : plain.verdict === 'slightlyDifferent'
+                ? tr('insPlainSlightly')
+                : tr('insPlainDifferent')
+        }
+        detail={
+          plain.verdict === 'learning'
+            ? remaining > 0
+              ? tr('insPlainLearningMore', { n: String(remaining) })
+              : tr('insPlainLearningSoon')
+            : /* "24 of 26 look like your usual ones" — a count, not a
+                 grade. It is the sentence that turns a percentage nobody
+                 can place into a proportion everybody can. */
+              tr('insPlainTypical', {
+                k: String(plain.typical),
+                n: String(plain.scored),
+              })
+        }
+      />
+
+      <PatientFacts
+        rtl={rtl}
+        facts={[
+          {
+            value: plain.restingBpm === null ? '—' : String(plain.restingBpm),
+            unit: plain.restingBpm === null ? null : ' bpm',
+            caption: tr('insFactRate'),
+          },
+          { value: String(view.stats?.total ?? identity.considered), caption: tr('insFactStudies') },
+          trackedFact,
+        ]}
+      />
 
       {/* ⚠️ THERE IS NO ALERT LINE HERE, AND THAT IS DELIBERATE — v0.41.1.
           One was added in v0.41.0 and removed after one day on a real
@@ -548,6 +662,22 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         rtl={rtl}
       />
 
+      {/* ══ 1B. What the reader has just been looking at ══════════
+          After the curve, never before it — see `HowItWorks`. Three lines
+          carrying the one idea the picture cannot state, which is what
+          the picture IS. Without them the screen is a green curve, a row
+          of percentages and some Latin, and a reader who has not got that
+          idea cannot use anything below. */}
+      <Rule bleed={paddingHorizontal} />
+      <HowItWorks
+        rtl={rtl}
+        steps={[
+          tr('insHow1'),
+          tr('insHow2', { n: String(identity.enrolled) }),
+          tr('insHow3'),
+        ]}
+      />
+
       {/* ══ 2. Every study against the baseline — and the one picked ══
           ★ This used to be TWO sections: a "Latest study" card and a
           separate timeline. They said the same thing twice — the card's
@@ -563,7 +693,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
           older studies reachable instead of only openable. */}
       <Rule bleed={paddingHorizontal} />
       <View style={styles.block}>
-        <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+        <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
           {tr('insTimelineTitle')}
         </Text>
         <SimilarityTimeline
@@ -601,6 +731,36 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
                 />
               </View>
             </View>
+
+            {/* ★ THE SENTENCE COMES BEFORE THE CHIPS — v0.42.0.
+                "67 % match" tells a patient nothing: they have no idea
+                what a good percentage is, and 67 sounds like a failing
+                exam grade when it may be an entirely ordinary recording
+                for them. This line says where the study sits in THEIR OWN
+                distribution, which is the only comparison that was ever
+                available, and it is deliberately placed above the chips
+                so the plain reading is the first one.
+
+                Null when there is no established spread yet: "we cannot
+                say" and "it is typical" are different claims, and only
+                one of them is supported by four recordings. */}
+            {selectedPlain && (
+              <Text
+                style={[
+                  styles.plainLine,
+                  {
+                    color: selectedPlain.verdict === 'consistent' ? t.signalInk : t.textPrimary,
+                    textAlign: align,
+                  },
+                ]}
+              >
+                {selectedPlain.verdict === 'consistent'
+                  ? tr('insStudyUsual')
+                  : selectedPlain.verdict === 'slightlyDifferent'
+                    ? tr('insStudySlightly')
+                    : tr('insStudyDifferent')}
+              </Text>
+            )}
 
             {selected.deviations.length === 0 ? (
               <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
@@ -655,7 +815,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             own two scrolls away. */}
         {rejected && (
           <View style={styles.block}>
-            <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+            <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
               {tr('insRejectedTitle', { n: String(rejected.total) })}
             </Text>
             <View style={bleedStyle}>
@@ -684,7 +844,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
       {/* ══ 3. The numbers the baseline holds ════════════════════ */}
       <Rule bleed={paddingHorizontal} />
       <View style={styles.block}>
-        <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+        <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
           {tr('insBaselineTitle')}
         </Text>
         {/* A plain row of figures, not bordered tiles. Twelve boxes in a
@@ -715,7 +875,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         <>
           <Rule bleed={paddingHorizontal} />
           <View style={styles.block}>
-            <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+            <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
               {tr('insDriftTitle')}
             </Text>
             {driftRows.map((d) => (
@@ -883,7 +1043,7 @@ function CadenceCard({ stats, rtl }: { stats: MeasurementStats; rtl: boolean }) 
 
   return (
     <View style={styles.block}>
-      <Text style={[styles.sectionTitle, { color: t.textTertiary, textAlign: align }]}>
+      <Text style={[styles.sectionTitle, { color: t.textSecondary, textAlign: align }]}>
         {tr('insCadenceTitle')}
       </Text>
       <Text style={[styles.facts, { color: t.textSecondary, textAlign: align }]}>
@@ -931,7 +1091,11 @@ function scoreColour(match: IdentityMatch, t: { attention: string; textPrimary: 
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { gap: 10 },
+  /* Roomier than it was (10). The de-carded layout removed every box,
+     which was right, but boxes had been doing the SPACING as well as the
+     framing — strip them and leave the old gaps and the page reads as one
+     undifferentiated column of grey. Air is what does that job now. */
+  content: { gap: 14 },
   rowRtl: { flexDirection: 'row-reverse' },
   rowBetween: {
     flexDirection: 'row',
@@ -942,20 +1106,33 @@ const styles = StyleSheet.create({
 
   /* A section is a label, its content, and a rule. There is no box. */
   block: { gap: 8 },
-  rule: { height: StyleSheet.hairlineWidth, marginTop: 6 },
+  rule: { height: StyleSheet.hairlineWidth, marginTop: 8 },
   empty: { gap: 8, paddingVertical: 20 },
 
-  /* Small-caps, letterspaced, tertiary — the register an instrument labels
-     its own panels in, and quiet enough that the DATA is the loud thing. */
-  sectionTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase' },
+  /* ★ NOT small-caps tertiary any more — v0.42.0.
+     It was 11 px, letterspaced, uppercase, in the FAINTEST text colour:
+     the register an instrument labels its panels in, which was the
+     intent. On a phone, six of them down one grey column is the single
+     thing that made this screen read as dated — the labels were quiet to
+     the point of being unreadable, so the eye got no structure at all and
+     the page became a wall.
+
+     A section header is now a plain, legible sentence-case line in the
+     secondary colour. It is still quieter than the data it introduces,
+     which was the real requirement; it is no longer quieter than the
+     background. */
+  sectionTitle: { fontSize: 13.5, fontWeight: '700', letterSpacing: -0.1 },
   body: { fontSize: 14, lineHeight: 20 },
   meta: { fontSize: 12.5, flexShrink: 1 },
   hint: { fontSize: 11.5, lineHeight: 16 },
 
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 2 },
   headText: { flex: 1, flexShrink: 1, minWidth: 0, gap: 3 },
-  title: { fontSize: 26, fontWeight: '800', letterSpacing: -0.3 },
-  state: { fontSize: 11, fontWeight: '800', letterSpacing: 0.9, textTransform: 'uppercase' },
+  title: { fontSize: 27, fontWeight: '800', letterSpacing: -0.5 },
+  /* The state line keeps its small caps, and it is the ONE place they
+     still earn their keep: it is provenance about the instrument
+     ("established, 24 studies"), not a label the reader navigates by. */
+  state: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
 
   readout: { flexDirection: 'row', alignItems: 'center', gap: 18, height: 30 },
   readoutCell: { gap: 1 },
@@ -982,6 +1159,9 @@ const styles = StyleSheet.create({
      little air above it so it reads as belonging to the bar that is lit
      rather than as the next section. */
   detail: { gap: 8, paddingTop: 4 },
+  /* The patient's reading of the selected study. Sized between the date
+     row and the body text: it is the sentence, not a caption on one. */
+  plainLine: { fontSize: 14.5, fontWeight: '700', lineHeight: 20 },
   detailDate: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   score: { fontSize: 17, fontWeight: '800', fontVariant: ['tabular-nums'] },
@@ -1014,6 +1194,31 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 10.5, lineHeight: 15, paddingTop: 2, textAlign: 'center' },
 });
 
+// v5.0.0 — ★ THE PATIENT'S HALF. Reported as "it feels dated, the colours are
+//          old, and it isn't very practical — add useful information for a
+//          patient who understands nothing about ECG." All three were the same
+//          defect: the screen was built for a clinician and opened with
+//          letterspaced small caps, a ring reading 82, and percentages.
+//          • THE ORDER INVERTED. The answer comes first, in a sentence
+//            (`PlainVerdict`), then three figures anyone can place
+//            (`PatientFacts`), then the curve, then what the curve is
+//            (`HowItWorks`). Nothing was deleted — every clinical figure is
+//            still here, lower, where someone looking for it will look.
+//          • THE SECTION HEADERS WERE THE "DATED" FEELING. 11 px letterspaced
+//            uppercase in the FAINTEST text colour, six of them down one grey
+//            column: quiet to the point of unreadable, so the eye got no
+//            structure and the page read as a wall. Now legible sentence-case
+//            in the secondary colour — still quieter than the data, no longer
+//            quieter than the background. Gaps went 10 → 14 for the same
+//            reason: removing every box also removed the spacing the boxes
+//            had been doing.
+//          • The palette did not change. It was barely being SPENT: almost
+//            everything was one of three greys. The tints that carry meaning
+//            (`signalSoft`, `attentionSoft`) now actually appear.
+//          ⚠️ The plain-language verdicts come from `summariseIdentityPlainly`,
+//          never from the per-study deviation thresholds. Those fire on nearly
+//          every recording — the v0.41.0 alert banner was built on them and
+//          told a real user their heart differed on 26 studies out of 26.
 // v4.0.1 — The alert line is gone. On a real history it said "the same
 //          difference on 26 studies in a row", which is not a finding about a
 //          heart — the persistence rule behind it counted backwards while the

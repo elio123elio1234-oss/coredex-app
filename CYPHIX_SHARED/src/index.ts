@@ -99,8 +99,15 @@ export * from './ecg/beatTemplate';
    touching it — the safety argument is the whole file. */
 export * from './ecg/leadCalibration';
 export * from './ecg/ecgIdentity';
+/* The same identity, said in words a patient can use. Judges every study
+   against THAT PATIENT'S OWN spread rather than an absolute threshold —
+   read its header for why that distinction is the whole file. */
+export * from './ecg/ecgIdentitySummary';
 export * from './ecg/measurementStats';
 
+// v1.13.0 — Adds ecg/ecgIdentitySummary: the identity in words a patient can
+//           use. Judges every study against THAT PATIENT'S OWN spread rather
+//           than an absolute threshold, which is the whole point of the file.
 // v1.12.0 — `IdentityAlert` is gone from types/ecgIdentity: a persistence rule
 //           cannot rescue per-study thresholds that fire constantly, and this
 //           one had been raising an alarm since the patient's first recording.

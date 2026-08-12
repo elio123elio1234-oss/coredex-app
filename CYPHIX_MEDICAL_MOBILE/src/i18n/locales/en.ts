@@ -507,6 +507,52 @@ export const en = {
   insCalibrated:
     'Electrode position differed here ({deg}°, {pct}% gain); the shape match allows for it. The axis and amplitude figures do not.',
 
+
+  /* ── ★ THE PATIENT'S HALF OF INSIGHTS (v0.42.0) ──────────────────
+     Everything above this point is addressed to someone who already
+     knows what a QRS is. These are for the person whose heart it is.
+
+     Two rules the wording holds to, both load-bearing:
+       • It never grades. "Looks like your usual ones" is a statement
+         about a distance from their own baseline, which is the only
+         claim this app has ever been able to make. No "good", no
+         "normal", no reassurance that would be a clinical opinion.
+       • It never uses an absolute yardstick, because the sentence is
+         chosen by `summariseIdentityPlainly` against the patient's own
+         spread. Copy implying a universal standard ("a healthy 95 %")
+         would be describing a computation that does not happen. */
+  insPlainLearning: 'Still learning what your heartbeat looks like',
+  insPlainLearningMore: '{n} more clean recordings and we will have your signature.',
+  insPlainLearningSoon: 'A few more recordings and we will have your signature.',
+  insPlainConsistent: 'Your last recording looks like you',
+  insPlainSlightly: 'Your last recording is a little different from your usual',
+  insPlainDifferent: 'Your last recording is not like your usual ones',
+  /* A proportion, not a grade — this is what turns a percentage nobody
+     can place into something anybody can. */
+  insPlainTypical: '{k} of your {n} recordings look like your usual ones.',
+
+  /* Three figures a patient recognises. Captions are plain words, never
+     abbreviations — `PatientFacts` explains why these three. */
+  insFactRate: 'Your usual heart rate',
+  insFactStudies: 'Recordings',
+  insFactMonths: 'Months tracked',
+  insFactWeeks: 'Weeks tracked',
+  insFactDays: 'Days tracked',
+
+  /* What the screen IS. Describes the METHOD only: "see what moved" is
+     the strongest phrasing allowed, because what a movement would mean
+     is a clinical claim. */
+  insHow1: 'Every heartbeat draws the same shape, and yours is yours — like a signature.',
+  insHow2: 'We averaged {n} of your recordings to find it, so the noise cancels out and the shape stays.',
+  insHow3: 'Each new recording is laid over that shape to see what moved.',
+
+  /* The selected study, in the patient's terms, ABOVE the chips. "67 %
+     match" reads like a failing exam grade to someone with no idea what
+     a good number is — and it may be a perfectly ordinary recording. */
+  insStudyUsual: 'This one looks like your usual recordings.',
+  insStudySlightly: 'This one is a little different from your usual.',
+  insStudyDifferent: 'This one stands out from your usual recordings.',
+
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',
   insDriftTitle: 'Change since you started',
@@ -869,6 +915,13 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.18.0 — The patient's half of Insights: the plain-language verdicts, the
+//           three recognisable figures, the three-line explainer, and the
+//           per-study sentence that goes ABOVE the chips. Two rules the wording
+//           holds to — it never grades, and it never implies an absolute
+//           yardstick, because the sentence is chosen against the patient's own
+//           spread and copy suggesting otherwise would describe a computation
+//           that does not happen.
 // v1.17.0 — The two alert strings are gone with the banner they served; it was
 //           reporting "the same difference on 26 studies in a row", i.e. since
 //           the beginning. The rest of the ECG ID v2 copy stands.

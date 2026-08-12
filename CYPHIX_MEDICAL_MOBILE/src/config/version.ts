@@ -1,7 +1,35 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.41.1';
-export const APP_BUILD_LABEL = 'The alert banner is gone - it was on since day one';
+export const APP_VERSION = '0.42.0';
+export const APP_BUILD_LABEL = 'Insights, rewritten for the person whose heart it is';
+
+// v0.42.0 - "Design the Insights tab in a more modern way, it feels dated with
+//           old colour choices and isn't very practical - add useful, nice
+//           information for a patient who understands nothing about ECG."
+//           All three complaints were one defect: the screen was built for a
+//           clinician. It opened with "ECG ID / BASELINE ESTABLISHED - 24
+//           STUDIES" in letterspaced small caps, then a ring reading 82, then a
+//           waveform, then percentages and Latin. The person whose heart it
+//           describes was never answered at all.
+//           ★ THE ORDER INVERTED. The answer comes first, in a sentence, then
+//             three figures anyone can place (resting rate, their own recording
+//             count, how long they have been tracking), then the curve, then
+//             three numbered lines saying what the curve IS. Nothing was
+//             deleted - the ring, the coverage grid, the deviations and every
+//             clinical figure are still there, lower down.
+//           ★ THE "DATED" FEELING WAS THE SECTION HEADERS. 11 px letterspaced
+//             uppercase in the faintest text colour, six of them down one grey
+//             column - quiet to the point of unreadable, so the eye got no
+//             structure and the page read as a wall. Now legible sentence-case
+//             in the secondary colour. Gaps 10 -> 14: removing every box in
+//             v0.33.0 also removed the spacing the boxes had been doing.
+//           ★ THE PALETTE DID NOT CHANGE. It was barely being SPENT - almost
+//             everything was one of three greys. The tints that carry meaning
+//             now actually appear.
+//           ⚠️ Every plain-language verdict comes from a comparison with the
+//           PATIENT'S OWN spread of scores, never from the per-study deviation
+//           thresholds. Those fire on nearly every recording, which is exactly
+//           how v0.41.0's alert banner came to say "26 studies in a row".
 
 // v0.41.1 - "Get rid of this line, it gives me no added value." It read:
 //           "The same difference on 26 studies in a row: Shape - Amplitude.
