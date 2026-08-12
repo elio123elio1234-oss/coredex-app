@@ -1,5 +1,55 @@
 # CHANGELOG — CYPHIX Medical Mobile
 
+## v0.40.1 - 2026-08-12 - the connection notice is glass, and says nothing when all is well
+
+Reported from the phone about v0.40.0: *"the Connected capsule that pops up at the
+top is really ugly — make something more delicate that feels native, not vibe
+coded."* Three separate faults, and the first is the one worth keeping.
+
+### "Connected" should never have existed
+
+Reconnecting is not an achievement. A green success badge for it is a UI
+congratulating itself for doing its job — and worse, it appeared **after**
+everything was already fine, which makes it a new interruption caused by the
+absence of a problem.
+
+The honest confirmation is that the notice which *was* there is now gone. So the
+capsule simply dissolves, and `connLive` is deleted from both locales rather than
+left orphaned.
+
+### It was a coloured plate next to a glass dock
+
+The app's native feel **is** the material — the dock is Apple Liquid Glass on
+iOS 26. A flat `successSoft` / `attentionSoft` rectangle with a hairline border
+and a coloured status dot is a web toast, and putting one above a glass bar is
+exactly the inconsistency that reads as improvised.
+
+It is `GlassSurface` now: the same atom, with the dock's tint arithmetic **copied
+rather than re-tuned** — two surfaces of one material must not be tuned
+separately or they drift. And it is **monochrome**. `attention` and `danger` mean
+specific things in this app (see the `tokens.ts` note on why `attention` exists
+at all) and neither of them is "the wifi".
+
+### It slid down like a notification banner
+
+A banner arrives from off-screen because it comes from elsewhere. This is the app
+talking about itself, so it **settles** into place: a spring on scale from 0.94
+with opacity, and no translation at all.
+
+It also stays **mounted** at zero opacity rather than using Reanimated's layout
+presets, so `offline → connecting` changes the words underneath instead of the
+whole capsule leaving and re-entering — the fidget the first version had every
+time the sync engine woke up. The glyph sits in a fixed 14 pt box, so swapping an
+outline icon for a scaled spinner cannot shift the label sideways by a pixel or
+two. That kind of twitch is only ever noticed subconsciously, as cheapness.
+
+`tsc --noEmit` clean; both bundles export. Appearance stays 🔬 until it is looked
+at on a handset — the whole point of this release is that a build passing every
+check told us nothing about how it looked.
+
+**OTA.** TypeScript only, `app.json` stays at 0.34.0.
+
+
 ## v0.40.0 - 2026-08-12 - you stay signed in, and offline is not signed out
 
 Reported from the phone: *"when I close the app for a while and then go back in,

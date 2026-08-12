@@ -711,10 +711,13 @@ export const en = {
      "Showing saved data" rather than "no internet": what the patient
      needs to know is what is on their screen, not what their radio is
      doing. It is also the truthful claim — the app IS showing the copy on
-     this phone, whatever the reason the server could not be reached. */
+     this phone, whatever the reason the server could not be reached.
+     ★ There is deliberately no "Connected" string. Reconnecting is not an
+     achievement, and the honest confirmation is the notice disappearing —
+     a badge announcing that everything is fine is a new interruption
+     caused by the absence of a problem (v0.40.1). */
   connOffline: 'Offline · showing saved data',
   connConnecting: 'Connecting to CYPHIX…',
-  connLive: 'Connected',
   authBiometricPrompt: 'Unlock CYPHIX',
   authBack: 'Back',
 

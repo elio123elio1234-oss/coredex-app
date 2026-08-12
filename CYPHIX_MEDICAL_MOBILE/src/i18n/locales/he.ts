@@ -674,7 +674,6 @@ export const he: Record<TranslationKey, string> = {
   /* ── רצועת החיבור ── */
   connOffline: 'לא מקוון · מוצג מידע שמור',
   connConnecting: 'מתחבר ל‑CYPHIX…',
-  connLive: 'מחובר',
   authBiometricPrompt: 'פתיחת CYPHIX',
   authBack: 'חזרה',
 

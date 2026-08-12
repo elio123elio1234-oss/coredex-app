@@ -1,7 +1,35 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.40.0';
-export const APP_BUILD_LABEL = 'You stay signed in — offline is not signed out';
+export const APP_VERSION = '0.40.1';
+export const APP_BUILD_LABEL = 'The connection notice is glass, and says nothing when all is well';
+
+// v0.40.1 - Reported on the phone: the "Connected" capsule that popped up at
+//           the top was ugly and did not feel native. Three faults, and the
+//           first is the one worth keeping:
+//           (1) ★ "CONNECTED" SHOULD NEVER HAVE EXISTED. Reconnecting is not an
+//           achievement, and a green success badge for it is a UI congratulating
+//           itself for doing its job. Worse, it appeared AFTER everything was
+//           already fine - a new interruption caused by the absence of a
+//           problem. The honest confirmation is that the notice which WAS there
+//           is gone, so the capsule now simply dissolves. The `connLive` string
+//           is deleted in both languages, not left orphaned.
+//           (2) IT WAS A COLOURED PLATE NEXT TO A GLASS DOCK. The app's native
+//           feel IS the material - the dock is Liquid Glass on iOS 26 - and a
+//           flat `successSoft`/`attentionSoft` rectangle with a hairline border
+//           and a coloured status dot is a web toast. It is `GlassSurface` now,
+//           the same atom with the same tint arithmetic copied rather than
+//           re-tuned (two surfaces of one material must not drift), and it is
+//           MONOCHROME: `attention` and `danger` mean specific things in this
+//           app and neither of them is "the wifi".
+//           (3) IT SLID DOWN LIKE A NOTIFICATION BANNER. A banner arrives from
+//           off screen because it comes from elsewhere; this is the app talking
+//           about itself, so it settles instead - a spring on scale from 0.94,
+//           no translation. And it stays MOUNTED at zero opacity, so
+//           offline -> connecting changes the words underneath instead of the
+//           whole capsule leaving and re-entering every time the sync engine
+//           wakes up. The glyph sits in a fixed 14 pt box so swapping it for a
+//           spinner cannot shift the label sideways.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.40.0 - Reported from the phone: "close the app for a while, open it again
 //           and it throws me straight to the sign-in screen - and it only signs

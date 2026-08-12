@@ -1,52 +1,66 @@
 /* ==================================================================
-   ConnectionStrip (organism) — one line at the top of the app saying
-   whether what is on screen was just confirmed by the server, or is the
-   last thing this phone was told.
+   ConnectionStrip (organism) — one quiet capsule under the status bar,
+   saying whether what is on screen was just confirmed by the server or
+   is the last thing this phone was told.
 
    ══ WHY THIS EXISTS ══
-   The app now opens on a session restored from the device, without
-   waiting for a server (`AuthGate` v2.0.0). That is the right behaviour
-   and it creates exactly one new obligation: a patient looking at their
-   record is entitled to know which of those two things they are looking
-   at. An app that silently renders cached data as though it were live is
-   the same class of lie as a frozen ECG trace drawn as a live one — the
-   thing `FRAME_STALE_MS` exists to prevent — and the honest answer costs
-   one line of chrome.
+   The app opens on a session restored from the device, without waiting
+   for a server (`AuthGate` v2.0.0). That is the right behaviour and it
+   creates exactly one obligation: a patient looking at their record is
+   entitled to know which of those two they are looking at. An app that
+   silently renders cached data as though it were live is the same class
+   of lie as a frozen ECG trace drawn as a live one.
 
-   ══ WHAT IT SAYS, AND WHEN IT SHUTS UP ══
-     connecting → a revalidation or a sync is in flight, and we are not
-                  live yet. "Working on it", not an error.
-     offline    → we asked and got no answer. The record on screen is the
-                  device's own copy.
-     connected  → shown for a moment when we go live, then gone. Without
-                  it, reconnecting is invisible and the patient is left
-                  watching a strip disappear with no idea whether that
-                  meant success.
-     (nothing)  → live and settled. ★ The steady state draws NOTHING. A
-                  permanent "online" badge is a permanent distraction that
-                  stops being read within a day, and then the one time it
-                  matters it is not read either.
+   ══ v1.1.0 — WHAT WAS WRONG WITH THE FIRST VERSION ══
+   Reported from the phone: the "Connected" capsule was ugly and did not
+   feel native. Three separate faults, and the first is the interesting
+   one:
+
+   ① **"Connected" should never have existed.** Reconnecting is not an
+      achievement, and a green success badge for it is a UI congratulating
+      itself for doing its job. The honest confirmation is that the notice
+      which WAS there is now gone — so the capsule simply dissolves. That
+      also removes the worst moment in the old design: a green pill
+      appearing *after* everything was already fine, i.e. a new
+      interruption caused by the absence of a problem.
+
+   ② **It was a coloured rectangle next to a glass dock.** The app's
+      native feel IS the material: the dock is Liquid Glass on iOS 26. A
+      flat `successSoft` / `attentionSoft` plate with a hairline border
+      and a coloured status dot is a web toast, and sitting it above a
+      glass bar is exactly the inconsistency that reads as improvised.
+      It is now `GlassSurface` — the same atom, the same tint arithmetic,
+      the same rim treatment — and it is MONOCHROME. Nothing here is
+      urgent enough to spend a colour on; `attention` and `danger` mean
+      specific things in this app and neither of them is "the wifi".
+
+   ③ **It slid down like a notification banner.** A banner arrives from
+      off-screen because it comes from elsewhere. This is the app talking
+      about itself, so it settles into place instead: a spring on scale
+      from 0.94 with opacity, and no translation at all.
+
+   ══ WHEN IT SHUTS UP ══
+   Live and settled draws NOTHING. A permanent "online" badge stops being
+   read within a day, and then it is not read on the day it matters
+   either.
 
    ══ pointerEvents ══
    `none`, at every level. This floats over whatever screen is up —
    including the landscape exam — and a strip that can eat a touch is a
-   strip that can break a measurement. It is information, never a
-   control.
+   strip that can break a measurement. It is information, never a control.
    ================================================================== */
 
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import GlassSurface, { IS_LIQUID_GLASS } from '@/components/atoms/GlassSurface';
 import { ENV } from '@/config/env';
 import { useSync } from '@/features/sync/useSync';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useAppSelector } from '@/store/hooks';
-import { useTheme } from '@/theme/useTheme';
-
-/** How long "Connected" stays up before the strip goes quiet. Long enough
-    to be read at a glance, short enough not to become chrome. */
-const CONFIRM_MS = 1800;
+import { useIsDark, useTheme } from '@/theme/useTheme';
 
 /**
  * Say nothing at all for the first moment after the app opens.
@@ -55,16 +69,22 @@ const CONFIRM_MS = 1800;
  * that is what "we have not asked yet" means — and the revalidation that
  * corrects it is dispatched from an effect, i.e. after this has already
  * rendered once. Without the grace, every single cold start would flash
- * "Offline · showing saved data" before settling, including the ones with
- * full signal. A banner that cries wolf on every launch is one nobody
- * reads on the launch that matters.
+ * the offline notice before settling, including the ones with full
+ * signal. A banner that cries wolf on every launch is one nobody reads on
+ * the launch that matters.
  */
 const SETTLE_MS = 900;
 
-type Strip = 'connecting' | 'offline' | 'connected' | null;
+/** RN's `small` indicator is a fixed ~20 pt, which is a spinner with its
+    own opinions next to 12 pt type. Scaled down to sit on the text's
+    cap height rather than tower over it. */
+const SPINNER_SCALE = 0.62;
+
+type Strip = 'connecting' | 'offline';
 
 export default function ConnectionStrip() {
   const t = useTheme();
+  const dark = useIsDark();
   const { t: tr } = useTranslation();
   const insets = useSafeAreaInsets();
   const sessionMode = useAppSelector((s) => s.auth.sessionMode);
@@ -72,29 +92,11 @@ export default function ConnectionStrip() {
   const signedIn = useAppSelector((s) => s.auth.user !== null);
   const sync = useSync();
 
-  /* The confirmation is a MOMENT, not a state, so it is the one thing
-     here that needs its own timer rather than being derived. */
-  const [confirming, setConfirming] = useState(false);
   const [settled, setSettled] = useState(false);
-  const live = sessionMode === 'live';
-
   useEffect(() => {
     const timer = setTimeout(() => setSettled(true), SETTLE_MS);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (!live) return;
-    setConfirming(true);
-    const timer = setTimeout(() => setConfirming(false), CONFIRM_MS);
-    return () => clearTimeout(timer);
-  }, [live]);
-
-  /* With no backend configured this whole concept is meaningless: the
-     build is the device mock, there is no server to be offline FROM, and
-     a permanent "offline" banner over a working demo would be a bug
-     report waiting to happen. */
-  if (!ENV.hasBackend || !signedIn || !settled) return null;
 
   /**
    * ★ Reachability is BOTH signals, and it has to be.
@@ -103,71 +105,130 @@ export default function ConnectionStrip() {
    * stays confirmed, because losing signal does not un-confirm anything
    * the server said. So on its own it could not report a phone that went
    * live at boot and walked into a basement an hour later. The sync
-   * engine's phase is the one that goes the other way: it is the thing
-   * that has actually tried to reach the server most recently. Reading
-   * only one of them leaves one direction of the truth unsayable.
+   * engine's phase is the one that goes the other way: it is what has
+   * actually tried to reach the server most recently. Reading only one of
+   * them leaves one direction of the truth unsayable.
    */
-  const reachable = live && sync.phase !== 'offline';
+  const enabled = ENV.hasBackend && signedIn && settled;
+  const reachable = sessionMode === 'live' && sync.phase !== 'offline';
+  const state: Strip | null = !enabled
+    ? null
+    : reachable
+      ? null
+      : revalidating || sync.phase === 'syncing'
+        ? 'connecting'
+        : 'offline';
 
-  let state: Strip = null;
-  if (!reachable) {
-    state = revalidating || sync.phase === 'syncing' ? 'connecting' : 'offline';
-  } else if (confirming) {
-    state = 'connected';
-  }
+  /* ── The settle ──
+     Driven by shared values rather than Reanimated's layout presets, so
+     the capsule can be kept MOUNTED and simply be at zero opacity. That
+     is what lets `offline → connecting` change the words underneath
+     without the whole thing leaving and re-entering, which is the fidget
+     the old version had every time the sync engine woke up. Free: it is
+     absolutely positioned and never takes a touch. */
+  const shown = useSharedValue(0);
+  const visible = state !== null;
+  useEffect(() => {
+    shown.value = visible
+      ? withSpring(1, { damping: 18, stiffness: 180, mass: 0.6 })
+      : withTiming(0, { duration: 200 });
+  }, [visible, shown]);
 
-  if (state === null) return null;
+  const settleStyle = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    /* 0.94, not 0. A capsule that grows from nothing is a popover; one
+       that firms up by 6 % is a thing that was always there arriving. */
+    transform: [{ scale: 0.94 + shown.value * 0.06 }],
+  }));
 
-  const tone =
-    state === 'offline'
-      ? { bg: t.attentionSoft, fg: t.textPrimary, dot: t.attention }
-      : state === 'connected'
-        ? { bg: t.successSoft, fg: t.textPrimary, dot: t.success }
-        : { bg: t.surfaceHover, fg: t.textSecondary, dot: t.textTertiary };
+  /* Same arithmetic as the dock (`BottomDock`), deliberately: iOS 26 gets
+     less tint because Apple's material is doing real work, and the
+     BlurView fallback keeps more because an untinted blur over a light
+     page really is nearly invisible (the v0.19.2 trap). Two surfaces of
+     one material must not be tuned separately or they drift. */
+  const tint = IS_LIQUID_GLASS
+    ? dark
+      ? 'rgba(19,27,44,0.34)'
+      : 'rgba(255,255,255,0.38)'
+    : dark
+      ? 'rgba(19,27,44,0.52)'
+      : 'rgba(255,255,255,0.62)';
 
-  const label =
-    state === 'offline'
-      ? tr('connOffline')
-      : state === 'connected'
-        ? tr('connLive')
-        : tr('connConnecting');
+  const rim = IS_LIQUID_GLASS
+    ? dark
+      ? 'rgba(255,255,255,0.10)'
+      : 'rgba(255,255,255,0.45)'
+    : dark
+      ? 'rgba(255,255,255,0.14)'
+      : 'rgba(200,208,224,0.55)';
 
   return (
     <Animated.View
       pointerEvents="none"
-      entering={FadeInUp.duration(220)}
-      exiting={FadeOutUp.duration(220)}
-      style={[styles.root, { top: insets.top + 6 }]}
+      style={[styles.root, { top: insets.top + 6 }, settleStyle]}
     >
-      <View style={[styles.pill, { backgroundColor: tone.bg, borderColor: t.border }]}>
-        <View style={[styles.dot, { backgroundColor: tone.dot }]} />
-        <Text style={[styles.label, { color: tone.fg }]} numberOfLines={1}>
-          {label}
+      <GlassSurface dark={dark} tint={tint} style={[styles.pill, { borderColor: rim }]}>
+        <View style={styles.slot}>
+          {state === 'connecting' ? (
+            <ActivityIndicator
+              size="small"
+              color={t.textTertiary}
+              style={{ transform: [{ scale: SPINNER_SCALE }] }}
+            />
+          ) : (
+            /* Outline, not filled: a filled glyph is a status, an outline
+               is a note. This is a note. */
+            <Ionicons name="cloud-offline-outline" size={13} color={t.textTertiary} />
+          )}
+        </View>
+        <Text
+          style={[styles.label, { color: t.textSecondary }]}
+          numberOfLines={1}
+          allowFontScaling={false}
+        >
+          {state === 'connecting' ? tr('connConnecting') : tr('connOffline')}
         </Text>
-      </View>
+      </GlassSurface>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   /* Centred rather than full-bleed: a full-width bar reads as a system
-     alert and shifts the eye away from the screen's own content. A pill
-     is a note. */
+     alert and pulls the eye off the screen's own content. A capsule is an
+     aside. */
   root: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 50 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
+    gap: 6,
+    paddingStart: 10,
+    paddingEnd: 13,
+    height: 28,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    maxWidth: '90%',
+    /* `overflow: hidden` is what makes the BlurView fallback respect the
+       radius — without it Android blurs a rectangle behind rounded
+       corners and the capsule has square shoulders. */
+    overflow: 'hidden',
+    maxWidth: '86%',
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  label: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
+  /* A fixed box for the glyph so swapping a 13 pt icon for a scaled
+     spinner does not shift the label sideways by a pixel or two — the
+     kind of twitch that is only ever noticed subconsciously, as
+     cheapness. */
+  slot: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  /* 12 pt medium, not 12 pt semibold: this is a caption, and weight is
+     the loudest thing available at this size. */
+  label: { fontSize: 12, fontWeight: '500', letterSpacing: 0.1 },
 });
 
+// v1.1.0 — Reported as ugly and un-native, and three things were wrong. The
+//          green "Connected" badge is GONE — reconnecting is not an achievement,
+//          and the honest confirmation is the notice disappearing. The coloured
+//          plate is now the dock's own GlassSurface, monochrome, with the same
+//          tint arithmetic. And it settles (spring on scale from 0.94) instead of
+//          sliding in like a notification banner.
 // v1.0.0 — Says whether the record on screen was just confirmed by the server
 //          or is the device's own copy — the obligation created by letting the
 //          app open on a restored session. Silent in the steady state.
