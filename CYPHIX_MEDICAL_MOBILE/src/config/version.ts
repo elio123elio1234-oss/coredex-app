@@ -1,7 +1,66 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.47.0';
-export const APP_BUILD_LABEL = 'the interpretation explains itself, and stops shouting about a hair past a line';
+export const APP_VERSION = '0.48.0';
+export const APP_BUILD_LABEL = 'the report is a real document now, and it cannot tear across a page';
+
+// v0.48.0 - "The PDF is not laid out for the page. The graphs stretch across
+//           two pages. The tables are colourless and dated. It is ugly. I need
+//           a report with graphs, with circles, with statistics on every
+//           measurement, six leads filling the whole first page, in my brand
+//           colours, perfect, with no errors and no overflow between pages.
+//           Statistical analysis of everything. Do not be stingy. Add
+//           illustrations too."
+//           * THE STRETCHING WAS A MISSING CONSTRAINT, NOT A STYLING MISTAKE.
+//             Every strip was `<svg width="100%">` with a viewBox and NO
+//             height, so its height was INFERRED from an aspect ratio against
+//             whatever column the print engine had decided on - and `.page`
+//             had no height ceiling at all. Any growth above (a long device
+//             name wrapping the letterhead is enough) pushed the sixth lead
+//             past 297 mm, and the engine did the only thing it can: started a
+//             new page in the middle of a lead.
+//           * NOW EVERY BOX IS A NUMBER IN MILLIMETRES, and `assertFits()`
+//             throws WHILE BUILDING if a page''s blocks exceed the body. A torn
+//             report is worse than a failed export precisely because it looks
+//             fine on the phone that made it: printToFileAsync reports success,
+//             the file opens, and the damage is a lead sliced in half in a
+//             document somebody treats a patient from.
+//           * AND A SECOND SILENT SHEAR, FOUND WHILE FIXING THE FIRST:
+//             printToFileAsync''s default paper size FOLLOWS THE DEVICE LOCALE.
+//             A phone set to US English gets Letter - 6 mm narrower and 18 mm
+//             shorter than the geometry every page is built to. A4 is now
+//             passed explicitly in points, with zero margins.
+//           THE DOCUMENT, four kinds of page:
+//             1..n  THE ECG at full page - six leads, 40 mm each, 240 of the
+//                   256 mm body. 25 mm/s, 10 mm/mV, 1 mV calibration pulse per
+//                   lead, R-peak ticks on II. 186 mm of column holds 7.1 s, so
+//                   a 10 s capture is two consecutive sheets - what a
+//                   six-channel machine does, rather than truncating.
+//             n+1   INTERPRETATION - the verdict as a donut whose FILL is the
+//                   checks that ran, then every finding with its evidence
+//                   chips, its margin bar and its PUBLISHED CRITERION printed
+//                   underneath. Findings paginate; nothing is dropped.
+//             n+2   STATISTICS - six stat tiles, all five intervals as bars
+//                   against their reference bands, and three real figures: the
+//                   HEXAXIAL DIAL (the axis is an angle, so it is drawn as a
+//                   compass), a POINCARE PLOT with its SD1/SD2 ellipse, and
+//                   the RR TACHOGRAM. Amplitudes as a striped table with a
+//                   signed mini-bar per lead.
+//             n+3   REFERENCE - EINTHOVEN''S TRIANGLE drawn, with which leads
+//                   see which wall and which walls are not recorded at all;
+//                   the blind spots; how to read the sheet; the disclaimer.
+//           * A SIMULATED RECORDING GETS NO INTERPRETATION PAGE. The same rule
+//             the app obeys, and it binds harder in a PDF: a document leaves
+//             the phone and is read by someone with no way to know the trace
+//             came from a bench generator.
+//           VERIFIED THE ONLY WAY A PDF CAN BE: the document builder was split
+//           away from expo-print into `pdf/document.ts` so it imports nothing
+//           native and can be BUILT IN NODE. Nine cases (normal, simulated,
+//           3 s, 30 s, brady, tachy, low voltage, left axis, irregular), all
+//           with deliberately over-long labels: 0 unsized SVGs, 0 percentage
+//           dimensions, 0 unresolved placeholders, 0 inconsistent page numbers,
+//           0 NaN/undefined in the output, and the overflow guard confirmed to
+//           fire when handed an over-tall page.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.47.0 - "What is this? It is not informative. Why did it decide that? Why
 //           are there no illustrations of why? I look at it and I have no idea

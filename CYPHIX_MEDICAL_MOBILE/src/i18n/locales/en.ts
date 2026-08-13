@@ -1210,6 +1210,47 @@ export const en = {
   scrCause_electricalAlternans: 'The size of your beats alternated — big, small, big, small. That pattern is produced by the heart physically swinging with each beat, which happens when it is surrounded by fluid. It is uncommon and it is checked with an ultrasound scan.',
   scrCause_leadReversal: 'One view of your heart came out upside down. Almost always this means the sensors on the left and right arms were the wrong way round — a two-second fix. Very rarely it means the heart sits on the other side of the chest, which is harmless in itself but worth knowing.',
 
+  /* ══════════════════════════════════════════════════════════════════
+     THE PRINTED REPORT.
+
+     This copy is written for a CLINICIAN, not for the patient — it is the
+     one artefact that gets filed, emailed and read by someone who was not
+     in the room. So it names things properly (the app says "the big spike",
+     the report says QRS), and every threshold on it is printed beside its
+     published source, because a doctor handed an automated finding is
+     entitled to know which criterion produced it.
+     ══════════════════════════════════════════════════════════════════ */
+
+  pdfPageEcg: '6-Lead Limb ECG',
+  pdfPageInterpretation: 'Automated Interpretation',
+  pdfPageStatistics: 'Measurements & Statistics',
+  pdfPageReference: 'How to Read This Report',
+  pdfPageOf: 'Page {n} of {total}',
+  pdfContinued: 'continued',
+  pdfPatient: 'Patient',
+  pdfCriterion: 'Criterion',
+  pdfBorderline: 'borderline',
+  pdfNoFindings: 'No abnormal pattern was detected in what these six leads can observe. Read this together with the limitations on the last page.',
+  pdfEvidenceTitle: 'Measured',
+  pdfConfidenceTitle: 'Confidence',
+  pdfStatsVariability: 'Axis and beat-to-beat variability',
+  mRrVariation: 'RR variation',
+
+  pdfAxisCap: 'Frontal-plane QRS axis. Shaded sector is the normal range, −30° to +90°.',
+  pdfPoincareCap: 'Poincaré plot: each RR interval against the next. A tight ball is a regular rhythm; a diffuse fan is what an irregular one makes.',
+  pdfTachogramCap: 'RR intervals in order of occurrence, against the mean. Shows where in the recording the variation happened.',
+
+  pdfLeadMapTitle: 'What these six leads look at',
+  pdfLeadMapCap: 'Leads I, II and III are the three sides of Einthoven’s triangle, formed by the electrodes on the two arms and the left leg. aVR, aVL and aVF are derived from the same two measured channels. Together they view the heart in the frontal plane only.',
+  pdfWallInferior: 'the bottom (inferior) wall',
+  pdfWallLateral: 'the side (high lateral) wall',
+  pdfWallNotSeen: 'the front and back walls — chest electrodes, NOT recorded here',
+  pdfHowToTitle: 'How to read the ECG sheet',
+  pdfHow1: 'Paper speed 25 mm/s and gain 10 mm/mV. One small square is 40 ms wide and 0.1 mV tall; one large square is 200 ms and 0.5 mV.',
+  pdfHow2: 'The step at the left of every lead is a 1 mV calibration pulse. It should stand exactly two large squares tall — if it does not, the gain on this sheet is not what the label says.',
+  pdfHow3: 'The short marks along the top of lead II are the detected R peaks. Every rate and interval on the following pages was computed from those detections.',
+  pdfHow4: 'A recording longer than about 7 seconds continues on the next sheet, consecutive in time. Nothing is truncated.',
+
   /* ── Shared ── */
   back: 'Back',
   exit: 'Exit',

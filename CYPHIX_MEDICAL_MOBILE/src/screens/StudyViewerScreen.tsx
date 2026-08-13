@@ -95,6 +95,7 @@ import {
 } from '@/features/history/hooks/useOverlayRecording';
 import { IDENTITY_OVERLAY_ID, useIdentityGhost } from '@/features/history/hooks/useIdentityGhost';
 import { useRecordingNote } from '@/features/history/hooks/useRecordingNote';
+import { usePdfLabels } from '@/features/history/hooks/usePdfLabels';
 import { useRecordingView } from '@/features/history/hooks/useRecordingView';
 import { useScreening } from '@/features/history/hooks/useScreening';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
@@ -239,6 +240,7 @@ export default function StudyViewerScreen() {
      the verdict and the numbers under it can never describe different
      signals. Returns null for a simulated study — see the hook. */
   const screening = useScreening(recording, view);
+  const pdfLabels = usePdfLabels();
 
   /* ★ TWO SOURCES, ONE GHOST — v0.43.0.
      The comparison can now be either another STUDY or the patient's own
@@ -422,43 +424,6 @@ export default function StudyViewerScreen() {
       detail: detailText,
     });
 
-  const pdfLabels = useMemo(() => {
-    const a = view?.analysis;
-    const num = (v: number | null, unit: string) => (v == null ? '—' : `${v} ${unit}`);
-    return {
-      title: tr('reportLimbTitle'),
-      brand: 'CYPHIX MEDICAL',
-      recorded: tr('reportRecorded'),
-      duration: tr('reportDuration'),
-      leads: tr('reportLeads'),
-      leadSet: tr('reportLeadSetShort'),
-      sampleRate: tr('reportSampleRate'),
-      device: tr('histDevice'),
-      simulated: tr('reportSimulated'),
-      sheetOf: tr('pdfSheetOf'),
-      measurements: tr('reportTabMeasurements'),
-      disclaimer: tr('analysisDisclaimer'),
-      note: tr('noteTitle'),
-      rows: a
-        ? [
-            { label: tr('mBpm'), value: num(a.rate.bpm, 'BPM') },
-            { label: tr('mRegularity'), value: tr(REGULARITY_KEY[a.rate.regularity]) },
-            { label: tr('mRrMean'), value: num(a.rate.rrMeanMs, 'ms') },
-            { label: tr('mSdnn'), value: num(a.rate.sdnnMs, 'ms') },
-            { label: tr('mRmssd'), value: num(a.rate.rmssdMs, 'ms') },
-            { label: tr('mBeats'), value: String(a.rate.beatsAnalyzed) },
-            { label: tr('secAxis'), value: num(a.axis.degrees, '°') },
-            { label: tr('iPR'), value: num(a.intervals.prMs, 'ms') },
-            { label: tr('iQRS'), value: num(a.intervals.qrsMs, 'ms') },
-            { label: tr('iQT'), value: num(a.intervals.qtMs, 'ms') },
-            { label: tr('iQTcB'), value: num(a.intervals.qtcBazettMs, 'ms') },
-            { label: tr('iQTcF'), value: num(a.intervals.qtcFridericiaMs, 'ms') },
-            { label: tr('qSqi'), value: num(a.quality.sqi, '%') },
-            { label: tr('qAnalysed'), value: num(a.quality.analysedSeconds, 's') },
-          ]
-        : [],
-    };
-  }, [view?.analysis, tr]);
 
   const runExport = async (kind: 'csv' | 'edf' | 'pdf') => {
     if (!recording) return;
@@ -478,7 +443,11 @@ export default function StudyViewerScreen() {
           tr('histExportEdf'),
         );
       } else {
-        await shareRecordingPdf(recording, pdfLabels, tr('printReport'));
+        /* The report re-runs the whole chain from RAW rather than taking
+           `view` — a printed artefact must carry the full standard filter
+           set, not whichever stages the reader happened to have switched
+           off on screen (see recordingPdf's header). */
+        await shareRecordingPdf({ recording, labels: pdfLabels }, tr('printReport'));
       }
       exportAudit(kind);
     } catch {

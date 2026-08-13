@@ -1,5 +1,76 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.48.0 - 2026-08-13 - the report is a real document now, and it cannot tear across a page
+
+*"The PDF is not laid out for the page. The graphs stretch across two pages.
+The tables are colourless and dated. It is ugly. I need a report with graphs,
+with circles, with statistics on every measurement, six leads filling the whole
+first page, in my brand colours, perfect, with no errors and no overflow
+between pages. Do not be stingy. Add illustrations too."*
+
+### The stretching was a missing constraint, not a styling mistake
+
+Every strip was `<svg width="100%">` with a viewBox and **no height**. The
+height was therefore INFERRED from an aspect ratio against whatever column the
+print engine had decided on - and `.page` had no height ceiling at all. Any
+growth above it (a long device name wrapping the letterhead is enough) pushed
+the sixth lead past 297 mm, and the engine did the only thing it can: started a
+new page in the middle of a lead.
+
+Every box is now a number in millimetres, and **`assertFits()` throws while
+building** if a page's blocks exceed the body. A torn report is worse than a
+failed export precisely because it looks fine on the phone that made it:
+`printToFileAsync` reports success, the file opens, and the damage is a lead
+sliced in half in a document somebody treats a patient from.
+
+> WARNING - a second silent shear, found while fixing the first.
+> `printToFileAsync`'s default paper size **follows the device locale**. A phone
+> set to US English gets Letter - 6 mm narrower and 18 mm shorter than the
+> geometry every page is built to. A4 is now passed explicitly, in points, with
+> zero margins.
+
+### The document
+
+| page | what is on it |
+|---|---|
+| **1...n** | **The ECG, full page.** Six leads at 40 mm each - 240 of the 256 mm body. 25 mm/s, 10 mm/mV, a 1 mV calibration pulse at the left of every lead, R-peak ticks along lead II. 186 mm of column holds 7.1 s, so a 10 s capture is two consecutive sheets - what a six-channel machine does, rather than truncating. |
+| **n+1** | **Interpretation.** The verdict as a **donut whose fill is the fraction of checks that ran**, then every finding with its evidence chips, its margin bar, and its **published criterion** printed underneath. Findings paginate; nothing is dropped. |
+| **n+2** | **Statistics.** Six stat tiles, all five intervals as bars against their reference bands, and three real figures: the **hexaxial dial** (the axis is an angle, so it is drawn as a compass), a **Poincare plot** with its SD1/SD2 ellipse, and the **RR tachogram**. Amplitudes as a striped table with a signed mini-bar per lead. |
+| **n+3** | **Reference.** **Einthoven's triangle drawn**, with which leads see which wall - and which walls are not recorded at all. The blind spots, how to read the sheet, the disclaimer. |
+
+Each figure was chosen because it answers something a table cannot. A Poincare
+plot separates a regular rhythm, ordinary respiratory variation and atrial
+fibrillation by the *shape* of the cloud, faster than any summary statistic
+does. The triangle is what makes the word "inferior" mean something to a reader
+who has never been told that leads have directions - and it shows the blind
+spots by having no arrow pointing at the front wall.
+
+### A simulated recording gets no interpretation page
+
+The same rule the app obeys, and it binds harder in a PDF: a document leaves the
+phone and is read by someone with no way to know the trace came from a bench
+generator rather than a heart.
+
+### Verified the only way a PDF can be
+
+A PDF cannot be diffed, so the document builder was **split away from
+`expo-print`** into `pdf/document.ts` - it imports nothing native and can
+therefore be built in Node. Nine cases (normal, simulated, 3 s, 30 s, brady,
+tachy, low voltage, left axis, irregular), every one with deliberately
+over-long labels and a 78-character device name:
+
+- **0** SVGs without an explicit millimetre width and height
+- **0** percentage dimensions anywhere
+- **0** unresolved `{n}` / `{total}` placeholders
+- **0** inconsistent page numbers ("Page 4 of 5" is checked against the real count)
+- **0** `NaN` / `undefined` / `Infinity` in the output
+- the overflow guard confirmed to **fire** when handed an over-tall page
+
+This proves the ARITHMETIC, not that the printed sheet is beautiful. That still
+needs a human looking at paper, so it stays marked for device verification.
+
+**OTA**: TypeScript only, so `app.json` stays at 0.34.0.
+
 ## v0.47.0 - 2026-08-13 - the interpretation explains itself, and stops shouting about a hair past a line
 
 *"What is this? It is not informative. Why did it decide that? Why are there no
