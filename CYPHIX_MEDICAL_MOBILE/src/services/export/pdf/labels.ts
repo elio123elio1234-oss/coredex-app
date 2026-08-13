@@ -71,6 +71,10 @@ export interface PdfLabels {
   statsAmplitudes: string;
   statsQuality: string;
   refRange: string;
+  /* Measurement-table column heads. */
+  measureCol: string;
+  resultCol: string;
+  refCol: string;
 
   mBpm: string;
   mRrMean: string;

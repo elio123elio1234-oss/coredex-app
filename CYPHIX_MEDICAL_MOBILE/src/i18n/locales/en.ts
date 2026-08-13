@@ -93,6 +93,9 @@ export const en = {
   reportDisclaimer:
     'For wellness and training only. Not a diagnostic device. Consult a clinician for medical interpretation.',
   reportTabWaveform: 'Waveform',
+  vtTabTrace: 'ECG',
+  vtTabValues: 'Values',
+  vtTabFindings: 'Findings',
   reportTabMeasurements: 'Measurements',
   reportSectionA11y: 'Report section',
   reportDuration: 'Duration',
@@ -1256,6 +1259,10 @@ export const en = {
   pdfAuditNote: '\u25CF present \u00B7 \u2013 ruled out \u00B7 ? could not be evaluated. A ruled-out check means the pattern was looked for on these six leads and was not there; it does not exclude conditions these leads cannot see (last page).',
   pdfMedianBeatTitle: 'Representative beat',
   pdfMedianBeatCap: 'median of {used} beats, {rejected} rejected',
+
+  pdfColMeasure: 'Measurement',
+  pdfColResult: 'Result',
+  pdfColRef: 'Reference',
 
   /* ── Shared ── */
   back: 'Back',

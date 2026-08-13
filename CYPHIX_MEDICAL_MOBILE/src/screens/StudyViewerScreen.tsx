@@ -1306,11 +1306,24 @@ export default function StudyViewerScreen() {
               </View>
 
               <View style={styles.tabs}>
+                {/* ★ SHORT LABELS, and it is not a cosmetic preference.
+                    A segmented control divides its width EVENLY, so three
+                    labels of very different lengths always look crammed at
+                    one end and empty at the other however the type is
+                    tuned — "Waveform / Measurements / Interpretation" put
+                    72 pt in the first slot and 105 in the next two, on
+                    ~120 pt segments.
+                    `ECG · Values · Findings` are also simply the better
+                    words: they are what a clinical report calls those
+                    three sections, and they are near enough the same
+                    length to read as one composed control. The report's
+                    own two-tab version keeps the long names — it has the
+                    room, and nothing there was cramped. */}
                 <SegmentedTabs
                   options={[
-                    { value: 'waveform' as const, label: tr('reportTabWaveform') },
-                    { value: 'measurements' as const, label: tr('reportTabMeasurements') },
-                    { value: 'screening' as const, label: tr('reportTabScreening') },
+                    { value: 'waveform' as const, label: tr('vtTabTrace') },
+                    { value: 'measurements' as const, label: tr('vtTabValues') },
+                    { value: 'screening' as const, label: tr('vtTabFindings') },
                   ]}
                   value={tab}
                   onChange={setTab}

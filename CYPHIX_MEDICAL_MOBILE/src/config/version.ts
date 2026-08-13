@@ -1,7 +1,56 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.49.0';
-export const APP_BUILD_LABEL = 'the report stops wasting paper and starts showing its work';
+export const APP_VERSION = '0.50.0';
+export const APP_BUILD_LABEL = 'the report stops being the app on paper, and the tabs stop touching';
+
+// v0.50.0 - "The PDF does not look like a professional medical report (except
+//           page 1 with the graphs). And the three tabs at the top are really
+//           cramped - think how to arrange that professionally."
+//           * THE TABS WERE CRAMPED BECAUSE THE LABELS WERE, and shrink-to-fit
+//             was papering over it. A segmented control divides its width
+//             EVENLY, so three labels of very different lengths always look
+//             wrong however the type is tuned: "Waveform / Measurements /
+//             Interpretation" put 72 pt in the first slot and ~105 in the next
+//             two, on ~120 pt segments, and the two long ones ended up
+//             touching with no gutter between them.
+//             Two fixes, and the first is the real one: the viewer's tabs are
+//             now `ECG / Values / Findings` - near enough the same length to
+//             read as one composed control, and simply the better words,
+//             because they are what a clinical report calls those three
+//             sections. The gutter went 4 -> 10 pt. Shrink-to-fit stays only
+//             as a safety net for a long word in a language nobody measured.
+//             The end-of-exam report's TWO-tab control keeps the long names;
+//             it has the room and nothing there was cramped.
+//           * THE REPORT WAS THE APP, PHOTOGRAPHED ONTO A4. That is the whole
+//             diagnosis. Pages 2-4 were built out of app idioms - rounded
+//             cards, soft coloured fills, chips, six 30 pt stat tiles - and an
+//             app rendered onto paper does not become a document. What makes a
+//             sheet read as a clinical report is boring and specific, and all
+//             of it is now there:
+//             - AN IDENTIFICATION GRID at the top of page 2: whose, when, on
+//               what, how many beats, what quality. A reader pulling the sheet
+//               out of a folder answers those before anything else and should
+//               not have to read a sentence to do it.
+//             - THE VERDICT IS A STATEMENT BLOCK, not a card: a heavy left
+//               rule in the level's colour, a kicker, the conclusion. The same
+//               shape a pathology report puts its impression in, because a
+//               conclusion is something the issuer stands behind rather than a
+//               widget.
+//             - SIX STAT TILES BECAME TWO RULED TABLES with reference ranges
+//               and H/L FLAGS. Tiles are a dashboard; a clinician reads a
+//               column, and the eye runs down the flag column first and stops
+//               on the letters. Blank when in range - a column of ticks makes
+//               exceptions harder to see, not easier.
+//             - SECTION HEADERS are uppercase, letterspaced, on a full-column
+//               rule. That single selector does more to make the sheet read as
+//               a document than anything else in the stylesheet.
+//             - Radii, soft fills and chip pills are gone; figures are aligned
+//               on the decimal (`tabular-nums` on the body).
+//           Re-verified in Node across nine cases: 4 pages, 0 unsized SVGs,
+//           0 percentage dimensions, 0 unresolved placeholders, 0 inconsistent
+//           page numbers, 0 NaN, 8 identification cells and the H/L flags
+//           present in the output.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.49.0 - "Why is there a blank page after every page? Why is there half a
 //           page of ECG for the remaining leads? Why are you not using my logo

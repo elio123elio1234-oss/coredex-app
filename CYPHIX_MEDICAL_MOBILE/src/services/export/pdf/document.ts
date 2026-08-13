@@ -175,8 +175,21 @@ export function buildRecordingHtml(input: ReportInput): string {
   const ecg = ecgPages(leads, analysis, n, chrome, labels, totalPages, pageNo);
   pageNo += ecg.pages;
 
+  /* The identification grid every clinical report opens with. Only facts the
+     record actually carries — a blank cell is honest, an invented one is not. */
+  const identity = [
+    { label: labels.patient, value: patientName ?? '—' },
+    { label: labels.recorded, value: when },
+    { label: labels.duration, value: `${recording.durationSec.toFixed(1)} s` },
+    { label: labels.sampleRate, value: `${fs} Hz` },
+    { label: labels.leads, value: labels.leadSet },
+    { label: labels.device, value: recording.deviceLabel ?? '—' },
+    { label: labels.mBeats, value: String(analysis.rate.beatsAnalyzed) },
+    { label: labels.mSqi, value: `${analysis.quality.sqi} %` },
+  ];
+
   const interp = screening
-    ? interpretationPages(screening, chrome, labels, totalPages, pageNo)
+    ? interpretationPages(screening, identity, chrome, labels, totalPages, pageNo)
     : { html: '', pages: 0 };
   pageNo += interp.pages;
 

@@ -106,6 +106,9 @@ export function usePdfLabels(): PdfLabels {
       statsAmplitudes: tr('secAmplitudes'),
       statsQuality: tr('secQuality'),
       refRange: tr('refRange'),
+      measureCol: tr('pdfColMeasure'),
+      resultCol: tr('pdfColResult'),
+      refCol: tr('pdfColRef'),
 
       mBpm: tr('mBpm'),
       mRrMean: tr('mRrMean'),

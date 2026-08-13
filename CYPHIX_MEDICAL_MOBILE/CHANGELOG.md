@@ -1,5 +1,62 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.50.0 - 2026-08-13 - the report stops being the app on paper, and the tabs stop touching
+
+*"The PDF does not look like a professional medical report (except page 1 with
+the graphs). And the three tabs at the top are really cramped - think how to
+arrange that professionally."*
+
+### The tabs were cramped because the labels were
+
+A segmented control divides its width **evenly**, so three labels of very
+different lengths always look wrong however the type is tuned. "Waveform /
+Measurements / Interpretation" put 72 pt in the first slot and ~105 pt in the
+next two, on ~120 pt segments - and shrink-to-fit was papering over it, which
+is why they fitted and *touched*: type squeezed to the edge of its box has no
+breathing room left by definition.
+
+The viewer's tabs are now **ECG / Values / Findings**. Near enough the same
+length to read as one composed control, and simply the better words: they are
+what a clinical report calls those three sections. The gutter went 4 -> 10 pt.
+Shrink-to-fit stays only as a safety net for a long word in a language nobody
+measured. The end-of-exam report's *two*-tab control keeps the long names - it
+has the room, and nothing there was cramped.
+
+### The report was the app, photographed onto A4
+
+That is the whole diagnosis. Pages 2-4 were built out of app idioms - rounded
+cards, soft coloured fills, chips, six 30 pt stat tiles - and an app rendered
+onto paper does not become a document.
+
+What makes a sheet read as a clinical report is boring and specific, and all of
+it is now there:
+
+- **An identification grid** at the top of page 2: whose, when, on what, how
+  many beats, what signal quality. A reader pulling the sheet out of a folder
+  answers those before anything else, and should not have to read a sentence to
+  do it.
+- **The verdict is a statement block, not a card** - a heavy left rule in the
+  level's colour, a kicker, the conclusion. The same shape a pathology report
+  puts its impression in, because a conclusion is something the issuer stands
+  behind rather than a widget.
+- **Six stat tiles became two ruled tables** with reference ranges and **H/L
+  flags**. Tiles are a dashboard; a clinician reads a column, and the eye runs
+  down the flag column first and stops on the letters. Blank when in range - a
+  column of ticks makes the exceptions harder to see, not easier.
+- **Section headers** are uppercase, letterspaced, on a full-column rule. That
+  one selector does more to make the sheet read as a document than anything
+  else in the stylesheet.
+- Radii, soft fills and chip pills are gone. Figures align on the decimal
+  (`tabular-nums` on the body).
+
+### Re-verified
+
+Nine cases in Node: 4 pages, 0 unsized SVGs, 0 percentage dimensions, 0
+unresolved placeholders, 0 inconsistent page numbers, 0 NaN, 8 identification
+cells and the H/L flags present in the output.
+
+**OTA**: TypeScript only, so `app.json` stays at 0.34.0.
+
 ## v0.49.0 - 2026-08-13 - the report stops wasting paper and starts showing its work
 
 *"Why is there a blank page after every page? Why is there half a page of ECG

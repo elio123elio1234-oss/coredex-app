@@ -96,6 +96,9 @@ export const he: Record<TranslationKey, string> = {
   reportDisclaimer:
     'לשימוש בריאותי ואימוני בלבד. אינו מכשיר אבחוני. לפענוח רפואי יש לפנות לרופא.',
   reportTabWaveform: 'גלים',
+  vtTabTrace: 'א.ק.ג',
+  vtTabValues: 'מדדים',
+  vtTabFindings: 'ממצאים',
   reportTabMeasurements: 'מדידות',
   reportSectionA11y: 'חלק בדוח',
   reportDuration: 'משך',
@@ -1162,6 +1165,10 @@ export const he: Record<TranslationKey, string> = {
   pdfAuditNote: '\u25CF \u05e0\u05de\u05e6\u05d0 \u00B7 \u2013 \u05e0\u05e9\u05dc\u05dc \u00B7 ? \u05dc\u05d0 \u05e0\u05d9\u05ea\u05df \u05dc\u05d4\u05e2\u05e8\u05d9\u05da. \u05d1\u05d3\u05d9\u05e7\u05d4 \u05e9\u05e0\u05e9\u05dc\u05dc\u05d4 \u05e4\u05d9\u05e8\u05d5\u05e9\u05d4 \u05e9\u05d4\u05d3\u05e4\u05d5\u05e1 \u05d7\u05d5\u05e4\u05e9 \u05d1\u05e9\u05e9\u05ea \u05d4\u05dc\u05d9\u05d3\u05d9\u05dd \u05d4\u05d0\u05dc\u05d4 \u05d5\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0; \u05d4\u05d9\u05d0 \u05d0\u05d9\u05e0\u05d4 \u05e9\u05d5\u05dc\u05dc\u05ea \u05de\u05e6\u05d1\u05d9\u05dd \u05e9\u05d4\u05dc\u05d9\u05d3\u05d9\u05dd \u05d4\u05d0\u05dc\u05d4 \u05dc\u05d0 \u05e8\u05d5\u05d0\u05d9\u05dd (\u05e2\u05de\u05d5\u05d3 \u05d0\u05d7\u05e8\u05d5\u05df).',
   pdfMedianBeatTitle: '\u05d4\u05e4\u05e2\u05d9\u05de\u05d4 \u05d4\u05de\u05d9\u05d9\u05e6\u05d2\u05ea',
   pdfMedianBeatCap: '\u05d7\u05e6\u05d9\u05d5\u05df \u05e9\u05dc {used} \u05e4\u05e2\u05d9\u05de\u05d5\u05ea, {rejected} \u05e0\u05d3\u05d7\u05d5',
+
+  pdfColMeasure: 'מדד',
+  pdfColResult: 'תוצאה',
+  pdfColRef: 'טווח ייחוס',
 
   /* ── משותף ── */
   back: 'חזרה',

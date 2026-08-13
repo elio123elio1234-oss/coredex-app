@@ -47,9 +47,12 @@ import type { PdfLabels } from './labels';
 import { wordmark } from './logo';
 import {
   BAND_OK,
+  BLUE,
   BODY_H,
   BRAND,
   BRAND_SOFT,
+  GOLD,
+  GREY_SOFT,
   PAGE_BOX_H,
   CAL_W,
   COL_W,
@@ -382,6 +385,7 @@ function auditGrid(screening: EcgScreening, labels: PdfLabels): string {
 
 export function interpretationPages(
   screening: EcgScreening,
+  identity: { label: string; value: string }[],
   chrome: Omit<Chrome, 'title' | 'pageLabel' | 'footRight'>,
   labels: PdfLabels,
   totalPages: number,
@@ -391,19 +395,27 @@ export function interpretationPages(
   const copy = labels.level(screening.level);
   const { rulesEvaluated, rulesTotal } = screening.stats;
 
-  const verdict = `<div class="verdict" style="border-color:${c.ink}33;background:${c.soft}">
-    ${donut({
-      size: 26,
-      fraction: rulesTotal > 0 ? rulesEvaluated / rulesTotal : 0,
-      ink: c.ink,
-      soft: PAPER,
-      centre: `${rulesEvaluated}`,
-      caption: `/ ${rulesTotal}`,
-    })}
-    <div class="verdict-copy">
-      <div class="verdict-head" style="color:${c.ink}">${esc(copy.headline)}</div>
-      <div class="verdict-act">${esc(copy.action)}</div>
-      <div class="verdict-checks">${esc(
+  /* ★ A STATEMENT BLOCK, NOT A CARD. A rounded box with a coloured fill and
+     a ring inside it is an app component photographed onto paper. A clinical
+     report states its conclusion in a ruled block with a heavy left edge —
+     the same shape a pathology report puts its impression in — because the
+     conclusion is a STATEMENT the issuer is standing behind, not a widget. */
+  const verdict = `<div class="stmt" style="border-left-color:${c.ink}">
+    <div class="stmt-l">
+      <div class="stmt-kicker">${esc(labels.pageInterpretation)}</div>
+      <div class="stmt-head" style="color:${c.ink}">${esc(copy.headline)}</div>
+      <div class="stmt-act">${esc(copy.action)}</div>
+    </div>
+    <div class="stmt-r">
+      ${donut({
+        size: 22,
+        fraction: rulesTotal > 0 ? rulesEvaluated / rulesTotal : 0,
+        ink: c.ink,
+        soft: PAPER,
+        centre: `${rulesEvaluated}`,
+        caption: `/ ${rulesTotal}`,
+      })}
+      <div class="stmt-checks">${esc(
         labels.checksRan.replace('{done}', String(rulesEvaluated)).replace('{total}', String(rulesTotal)),
       )}</div>
     </div>
@@ -425,15 +437,18 @@ export function interpretationPages(
   /* Findings that do not fit continue on a second page rather than being
      dropped or squeezed. Nothing is ever silently omitted from a report. */
   const perExtra = Math.floor((BODY_H - titleH) / FINDING_H);
-  const firstCount = Math.max(0, Math.min(found.length, Math.floor((BODY_H - VERDICT_H - SECTION_GAP - titleH - 34) / FINDING_H)));
+  const firstCount = Math.max(0, Math.min(found.length, Math.floor((BODY_H - 15 - SECTION_GAP - VERDICT_H - SECTION_GAP - titleH - 40) / FINDING_H)));
   const first = found.slice(0, firstCount);
   const rest: ScreeningFinding[][] = [];
   for (let i = firstCount; i < found.length; i += perExtra) rest.push(found.slice(i, i + perExtra));
 
   const firstFindingsH = first.length * FINDING_H;
-  const auditAvail = BODY_H - VERDICT_H - SECTION_GAP - (first.length ? titleH + firstFindingsH : 0) - SECTION_GAP - AUDIT_TITLE_H;
+  const auditAvail = BODY_H - 15 - SECTION_GAP - VERDICT_H - SECTION_GAP - (first.length ? titleH + firstFindingsH : 0) - SECTION_GAP - AUDIT_TITLE_H;
 
+  const ID_H = 15;
   assertFits('interpretation', [
+    ID_H,
+    SECTION_GAP,
     VERDICT_H,
     SECTION_GAP,
     first.length ? titleH + firstFindingsH : 0,
@@ -449,7 +464,9 @@ export function interpretationPages(
       pageLabel: labels.pageOf.replace('{n}', String(firstPageNumber)).replace('{total}', String(totalPages)),
       footRight: copy.headline,
     },
-    block(VERDICT_H, verdict) +
+    block(ID_H, idBlock(identity)) +
+      block(SECTION_GAP, '') +
+      block(VERDICT_H, verdict) +
       block(SECTION_GAP, '') +
       (first.length
         ? block(titleH, sectionTitle(labels.findingsTitle)) + block(firstFindingsH, first.map((f) => findingRow(f, labels)).join(''))
@@ -483,8 +500,71 @@ export function interpretationPages(
 export function countInterpretationPages(findings: readonly ScreeningFinding[]): number {
   const titleH = 8;
   const perExtra = Math.floor((BODY_H - titleH) / FINDING_H);
-  const firstCount = Math.max(0, Math.min(findings.length, Math.floor((BODY_H - VERDICT_H - SECTION_GAP - titleH - 34) / FINDING_H)));
+  const firstCount = Math.max(0, Math.min(findings.length, Math.floor((BODY_H - 15 - SECTION_GAP - VERDICT_H - SECTION_GAP - titleH - 40) / FINDING_H)));
   return 1 + Math.ceil(Math.max(0, findings.length - firstCount) / perExtra);
+}
+
+/* ══════════════════ Clinical document primitives ══════════════════ */
+
+/**
+ * ★ THE IDENTIFICATION BLOCK — what every clinical report opens with.
+ *
+ * Reported: *"it does not look like a professional medical report."* The
+ * pages were built out of APP idioms — rounded cards, soft fills, chips,
+ * big tiles — and an app rendered onto A4 does not become a document. What
+ * makes a report read as a report is boring and specific: a labelled
+ * identification grid at the top, ruled tables, figures aligned on the
+ * decimal, and a verification line at the bottom.
+ *
+ * This is the first of those. A reader picking the sheet out of a folder
+ * needs to answer "whose, when, on what" before anything else, and they
+ * should not have to read a sentence to do it.
+ */
+function idBlock(rows: { label: string; value: string }[]): string {
+  return `<div class="idgrid">${rows
+    .map(
+      (r) => `<div class="idcell"><span>${esc(r.label)}</span><b>${esc(r.value)}</b></div>`,
+    )
+    .join('')}</div>`;
+}
+
+/**
+ * A measurement row with its reference range and a flag.
+ *
+ * The H / L flag column is the single most report-like thing on the page and
+ * it is not decoration: it is how a reader scans forty numbers in two
+ * seconds and stops on the one that matters. Blank when in range — a column
+ * of ticks would make the exceptions harder to see, not easier.
+ */
+function measureRow(
+  label: string,
+  value: number | null,
+  unit: string,
+  low: number | null,
+  high: number | null,
+  digits = 0,
+): string {
+  const num = value === null ? '\u2014' : value.toFixed(digits);
+  let flag = '';
+  let cls = '';
+  if (value !== null && low !== null && high !== null) {
+    if (value > high) {
+      flag = 'H';
+      cls = 'hi';
+    } else if (value < low) {
+      flag = 'L';
+      cls = 'lo';
+    }
+  }
+  const ref =
+    low === null || high === null ? '\u2014' : `${low}\u2013${high}`;
+  return `<tr class="${cls}">
+    <th>${esc(label)}</th>
+    <td class="num">${num}</td>
+    <td class="unit">${esc(unit)}</td>
+    <td class="ref">${ref}</td>
+    <td class="flag">${flag}</td>
+  </tr>`;
 }
 
 /* ══════════════════ 3. Statistics ══════════════════ */
@@ -564,7 +644,8 @@ export function statisticsPage(
   }
 
   /* ── Block heights, declared before anything is drawn ── */
-  const H_TILES = 24;
+  const H_MB_TITLE_FIRST = 7;
+  const H_TILES = 42;
   const H_MB_TITLE = 7;
   const H_MB = 30;
   const H_INT_TITLE = 7;
@@ -572,8 +653,9 @@ export function statisticsPage(
   const H_FIG_TITLE = 7;
   const H_FIGS = 46;
   const H_AMP_TITLE = 7;
-  const H_AMPS = 51;
+  const H_AMPS = 33;
   assertFits('statistics', [
+    H_MB_TITLE_FIRST,
     H_TILES,
     H_MB_TITLE,
     H_MB,
@@ -585,18 +667,33 @@ export function statisticsPage(
     H_AMPS,
   ]);
 
-  const tile = (label: string, value: string, unit: string, ink = INK): string =>
-    `<div class="tile"><div class="tile-v" style="color:${ink}">${esc(value)}<span>${esc(unit)}</span></div><div class="tile-l">${esc(label)}</div></div>`;
+  /* ★ A RULED TABLE WITH REFERENCE RANGES AND FLAGS, not six app tiles.
+     Six 30 pt numbers in rounded boxes is a dashboard; a clinician reads a
+     column. Two columns of measurement / result / unit / reference / flag is
+     what every ECG machine and every lab prints, and it is scannable in a way
+     a tile grid is not: the eye runs down the flag column first and stops on
+     the letters. */
+  const tableRows = [
+    measureRow(labels.mBpm, rate.bpm, 'BPM', 50, 100),
+    measureRow('PR', intervals.prMs, 'ms', REF.pr.low, REF.pr.high),
+    measureRow('QRS', intervals.qrsMs, 'ms', REF.qrs.low, REF.qrs.high),
+    measureRow('QT', intervals.qtMs, 'ms', REF.qt.low, REF.qt.high),
+    measureRow('QTc (Bazett)', intervals.qtcBazettMs, 'ms', REF.qtc.low, REF.qtc.high),
+    measureRow('QTc (Fridericia)', intervals.qtcFridericiaMs, 'ms', REF.qtc.low, REF.qtc.high),
+  ].join('');
+  const tableRows2 = [
+    measureRow(labels.statsAxis, axis.degrees, 'deg', -30, 90),
+    measureRow(labels.mRrMean, rate.rrMeanMs, 'ms', null, null),
+    measureRow(labels.mSdnn, rate.sdnnMs, 'ms', null, null, 1),
+    measureRow(labels.mRmssd, rate.rmssdMs, 'ms', null, null, 1),
+    measureRow(labels.mRrVariation, rate.rrVariationPct, '%', null, null, 1),
+    measureRow(labels.mSqi, quality.sqi, '%', null, null),
+  ].join('');
 
-  const num = (v: number | null, d = 0): string => (v === null ? '—' : v.toFixed(d));
-
-  const tiles = `<div class="tiles">
-    ${tile(labels.mBpm, num(rate.bpm), 'BPM', BRAND)}
-    ${tile(labels.mSdnn, num(rate.sdnnMs, 1), 'ms')}
-    ${tile(labels.mRmssd, num(rate.rmssdMs, 1), 'ms')}
-    ${tile(labels.mRrVariation, num(rate.rrVariationPct, 1), '%')}
-    ${tile(labels.mBeats, String(rate.beatsAnalyzed), '')}
-    ${tile(labels.mSqi, String(quality.sqi), '%', BRAND)}
+  const head = `<tr><th>${esc(labels.measureCol)}</th><th class="num">${esc(labels.resultCol)}</th><th></th><th class="ref">${esc(labels.refCol)}</th><th class="flag"></th></tr>`;
+  const tiles = `<div class="twocol">
+    <table class="mt"><thead>${head}</thead><tbody>${tableRows}</tbody></table>
+    <table class="mt"><thead>${head}</thead><tbody>${tableRows2}</tbody></table>
   </div>`;
 
   const intervals5 = [
@@ -656,7 +753,8 @@ export function statisticsPage(
       pageLabel: labels.pageOf.replace('{n}', String(pageNumber)).replace('{total}', String(totalPages)),
       footRight: `${labels.mAnalysed}: ${quality.analysedSeconds} s`,
     },
-    block(H_TILES, tiles) +
+    block(H_MB_TITLE_FIRST, sectionTitle(labels.statsRate)) +
+      block(H_TILES, tiles) +
       block(
         H_MB_TITLE,
         sectionTitle(
@@ -764,127 +862,153 @@ export const REPORT_CSS = `
 html, body { margin: 0; padding: 0; background: ${PAPER}; }
 body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Arial, sans-serif;
        color: ${INK}; -webkit-print-color-adjust: exact; print-color-adjust: exact;
-       -webkit-font-smoothing: antialiased; }
+       -webkit-font-smoothing: antialiased;
+       font-variant-numeric: tabular-nums; }
 
-/* ★ The page is a FIXED BOX. 'overflow:hidden' is the last line of defence
-   behind assertFits: if arithmetic ever fails, the damage is a clipped
-   block on one page rather than a lead torn across two. */
+/* The page is a FIXED BOX at 296 mm - see PAGE_BOX_H for why not 297. */
 .pg { position: relative; width: 210mm; height: ${PAGE_BOX_H}mm; overflow: hidden;
       padding: 10mm 12mm 8mm; page-break-after: always; break-after: page; }
 .pg:last-child { page-break-after: avoid; break-after: avoid; }
 
 .lh { height: 16mm; display: flex; align-items: flex-start; justify-content: space-between;
-      border-bottom: 0.5mm solid ${INK}; padding-bottom: 2mm; }
+      border-bottom: 0.6mm solid ${INK}; padding-bottom: 2mm; }
 .mark { line-height: 0; }
 .mark svg { display: block; }
-.ttl { font-size: 13pt; font-weight: 800; letter-spacing: -0.3px; margin-top: 1.6mm; color: ${BRAND}; }
-.lh-r { font-size: 7.5pt; color: ${SLATE}; text-align: right; line-height: 1.5;
-        max-width: 80mm; overflow: hidden; }
+.ttl { font-size: 11pt; font-weight: 800; letter-spacing: 0.4px; margin-top: 1.8mm;
+       color: ${INK}; text-transform: uppercase; }
+.lh-r { font-size: 7pt; color: ${SLATE}; text-align: right; line-height: 1.55;
+        max-width: 82mm; overflow: hidden; white-space: pre-line; }
 
 .body { height: ${BODY_H}mm; }
 .blk { overflow: hidden; }
 .ft { position: absolute; left: 12mm; right: 12mm; bottom: 8mm; height: 7mm;
       display: flex; align-items: flex-end; justify-content: space-between;
-      font-size: 7pt; color: ${MUTED}; border-top: 0.2mm solid ${HAIRLINE}; }
+      font-size: 6.6pt; color: ${MUTED}; border-top: 0.2mm solid ${HAIRLINE};
+      letter-spacing: 0.3px; }
 
-.sec { font-size: 9.5pt; font-weight: 800; letter-spacing: -0.2px; color: ${INK};
-       padding-bottom: 1.4mm; }
+/* ★ THE SECTION RULE. Uppercase, letterspaced, on a heavy hairline that runs
+   the full column. This one selector does more to make the sheet read as a
+   document than any other rule in the file. */
+.sec { font-size: 7pt; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase;
+       color: ${INK}; border-bottom: 0.35mm solid ${INK}; padding-bottom: 1.2mm; }
 
-/* ── ECG ── */
-.sheet { border: 0.25mm solid ${HAIRLINE}; border-radius: 1.5mm; overflow: hidden;
+/* -- ECG -- */
+.sheet { border: 0.25mm solid ${HAIRLINE}; overflow: hidden;
          display: block; font-size: 0; line-height: 0; }
 .strip { display: block; }
 .cap { display: flex; justify-content: space-between; align-items: center;
-       font-size: 7pt; color: ${SLATE}; padding-top: 2mm; }
+       font-size: 6.6pt; color: ${SLATE}; padding-top: 2mm; letter-spacing: 0.2px; }
 
-/* ── Interpretation ── */
-.verdict { display: flex; align-items: center; gap: 6mm; height: 100%;
-           border: 0.3mm solid; border-radius: 3mm; padding: 4mm 6mm; }
-.verdict-copy { flex: 1; min-width: 0; }
-.verdict-head { font-size: 17pt; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
-.verdict-act { font-size: 9.5pt; color: ${SLATE}; margin-top: 1.4mm; }
-.verdict-checks { font-size: 7.5pt; color: ${MUTED}; margin-top: 1.4mm; }
-
-.find { display: flex; gap: 0; border: 0.2mm solid ${HAIRLINE}; border-radius: 2mm;
-        overflow: hidden; margin-bottom: 1.6mm; }
-.find-bar { width: 1.2mm; flex: none; }
-.find-body { flex: 1; min-width: 0; padding: 2mm 3mm; }
-.find-top { display: flex; align-items: center; gap: 2mm; }
-.find-name { font-size: 10pt; font-weight: 800; letter-spacing: -0.2px; }
-.chip { font-size: 6.5pt; font-weight: 800; padding: 0.5mm 1.6mm; border-radius: 1mm; }
-.chip-q { background: ${SURFACE}; color: ${SLATE}; }
-.find-mean { font-size: 8pt; color: ${SLATE}; margin-top: 0.8mm; line-height: 1.35;
-             max-height: 7mm; overflow: hidden; }
-.find-ev { margin-top: 1mm; font-size: 7.5pt; color: ${INK}; }
-.ev { display: inline-block; background: ${SURFACE}; border-radius: 1mm;
-      padding: 0.4mm 1.4mm; margin-right: 1.4mm; font-variant-numeric: tabular-nums; }
-.ev b { color: ${MUTED}; font-weight: 700; }
-.mtrack { height: 0.9mm; background: ${SURFACE}; border-radius: 0.5mm; margin-top: 1.2mm;
+/* -- Identification grid -- */
+.idgrid { display: flex; flex-wrap: wrap; border-top: 0.2mm solid ${HAIRLINE}; }
+.idcell { width: 25%; border-bottom: 0.2mm solid ${HAIRLINE}; padding: 1.6mm 2mm 1.6mm 0;
           overflow: hidden; }
-.mtrack i { display: block; height: 100%; border-radius: 0.5mm; }
-.find-src { font-size: 6.5pt; color: ${MUTED}; margin-top: 1mm;
+.idcell span { display: block; font-size: 6.2pt; letter-spacing: 0.8px; text-transform: uppercase;
+               color: ${MUTED}; }
+.idcell b { display: block; font-size: 8.5pt; font-weight: 700; margin-top: 0.4mm;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.empty { font-size: 9pt; color: ${SLATE}; background: ${SURFACE}; border-radius: 2mm;
-         padding: 4mm; }
 
-/* ── Statistics ── */
-.tiles { display: flex; gap: 2mm; height: 100%; }
-.tile { flex: 1; border: 0.2mm solid ${HAIRLINE}; border-radius: 2mm; padding: 2.4mm 2mm;
-        background: ${PAPER}; overflow: hidden; }
-.tile-v { font-size: 15pt; font-weight: 800; letter-spacing: -0.6px;
-          font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tile-v span { font-size: 7pt; font-weight: 700; color: ${MUTED}; margin-left: 0.8mm; }
-.tile-l { font-size: 6.8pt; color: ${SLATE}; margin-top: 1mm; line-height: 1.2; }
+/* -- The interpretation statement -- */
+.stmt { display: flex; align-items: center; justify-content: space-between; gap: 6mm;
+        height: 100%; border-left: 1.4mm solid; padding: 3mm 4mm; background: ${SURFACE}; }
+.stmt-l { min-width: 0; }
+.stmt-kicker { font-size: 6.4pt; font-weight: 800; letter-spacing: 1.4px;
+               text-transform: uppercase; color: ${MUTED}; }
+.stmt-head { font-size: 16pt; font-weight: 800; letter-spacing: -0.4px; line-height: 1.12;
+             margin-top: 1mm; }
+.stmt-act { font-size: 8.5pt; color: ${SLATE}; margin-top: 1.2mm; }
+.stmt-r { flex: none; text-align: center; }
+.stmt-checks { font-size: 6.2pt; color: ${MUTED}; margin-top: 0.6mm; }
 
+/* -- Findings, as numbered statements -- */
+.find { display: flex; gap: 0; border-bottom: 0.2mm solid ${HAIRLINE}; overflow: hidden; }
+.find-bar { width: 1mm; flex: none; }
+.find-body { flex: 1; min-width: 0; padding: 1.8mm 0 1.8mm 2.6mm; }
+.find-top { display: flex; align-items: baseline; gap: 2mm; }
+.find-name { font-size: 9.5pt; font-weight: 800; letter-spacing: -0.1px; }
+.chip { font-size: 6.2pt; font-weight: 800; padding: 0.3mm 1.4mm; letter-spacing: 0.4px;
+        text-transform: uppercase; }
+.chip-q { background: ${GREY_SOFT}; color: ${SLATE}; }
+.find-mean { font-size: 7.6pt; color: ${SLATE}; margin-top: 0.6mm; line-height: 1.35;
+             max-height: 6.4mm; overflow: hidden; }
+.find-ev { margin-top: 0.9mm; font-size: 7.2pt; }
+.ev { display: inline-block; margin-right: 3mm; }
+.ev b { color: ${MUTED}; font-weight: 700; letter-spacing: 0.3px; }
+.mtrack { height: 0.7mm; background: ${GREY_SOFT}; margin-top: 1mm; overflow: hidden; }
+.mtrack i { display: block; height: 100%; }
+.find-src { font-size: 6.2pt; color: ${MUTED}; margin-top: 0.9mm;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty { font-size: 8pt; color: ${SLATE}; padding: 3mm 0; }
+
+/* -- Measurement tables -- */
+.twocol { display: flex; gap: 6mm; height: 100%; }
+.twocol > table { flex: 1; }
+table.mt { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
+table.mt thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
+                    text-transform: uppercase; color: ${MUTED}; text-align: left;
+                    padding: 0 1.2mm 1mm 0; border-bottom: 0.35mm solid ${INK}; }
+table.mt tbody th { text-align: left; font-weight: 600; color: ${SLATE};
+                    padding: 1.5mm 1.2mm 1.5mm 0; border-bottom: 0.2mm solid ${HAIRLINE};
+                    white-space: nowrap; overflow: hidden; }
+table.mt td { padding: 1.5mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
+table.mt .num { text-align: right; font-weight: 800; font-size: 8.6pt; width: 16mm; }
+table.mt .unit { color: ${MUTED}; font-size: 6.8pt; width: 9mm; }
+table.mt .ref { text-align: right; color: ${MUTED}; font-size: 6.8pt; width: 16mm; }
+table.mt .flag { text-align: center; width: 6mm; font-weight: 800; font-size: 8pt; }
+table.mt tr.hi .num, table.mt tr.hi .flag { color: ${GOLD}; }
+table.mt tr.lo .num, table.mt tr.lo .flag { color: ${BLUE}; }
+
+/* -- Figures -- */
 .figrow { display: flex; gap: 4mm; height: 100%; }
 .fig { text-align: center; }
-.fig-cap { font-size: 6.6pt; color: ${MUTED}; line-height: 1.3; margin-top: 1mm; }
+.fig-cap { font-size: 6.2pt; color: ${MUTED}; line-height: 1.3; margin-top: 1mm; }
 
-table.amp { width: 100%; border-collapse: collapse; font-size: 8pt; }
-table.amp thead th { font-size: 7pt; font-weight: 800; color: ${MUTED}; text-align: right;
-                     padding: 1.2mm 1.6mm; border-bottom: 0.3mm solid ${INK}; }
+table.amp { width: 100%; border-collapse: collapse; font-size: 7.6pt; }
+table.amp thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
+                     text-transform: uppercase; color: ${MUTED}; text-align: right;
+                     padding: 0 1.4mm 1mm; border-bottom: 0.35mm solid ${INK}; }
 table.amp thead th:first-child { text-align: left; }
-table.amp tbody th { text-align: left; font-weight: 800; font-size: 8.5pt;
-                     padding: 1.4mm 1.6mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
-table.amp td { text-align: right; padding: 1.4mm 1.6mm; font-variant-numeric: tabular-nums;
+table.amp tbody th { text-align: left; font-weight: 800; font-size: 8pt;
+                     padding: 1.2mm 1.4mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
+table.amp td { text-align: right; padding: 1.2mm 1.4mm;
                border-bottom: 0.2mm solid ${HAIRLINE}; }
-table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: ${SURFACE}; }
 td.ampcell { width: 44mm; padding-right: 0; }
 
-/* -- The audit grid: 43 checks in three columns -- */
+/* -- The 43-check audit -- */
 .audit { column-count: 3; column-gap: 6mm; }
 .agroup { break-inside: avoid; margin-bottom: 2mm; }
-.agroup h4 { margin: 0 0 0.8mm; font-size: 6.6pt; font-weight: 800; letter-spacing: 0.6px;
-             text-transform: uppercase; color: ${MUTED}; }
-.arow { display: flex; gap: 1.4mm; align-items: baseline; font-size: 7pt; line-height: 1.45; }
+.agroup h4 { margin: 0 0 0.8mm; font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
+             text-transform: uppercase; color: ${MUTED};
+             border-bottom: 0.2mm solid ${HAIRLINE}; padding-bottom: 0.5mm; }
+.arow { display: flex; gap: 1.4mm; align-items: baseline; font-size: 6.8pt; line-height: 1.45; }
 .arow i { font-style: normal; width: 2mm; flex: none; text-align: center; }
 .a-out { color: ${SLATE}; }
 .a-out i { color: ${HAIRLINE}; }
 .a-na { color: ${MUTED}; }
 .a-found { font-weight: 800; }
-.auditnote { font-size: 6.4pt; color: ${MUTED}; margin-top: 1.6mm; line-height: 1.4; }
+.auditnote { font-size: 6.2pt; color: ${MUTED}; margin-top: 1.6mm; line-height: 1.4; }
 
 /* -- Median beats -- */
 .mbrow { display: flex; gap: 2mm; height: 100%; }
 .mbcell { flex: none; }
-.mblead { font-size: 7pt; font-weight: 800; color: ${BRAND}; margin-bottom: 0.8mm; }
+.mblead { font-size: 6.6pt; font-weight: 800; color: ${INK}; margin-bottom: 0.6mm;
+          letter-spacing: 0.5px; }
 
-/* ── Reference ── */
+/* -- Reference page -- */
 .maprow { display: flex; gap: 5mm; height: 100%; }
 .mapfig { flex: none; }
 .mapcopy { flex: 1; min-width: 0; }
-.mapcopy p { margin: 0 0 2mm; font-size: 8pt; color: ${SLATE}; line-height: 1.45; }
-.wall { display: flex; gap: 2.5mm; align-items: baseline; font-size: 8pt; margin-bottom: 1.4mm; }
+.mapcopy p { margin: 0 0 2mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.45; }
+.wall { display: flex; gap: 2.5mm; align-items: baseline; font-size: 7.6pt; margin-bottom: 1.4mm;
+        border-bottom: 0.2mm solid ${HAIRLINE}; padding-bottom: 1.2mm; }
 .wall b { flex: none; width: 22mm; font-weight: 800; color: ${INK}; }
 .wall span { color: ${SLATE}; }
 .wall-off b, .wall-off span { color: ${MUTED}; }
-ul.blind { margin: 0; padding-left: 4mm; font-size: 8pt; color: ${SLATE}; line-height: 1.5; }
-ol.how { margin: 0; padding-left: 4.5mm; font-size: 8pt; color: ${SLATE}; line-height: 1.5; }
-.note { font-size: 8pt; line-height: 1.45; background: ${SURFACE}; border-radius: 2mm;
-        padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
-.disc { font-size: 6.8pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
-.sim { display: inline-block; font-size: 7.5pt; font-weight: 800; color: ${LEVEL_COLOR.urgent.ink};
-       background: ${LEVEL_COLOR.urgent.soft}; padding: 0.8mm 2mm; border-radius: 1mm; }
+ul.blind { margin: 0; padding-left: 4mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.5; }
+ol.how { margin: 0; padding-left: 4.5mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.5; }
+.note { font-size: 7.6pt; line-height: 1.45; background: ${SURFACE};
+        border-left: 1mm solid ${HAIRLINE}; padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
+.disc { font-size: 6.4pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
 `;
 
 // v1.0.0 — Every page of the report at an exact millimetre, with assertFits
