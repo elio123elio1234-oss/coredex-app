@@ -106,9 +106,28 @@ export default function SegmentedTabs<T extends string>({
             }}
             style={styles.seg}
           >
+            {/* ★ THE TYPE SHRINKS WHEN THERE ARE THREE SEGMENTS.
+                Reported from the phone: "Measurem… Interpretat…". With two
+                options each segment is ~180 pt on a 390 pt screen and 14 pt
+                bold fits anything; with three it is ~120 pt and "Measurements"
+                alone is over 100 pt, so both long labels truncated and the
+                control read as broken.
+
+                `adjustsFontSizeToFit` rather than a smaller fixed size,
+                because the shrink must follow the LABEL and the LANGUAGE —
+                Hebrew's words here are shorter than English's, and a size
+                chosen for the worst English case would needlessly shrink
+                every Hebrew tab. `minimumFontScale` stops it becoming
+                unreadable rather than letting it scale to nothing. */}
             <Text
-              style={[styles.label, { color: active ? t.textPrimary : t.textSecondary }]}
+              style={[
+                styles.label,
+                options.length > 2 && styles.labelTight,
+                { color: active ? t.textPrimary : t.textSecondary },
+              ]}
               numberOfLines={1}
+              adjustsFontSizeToFit={options.length > 2}
+              minimumFontScale={0.75}
             >
               {o.label}
             </Text>
@@ -133,8 +152,23 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   /* `flex: 1` is the whole point — the segments divide the full width. */
-  seg: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9 },
+  seg: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    /* Without this the Text's intrinsic width can push past its flex share
+       before `adjustsFontSizeToFit` ever measures, so the shrink is applied
+       to a box that has already overflowed. */
+    paddingHorizontal: 4,
+  },
   label: { fontSize: 14, fontWeight: '700' },
+  /* Three segments start a step down, so shrink-to-fit has less work to do
+     and the three labels stay closer to one size as a result. */
+  labelTight: { fontSize: 13 },
 });
 
+// v1.1.0 — The label shrinks to fit when there are more than two segments.
+//          At three, "Measurements" and "Interpretation" both truncated on a
+//          390 pt screen and the control read as broken.
 // v1.0.0 — Full-width segmented tab bar with a sliding native-driver thumb.

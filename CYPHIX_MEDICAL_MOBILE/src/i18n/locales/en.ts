@@ -1124,6 +1124,92 @@ export const en = {
   scrF_leadReversal: 'The electrodes may be swapped',
   scrM_leadReversal: 'Check the arm electrodes and measure again. Rarely, it is the heart’s position.',
 
+  /* ══════════════════════════════════════════════════════════════════
+     THE EXPLAIN SHEET — "why is this yellow?"
+
+     ★ THE COPY RULE HERE IS STRICTER THAN ANYWHERE ELSE IN THE APP, and it
+     comes from a real reaction to the first version: *"I look at this and I
+     have no idea what you are talking about. As a healthy person I see it
+     and I get stressed."* That is the brief. Every `scrCause_*` line below
+     is written for someone with no medical training who is frightened:
+
+       · no term is used without being said in ordinary words first
+       · the ORDINARY explanation comes before the serious one, because it
+         is also the likelier one and reading it first is what stops panic
+       · nothing is softened into meaninglessness — "this can mean a heart
+         attack is happening" stays, because it is true and the whole point
+         of the screen is that the reader acts on it
+     ══════════════════════════════════════════════════════════════════ */
+
+  scrWhyButton: 'Why?',
+  scrWhyTitle: 'Why this was flagged',
+  scrWhyMeasured: 'What we measured',
+  scrWhyYours: 'Yours',
+  scrWhyNormal: 'Typical',
+  scrWhyMeaning: 'What it means',
+  scrWhyCause: 'Why this happens',
+  scrWhyEvidence: 'From your recording',
+  scrWhySource: 'Criterion',
+  scrWhyBorderline: 'Only just past the line — this did not change your result.',
+  scrClose: 'Close',
+
+  /* Which part of the beat the rule looked at. Eight strings rather than 43:
+     the rule declares its `focus` and the sheet reads it, so a new rule
+     inherits the right sentence without anyone writing one. */
+  scrFocus_p: 'The small bump before each beat — the top chambers firing.',
+  scrFocus_pr: 'The gap between the small bump and the big spike — how long the signal takes to travel down.',
+  scrFocus_qrs: 'The big spike — the main pumping chambers firing.',
+  scrFocus_st: 'The flat stretch just after the big spike — where a blood-supply problem shows.',
+  scrFocus_t: 'The rounded wave after the spike — the heart resetting.',
+  scrFocus_qt: 'From the spike to the end of the rounded wave — the full fire-and-reset cycle.',
+  scrFocus_rhythm: 'The spacing between beats across the whole recording.',
+  scrFocus_none: 'How the recording itself was taken.',
+
+  /* ── Why it happens, in plain words ── */
+  scrCause_bradycardiaSevere: 'Your heart beat fewer than 40 times a minute. Very fit people run slow, but this is slower than fitness explains — it can also be the heart\u2019s own pacemaker tiring, or a medicine slowing it too much.',
+  scrCause_bradycardia: 'A slow resting heart is normal in athletes and during sleep — a strong heart moves more blood per beat, so it needs fewer. It can also come from beta-blockers or an underactive thyroid, which is why it is worth a mention.',
+  scrCause_tachycardia: 'A fast heart at rest is almost always a response to something rather than a problem in itself: stress, caffeine, pain, fever, dehydration, or simply having moved just before measuring.',
+  scrCause_tachycardiaExtreme: 'Above 150 beats a minute at rest, the heart is usually not just responding to something — an electrical short-circuit is often driving it. It also gets less time to refill between beats.',
+  scrCause_atrialFibrillation: 'The top chambers stopped beating in an organised way and started quivering, so the bottom chambers get a random stream of signals instead of a steady one. Blood pools where it should be pushed, which is why this raises stroke risk. It is common, and there is good treatment.',
+  scrCause_atrialFlutter: 'The signal in the top chambers is circling a loop instead of travelling once and stopping. The loop runs very fast, and a gate lower down passes only every second beat through — which is why the pulse comes out fast but very regular.',
+  scrCause_svt: 'A fast, regular rhythm starting above the main pumping chambers, usually from a signal that found a short-cut and is going round in a circle. It often starts and stops abruptly, and it is very treatable.',
+  scrCause_wideComplexTachycardia: 'The beats are both fast and unusually broad, which is what happens when the signal starts in the main pumping chambers instead of travelling down the normal wiring. This is the pattern doctors treat first and ask questions about afterwards.',
+  scrCause_ectopyFrequent: 'Extra beats fired early, ahead of the next scheduled one. Nearly everyone has some. What makes these worth a mention is how many there were — a high number over a long time can gradually tire the heart out.',
+  scrCause_ectopyOccasional: 'A beat or two arrived early. This is one of the commonest things on any ECG, most people have it, and it is what you feel as a skip or a thud. On its own it means nothing.',
+  scrCause_irregularRhythm: 'The gaps between your beats were uneven. The usual reason is completely normal: the heart speeds up slightly as you breathe in and slows as you breathe out. It is most obvious in young and fit people and is a sign of a healthy nervous system.',
+  scrCause_pause: 'There was a gap of more than two seconds between beats. Short pauses happen in sleep and in very fit people. Longer or repeated ones can mean the heart\u2019s own pacemaker is skipping.',
+  scrCause_pauseLong: 'Your heart went more than three seconds without a beat. A gap that long can make someone feel faint or actually black out, which is why it needs looking at rather than watching.',
+  scrCause_avBlock1: 'The signal from the top chambers to the bottom ones is taking longer than usual to get through — like a slightly slow relay. Every beat still arrives. It is common with age, in athletes, and with some medicines.',
+  scrCause_avBlock1Marked: 'The delay between the top and bottom chambers is long enough that the two are no longer working in step, which can cost the heart some of its efficiency. Still every beat arrives — it just arrives late.',
+  scrCause_avBlock2Suspected: 'One beat looks like it went missing: the top chambers fired, and the signal did not make it through to the bottom ones that time. Sometimes harmless, sometimes the beginning of something that needs a pacemaker — telling those apart needs a longer recording.',
+  scrCause_avBlockCompleteSuspected: 'The top and bottom chambers appear to have stopped talking to each other, so the bottom ones are beating on their own backup rhythm. Backups are slow and not fully reliable, which is why this needs seeing rather than watching.',
+  scrCause_ivcd: 'The signal is taking slightly longer than usual to spread through the main pumping chambers. It is a small delay — not enough to name a specific blocked pathway, but enough to note.',
+  scrCause_bbbLeftPattern: 'One of the two main electrical cables into the pumping chambers looks blocked, so the signal has to go the long way round and the beat comes out wide. Confirming which cable needs chest electrodes this test does not have.',
+  scrCause_bbbRightPattern: 'One of the two main electrical cables into the pumping chambers looks blocked, so one side finishes late and the beat comes out wide. The right-sided version is often found in healthy people. Confirming it needs chest electrodes.',
+  scrCause_bbbIndeterminate: 'The beats are wider than normal, so the signal is taking a detour somewhere — but the shape does not clearly say which side. A full ECG with chest electrodes would.',
+  scrCause_lafb: 'One of the small branches of the heart\u2019s wiring is not conducting, so the signal reaches part of the muscle by a slightly longer route. This changes the direction of the beat without changing the heart itself, and on its own it is often harmless.',
+  scrCause_lpfb: 'A small branch of the heart\u2019s wiring appears not to be conducting. This one is uncommon, and the same picture is produced much more often by an ordinary thin build or by the right side of the heart working hard — which is why a doctor should confirm it rather than the app.',
+  scrCause_qtLong: 'After each beat the heart takes a moment to reset before it can beat again, and yours is taking longer than usual. The commonest reason by far is a medicine — many ordinary ones do it, including some antibiotics and antidepressants. Low potassium or magnesium can too.',
+  scrCause_qtLongSevere: 'The reset time after each beat is very long. That matters because during the reset the heart is vulnerable, and a long enough window lets a dangerous rhythm start. Medicines are the commonest cause, and stopping the right one usually fixes it — which is why this is worth acting on today.',
+  scrCause_qtShort: 'The heart is resetting faster than usual after each beat. Uncommon. It can come from too much calcium in the blood or from certain medicines, both of which a blood test settles quickly.',
+  scrCause_tInversionInferior: 'The wave where the heart resets is pointing downwards in the leads that look at the bottom of the heart. This can be old, it can be down to your build or your position, and it can be new — the only way to tell is to compare with a previous recording, which is a doctor\u2019s job.',
+  scrCause_tInversionLateral: 'The reset wave is pointing downwards in the leads that look at the side of the heart. As with any T-wave change, whether it matters depends almost entirely on whether it is new — which needs an older ECG to compare against.',
+  scrCause_axisLeft: 'This describes the overall direction the electrical signal travels through your heart, not a problem with it. It leans left in a lot of perfectly healthy people, and does so more with age and with a fuller build.',
+  scrCause_axisRight: 'This is the overall direction the signal travels through your heart. Leaning right is normal in tall, thin, young people and in children. When it means something, it usually means the right side of the heart is working harder than it should.',
+  scrCause_axisExtreme: 'The signal is travelling in an unusual direction — up and to the right. The commonest reason by far is that the arm electrodes were swapped, so it is worth simply measuring again before reading anything into it.',
+  scrCause_lvhVoltage: 'The electrical signal from the main pumping chamber is larger than usual, which can mean its muscle wall has thickened — usually from years of higher blood pressure. But a slim chest also makes signals look big, so this test cannot tell those apart. An ultrasound scan of the heart can, easily.',
+  scrCause_raEnlargement: 'The bump at the start of each beat is taller than usual, which is what the top-right chamber produces when it is enlarged or working against pressure. It usually points at the lungs rather than the heart.',
+  scrCause_stElevationInferior: 'The flat stretch after each beat is lifted in the leads that look at the bottom of the heart. This is the pattern of an artery being blocked right now, with muscle starting to die. It can also be caused by other, harmless things — but it is not something to wait out, because if it is the serious one, every minute counts.',
+  scrCause_stElevationLateral: 'The flat stretch after each beat is lifted in the leads looking at the side of the heart, which can mean an artery there is blocked right now. There are harmless causes too, but this is not a pattern to wait out.',
+  scrCause_stDepressionInferior: 'The flat stretch after each beat is pushed down, which is what muscle does when it is not getting as much blood as it is asking for. It often shows up during exertion and settles with rest.',
+  scrCause_stDepressionLateral: 'The flat stretch after each beat is pushed down in the leads looking at the side of the heart — the pattern of muscle asking for more blood than it is getting.',
+  scrCause_qWavesInferior: 'There is a downward notch at the start of the beat in the leads that look at the bottom of the heart. Dead muscle does not carry electricity, so the lead facing it records the wall opposite instead — that notch can be the scar of a heart attack, possibly one that was never noticed at the time. It is also a normal shape in some people.',
+  scrCause_qWavesLateral: 'There is a downward notch at the start of the beat in the leads looking at the side of the heart. It can be the scar of an old heart attack, and it can be an ordinary variation in shape.',
+  scrCause_hyperkalaemiaPattern: 'The reset wave after each beat is tall and pointed rather than rounded. The classic reason is too much potassium in the blood, which happens with kidney problems and with some blood-pressure medicines. A single blood test answers it.',
+  scrCause_lowVoltage: 'All six views of your heart recorded a smaller signal than usual. The commonest reasons are about what sits between your heart and the sensors rather than the heart itself — body build, lung air, or in some cases fluid around the heart. How the device is worn also affects it, so a repeat measurement is worthwhile.',
+  scrCause_electricalAlternans: 'The size of your beats alternated — big, small, big, small. That pattern is produced by the heart physically swinging with each beat, which happens when it is surrounded by fluid. It is uncommon and it is checked with an ultrasound scan.',
+  scrCause_leadReversal: 'One view of your heart came out upside down. Almost always this means the sensors on the left and right arms were the wrong way round — a two-second fix. Very rarely it means the heart sits on the other side of the chest, which is harmless in itself but worth knowing.',
+
   /* ── Shared ── */
   back: 'Back',
   exit: 'Exit',

@@ -57,7 +57,7 @@ export * from './ecg/ecgAnalysis';
    rule: findings carry their own evidence, their own confidence, and the
    blind spots six limb leads structurally cannot cover. */
 export * from './types/ecgScreening';
-export * from './ecg/ecgScreening';
+export * from './ecg/screening';
 
 /* Report GEOMETRY, in millimetres. Not signal maths, but the same rule
    applies for a different reason: a trace measured off the web's printed

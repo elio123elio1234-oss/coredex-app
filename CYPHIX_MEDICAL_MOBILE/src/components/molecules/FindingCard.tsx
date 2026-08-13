@@ -1,29 +1,33 @@
 /* ==================================================================
-   FindingCard (molecule) — one named pattern, with the arithmetic that
-   produced it.
+   FindingCard (molecule) — one named pattern, on a card you can tap.
 
-   ══ THE SHAPE IS THE ARGUMENT ══
-   Four bands, in the order a worried person actually reads them:
+   ══ WHAT THE FIRST VERSION GOT WRONG ══
+   It printed the name, a line of meaning, two chips, and a table of raw
+   measurements — `Largest QRS +0.48 mV / Threshold 0.50 mV`. Reported as:
+   *"what is this? it is not informative. why did it decide that? I look at
+   it and I have no idea what you are talking about."*
 
-     1. WHAT IT IS      the pattern's name — what a doctor would call it
-     2. WHAT IT MEANS   one plain line, no jargon left untranslated
-     3. HOW SURE        Clear / Likely / Possible, as a word
-     4. WHAT WAS MEASURED  PR 236 ms · QTc 512 ms — the checkable part
+   Every word of that was fair. A table of figures is what you show a
+   clinician who already knows which of them matters. To the person whose
+   heart it is, it is two numbers and a colour, and a colour with numbers
+   under it reads as a diagnosis.
 
-   Band 4 is not decoration and is never collapsed behind a tap. A finding
-   whose evidence is hidden asks to be believed; a finding showing "QTc
-   512 ms" can be argued with, and being arguable is the difference between
-   a screening tool and an oracle.
+   ══ WHAT IT DOES NOW ══
+     · the name and the plain meaning, at a size meant to be read
+     · a BAR showing how far past the line the reading actually is — this
+       is what turns "0.48 vs 0.50" into "barely", without the word
+     · "Only just past the line" said outright when it is borderline
+     · a WHY button, because the full answer needs a screen of its own and
+       burying it would leave this card exactly as unexplained as before
 
-   ══ THE LEADING RULE, NOT A LEADING DOT ══
-   Urgency is carried by a 3 pt bar down the leading edge rather than a
-   coloured card. A red-filled card in a list of four is a list of four
-   alarms; a bar reads as a margin mark and lets the WORDS carry the
-   weight. It is on the leading edge (`start`), so it flips with Hebrew
-   without a second style.
+   The raw figures moved into the Why sheet. They are not gone — a doctor
+   still needs them — they are simply no longer the first thing a
+   frightened person meets.
    ================================================================== */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ScreeningFinding } from '@cyphix/shared';
 import { verdictPalette } from '@/components/molecules/ScreeningVerdict';
 import type { TranslationKey } from '@/i18n/config';
@@ -33,6 +37,7 @@ import { useTheme } from '@/theme/useTheme';
 
 interface Props {
   finding: ScreeningFinding;
+  onExplain: (f: ScreeningFinding) => void;
 }
 
 const CONFIDENCE_KEY: Record<ScreeningFinding['confidence'], TranslationKey> = {
@@ -53,96 +58,129 @@ const CATEGORY_KEY: Record<ScreeningFinding['category'], TranslationKey> = {
   technical: 'scrCatTechnical',
 };
 
-export default function FindingCard({ finding }: Props) {
+/** The margin bar never renders as literally nothing — a zero-width fill
+    reads as a broken component rather than as "only just". */
+const MIN_FILL_PCT = 6;
+
+export default function FindingCard({ finding, onExplain }: Props) {
   const t = useTheme();
   const { t: tr, rtl } = useTranslation();
   const align = rtl ? ('right' as const) : ('left' as const);
   const p = verdictPalette(finding.level, t);
 
-  /* ★ NO `as TranslationKey` HERE, and that is the entire point.
-     These are ANNOTATED, not cast: TypeScript checks the template literal
-     type `scrF_${FindingId}` against the locale's key union, so adding a
-     rule to the engine is a COMPILE ERROR in this file until both
-     languages carry its two strings. A cast would type-check identically
-     and silently print `scrF_myNewRule` to a patient — which is the one
-     failure mode a translated medical screen must not have. */
+  /* ★ NO `as TranslationKey` on these two — they are ANNOTATED, so
+     TypeScript checks the template-literal type against the locale's key
+     union and adding a rule to the engine is a COMPILE ERROR here until
+     both languages carry its strings. A cast would type-check identically
+     and print `scrF_myNewRule` to a patient. */
   const nameKey: TranslationKey = `scrF_${finding.id}`;
   const meaningKey: TranslationKey = `scrM_${finding.id}`;
 
+  const fill = Math.max(MIN_FILL_PCT, Math.round(finding.margin * 100));
+
   return (
     <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-      <View style={[styles.bar, { backgroundColor: p.accent }]} />
-
-      <View style={styles.body}>
-        <Text style={[styles.name, { color: t.textPrimary, textAlign: align }]}>
-          {tr(nameKey)}
+      <View style={[styles.head, rtl && styles.rowRtl]}>
+        <View style={[styles.dot, { backgroundColor: p.accent }]} />
+        <Text style={[styles.category, { color: t.textTertiary }]}>
+          {tr(CATEGORY_KEY[finding.category])}
         </Text>
-        <Text style={[styles.meaning, { color: t.textSecondary, textAlign: align }]}>
-          {tr(meaningKey)}
+        <View style={styles.spacer} />
+        <Text style={[styles.confidence, { color: p.ink, backgroundColor: p.soft }]}>
+          {tr(CONFIDENCE_KEY[finding.confidence])}
         </Text>
-
-        <View style={[styles.chips, rtl && styles.rowRtl]}>
-          <Text style={[styles.chip, { color: t.textSecondary, backgroundColor: t.surfaceHover }]}>
-            {tr(CATEGORY_KEY[finding.category])}
-          </Text>
-          <Text style={[styles.chip, { color: p.ink, backgroundColor: p.soft }]}>
-            {tr(CONFIDENCE_KEY[finding.confidence])}
-          </Text>
-          {finding.leads && finding.leads.length > 0 && (
-            <Text style={[styles.chip, { color: t.textTertiary, backgroundColor: t.surfaceHover }]}>
-              {finding.leads.join(' · ')}
-            </Text>
-          )}
-        </View>
-
-        {/* ── The checkable part ── */}
-        <View style={[styles.evidence, { borderTopColor: t.border }]}>
-          {finding.evidence.map((e) => (
-            <View key={`${e.label}${e.value}`} style={[styles.evRow, rtl && styles.rowRtl]}>
-              <Text style={[styles.evLabel, { color: t.textTertiary }]} numberOfLines={1}>
-                {e.label}
-              </Text>
-              <Text style={[styles.evValue, { color: t.textPrimary }]} numberOfLines={1}>
-                {e.value}
-              </Text>
-            </View>
-          ))}
-        </View>
       </View>
+
+      <Text style={[styles.name, { color: t.textPrimary, textAlign: align }]}>{tr(nameKey)}</Text>
+      <Text style={[styles.meaning, { color: t.textSecondary, textAlign: align }]}>
+        {tr(meaningKey)}
+      </Text>
+
+      {/* ── How far past the line ──
+          A finding 4 % over its threshold and one 200 % over used to draw
+          identically. This is the whole difference. */}
+      <View style={styles.marginRow}>
+        <View style={[styles.marginTrack, { backgroundColor: t.surfaceHover }]}>
+          <View
+            style={[styles.marginFill, { backgroundColor: p.accent, width: `${fill}%` }]}
+          />
+        </View>
+        {finding.borderline && (
+          <Text style={[styles.borderline, { color: t.textTertiary, textAlign: align }]}>
+            {tr('scrWhyBorderline')}
+          </Text>
+        )}
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${tr(nameKey)} — ${tr('scrWhyTitle')}`}
+        onPress={() => {
+          void Haptics.selectionAsync();
+          onExplain(finding);
+        }}
+        style={({ pressed }) => [
+          styles.why,
+          rtl && styles.rowRtl,
+          { backgroundColor: p.soft, opacity: pressed ? 0.65 : 1 },
+        ]}
+      >
+        <Text style={[styles.whyText, { color: p.ink }]}>{tr('scrWhyButton')}</Text>
+        <Ionicons
+          name={rtl ? 'chevron-back' : 'chevron-forward'}
+          size={15}
+          color={p.ink}
+        />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  /* `row` + a leading bar rather than a `borderStartWidth`, so the bar can
-     run the full height including the evidence block. */
+  /* Apple Health's inset grouped card: generous padding, a large radius, a
+     hairline rather than a shadow. The old version's 3 pt colour bar down
+     the edge is gone — with a coloured dot in the header the bar was the
+     same statement twice, and it made every card read as a warning stripe. */
   card: {
-    flexDirection: 'row',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 8,
   },
-  bar: { width: 3 },
-  body: { flex: 1, padding: 14, gap: 5 },
-  name: { fontSize: 16.5, fontWeight: '800', letterSpacing: -0.2 },
-  meaning: { fontSize: 14, lineHeight: 19.5 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 3 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   rowRtl: { flexDirection: 'row-reverse' },
-  chip: {
+  dot: { width: 9, height: 9, borderRadius: 5 },
+  category: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  spacer: { flex: 1 },
+  confidence: {
     fontSize: 11.5,
-    fontWeight: '700',
+    fontWeight: '800',
     borderRadius: RADIUS.sm,
     overflow: 'hidden',
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 3,
   },
-  evidence: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 8, paddingTop: 8, gap: 4 },
-  evRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  evLabel: { fontSize: 12.5, flexShrink: 1 },
-  /* Tabular figures so a column of measurements lines up on the decimal
-     rather than drifting with the digits. */
-  evValue: { fontSize: 12.5, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  name: { fontSize: 20, fontWeight: '800', letterSpacing: -0.4, marginTop: 2 },
+  meaning: { fontSize: 15, lineHeight: 21 },
+  marginRow: { gap: 6, marginTop: 4 },
+  marginTrack: { height: 5, borderRadius: 3, overflow: 'hidden' },
+  marginFill: { height: '100%', borderRadius: 3 },
+  borderline: { fontSize: 12.5, lineHeight: 17 },
+  why: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  whyText: { fontSize: 14.5, fontWeight: '800' },
 });
 
-// v1.0.0 — One screening finding: name, plain meaning, category/confidence
-//          chips, and the measurements that fired the rule.
+// v2.0.0 — Rebuilt after "what is this? it is not informative". The raw figures
+//          moved into the Why sheet; the card now carries the name, the plain
+//          meaning, a bar showing how far past the line the reading is, and the
+//          button that opens the full explanation.

@@ -170,6 +170,19 @@ export interface ScreeningEvidence {
   value: string;
 }
 
+/** Which part of the patient's own beat to highlight when explaining it. */
+export type BeatFocus = 'p' | 'pr' | 'qrs' | 'st' | 't' | 'qt' | 'rhythm' | 'none';
+
+/** The number that fired the rule, placed on a scale a person can read. */
+export interface FindingScale {
+  value: number;
+  unit: string;
+  min: number;
+  max: number;
+  normalLow: number;
+  normalHigh: number;
+}
+
 export interface ScreeningFinding {
   id: FindingId;
   category: FindingCategory;
@@ -179,6 +192,40 @@ export interface ScreeningFinding {
   evidence: ScreeningEvidence[];
   /** Which leads carried it, for the per-lead findings. */
   leads?: LimbLeadName[];
+
+  /**
+   * ★ HOW FAR PAST THE THRESHOLD, 0…1.
+   *
+   * 0 = exactly on the line, 1 = unambiguous. Added after a real report: a
+   * healthy person measured 0.48 mV against a 0.50 mV limit — 4 % over —
+   * and was shown the same amber verdict as someone with a genuine finding.
+   * They read it as "something is wrong with my heart", which is what a
+   * screen that cannot express degree will always eventually say.
+   */
+  margin: number;
+  /**
+   * True when `margin` is below `BORDERLINE_MARGIN`.
+   *
+   * A borderline finding is still listed, still explainable and still in
+   * the PDF — it simply DOES NOT RAISE THE VERDICT. That is the whole point
+   * of it: the green mark survives a measurement that is a hair past a
+   * line, because a threshold is a line drawn through a continuum and this
+   * device's precision does not justify treating the first sliver past it
+   * as equal to the middle of the abnormal range.
+   */
+  borderline: boolean;
+  /** Which part of the beat to draw when explaining this finding. */
+  focus: BeatFocus;
+  /** The firing number on its own axis, for the explain sheet's range bar. */
+  scale?: FindingScale;
+  /**
+   * The published criterion behind the threshold.
+   *
+   * Printed in the PDF, because a doctor handed an automated finding is
+   * entitled to know which criterion produced it, and "our algorithm" is
+   * not an answer they can check.
+   */
+  source: string;
 }
 
 /* ══════════════════ What six leads cannot see ══════════════════ */

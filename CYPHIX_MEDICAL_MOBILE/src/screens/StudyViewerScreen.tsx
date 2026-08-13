@@ -1237,7 +1237,11 @@ export default function StudyViewerScreen() {
           <EcgScreeningSheet
             screening={screening}
             isSimulated={recording.isSimulated}
-            bpm={view.analysis.rate.bpm}
+            /* Lead II — the same filtered waveform the finding was measured
+               from, so the Why sheet draws the trace the rule actually read
+               rather than a second rendering of the same recording. */
+            signal={view.leads.II ?? null}
+            analysis={view.analysis}
           />
         </ScrollView>
       )}

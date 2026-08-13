@@ -1,7 +1,67 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.46.0';
-export const APP_BUILD_LABEL = 'the ECG finally says what it thinks it is looking at';
+export const APP_VERSION = '0.47.0';
+export const APP_BUILD_LABEL = 'the interpretation explains itself, and stops shouting about a hair past a line';
+
+// v0.47.0 - "What is this? It is not informative. Why did it decide that? Why
+//           are there no illustrations of why? I look at it and I have no idea
+//           what you are talking about. As a healthy person I see this and I
+//           get stressed. Maybe even a button that explains it like to a small
+//           child, with drawings and proof from my own measurement."
+//           Every word of that was fair, and one part of it was not a design
+//           complaint at all - it was a bug report.
+//           * THE AMBER WAS 4 % OF A THRESHOLD. `Largest QRS +0.48 mV /
+//             Threshold 0.50 mV`. A finding a hair past its line drew exactly
+//             like one 200 % past it, because the engine had no way to express
+//             DEGREE. Every rule now returns a `margin` (0 = on the line,
+//             1 = unambiguous) and a finding below 0.15 is `borderline`: still
+//             listed, still explained, still in the report - and it NO LONGER
+//             RAISES THE VERDICT. A well person's mark stays green.
+//           !! AND THAT FIX, ALONE, SHIPPED A WORSE BUG THAN THE ONE IT FIXED.
+//             Validation caught a QTc of 515 ms - three per cent past the
+//             torsades threshold - being demoted to borderline and returning a
+//             GREEN verdict. Silencing an urgent finding is not a milder
+//             version of over-calling a benign one, it is the opposite error,
+//             and they do not cost the same. Borderline demotion is now
+//             deliberately asymmetric: `attention` findings can be demoted,
+//             `urgent` findings never can.
+//           * "WHY?" ON EVERY FINDING, and it answers with the patient's OWN
+//             recording: their representative beat drawn with the segment the
+//             rule measured shaded, their number on a bar against the typical
+//             band, the cause in ordinary words, and the published criterion.
+//             A stock diagram would explain the concept and prove nothing - the
+//             question is not "what is a QT interval", it is "why did you flag
+//             MINE". A rhythm finding gets a five-second strip with the beats
+//             ticked, because a pause is invisible inside one complex.
+//           * 43 RULES, 43 FILES. The engine was one 900-line function; it is
+//             now `screening/<category>/<disease>.ts`, each a declarative object
+//             carrying its threshold, its citation, its evidence, its margin and
+//             what to draw. Adding a disease is: write the file, add the line to
+//             the registry. `RULE_COUNT` is derived from the array so the
+//             "43 checks" denominator cannot go stale.
+//           * THE TABS WERE TRUNCATING - "Measurem... Interpretat...". Three
+//             segments on a 390 pt screen give ~120 pt each and the labels are
+//             over 100 pt at 14 pt bold. SegmentedTabs now shrinks type to fit
+//             above two options, per label and per language.
+//           * REDESIGNED AT PATIENT SCALE. Statistics were `MetricTile`, the
+//             REPORT's dense bordered table atom, six to a screen - which reads
+//             as a spreadsheet. They are `StatCard` now: 30 pt value, inset
+//             card, a progress track where the number is a fraction. Section
+//             headings 19 pt. Findings are large tappable cards; the raw figures
+//             moved into the Why sheet, where a doctor still has them and a
+//             frightened person does not meet them first.
+//           VALIDATION AFTER THE REFACTOR: 90.4 % of 3 000 synthetic healthy
+//           adults return "no abnormal finding" (was 87.0 %) and 0.00 % return
+//           urgent. All 20 threshold regression cases pass. The 43-file split
+//           did not change a single result.
+//           !! STILL OPEN, and both are real: the history list cannot carry a
+//           verdict dot without the level being CACHED ON WRITE the way
+//           `RecordingSummary` is - the list endpoint returns metadata only, by
+//           design, and re-deriving 43 rules per row would mean decoding every
+//           waveform to draw a list. Deriving a dot from the cached summary
+//           alone would use ~6 of 43 rules and disagree with the detail screen,
+//           which is worse than no dot. The PDF has no interpretation page yet.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.46.0 - "For every measurement, interpret it for different heart diseases.
 //           Write algorithms for the kinds of heart disease that can be

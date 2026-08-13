@@ -1,5 +1,104 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.47.0 - 2026-08-13 - the interpretation explains itself, and stops shouting about a hair past a line
+
+*"What is this? It is not informative. Why did it decide that? Why are there no
+illustrations of why? I look at it and I have no idea what you are talking
+about. As a healthy person I see this and I get stressed."*
+
+Every word of that was fair. One part of it was not a design complaint at all.
+
+### The amber was four per cent of a threshold
+
+The screen said `Largest QRS +0.48 mV / Threshold 0.50 mV` and turned the
+verdict amber. A healthy person read a colour and two numbers they could not
+place, and concluded something was wrong with their heart.
+
+The engine had **no way to express degree**. A finding a hair past its line
+drew identically to one 200 % past it. Every rule now returns a `margin`
+(0 = exactly on the line, 1 = unambiguous); below 0.15 a finding is
+`borderline` — still listed, still explained, still in the report, and it **no
+longer raises the verdict**.
+
+> ⚠️ **That fix, alone, shipped a worse bug than the one it fixed.** Validation
+> caught a QTc of 515 ms — three per cent past the torsades threshold — being
+> demoted to borderline and returning a **green** verdict. Silencing an urgent
+> finding is not a milder version of over-calling a benign one; it is the
+> opposite error, and the two do not cost the same. The demotion is now
+> deliberately asymmetric: `attention` findings can be demoted, `urgent` ones
+> never can.
+
+### "Why?" on every finding
+
+Each card opens a sheet that answers with **the patient's own recording**:
+
+1. **What we measured** — their representative beat drawn, with the segment
+   the rule looked at shaded. A rhythm finding gets a five-second strip with
+   the beats ticked instead, because a pause is invisible inside one complex.
+2. **From your recording** — their number on a bar against the typical band.
+   Seeing 0.48 sit one pixel outside a green band says "barely" without anyone
+   writing the word.
+3. **Why this happens** — the cause in ordinary language, ordinary explanation
+   first, because it is also the likelier one and reading it first is what
+   stops panic.
+4. **What it means** — the consequence, and the published criterion behind the
+   threshold.
+
+A stock diagram of a heart would explain the concept and prove nothing. The
+question is not "what is a QT interval", it is "why did you flag **mine**".
+
+### 43 rules, 43 files
+
+The engine was one 900-line function with 43 inline calls. It is now
+`shared/ecg/screening/<category>/<disease>.ts` — each a declarative object
+carrying its threshold, its citation, the evidence it produces, its margin,
+and what to draw. Adding a disease is: write the file, add the line to the
+registry. `RULE_COUNT` is derived from the array, so the "43 checks"
+denominator cannot go stale.
+
+### The tabs were truncating
+
+"Measurem… Interpretat…". Three segments on a 390 pt screen give ~120 pt each,
+and both labels are over 100 pt at 14 pt bold. `SegmentedTabs` now shrinks type
+to fit above two options — per label and per language, so Hebrew's shorter
+words are not shrunk to match English's longer ones.
+
+### Redesigned at patient scale
+
+The statistics used `MetricTile` — the **report's** dense bordered table atom,
+six to a screen. That reads as a spreadsheet, which was the "looks dated, not
+professional" half of the feedback. They are `StatCard` now: 30 pt value, inset
+card, a progress track where the number is a fraction of something. Section
+headings went to 19 pt. Findings are large tappable cards, and the raw figures
+moved into the Why sheet — where a doctor still has them and a frightened
+person does not meet them first.
+
+### Validation
+
+| | before | after |
+|---|---|---|
+| 3 000 synthetic healthy adults returning "no abnormal finding" | 87.0 % | **90.4 %** |
+| …returning urgent | 0.00 % | **0.00 %** |
+| threshold regression cases passing | 20/20 | **20/20** |
+
+The 43-file split did not change a single result.
+
+### Still open, and both are real
+
+- **The history verdict dot is not built.** The list endpoint returns metadata
+  only, by design — re-deriving 43 rules per row would mean decoding every
+  waveform to draw a list, which is exactly what `RecordingSummary` exists to
+  prevent. Doing it properly means caching the level **on write**, alongside
+  the summary, which is a shared-type and server change. Deriving a dot from
+  the cached summary alone would use roughly 6 of the 43 rules and would
+  therefore disagree with the detail screen — two verdicts for one recording is
+  worse than no dot.
+- **The PDF has no interpretation page yet.** The existing report (real ECG
+  paper at 25 mm/s · 10 mm/mV, calibration pulse, two A4 sheets, measurement
+  table) is unchanged and still shares through the ⋯ menu.
+
+**OTA**: TypeScript only, so `app.json` stays at 0.34.0.
+
 ## v0.46.0 - 2026-08-13 - the ECG finally says what it thinks it is looking at
 
 *"For every measurement, interpret it for different heart diseases. Write
