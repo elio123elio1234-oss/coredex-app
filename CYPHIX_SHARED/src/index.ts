@@ -47,6 +47,18 @@ export * from './ecg/measurement.constants';
 export * from './ecg/reportFilter';
 export * from './ecg/ecgAnalysis';
 
+/* ── Interpretation, and why it is a SEPARATE export ──────────────
+   `ecgAnalysis` measures and refuses to interpret; `ecgScreening` reads
+   what it measured and names patterns. Two files, two exports, one
+   dependency direction — screening imports analysis and never the
+   reverse. Anything that wants only the numbers can still take only the
+   numbers, which is the property that keeps the measurement layer
+   auditable. Read the header of `types/ecgScreening.ts` before adding a
+   rule: findings carry their own evidence, their own confidence, and the
+   blind spots six limb leads structurally cannot cover. */
+export * from './types/ecgScreening';
+export * from './ecg/ecgScreening';
+
 /* Report GEOMETRY, in millimetres. Not signal maths, but the same rule
    applies for a different reason: a trace measured off the web's printed
    sheet and one measured off the phone must land on the same ruler, so
@@ -110,6 +122,14 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.15.0 — Adds the SCREENING layer (types/ecgScreening + ecg/ecgScreening):
+//           43 published-threshold rules that read the measurements and name
+//           patterns, with an urgency, an evidence trail and a confidence per
+//           finding. Deliberately a separate module from ecgAnalysis, which
+//           still measures and still does not interpret — the split is what
+//           keeps the measurements checkable. `delineateBeat` is now exported
+//           from ecgAnalysis (export only, no maths changed) so screening can
+//           find a J point without forking the delineation.
 // v1.14.0 — Adds ecg/identityGhost: the identity as a viewer overlay, stamped
 //           at every R peak of the strip it is laid over. Alignment is exact by
 //           construction and its rhythm is therefore the strip's own — read the

@@ -179,7 +179,23 @@ export function detectRPeaks(signal: Float32Array, fs: number): number[] {
 
 /* ══════════════════ 2. Per-beat delineation ══════════════════ */
 
-interface BeatDelineation {
+/**
+ * The boundaries of one beat, in sample indices.
+ *
+ * ★ EXPORTED, and the reason is worth stating: `ecgScreening.ts` needs the
+ * J point to measure an ST level and needs per-beat QRS widths to spot an
+ * ectopic. Both are measurements this file already knows how to locate.
+ * The alternative was a second copy of the slope-collapse delineation in
+ * the screening module — i.e. a FORK of frozen maths, which the
+ * constitution forbids for exactly the reason it would bite here: two
+ * delineators would eventually disagree, and the report and the screen
+ * would then describe different beats from the same recording.
+ *
+ * Exporting a measurement does not make this file interpret. Nothing below
+ * this line reads the result and forms an opinion about it; something else
+ * does, in a file that says so at the top.
+ */
+export interface BeatDelineation {
   rIdx: number;
   qrsOnset: number;
   qrsOffset: number;
@@ -198,7 +214,7 @@ interface BeatDelineation {
  * waveform stops being flat, and a slope criterion finds that regardless
  * of whether the beat starts with a Q dip or straight into R.
  */
-function delineateBeat(
+export function delineateBeat(
   signal: Float32Array,
   rIdx: number,
   rrSamples: number,
@@ -595,4 +611,9 @@ export function analyseLimbEcg(
   };
 }
 
+// v1.1.0 — `BeatDelineation` and `delineateBeat` are now EXPORTED so
+//          `ecgScreening.ts` can locate a J point and a per-beat QRS width
+//          without forking the slope-collapse delineation. Export only: not one
+//          line of the maths, and not one constant, has changed — and this file
+//          still measures and does not interpret.
 // v1.0.0 — Automated limb-lead ECG measurements (rate, rhythm, axis, intervals, amplitudes). No interpretation.

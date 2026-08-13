@@ -874,6 +874,170 @@ export const he: Record<TranslationKey, string> = {
   authErrUnknown: 'משהו השתבש. נסו שוב.',
   authErrWrongCode: 'הקוד אינו תואם. בדקו ונסו שוב.',
 
+  /* ══════════════════════════════════════════════════════════════════
+     פענוח (טאב הפענוח).
+
+     ★ כלל הניסוח לבלוק הזה שונה משאר האפליקציה: משפטים קצרים, בלי מונח
+     לועזי בלי תרגום, ובלי משפט שדורש קריאה שנייה. אדם פותח את המסך הזה
+     כדי לענות על שאלה אחת — "אני בסדר, או שאני צריך לעשות משהו?" — וייתכן
+     שהוא מפוחד בזמן הקריאה. כל שורה כאן היא או התשובה או עובדה שתומכת בה.
+
+     המספרים (PR, QTc, mV) אינם מתורגמים — אלה סמלים בינלאומיים זהים בכל
+     שפה, ותרגום שלהם היה מנתק את הדוח מדוח בית חולים.
+     ══════════════════════════════════════════════════════════════════ */
+
+  reportTabScreening: 'פענוח',
+
+  scrLevelClear: 'לא נמצא ממצא חריג',
+  scrActClear: 'אין צורך בפעולה.',
+  scrLevelAttention: 'כדאי להראות לרופא',
+  scrActAttention: 'לא דחוף. קחו את זה לביקור הבא.',
+  scrLevelUrgent: 'פנו לעזרה רפואית עכשיו',
+  scrActUrgent: 'התקשרו למוקד החירום או גשו לחדר מיון.',
+  scrLevelInconclusive: 'לא ניתן לפענח',
+  scrActInconclusive: 'האות היה רועש מדי לסריקה. מדדו שוב.',
+
+  scrFindingsTitle: 'מה נמצא',
+  scrBlindTitle: 'מה הבדיקה הזו לא רואה',
+  scrStatsTitle: 'המספרים',
+  scrEvidenceTitle: 'נמדד',
+  scrChecksLine: '{done} מתוך {total} בדיקות בוצעו',
+  scrDisclaimer: 'זו תוצאת סריקה, לא אבחנה. רק רופא יכול לאבחן מחלת לב.',
+
+  scrSimTitle: 'אות הדגמה',
+  scrSimBody: 'ההקלטה הזו הגיעה מהסימולטור המובנה, לא מלב. היא אינה נסרקת.',
+
+  scrConfHigh: 'ברור',
+  scrConfModerate: 'סביר',
+  scrConfLimited: 'אפשרי',
+
+  scrCatRate: 'קצב',
+  scrCatRhythm: 'מקצב',
+  scrCatConduction: 'הולכה',
+  scrCatRepolarisation: 'התאוששות',
+  scrCatAxis: 'כיוון',
+  scrCatChamber: 'מדורי הלב',
+  scrCatIschaemia: 'אספקת דם',
+  scrCatOther: 'אחר',
+  scrCatTechnical: 'ההקלטה',
+
+  scrBlindAnteriorSeptal: 'הדופן הקדמית של הלב — לשם כך נדרשות אלקטרודות חזה.',
+  scrBlindPosterior: 'הדופן האחורית — לשם כך נדרשות אלקטרודות נוספות.',
+  scrBlindChamberPrecordial: 'הערכת גודל מלאה של מדורי הלב — אלקטרודות חזה מודדות זאת.',
+  scrBlindParoxysmal: 'כל דבר שבא והולך. עשר שניות הן תצלום רגע.',
+  scrBlindSingleTimepoint: 'שינוי לאורך זמן. הקלטה אחת אינה מגמה.',
+
+  scrStatChecks: 'בדיקות שבוצעו',
+  scrStatBeats: 'פעימות שנותחו',
+  scrStatEctopy: 'פעימות נוספות',
+  scrStatQuality: 'איכות האות',
+  scrStatRate: 'דופק',
+  scrStatDuration: 'משך ההקלטה',
+
+  /* ── ממצאים: קצב ── */
+  scrF_bradycardiaSevere: 'דופק איטי מאוד',
+  scrM_bradycardiaSevere: 'פחות מ־40 פעימות בדקה.',
+  scrF_bradycardia: 'דופק איטי',
+  scrM_bradycardia: 'שכיח אצל ספורטאים. יכול גם להיות סימן.',
+  scrF_tachycardia: 'דופק מהיר',
+  scrM_tachycardia: 'מתח, קפאין, חום ותנועה גורמים לזה.',
+  scrF_tachycardiaExtreme: 'דופק מהיר מאוד',
+  scrM_tachycardiaExtreme: 'מעל 150 במנוחה מחייב בדיקה.',
+
+  /* ── ממצאים: מקצב ── */
+  scrF_atrialFibrillation: 'דפוס פרפור פרוזדורים',
+  scrM_atrialFibrillation: 'קצב לא סדיר שמעלה את הסיכון לשבץ. יש לו טיפול.',
+  scrF_atrialFlutter: 'דפוס רפרוף פרוזדורים',
+  scrM_atrialFlutter: 'קצב מהיר וסדיר במדורים העליונים.',
+  scrF_svt: 'קצב מהיר ממקור מעל החדרים',
+  scrM_svt: 'הוא מתחיל בחלק העליון של הלב.',
+  scrF_wideComplexTachycardia: 'קצב מהיר עם פעימות רחבות',
+  scrM_wideComplexTachycardia: 'מטופל כאילו מקורו בחדרים עד שרופא שולל זאת.',
+  scrF_ectopyFrequent: 'פעימות נוספות תכופות',
+  scrM_ectopyFrequent: 'פעימות רבות הגיעו מוקדם מהצפוי.',
+  scrF_ectopyOccasional: 'כמה פעימות נוספות',
+  scrM_ectopyOccasional: 'נפוץ מאוד, ולרוב לא מזיק.',
+  scrF_irregularRhythm: 'קצב לא סדיר',
+  scrM_irregularRhythm: 'המרווחים בין הפעימות השתנו.',
+  scrF_pause: 'הפסקה בין פעימות',
+  scrM_pause: 'מרווח אחד היה ארוך משתי שניות.',
+  scrF_pauseLong: 'הפסקה ארוכה בין פעימות',
+  scrM_pauseLong: 'מרווח אחד היה ארוך משלוש שניות.',
+
+  /* ── ממצאים: הולכה ── */
+  scrF_avBlock1: 'חסם AV מדרגה ראשונה',
+  scrM_avBlock1: 'האות מגיע למדורים התחתונים לאט מהרגיל.',
+  scrF_avBlock1Marked: 'חסם AV מדרגה ראשונה, בולט',
+  scrM_avBlock1Marked: 'עיכוב ארוך בין המדורים העליונים לתחתונים.',
+  scrF_avBlock2Suspected: 'ייתכן שפעימה נשמטה',
+  scrM_avBlock2Suspected: 'נראה שפעימה אחת חסרה ברצף.',
+  scrF_avBlockCompleteSuspected: 'ייתכן חסם לב מלא',
+  scrM_avBlockCompleteSuspected: 'איטי וסדיר, והמדורים העליונים אינם מסונכרנים.',
+  scrF_ivcd: 'פעימות רחבות מעט',
+  scrM_ivcd: 'האות עובר בחדרים מעט לאט.',
+  scrF_bbbLeftPattern: 'דפוס חסם צרור שמאלי',
+  scrM_bbbLeftPattern: 'כדי לאשר איזה צרור מעורב נדרשות אלקטרודות חזה.',
+  scrF_bbbRightPattern: 'דפוס חסם צרור ימני',
+  scrM_bbbRightPattern: 'כדי לאשר איזה צרור מעורב נדרשות אלקטרודות חזה.',
+  scrF_bbbIndeterminate: 'פעימות רחבות',
+  scrM_bbbIndeterminate: 'רחבות, בלי דפוס ימני או שמאלי ברור.',
+  scrF_lafb: 'חסם פאסיקולרי קדמי שמאלי',
+  scrM_lafb: 'ענף הולכה קטן חסום. לרוב לא מזיק בפני עצמו.',
+  scrF_lpfb: 'חסם פאסיקולרי אחורי שמאלי',
+  scrM_lpfb: 'לא שכיח. רופא צריך לאשר את זה.',
+
+  /* ── ממצאים: התאוששות ── */
+  scrF_qtLong: 'מרווח QT ארוך',
+  scrM_qtLong: 'הלב מתאפס לאט מהרגיל. תרופות מסוימות גורמות לזה.',
+  scrF_qtLongSevere: 'מרווח QT ארוך מאוד',
+  scrM_qtLongSevere: 'זה מעלה את הסיכון להפרעת קצב מסוכנת.',
+  scrF_qtShort: 'מרווח QT קצר',
+  scrM_qtShort: 'לא שכיח. כדאי שרופא יסתכל על זה.',
+  scrF_tInversionInferior: 'גלי T הפוכים, לידים תחתונים',
+  scrM_tInversionInferior: 'יכול להיות ישן, תנוחתי או חדש. רופא מבדיל ביניהם.',
+  scrF_tInversionLateral: 'גלי T הפוכים, לידים צדדיים',
+  scrM_tInversionLateral: 'יכול להיות ישן, תנוחתי או חדש. רופא מבדיל ביניהם.',
+
+  /* ── ממצאים: כיוון ── */
+  scrF_axisLeft: 'כיוון אות נוטה שמאלה',
+  scrM_axisLeft: 'הכיוון שבו נע האות בלב. לרוב תקין לגמרי.',
+  scrF_axisRight: 'כיוון אות נוטה ימינה',
+  scrM_axisRight: 'הכיוון שבו נע האות בלב. לרוב תקין לגמרי.',
+  scrF_axisExtreme: 'כיוון אות חריג',
+  scrM_axisExtreme: 'מחוץ לטווח הרגיל.',
+
+  /* ── ממצאים: מדורי הלב ── */
+  scrF_lvhVoltage: 'דפוס שריר לב מעובה',
+  scrM_lvhVoltage: 'המתח מרמז על כך. בדיקת אקו היא זו שמאשרת.',
+  scrF_raEnlargement: 'דפוס מדור ימני-עליון מוגדל',
+  scrM_raEnlargement: 'גל ה־P גבוה מהרגיל.',
+
+  /* ── ממצאים: אספקת דם ── */
+  scrF_stElevationInferior: 'הרמת ST, דופן תחתונה',
+  scrM_stElevationInferior: 'הדפוס הזה יכול להעיד על התקף לב שמתרחש עכשיו.',
+  scrF_stElevationLateral: 'הרמת ST, דופן צדדית',
+  scrM_stElevationLateral: 'הדפוס הזה יכול להעיד על התקף לב שמתרחש עכשיו.',
+  scrF_stDepressionInferior: 'שקיעת ST, דופן תחתונה',
+  scrM_stDepressionInferior: 'יכול להעיד שחלק מהשריר מקבל פחות דם.',
+  scrF_stDepressionLateral: 'שקיעת ST, דופן צדדית',
+  scrM_stDepressionLateral: 'יכול להעיד שחלק מהשריר מקבל פחות דם.',
+  scrF_qWavesInferior: 'גלי Q, דופן תחתונה',
+  scrM_qWavesInferior: 'יכול להיות צלקת מהתקף לב ישן.',
+  scrF_qWavesLateral: 'גלי Q, דופן צדדית',
+  scrM_qWavesLateral: 'יכול להיות צלקת מהתקף לב ישן.',
+
+  /* ── ממצאים: אחר ── */
+  scrF_hyperkalaemiaPattern: 'גלי T מחודדים',
+  scrM_hyperkalaemiaPattern: 'לפעמים אשלגן גבוה בדם. בדיקת דם עונה על זה.',
+  scrF_lowVoltage: 'מתח נמוך',
+  scrM_lowVoltage: 'אותות קטנים בכל הלידים. יש לכך כמה סיבות.',
+  scrF_electricalAlternans: 'גודל הפעימה מתחלף',
+  scrM_electricalAlternans: 'גובה הפעימה עולה ויורד, כל פעימה שנייה.',
+
+  /* ── ממצאים: ההקלטה ── */
+  scrF_leadReversal: 'ייתכן שהאלקטרודות הוחלפו',
+  scrM_leadReversal: 'בדקו את אלקטרודות הידיים ומדדו שוב. לעיתים נדירות זו תנוחת הלב.',
+
   /* ── משותף ── */
   back: 'חזרה',
   exit: 'יציאה',
@@ -906,6 +1070,9 @@ export const he: Record<TranslationKey, string> = {
 //           as an apology.
 // v1.12.0 — setAboutMaterial, matching en.ts key for key.
 // v1.11.0 — Profile-photo sheet copy, matching en.ts key for key.
+// v1.3.0 — The SCREENING block, matching en.ts key for key. The measurement
+//          symbols (PR, QTc, mV) stay untranslated on purpose - translating them
+//          would cut the report loose from a hospital's.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.

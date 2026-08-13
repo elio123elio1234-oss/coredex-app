@@ -1,7 +1,84 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.45.0';
-export const APP_BUILD_LABEL = 'the app stops spending its session to ask if the server is there';
+export const APP_VERSION = '0.46.0';
+export const APP_BUILD_LABEL = 'the ECG finally says what it thinks it is looking at';
+
+// v0.46.0 - "For every measurement, interpret it for different heart diseases.
+//           Write algorithms for the kinds of heart disease that can be
+//           extracted from 6 limb leads. Show it to the patient in calming
+//           colour with gentle animation. Something a patient looks at and says
+//           okay I'm healthy, or the opposite, okay I need to go to A&E."
+//           ★ A THIRD TAB IN THE STUDY VIEWER: Waveform | Measurements |
+//             INTERPRETATION. 43 rules across rate, rhythm, conduction,
+//             repolarisation, axis, chambers, blood supply and recording
+//             technique, resolving to ONE of four answers - no abnormal
+//             finding / worth showing a doctor / get help now / could not be
+//             read - with the action underneath it and a breathing mark in the
+//             level's colour.
+//           ⚠️ THIS CROSSES A LINE THE CODEBASE WROTE DOWN TWICE, so it is
+//           crossed in a specific place. `ecgAnalysis.ts` says it measures and
+//           must never interpret; `tokens.ts` says painting a difference red is
+//           a layer interpreting when it may not. Both are still true and
+//           neither changed. The reading lives in a NEW module,
+//           `shared/ecg/ecgScreening.ts`, which imports the measurements and is
+//           never imported by them. Delete it and the measurement layer is
+//           intact; that is the property that keeps the numbers auditable.
+//           Two words were added to ecgAnalysis - `export` on `delineateBeat`
+//           and on its type - so screening can find a J point without forking
+//           the delineation. No maths, no constant, was touched, and the web's
+//           own copy was regenerated from shared so the two stay identical.
+//           ── AND NOW THE PART WORTH KEEPING ──
+//           ★ THE FIRST VERSION FIRED ON 39 OF 40 HEALTHY SUBJECTS, and every
+//             defect below was found by RUNNING it, not by reading it:
+//           (1) `qtLongSevere` - an URGENT finding - fired on 3.6 % of 3 000
+//               synthetic healthy adults. One emergency alarm per 28 well
+//               people. The cause is not a coding error, it is Bazett: QT/vRR
+//               over-corrects above ~90 bpm, so an ordinary 390 ms QT at 98 bpm
+//               comes out as a QTc of 500 - the torsades threshold. The
+//               correction is now chosen BY RATE (Bazett inside 60-100 where it
+//               is accurate, Fridericia outside), and the urgent finding needs
+//               BOTH to agree. Reports still print both, unchanged.
+//           (2) `electricalAlternans`, also urgent, fired on 1 subject in 7. It
+//               was measuring noise: on ten beats, ordinary jitter splits into
+//               "even" and "odd" groups differing by 15 % often. It now needs
+//               the alternation to exceed the scatter WITHIN each group.
+//           (3) `leadReversal` fired on ordinary marked RIGHT AXIS DEVIATION. A
+//               vector at +120 degrees inverts lead I on its own, P wave
+//               included, so "lead I is upside down" cannot tell a swapped
+//               cable from a rightward heart. aVR can: its P is negative at
+//               every physiological axis and flips POSITIVE when the arm
+//               electrodes are swapped. One sign, measured at -0.09 mV at +45
+//               and +0.73 mV reversed.
+//           AFTER: 87.0 % of 3 000 healthy adults return "no abnormal finding"
+//           and 0.00 % return urgent. The findings that do fire sit at their
+//           published population rates - LVH voltage criteria ~5 %, PR > 200 ms
+//           ~2 % - which is epidemiology, not a bug.
+//           ★ THREE THINGS THE SHAPES ENFORCE RATHER THAN THE COPY:
+//             * every finding carries the ARITHMETIC that fired it (QTc 512 ms),
+//               so it can be argued with. A verdict nobody can check must be
+//               either believed or ignored, and both are wrong;
+//             * every screen carries what six limb leads CANNOT see - the
+//               anterior wall above all - and it renders on a CLEAR result
+//               too, most importantly there. Green with nothing beside it reads
+//               as "my heart is fine" when it says "nothing these leads can see
+//               is wrong";
+//             * a rule that could not be evaluated is COUNTED, not skipped, so
+//               "no abnormal finding" always arrives with "41 of 43 checks ran".
+//               Six of 43 is a recording that could not be read, and without the
+//               denominator both draw the same green mark.
+//           ⚠️ A SIMULATED RECORDING GETS NO VERDICT AT ALL - not a caveat
+//           under one. `useScreening` returns null and the tab says what the
+//           recording is. The bench simulator's T wave sits at a FIXED offset
+//           from the QRS, so its QT does not shorten with rate and every
+//           simulated strip measures a QTc near 280 ms; screened, ~90 % would
+//           report a short QT. The engine is right and the signal is not a
+//           heart. (Mobile CLAUDE.md §4 already required this; the measurement
+//           of how badly it would have failed is new.)
+//           Patient sex moves the long-QT limit by 10 ms and is passed ONLY
+//           when the study provably belongs to the active patient - a clinician
+//           opening someone else's record would otherwise screen them against
+//           the wrong threshold, silently.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.45.0 - "sometimes I'm in the app and it suddenly switches to the login
 //           screen and disconnects me on its own."

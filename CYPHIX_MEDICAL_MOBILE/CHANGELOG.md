@@ -1,5 +1,139 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.46.0 - 2026-08-13 - the ECG finally says what it thinks it is looking at
+
+*"For every measurement, interpret it for different heart diseases. Write
+algorithms for the kinds of heart disease that can be extracted from 6 limb
+leads. Show it to the patient in calming colour with gentle animation.
+Something a patient looks at and says okay I'm healthy, or the opposite, okay
+I need to go to A&E."*
+
+The study viewer could show what was recorded and what could be measured from
+it, and then stopped - exactly where the person whose heart it is starts
+caring. There is now a third tab.
+
+### Where the line was crossed, and why there
+
+This codebase says twice, in writing, that it does not interpret.
+`ecgAnalysis.ts`: *"It does not diagnose, and it must never start to."*
+`tokens.ts`: *"painting a difference red interprets it - in the one direction
+we may not go."*
+
+Both are still true and neither was edited to make room for this. The reading
+lives in a new module, `CYPHIX_SHARED/src/ecg/ecgScreening.ts`, which imports
+the measurements and is never imported by them:
+
+    ecgAnalysis   ->  "PR is 236 ms."                       a fact, falsifiable
+    ecgScreening  ->  "236 ms is a first-degree AV block."  a reading, arguable
+
+Delete the screening file and the measurement layer is untouched. That
+separation is not tidiness - it is what keeps the numbers checkable by someone
+who disagrees with the reading.
+
+Two words were added to `ecgAnalysis.ts`: `export` on `delineateBeat` and on
+its type, so screening can locate a J point without forking the slope-collapse
+delineation. No maths and no constant changed. The web app's own copy was
+regenerated from shared, so the two files remain identical.
+
+### What it detects
+
+43 rules over the six limb leads, each with a published threshold cited at its
+definition:
+
+| | |
+|---|---|
+| **Rhythm** | atrial fibrillation, flutter, SVT, wide-complex tachycardia, ectopy burden, pauses |
+| **Conduction** | AV block 1st / 2nd / complete, IVCD, bundle-branch patterns, anterior and posterior fascicular block |
+| **Recovery** | long QT, very long QT, short QT, T-wave inversion |
+| **Blood supply** | ST elevation and depression, pathological Q waves - inferior and lateral |
+| **Chambers** | LVH by Lewis index and R in aVL, right atrial enlargement |
+| **Other** | peaked T waves, low voltage, electrical alternans, swapped electrodes |
+
+Fascicular block is worth naming separately: it is one of the very few
+diagnoses that is a **pure limb-lead finding**, because the hemiblocks change
+the frontal axis and nothing else.
+
+### The three defects found by running it
+
+The first version returned "no abnormal finding" on **1 of 40** healthy
+subjects. None of these would have been found by reading the code.
+
+**1. Bazett.** `qtLongSevere` - an *urgent* finding - fired on **3.6 % of 3 000
+synthetic healthy adults**. One emergency alarm per 28 well people. Not a
+coding error: QT/vRR systematically over-corrects above ~90 bpm, so a perfectly
+ordinary 390 ms QT at 98 bpm emerges as a QTc of 500 ms, which is the torsades
+threshold. The correction is now chosen **by rate** - Bazett inside 60-100 bpm
+where it is accurate, Fridericia outside it - and the urgent finding requires
+both to agree. Reports still print both, unchanged.
+
+**2. Electrical alternans** fired on 1 subject in 7. It was measuring noise: on
+ten beats, ordinary amplitude jitter splits into "even" and "odd" groups that
+differ by 15 % often, and a short run of noisy differences flips sign 80 % of
+the time by chance. It now requires the alternation to exceed the scatter
+*within* each alternating group.
+
+**3. Lead reversal** fired on ordinary marked **right axis deviation**. A
+frontal vector at +120 degrees inverts lead I on its own, P wave included, so
+"lead I is upside down" cannot distinguish a swapped cable from a rightward
+heart. aVR can: it faces the right shoulder, so its P wave is negative at every
+physiological axis (-0.09 mV at +45 degrees, still -0.01 mV at +110) and flips
+**positive** when the arm electrodes are swapped (+0.73 mV). One sign.
+
+After the fixes: **87.0 %** of 3 000 healthy adults return "no abnormal
+finding" and **0.00 %** return urgent. What still fires does so at its published
+population rate - LVH voltage criteria ~5 %, PR > 200 ms ~2 % - which is
+epidemiology rather than a bug.
+
+### Three things the type shapes enforce, not the copy
+
+- **Every finding carries the arithmetic that fired it.** "QTc 512 ms" sits
+  under the name. A verdict a reader cannot check must be either believed
+  whole or ignored whole, and both are the wrong relationship to have with a
+  medical screen.
+- **Every screen carries what six limb leads cannot see** - the anterior wall
+  above all - and it renders on a *clear* result too, most importantly there. A
+  green mark with nothing beside it is read as "my heart is fine" when what it
+  says is "nothing these leads can observe is wrong".
+- **A rule that could not be evaluated is counted, not skipped.** "No abnormal
+  finding" always arrives with "41 of 43 checks ran". Six of 43 is a recording
+  that mostly could not be read, and without the denominator both draw the same
+  green mark.
+
+### A simulated recording gets no verdict at all
+
+Not a caveat under one - no verdict. `useScreening` returns null and the tab
+says what the recording is instead.
+
+This is not defensive: the bench simulator's T wave sits at a **fixed offset**
+from the QRS, so its QT does not shorten with rate and every simulated strip
+measures a QTc near 280 ms. Screened, roughly 90 % of them would report a short
+QT interval. The engine is right and the signal is not a heart. Mobile
+`CLAUDE.md` §4 already required this; what is new is the measurement of how
+badly it would otherwise have read.
+
+*(That is a defect in the simulator, not in this feature, and it is worth
+fixing on its own - a demo recording that reads "no abnormal finding, 43 of 43
+checks ran" would be a truer demonstration than one flagging a short QT. It is
+deliberately not fixed in this release: the simulator is shared frozen code and
+changing its waveform changes the web app's demo too.)*
+
+### The screen itself
+
+Answer first, then the evidence for it - the reverse of how a clinical report
+is built, because the reader has one question and will not scroll past three
+sections of context to reach it. A breathing mark in the level's colour (two
+pulse rings at 3 s, slower than a resting heart: a ring at heart rate reads as
+a monitor and raises the pulse of whoever is watching it), the verdict, the
+action, the checks-run line. Findings stagger in below it.
+
+Patient sex moves the long-QT limit by 10 ms and is passed **only** when the
+study provably belongs to the active patient. A clinician opening someone
+else's record would otherwise have them screened against the wrong threshold,
+silently.
+
+**OTA**: TypeScript only, so `app.json` stays at 0.34.0 (mobile `CLAUDE.md`
+§5A.2).
+
 ## v0.45.0 - 2026-08-12 - the app stops spending its session to ask if the server is there
 
 *"Sometimes I'm in the app and it suddenly switches to the login screen and

@@ -84,6 +84,7 @@ import { CAL_WIDTH_MM, GHOST_NUDGE_LIMIT_MM } from '@/components/molecules/EcgRe
 import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import EcgAnalysisSheet, { REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
+import EcgScreeningSheet from '@/components/organisms/EcgScreeningSheet';
 import EcgReviewSheet, { type ViewerMode } from '@/components/organisms/EcgReviewSheet';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { useAnnotations } from '@/features/history/hooks/useAnnotations';
@@ -95,6 +96,7 @@ import {
 import { IDENTITY_OVERLAY_ID, useIdentityGhost } from '@/features/history/hooks/useIdentityGhost';
 import { useRecordingNote } from '@/features/history/hooks/useRecordingNote';
 import { useRecordingView } from '@/features/history/hooks/useRecordingView';
+import { useScreening } from '@/features/history/hooks/useScreening';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
 import {
   DEFAULT_VIEWER_SETTINGS,
@@ -120,7 +122,13 @@ import {
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
-type Tab = 'waveform' | 'measurements';
+/* Three views of one study, in the order they earn each other: what was
+   recorded, what can be measured from it, and what those measurements look
+   like. `screening` is last in the type and FIRST in usefulness to a
+   patient — the segmented control puts it on the trailing edge because the
+   waveform is what a clinician opens the viewer for, and the report's own
+   order (waveform → measurements) predates it. */
+type Tab = 'waveform' | 'measurements' | 'screening';
 type ViewerRoute = RouteProp<{ StudyViewer: { id: string } }, 'StudyViewer'>;
 type Nav = {
   goBack: () => void;
@@ -227,6 +235,10 @@ export default function StudyViewerScreen() {
   }, [navigation, fullscreen]);
 
   const view = useRecordingView(recording, settings);
+  /* Reads the same filtered waveforms the measurements were taken from, so
+     the verdict and the numbers under it can never describe different
+     signals. Returns null for a simulated study — see the hook. */
+  const screening = useScreening(recording, view);
 
   /* ★ TWO SOURCES, ONE GHOST — v0.43.0.
      The comparison can now be either another STUDY or the patient's own
@@ -1208,6 +1220,28 @@ export default function StudyViewerScreen() {
         </ScrollView>
       )}
 
+      {view && recording && tab === 'screening' && (
+        /* Same full-height scroll and the same header inset as the
+           measurements tab: three views of one study that scrolled to
+           different places under the glass would read as three screens. */
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.analysis,
+            { paddingTop: headerH + 14, paddingBottom: Math.max(insets.bottom, 16) + 16 },
+          ]}
+          scrollEventThrottle={32}
+          onScroll={onAnalysisScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <EcgScreeningSheet
+            screening={screening}
+            isSimulated={recording.isSimulated}
+            bpm={view.analysis.rate.bpm}
+          />
+        </ScrollView>
+      )}
+
       {/* ── The glass header, over everything ── */}
       <GlassSurface
         dark={dark}
@@ -1303,6 +1337,7 @@ export default function StudyViewerScreen() {
                   options={[
                     { value: 'waveform' as const, label: tr('reportTabWaveform') },
                     { value: 'measurements' as const, label: tr('reportTabMeasurements') },
+                    { value: 'screening' as const, label: tr('reportTabScreening') },
                   ]}
                   value={tab}
                   onChange={setTab}
@@ -1485,6 +1520,14 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.0.0 - A THIRD TAB: Interpretation. The viewer showed what was recorded and
+//          what could be measured from it, and stopped exactly where the person
+//          whose heart it is starts caring. `useScreening` reads the SAME
+//          filtered leads the measurements came from, so a verdict and the
+//          numbers under it can never describe different signals.
+//          The tab is on the trailing edge rather than first: a clinician opens
+//          this viewer for the waveform, and the report's own order predates
+//          the reading.
 // v4.3.0 — The comparison ghost has TWO SOURCES now: another study, or the
 //          patient's OWN representative beat. Both hooks return an
 //          `OverlayView`, so the screen keeps one ghost concept and the strip,

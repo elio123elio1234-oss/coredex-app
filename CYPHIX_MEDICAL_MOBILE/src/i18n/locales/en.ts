@@ -946,6 +946,184 @@ export const en = {
   authErrUnknown: 'Something went wrong. Please try again.',
   authErrWrongCode: 'That code does not match. Check it and try again.',
 
+  /* ══════════════════════════════════════════════════════════════════
+     SCREENING (the Interpretation tab).
+
+     ★ THE COPY RULE FOR THIS BLOCK, and it is different from the rest of
+     the app: SHORT SENTENCES, NO JARGON WITHOUT A TRANSLATION, AND NEVER
+     A SENTENCE THAT NEEDS A SECOND READING. Someone opens this screen to
+     answer one question — "am I fine, or do I need to do something?" — and
+     they may be frightened while reading it. Every line here is either the
+     answer or a fact supporting it. Nothing is here to sound thorough.
+
+     Each finding has exactly two strings: `scrF_*` is WHAT IT IS (a name a
+     doctor would recognise), `scrM_*` is WHAT IT MEANS (one line, plain).
+     The `evidence` numbers come from the engine and are not translated —
+     PR, QTc and mV are the same symbols in every language.
+     ══════════════════════════════════════════════════════════════════ */
+
+  reportTabScreening: 'Interpretation',
+
+  /* ── The verdict. One line each: the answer, then the action. ── */
+  scrLevelClear: 'No abnormal finding',
+  scrActClear: 'Nothing here needs action.',
+  scrLevelAttention: 'Worth showing a doctor',
+  scrActAttention: 'Not urgent. Bring this to your next visit.',
+  scrLevelUrgent: 'Get medical help now',
+  scrActUrgent: 'Call emergency services or go to an emergency room.',
+  scrLevelInconclusive: 'Could not be read',
+  scrActInconclusive: 'The signal was too noisy to screen. Measure again.',
+
+  /* ── Sections ── */
+  scrFindingsTitle: 'What was found',
+  scrBlindTitle: 'What this test cannot see',
+  scrStatsTitle: 'The numbers',
+  scrEvidenceTitle: 'Measured',
+  scrChecksLine: '{done} of {total} checks ran',
+  scrDisclaimer:
+    'This is a screening result, not a diagnosis. Only a doctor can diagnose a heart condition.',
+
+  /* ── A simulated recording is not screened at all (CLAUDE.md §4). ── */
+  scrSimTitle: 'Demo signal',
+  scrSimBody:
+    'This recording came from the built-in simulator, not from a heart. It is not screened.',
+
+  /* ── Confidence. Deliberately three plain words rather than a
+        percentage: a number invites arithmetic nobody can do here. ── */
+  scrConfHigh: 'Clear',
+  scrConfModerate: 'Likely',
+  scrConfLimited: 'Possible',
+
+  /* ── Categories ── */
+  scrCatRate: 'Rate',
+  scrCatRhythm: 'Rhythm',
+  scrCatConduction: 'Conduction',
+  scrCatRepolarisation: 'Recovery',
+  scrCatAxis: 'Direction',
+  scrCatChamber: 'Chambers',
+  scrCatIschaemia: 'Blood supply',
+  scrCatOther: 'Other',
+  scrCatTechnical: 'Recording',
+
+  /* ── Blind spots ── */
+  scrBlindAnteriorSeptal: 'The front wall of the heart — that needs chest electrodes.',
+  scrBlindPosterior: 'The back wall — that needs extra electrodes.',
+  scrBlindChamberPrecordial: 'Full chamber sizing — chest electrodes measure that.',
+  scrBlindParoxysmal: 'Anything that comes and goes. Ten seconds is a snapshot.',
+  scrBlindSingleTimepoint: 'Change over time. One recording is not a trend.',
+
+  /* ── Statistics ── */
+  scrStatChecks: 'Checks run',
+  scrStatBeats: 'Beats analysed',
+  scrStatEctopy: 'Extra beats',
+  scrStatQuality: 'Signal quality',
+  scrStatRate: 'Heart rate',
+  scrStatDuration: 'Recorded',
+
+  /* ── Findings: rate ── */
+  scrF_bradycardiaSevere: 'Very slow heartbeat',
+  scrM_bradycardiaSevere: 'Under 40 beats a minute.',
+  scrF_bradycardia: 'Slow heartbeat',
+  scrM_bradycardia: 'Common in athletes. It can also be a signal.',
+  scrF_tachycardia: 'Fast heartbeat',
+  scrM_tachycardia: 'Stress, caffeine, fever and movement all do this.',
+  scrF_tachycardiaExtreme: 'Very fast heartbeat',
+  scrM_tachycardiaExtreme: 'Above 150 at rest needs checking.',
+
+  /* ── Findings: rhythm ── */
+  scrF_atrialFibrillation: 'Atrial fibrillation pattern',
+  scrM_atrialFibrillation: 'An irregular rhythm that raises stroke risk. It is treatable.',
+  scrF_atrialFlutter: 'Atrial flutter pattern',
+  scrM_atrialFlutter: 'A fast, organised rhythm in the upper chambers.',
+  scrF_svt: 'Fast rhythm from above the ventricles',
+  scrM_svt: 'It starts in the upper part of the heart.',
+  scrF_wideComplexTachycardia: 'Fast rhythm with wide beats',
+  scrM_wideComplexTachycardia: 'Treated as coming from the ventricles until a doctor rules that out.',
+  scrF_ectopyFrequent: 'Frequent extra beats',
+  scrM_ectopyFrequent: 'Many beats arrived early.',
+  scrF_ectopyOccasional: 'A few extra beats',
+  scrM_ectopyOccasional: 'Very common, and usually harmless.',
+  scrF_irregularRhythm: 'Irregular rhythm',
+  scrM_irregularRhythm: 'The gaps between beats varied.',
+  scrF_pause: 'A pause between beats',
+  scrM_pause: 'One gap was longer than 2 seconds.',
+  scrF_pauseLong: 'A long pause between beats',
+  scrM_pauseLong: 'One gap was longer than 3 seconds.',
+
+  /* ── Findings: conduction ── */
+  scrF_avBlock1: 'First-degree AV block',
+  scrM_avBlock1: 'The signal takes longer than usual to reach the lower chambers.',
+  scrF_avBlock1Marked: 'Marked first-degree AV block',
+  scrM_avBlock1Marked: 'A long delay between the upper and lower chambers.',
+  scrF_avBlock2Suspected: 'A beat may have been dropped',
+  scrM_avBlock2Suspected: 'One beat looks missing from the sequence.',
+  scrF_avBlockCompleteSuspected: 'Possible complete heart block',
+  scrM_avBlockCompleteSuspected: 'Slow and regular, with the upper chambers out of step.',
+  scrF_ivcd: 'Slightly wide beats',
+  scrM_ivcd: 'The signal moves through the ventricles a little slowly.',
+  scrF_bbbLeftPattern: 'Left bundle branch pattern',
+  scrM_bbbLeftPattern: 'Confirming which branch is involved needs chest electrodes.',
+  scrF_bbbRightPattern: 'Right bundle branch pattern',
+  scrM_bbbRightPattern: 'Confirming which branch is involved needs chest electrodes.',
+  scrF_bbbIndeterminate: 'Wide beats',
+  scrM_bbbIndeterminate: 'Wide, without a clear left or right pattern.',
+  scrF_lafb: 'Left anterior fascicular block',
+  scrM_lafb: 'A small conduction branch is blocked. Often harmless on its own.',
+  scrF_lpfb: 'Left posterior fascicular block',
+  scrM_lpfb: 'Uncommon. A doctor should confirm it.',
+
+  /* ── Findings: recovery ── */
+  scrF_qtLong: 'Long QT interval',
+  scrM_qtLong: 'The heart takes longer than usual to reset. Some medicines cause this.',
+  scrF_qtLongSevere: 'Very long QT interval',
+  scrM_qtLongSevere: 'This raises the risk of a dangerous rhythm.',
+  scrF_qtShort: 'Short QT interval',
+  scrM_qtShort: 'Uncommon. Worth a doctor looking at it.',
+  scrF_tInversionInferior: 'Inverted T waves, lower leads',
+  scrM_tInversionInferior: 'Can be old, positional, or new. A doctor tells them apart.',
+  scrF_tInversionLateral: 'Inverted T waves, side leads',
+  scrM_tInversionLateral: 'Can be old, positional, or new. A doctor tells them apart.',
+
+  /* ── Findings: direction ── */
+  scrF_axisLeft: 'Left-leaning signal direction',
+  scrM_axisLeft: 'The direction the signal travels. Often perfectly normal.',
+  scrF_axisRight: 'Right-leaning signal direction',
+  scrM_axisRight: 'The direction the signal travels. Often perfectly normal.',
+  scrF_axisExtreme: 'Unusual signal direction',
+  scrM_axisExtreme: 'Outside the usual range.',
+
+  /* ── Findings: chambers ── */
+  scrF_lvhVoltage: 'Thickened heart muscle pattern',
+  scrM_lvhVoltage: 'The voltage suggests it. An ultrasound scan is what confirms it.',
+  scrF_raEnlargement: 'Enlarged upper-right chamber pattern',
+  scrM_raEnlargement: 'The P wave is taller than usual.',
+
+  /* ── Findings: blood supply ── */
+  scrF_stElevationInferior: 'ST elevation, lower wall',
+  scrM_stElevationInferior: 'This pattern can mean a heart attack is happening.',
+  scrF_stElevationLateral: 'ST elevation, side wall',
+  scrM_stElevationLateral: 'This pattern can mean a heart attack is happening.',
+  scrF_stDepressionInferior: 'ST depression, lower wall',
+  scrM_stDepressionInferior: 'Can mean part of the muscle is short of blood.',
+  scrF_stDepressionLateral: 'ST depression, side wall',
+  scrM_stDepressionLateral: 'Can mean part of the muscle is short of blood.',
+  scrF_qWavesInferior: 'Q waves, lower wall',
+  scrM_qWavesInferior: 'Can be the scar of an old heart attack.',
+  scrF_qWavesLateral: 'Q waves, side wall',
+  scrM_qWavesLateral: 'Can be the scar of an old heart attack.',
+
+  /* ── Findings: other ── */
+  scrF_hyperkalaemiaPattern: 'Peaked T waves',
+  scrM_hyperkalaemiaPattern: 'Sometimes high potassium in the blood. A blood test answers it.',
+  scrF_lowVoltage: 'Low voltage',
+  scrM_lowVoltage: 'Small signals in every lead. There are several causes.',
+  scrF_electricalAlternans: 'Beat size alternating',
+  scrM_electricalAlternans: 'Beat height swings up and down, every other beat.',
+
+  /* ── Findings: recording ── */
+  scrF_leadReversal: 'The electrodes may be swapped',
+  scrM_leadReversal: 'Check the arm electrodes and measure again. Rarely, it is the heart’s position.',
+
   /* ── Shared ── */
   back: 'Back',
   exit: 'Exit',
@@ -997,6 +1175,11 @@ export type TranslationKey = keyof typeof en;
 //           quote the same string the changelog does.
 // v1.11.0 — Profile-photo sheet copy. The sheet says the picture is saved to
 //           your record, because that is a different decision from a device.
+// v1.3.0 — The SCREENING block: 43 findings x (name + plain meaning), the four
+//          verdict levels with their action lines, confidence words, category
+//          names, the blind spots and the disclaimer. Its copy rule is stricter
+//          than the rest of the file and is written at the top of the block:
+//          this is the screen someone reads while frightened.
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.
