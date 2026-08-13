@@ -273,11 +273,35 @@ export interface ScreeningStats {
 
 /* ══════════════════ The result ══════════════════ */
 
+/**
+ * What happened to ONE rule.
+ *
+ * ★ ADDED BECAUSE A COUNT IS NOT AN AUDIT. "43 of 43 checks ran" tells a
+ * reader how much of the screen was possible; it does not tell them WHAT
+ * was looked for. A clinician handed an automated report wants the negative
+ * list at least as much as the positive one — "atrial fibrillation: not
+ * present" is a clinical statement, and its absence is why an automated
+ * "no abnormal finding" reads as an empty gesture.
+ */
+export interface ScreeningCheck {
+  id: FindingId;
+  category: FindingCategory;
+  /**
+   * `found`        the pattern is present
+   * `notPresent`   the rule ran and the pattern is absent — the useful negative
+   * `notEvaluated` the measurement it needs was unavailable, so NOTHING is
+   *                claimed either way. Never collapse this into `notPresent`.
+   */
+  status: 'found' | 'notPresent' | 'notEvaluated';
+}
+
 export interface EcgScreening {
   /** The worst level among the findings — or `clear` / `inconclusive`. */
   level: ScreeningLevel;
   /** Sorted: urgent first, then by confidence, then by category order. */
   findings: ScreeningFinding[];
+  /** Every rule and what happened to it, in registry order. */
+  checks: ScreeningCheck[];
   blindSpots: BlindSpotId[];
   stats: ScreeningStats;
 }

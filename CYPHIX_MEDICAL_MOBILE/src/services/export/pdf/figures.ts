@@ -30,7 +30,9 @@
    ================================================================== */
 
 import {
+  BAND_OK,
   BLUE,
+  BRAND,
   GRID_MAJOR,
   GRID_MINOR,
   GOLD,
@@ -38,12 +40,16 @@ import {
   INK,
   MUTED,
   PAPER,
-  SIGNAL,
-  SIGNAL_INK,
   SLATE,
   SURFACE,
   esc,
 } from './theme';
+
+/* Green appears in exactly two places in this file and in neither of them is
+   it identity: the reference band on an interval bar and the normal sector on
+   the dial. That is the universal chart convention for "inside the expected
+   range" and a reader decodes it without a legend. Everything that speaks FOR
+   the product - rings, needles, traces, clouds - is the wordmark's navy. */
 
 /** Open an SVG whose on-page size is fixed in millimetres. */
 function svg(w: number, h: number, body: string): string {
@@ -131,9 +137,9 @@ export function rangeBar(opts: {
     `
     <text x="0" y="${trackY + trackH - 0.3}" font-size="3.5" font-weight="700" fill="${SLATE}">${esc(label)}</text>
     <rect x="${n2(x0)}" y="${trackY}" width="${n2(trackW)}" height="${trackH}" rx="1.8" fill="${SURFACE}"/>
-    <rect x="${n2(bandFrom)}" y="${trackY}" width="${n2(Math.max(0, bandTo - bandFrom))}" height="${trackH}" rx="1.8" fill="${SIGNAL}" opacity="0.22"/>
-    <line x1="${n2(bandFrom)}" y1="${trackY - 0.9}" x2="${n2(bandFrom)}" y2="${trackY + trackH + 0.9}" stroke="${SIGNAL_INK}" stroke-width="0.22" opacity="0.7"/>
-    <line x1="${n2(bandTo)}" y1="${trackY - 0.9}" x2="${n2(bandTo)}" y2="${trackY + trackH + 0.9}" stroke="${SIGNAL_INK}" stroke-width="0.22" opacity="0.7"/>
+    <rect x="${n2(bandFrom)}" y="${trackY}" width="${n2(Math.max(0, bandTo - bandFrom))}" height="${trackH}" rx="1.8" fill="${BAND_OK}" opacity="0.22"/>
+    <line x1="${n2(bandFrom)}" y1="${trackY - 0.9}" x2="${n2(bandFrom)}" y2="${trackY + trackH + 0.9}" stroke="${BRAND}" stroke-width="0.22" opacity="0.7"/>
+    <line x1="${n2(bandTo)}" y1="${trackY - 0.9}" x2="${n2(bandTo)}" y2="${trackY + trackH + 0.9}" stroke="${BRAND}" stroke-width="0.22" opacity="0.7"/>
     ${
       clamped === null
         ? `<text x="${n2(x0 + trackW + 2)}" y="${trackY + trackH - 0.3}" font-size="3.6" font-weight="700" fill="${MUTED}">—</text>`
@@ -141,8 +147,8 @@ export function rangeBar(opts: {
            <text x="${n2(x0 + trackW + 2)}" y="${trackY + trackH - 0.3}" font-size="3.8" font-weight="800" fill="${ink}">${value === null ? '—' : Math.round(value)}</text>`
     }
     <text x="${n2(x0)}" y="${H - 0.6}" font-size="2.6" fill="${MUTED}">${min}</text>
-    <text x="${n2(bandFrom)}" y="${H - 0.6}" font-size="2.6" fill="${SIGNAL_INK}" text-anchor="middle">${low}</text>
-    <text x="${n2(bandTo)}" y="${H - 0.6}" font-size="2.6" fill="${SIGNAL_INK}" text-anchor="middle">${high}</text>
+    <text x="${n2(bandFrom)}" y="${H - 0.6}" font-size="2.6" fill="${BRAND}" text-anchor="middle">${low}</text>
+    <text x="${n2(bandTo)}" y="${H - 0.6}" font-size="2.6" fill="${BRAND}" text-anchor="middle">${high}</text>
     <text x="${n2(x0 + trackW)}" y="${H - 0.6}" font-size="2.6" fill="${MUTED}" text-anchor="end">${max} ${esc(unit)}</text>`,
   );
 }
@@ -203,7 +209,7 @@ export function hexaxial(opts: { size: number; degrees: number | null; ink: stri
     size,
     size,
     `
-    <path d="${wedge}" fill="${SIGNAL}" opacity="0.13"/>
+    <path d="${wedge}" fill="${BAND_OK}" opacity="0.13"/>
     <circle cx="${cx}" cy="${cy}" r="${n2(r)}" fill="none" stroke="${HAIRLINE}" stroke-width="0.3"/>
     ${spokes}
     ${needle}
@@ -395,12 +401,12 @@ export function einthoven(opts: { w: number; h: number; highlight: string[] }): 
     w,
     h,
     `
-    <circle cx="${n2(cx)}" cy="${n2(cy + 1)}" r="${n2(R * 0.42)}" fill="${SIGNAL}" opacity="0.10"/>
+    <circle cx="${n2(cx)}" cy="${n2(cy + 1)}" r="${n2(R * 0.42)}" fill="${BAND_OK}" opacity="0.10"/>
     <path d="M ${n2(cx - R * 0.16)} ${n2(cy - R * 0.1)}
              q ${n2(R * 0.16)} ${n2(-R * 0.2)} ${n2(R * 0.32)} 0
              q ${n2(R * 0.16)} ${n2(R * 0.28)} ${n2(-R * 0.16)} ${n2(R * 0.42)}
              q ${n2(-R * 0.32)} ${n2(-R * 0.14)} ${n2(-R * 0.16)} ${n2(-R * 0.42)} Z"
-          fill="${SIGNAL}" opacity="0.32"/>
+          fill="${BAND_OK}" opacity="0.32"/>
 
     <line x1="${n2(RA.x)}" y1="${n2(RA.y)}" x2="${n2(LA.x)}" y2="${n2(LA.y)}" stroke="${strong('I')}" stroke-width="${on('I') ? 0.8 : 0.3}"/>
     <line x1="${n2(RA.x)}" y1="${n2(RA.y)}" x2="${n2(LL.x)}" y2="${n2(LL.y)}" stroke="${strong('II')}" stroke-width="${on('II') ? 0.8 : 0.3}"/>

@@ -83,6 +83,7 @@ export function usePdfLabels(): PdfLabels {
       pageStatistics: tr('pdfPageStatistics'),
       pageReference: tr('pdfPageReference'),
       sheetOf: tr('pdfSheetOf'),
+      sheetWindow: tr('pdfSheetWindow'),
       pageOf: tr('pdfPageOf'),
       continued: tr('pdfContinued'),
 
@@ -92,6 +93,10 @@ export function usePdfLabels(): PdfLabels {
       evidenceTitle: tr('pdfEvidenceTitle'),
       criterion: tr('pdfCriterion'),
       borderlineNote: tr('pdfBorderline'),
+      auditTitle: tr('pdfAuditTitle'),
+      auditNote: tr('pdfAuditNote'),
+      medianBeatTitle: tr('pdfMedianBeatTitle'),
+      medianBeatCaption: tr('pdfMedianBeatCap'),
       confidenceTitle: tr('pdfConfidenceTitle'),
 
       statsRate: tr('secRate'),

@@ -1,7 +1,69 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.48.0';
-export const APP_BUILD_LABEL = 'the report is a real document now, and it cannot tear across a page';
+export const APP_VERSION = '0.49.0';
+export const APP_BUILD_LABEL = 'the report stops wasting paper and starts showing its work';
+
+// v0.49.0 - "Why is there a blank page after every page? Why is there half a
+//           page of ECG for the remaining leads? Why are you not using my logo
+//           and writing it in plain text? A whole page for that one line - are
+//           you serious? Green is not my brand colour. There is partial
+//           information that gives no value. It is ugly and does not look like
+//           a report a doctor would be impressed by. Add the average beats from
+//           the ECG ID tab. Think outside the box."
+//           Six complaints, six causes, and two of them were bugs I shipped.
+//           * THE BLANK PAGE WAS ONE MILLIMETRE. `.pg` was `height: 297mm`
+//             inside a 297 mm page. WebKit lays print out in CSS pixels:
+//             297 mm is 1122.52 px, which it rounds UP to 1123, so the box was
+//             half a pixel taller than the page holding it. The engine then
+//             honoured `page-break-after: always` on a box that had ALREADY
+//             overflowed - and half a pixel of nothing became a sheet of paper,
+//             after every single page. `PAGE_BOX_H` is 296 now, and
+//             `:last-child` breaks with `avoid` rather than `auto`.
+//           * THE HALF PAGE OF ECG IS GONE. The recording no longer paginates
+//             at all. 186 mm at 25 mm/s holds 7.1 s, so a 10 s capture used to
+//             become two sheets and the second was six leads stopping a third
+//             of the way across - the ugly half of a trade nobody asked for.
+//             One sheet now, the window stated against the total in the
+//             caption. Compressing 10 s into 186 mm would mean 18.6 mm/s, and
+//             rescaling the time axis is banned (`ecgPath.ts`): every interval
+//             measured off the paper would be wrong by a quarter. CSV and EDF
+//             still carry every sample.
+//           * THE LOGO IS THE LOGO. `pdf/logo.ts` carries the wordmark as
+//             plain SVG - path data copied verbatim from
+//             components/atoms/BrandLogo, which cannot be imported here
+//             because it renders through react-native-svg into native views.
+//             34 mm on every letterhead.
+//           * THE RULER IS ON THE PAPER. A second label per large square along
+//             the time axis, +/-0.5 and +/-1 mV against the baseline, and the
+//             calibration pulse named. A grid without numbers asks the reader
+//             to remember that a large square is 200 ms.
+//           * GREEN IS NOT THE BRAND, and it should never have been the
+//             verdict colour. `clear` is the wordmark's own navy #0D2041 now.
+//             Green survives ONLY as the reference band on an interval bar and
+//             the normal sector on the dial, where it is not identity but the
+//             universal chart convention for "inside range".
+//           * THE INTERPRETATION PAGE HAD A RING, A HEADLINE AND ONE FINDING ON
+//             297 MM OF PAPER. The emptiness was the symptom; the disease was
+//             that "no abnormal finding" is a claim with NO CONTENT unless the
+//             reader knows what was looked for. `screenLimbEcg` now returns a
+//             per-rule AUDIT, and the page prints all 43 in three columns,
+//             grouped by category, marked present / ruled out / not evaluable.
+//             A clinician wants the negative list at least as much as the
+//             positive one: "atrial fibrillation: not present" is a clinical
+//             statement, and a report that omits it asks to be trusted rather
+//             than read.
+//           * THE REPRESENTATIVE BEAT, ALL SIX LEADS, from `buildBeatTemplates`
+//             - the SAME function the ECG ID tab uses, so the beat on paper and
+//             the beat on that screen are one computation. Real ECG machines
+//             print exactly this panel beside the rhythm strip, because a
+//             median beat is what a reader inspects when asking about a Q wave
+//             or an ST segment; a ten-second strip shows rhythm, not
+//             morphology.
+//           Re-verified in Node across nine cases: 4 pages (was 5), 0 unsized
+//           SVGs, 0 percentage dimensions, 0 unresolved placeholders, 0
+//           inconsistent page numbers, 0 NaN, and 43 audit rows plus 6 median
+//           beats present in the output.
+//           OTA: TypeScript only, app.json stays at 0.34.0.
 
 // v0.48.0 - "The PDF is not laid out for the page. The graphs stretch across
 //           two pages. The tables are colourless and dated. It is ugly. I need

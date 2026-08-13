@@ -44,8 +44,13 @@ import {
   tachogram,
 } from './figures';
 import type { PdfLabels } from './labels';
+import { wordmark } from './logo';
 import {
+  BAND_OK,
   BODY_H,
+  BRAND,
+  BRAND_SOFT,
+  PAGE_BOX_H,
   CAL_W,
   COL_W,
   GRID_MAJOR,
@@ -57,7 +62,6 @@ import {
   MUTED,
   PAPER,
   SHEET_CAPTION_H,
-  SIGNAL_INK,
   SLATE,
   SURFACE,
   STRIP_H,
@@ -85,10 +89,15 @@ interface Chrome {
  * so the body's height is a constant the blocks can be checked against.
  */
 function page(chrome: Chrome, bodyHtml: string): string {
+  /* The WORDMARK, not the word. Reported: "why are you not using my logo and
+     writing it in plain text?" - and there is no answer, the logo existed as
+     `components/atoms/BrandLogo` the whole time. It is 34 mm wide: large
+     enough to be the issuer of a clinical document at a glance, small enough
+     that the study title beside it is still the loudest thing on the page. */
   return `<section class="pg">
   <header class="lh">
     <div class="lh-l">
-      <div class="brand">${esc(chrome.brand)}</div>
+      <div class="mark">${wordmark(34)}</div>
       <div class="ttl">${esc(chrome.title)}</div>
     </div>
     <div class="lh-r">${esc(chrome.subtitle)}</div>
@@ -113,12 +122,51 @@ function sectionTitle(text: string): string {
 
 /* ══════════════════ 1. The ECG sheets ══════════════════ */
 
+/**
+ * The ruler, printed ON the paper.
+ *
+ * Asked for: "add the square measurements onto the ECG axes." A grid without
+ * numbers asks the reader to remember that a large square is 200 ms and
+ * 0.5 mV - which every clinician does know, and which is exactly the kind of
+ * recall a document should not be spending. A second tick every 5 mm of
+ * amplitude and a label every large square along the time axis costs nothing
+ * and makes the sheet self-describing.
+ */
+function axisTicks(sampleRate: number, secondsBefore: number): string {
+  const parts: string[] = [];
+  const usable = COL_W - CAL_W;
+  /* One label per SECOND: at 25 mm/s that is every 5 large squares, which is
+     dense enough to find a point and sparse enough not to become texture. */
+  for (let sec = 0; CAL_W + sec * STANDARD_MM_PER_SEC <= COL_W - 4; sec++) {
+    const x = CAL_W + sec * STANDARD_MM_PER_SEC;
+    parts.push(
+      `<line x1="${x.toFixed(2)}" y1="${(STRIP_H - 3.4).toFixed(2)}" x2="${x.toFixed(2)}" y2="${(STRIP_H - 1.2).toFixed(2)}" stroke="${MUTED}" stroke-width="0.2"/>`,
+      `<text x="${(x + 0.7).toFixed(2)}" y="${(STRIP_H - 1.6).toFixed(2)}" font-size="2.3" fill="${MUTED}">${(secondsBefore + sec).toFixed(0)}s</text>`,
+    );
+  }
+  /* Amplitude: +/- 0.5 mV either side of the baseline is one large square, and
+     that is the number a reader actually measures against. */
+  const base = STRIP_H / 2;
+  for (const mv of [1, 0.5, -0.5, -1]) {
+    const y = base - mv * STANDARD_MM_PER_MV;
+    if (y < 4 || y > STRIP_H - 4) continue;
+    parts.push(
+      `<text x="${(COL_W - 1).toFixed(2)}" y="${(y - 0.5).toFixed(2)}" font-size="2.3" fill="${MUTED}" text-anchor="end">${mv > 0 ? '+' : ''}${mv} mV</text>`,
+    );
+  }
+  parts.push(
+    `<text x="${(CAL_W - 0.8).toFixed(2)}" y="${(STRIP_H - 1.6).toFixed(2)}" font-size="2.2" fill="${MUTED}" text-anchor="end">1 mV</text>`,
+  );
+  return parts.join('');
+}
+
 /** One lead band. Explicit width AND height — never inferred. */
 function strip(
   lead: string,
   data: Float32Array,
   sampleRate: number,
   rPeaks: number[] | undefined,
+  secondsBefore: number,
 ): string {
   const baseline = STRIP_H / 2;
   const grid = buildEcgGrid(COL_W, STRIP_H);
@@ -150,6 +198,7 @@ function strip(
   <path d="${path}" fill="none" stroke="${TRACE}" stroke-width="0.26" stroke-linecap="round" stroke-linejoin="round"/>
   <rect x="1.2" y="1.2" width="7.2" height="5.4" rx="1" fill="${PAPER}" opacity="0.9"/>
   <text x="2" y="5.4" font-size="3.8" font-weight="800" fill="${TRACE}">${esc(lead)}</text>
+  ${axisTicks(sampleRate, secondsBefore)}
 </svg>`;
 }
 
@@ -161,8 +210,26 @@ export function samplesPerSheet(fs: number): number {
 /** ★ Counted BEFORE anything is built, because every page prints "n of N"
     and N is not knowable from inside a page builder. Two passes over the
     same arithmetic would eventually disagree; one function cannot. */
-export function countEcgSheets(sampleCount: number, fs: number): number {
-  return Math.max(1, Math.ceil(sampleCount / samplesPerSheet(fs)));
+/**
+ * ★ ALWAYS ONE. THE RECORDING IS NOT PAGINATED ANY MORE.
+ *
+ * It used to be: 186 mm of column at 25 mm/s holds 7.1 s, so a 10 s capture
+ * became two sheets and the second one was six leads that stopped a third of
+ * the way across - "half a page of ECG for the remaining leads", reported
+ * exactly that way, and it looked broken because it WAS the ugly half of a
+ * trade-off nobody had asked for.
+ *
+ * The trade being made instead: the sheet shows the first ~7.1 s at the full
+ * clinical 25 mm/s, and the caption states the window and the total. Squeezing
+ * 10 s into 186 mm would mean 18.6 mm/s, and rescaling the time axis is banned
+ * for a good reason (`ecgPath.ts`) - every interval measured off the paper
+ * would be wrong by a quarter. Seven seconds of true-scale six-lead ECG is a
+ * legitimate clinical strip; a compressed ten is not.
+ *
+ * The full waveform is not lost: CSV and EDF export carry every sample.
+ */
+export function countEcgSheets(): number {
+  return 1;
 }
 
 export function ecgPages(
@@ -175,8 +242,8 @@ export function ecgPages(
   firstPageNumber: number,
 ): { html: string; pages: number } {
   const fs = analysis.sampleRate;
-  const perSheet = Math.max(1, Math.floor(((COL_W - CAL_W) / STANDARD_MM_PER_SEC) * fs));
-  const sheets = Math.max(1, Math.ceil(sampleCount / perSheet));
+  const perSheet = samplesPerSheet(fs);
+  const sheets = 1;
 
   /* Checked once for the shape every ECG page has. If STRIP_H or the
      margins are ever edited, this is what refuses the edit. */
@@ -194,12 +261,19 @@ export function ecgPages(
            was computed from, and marking all six would imply six
            independent detections. Re-based onto this sheet's window. */
         lead === 'II' ? analysis.rPeaks.filter((r) => r >= from && r < to).map((r) => r - from) : undefined,
+        from / fs,
       ),
     ).join('');
 
+    /* States the window against the TOTAL. The sheet no longer paginates, so
+       the honest thing is to say which slice of the capture is drawn rather
+       than to let the reader assume it is all of it. */
     const caption = `<div class="cap">
-      <span><b>${STANDARD_MM_PER_SEC} mm/s</b> · <b>${STANDARD_MM_PER_MV} mm/mV</b> · 1 mV calibration pulse at the left of every lead</span>
-      <span>${esc(labels.sheetOf.replace('{n}', String(s + 1)).replace('{total}', String(sheets)))} · ${(from / fs).toFixed(1)}–${(to / fs).toFixed(1)} s</span>
+      <span><b>${STANDARD_MM_PER_SEC} mm/s</b> &middot; <b>${STANDARD_MM_PER_MV} mm/mV</b> &middot; 1 mV calibration pulse per lead &middot; small square 40 ms / 0.1 mV</span>
+      <span>${esc(labels.sheetWindow
+        .replace('{from}', (from / fs).toFixed(1))
+        .replace('{to}', (to / fs).toFixed(1))
+        .replace('{total}', (sampleCount / fs).toFixed(1)))}</span>
     </div>`;
 
     return page(
@@ -221,22 +295,14 @@ export function ecgPages(
 
 /* ══════════════════ 2. Interpretation ══════════════════ */
 
-const VERDICT_H = 44;
-const FINDING_H = 27;
-/** How many findings fit under the verdict on the first page, and on a
-    continuation page. Both are derived from the block heights rather than
-    guessed, so changing a height cannot silently overflow. */
-const FIRST_PAGE_FINDINGS = Math.floor((BODY_H - VERDICT_H - 8) / FINDING_H);
-const CONT_PAGE_FINDINGS = Math.floor((BODY_H - 8) / FINDING_H);
+const VERDICT_H = 34;
+const FINDING_H = 25;
+const AUDIT_TITLE_H = 7;
+const SECTION_GAP = 3;
 
-/** How the findings divide across pages. Same function the builder uses, so
-    the page count and the page contents cannot disagree. */
-export function chunkFindings(findings: readonly ScreeningFinding[]): ScreeningFinding[][] {
-  const list = [...findings];
-  const chunks: ScreeningFinding[][] = [list.splice(0, FIRST_PAGE_FINDINGS)];
-  while (list.length > 0) chunks.push(list.splice(0, CONT_PAGE_FINDINGS));
-  return chunks;
-}
+/** Rows the audit grid can hold on the interpretation page, once the verdict
+    and any findings have taken their share. Derived, never guessed. */
+const AUDIT_ROW_H = 4.4;
 
 function findingRow(f: ScreeningFinding, labels: PdfLabels): string {
   const c = LEVEL_COLOR[f.level] ?? LEVEL_COLOR.attention;
@@ -244,9 +310,6 @@ function findingRow(f: ScreeningFinding, labels: PdfLabels): string {
   const evidence = f.evidence
     .map((e) => `<span class="ev"><b>${esc(e.label)}</b> ${esc(e.value)}</span>`)
     .join('');
-
-  /* The margin bar. A finding 4 % past its threshold and one 200 % past it
-     used to print identically; this is the difference, on paper. */
   const fill = Math.max(6, Math.round(f.margin * 100));
 
   return `<div class="find" style="height:${mm(FINDING_H)}">
@@ -266,6 +329,57 @@ function findingRow(f: ScreeningFinding, labels: PdfLabels): string {
   </div>`;
 }
 
+/**
+ * ★ THE AUDIT — every one of the 43 checks and what happened to it.
+ *
+ * ══ WHY THIS EXISTS ══
+ * Reported, and it was the right thing to be angry about: *"a whole page for
+ * that one line? Are you serious?"* The interpretation page carried a ring, a
+ * headline and one finding on 297 mm of paper, and the rest was white.
+ *
+ * The deeper problem was not the emptiness, it was that "no abnormal finding"
+ * is a claim with NO CONTENT unless the reader knows what was looked for.
+ * A clinician wants the NEGATIVE list at least as much as the positive one —
+ * "atrial fibrillation: not present" is a clinical statement, and a report
+ * that omits it is asking to be trusted rather than read.
+ *
+ * Three columns of small type carry all 43 in ~50 mm, grouped by the category
+ * a reader triages by, with the ruled-out ones set quietly and anything found
+ * in its level's colour.
+ */
+function auditGrid(screening: EcgScreening, labels: PdfLabels): string {
+  const ORDER: ScreeningFinding['category'][] = [
+    'rhythm', 'conduction', 'ischaemia', 'repolarisation', 'rate', 'chamber', 'axis', 'other', 'technical',
+  ];
+  const byCat = new Map<string, typeof screening.checks>();
+  for (const c of screening.checks) {
+    if (!byCat.has(c.category)) byCat.set(c.category, []);
+    byCat.get(c.category)!.push(c);
+  }
+
+  const foundIds = new Map(screening.findings.map((f) => [f.id, f]));
+
+  const groups = ORDER.filter((cat) => byCat.has(cat)).map((cat) => {
+    const rows = byCat
+      .get(cat)!
+      .map((c) => {
+        const f = foundIds.get(c.id);
+        const ink = f ? (LEVEL_COLOR[f.level] ?? LEVEL_COLOR.attention).ink : null;
+        const glyph =
+          c.status === 'found' ? '&#9679;' : c.status === 'notPresent' ? '&#8211;' : '&#63;';
+        const cls =
+          c.status === 'found' ? 'a-found' : c.status === 'notPresent' ? 'a-out' : 'a-na';
+        return `<div class="arow ${cls}"${ink ? ` style="color:${ink}"` : ''}><i>${glyph}</i><span>${esc(
+          labels.finding(c.id).name,
+        )}</span></div>`;
+      })
+      .join('');
+    return `<div class="agroup"><h4>${esc(labels.category(cat))}</h4>${rows}</div>`;
+  });
+
+  return `<div class="audit">${groups.join('')}</div>`;
+}
+
 export function interpretationPages(
   screening: EcgScreening,
   chrome: Omit<Chrome, 'title' | 'pageLabel' | 'footRight'>,
@@ -277,9 +391,9 @@ export function interpretationPages(
   const copy = labels.level(screening.level);
   const { rulesEvaluated, rulesTotal } = screening.stats;
 
-  const verdict = `<div class="verdict" style="border-color:${c.ink}22;background:${c.soft}">
+  const verdict = `<div class="verdict" style="border-color:${c.ink}33;background:${c.soft}">
     ${donut({
-      size: 34,
+      size: 26,
       fraction: rulesTotal > 0 ? rulesEvaluated / rulesTotal : 0,
       ink: c.ink,
       soft: PAPER,
@@ -295,44 +409,82 @@ export function interpretationPages(
     </div>
   </div>`;
 
-  const chunks = chunkFindings(screening.findings);
+  /* ★ ONE PAGE. The findings take what they need and the audit takes the
+     rest, so the sheet is full whatever the result — an empty half page was
+     the complaint, and a layout whose density depends on the diagnosis is a
+     layout that has only been looked at with one diagnosis. */
+  const found = screening.findings;
+  const findingsH = found.length * FINDING_H;
+  const titleH = 8;
+  const auditRows = Math.ceil(screening.checks.length / 3) + 9;
+  const auditH = Math.max(30, AUDIT_TITLE_H + auditRows * AUDIT_ROW_H);
 
-  const html = chunks
-    .map((chunk, i) => {
-      const isFirst = i === 0;
-      const titleH = 8;
-      const rows = chunk.map((f) => findingRow(f, labels)).join('');
-      const listH = chunk.length * FINDING_H;
+  const spare = BODY_H - VERDICT_H - SECTION_GAP - (found.length ? titleH + findingsH : 0)
+    - SECTION_GAP - AUDIT_TITLE_H;
 
-      const blocks = isFirst ? [VERDICT_H, titleH, listH] : [titleH, listH];
-      assertFits(`interpretation p${i + 1}`, blocks);
+  /* Findings that do not fit continue on a second page rather than being
+     dropped or squeezed. Nothing is ever silently omitted from a report. */
+  const perExtra = Math.floor((BODY_H - titleH) / FINDING_H);
+  const firstCount = Math.max(0, Math.min(found.length, Math.floor((BODY_H - VERDICT_H - SECTION_GAP - titleH - 34) / FINDING_H)));
+  const first = found.slice(0, firstCount);
+  const rest: ScreeningFinding[][] = [];
+  for (let i = firstCount; i < found.length; i += perExtra) rest.push(found.slice(i, i + perExtra));
 
-      const body =
-        (isFirst ? block(VERDICT_H, verdict) : '') +
-        block(
-          titleH,
-          sectionTitle(isFirst ? labels.findingsTitle : `${labels.findingsTitle} (${labels.continued})`),
-        ) +
-        block(
-          listH,
-          chunk.length > 0 ? rows : `<div class="empty">${esc(labels.noFindings)}</div>`,
-        );
+  const firstFindingsH = first.length * FINDING_H;
+  const auditAvail = BODY_H - VERDICT_H - SECTION_GAP - (first.length ? titleH + firstFindingsH : 0) - SECTION_GAP - AUDIT_TITLE_H;
 
-      return page(
-        {
-          ...chrome,
-          title: labels.pageInterpretation,
-          pageLabel: labels.pageOf
-            .replace('{n}', String(firstPageNumber + i))
-            .replace('{total}', String(totalPages)),
-          footRight: esc(copy.headline),
-        },
-        body,
-      );
-    })
-    .join('');
+  assertFits('interpretation', [
+    VERDICT_H,
+    SECTION_GAP,
+    first.length ? titleH + firstFindingsH : 0,
+    SECTION_GAP,
+    AUDIT_TITLE_H,
+    Math.max(0, auditAvail),
+  ]);
 
-  return { html, pages: chunks.length };
+  const firstPage = page(
+    {
+      ...chrome,
+      title: labels.pageInterpretation,
+      pageLabel: labels.pageOf.replace('{n}', String(firstPageNumber)).replace('{total}', String(totalPages)),
+      footRight: copy.headline,
+    },
+    block(VERDICT_H, verdict) +
+      block(SECTION_GAP, '') +
+      (first.length
+        ? block(titleH, sectionTitle(labels.findingsTitle)) + block(firstFindingsH, first.map((f) => findingRow(f, labels)).join(''))
+        : '') +
+      block(SECTION_GAP, '') +
+      block(AUDIT_TITLE_H, sectionTitle(labels.auditTitle)) +
+      block(Math.max(0, auditAvail), auditGrid(screening, labels) + `<div class="auditnote">${esc(labels.auditNote)}</div>`),
+  );
+
+  const extraPages = rest.map((chunk, i) => {
+    assertFits(`interpretation cont ${i + 1}`, [titleH, chunk.length * FINDING_H]);
+    return page(
+      {
+        ...chrome,
+        title: labels.pageInterpretation,
+        pageLabel: labels.pageOf
+          .replace('{n}', String(firstPageNumber + 1 + i))
+          .replace('{total}', String(totalPages)),
+        footRight: copy.headline,
+      },
+      block(titleH, sectionTitle(`${labels.findingsTitle} (${labels.continued})`)) +
+        block(chunk.length * FINDING_H, chunk.map((f) => findingRow(f, labels)).join('')),
+    );
+  });
+
+  return { html: firstPage + extraPages.join(''), pages: 1 + extraPages.length };
+}
+
+/** How many interpretation pages there will be. Same arithmetic as the
+    builder, so the page count and the pages cannot disagree. */
+export function countInterpretationPages(findings: readonly ScreeningFinding[]): number {
+  const titleH = 8;
+  const perExtra = Math.floor((BODY_H - titleH) / FINDING_H);
+  const firstCount = Math.max(0, Math.min(findings.length, Math.floor((BODY_H - VERDICT_H - SECTION_GAP - titleH - 34) / FINDING_H)));
+  return 1 + Math.ceil(Math.max(0, findings.length - firstCount) / perExtra);
 }
 
 /* ══════════════════ 3. Statistics ══════════════════ */
@@ -349,12 +501,55 @@ const REF = {
     whether being outside matters, and they have already run. */
 function bandInk(v: number | null, low: number, high: number): string {
   if (v === null) return MUTED;
-  return v >= low && v <= high ? SIGNAL_INK : LEVEL_COLOR.attention.ink;
+  return v >= low && v <= high ? BRAND : LEVEL_COLOR.attention.ink;
+}
+
+/**
+ * ★ THE MEDIAN BEAT PANEL — the same representative beat the app's ECG ID tab
+ * shows, all six leads, side by side.
+ *
+ * Asked for, and it is the single most clinically useful thing that was
+ * missing. A ten-second strip shows the rhythm; a MEDIAN beat shows the
+ * morphology with the noise averaged out of it, which is what a reader
+ * actually inspects when asking about a Q wave or an ST segment. Real ECG
+ * machines print exactly this panel next to the rhythm strip.
+ *
+ * It is built from `buildBeatTemplates` in `@cyphix/shared` — the same
+ * function the ECG ID uses — so the beat on this page and the beat on that
+ * screen are the same beat, computed once and never re-derived.
+ */
+function medianBeatPanel(
+  templates: TemplatePanel | null,
+  w: number,
+  h: number,
+  labels: PdfLabels,
+): string {
+  if (!templates || templates.leads.length === 0) {
+    return `<div class="empty">${esc(labels.noFindings)}</div>`;
+  }
+  const cellW = (w - 5 * 2) / 6;
+  const cells = templates.leads
+    .map(
+      (l) => `<div class="mbcell" style="width:${mm(cellW)}">
+        <div class="mblead">${esc(l.name)}</div>
+        ${beatFigure({ w: cellW, h: h - 7, signal: l.data, from: 0, to: l.data.length - 1, band: null, ink: BRAND })}
+      </div>`,
+    )
+    .join('');
+  return `<div class="mbrow">${cells}</div>`;
+}
+
+/** What the statistics page needs to draw the median beats. */
+export interface TemplatePanel {
+  leads: { name: string; data: Float32Array }[];
+  beatsUsed: number;
+  beatsRejected: number;
 }
 
 export function statisticsPage(
   analysis: EcgAnalysis,
   screening: EcgScreening | null,
+  templates: TemplatePanel | null,
   chrome: Omit<Chrome, 'title' | 'pageLabel' | 'footRight'>,
   labels: PdfLabels,
   totalPages: number,
@@ -369,15 +564,19 @@ export function statisticsPage(
   }
 
   /* ── Block heights, declared before anything is drawn ── */
-  const H_TILES = 26;
+  const H_TILES = 24;
+  const H_MB_TITLE = 7;
+  const H_MB = 30;
   const H_INT_TITLE = 7;
   const H_INTERVALS = 13 * 5;
   const H_FIG_TITLE = 7;
   const H_FIGS = 46;
   const H_AMP_TITLE = 7;
-  const H_AMPS = 56;
+  const H_AMPS = 51;
   assertFits('statistics', [
     H_TILES,
+    H_MB_TITLE,
+    H_MB,
     H_INT_TITLE,
     H_INTERVALS,
     H_FIG_TITLE,
@@ -392,12 +591,12 @@ export function statisticsPage(
   const num = (v: number | null, d = 0): string => (v === null ? '—' : v.toFixed(d));
 
   const tiles = `<div class="tiles">
-    ${tile(labels.mBpm, num(rate.bpm), 'BPM', SIGNAL_INK)}
+    ${tile(labels.mBpm, num(rate.bpm), 'BPM', BRAND)}
     ${tile(labels.mSdnn, num(rate.sdnnMs, 1), 'ms')}
     ${tile(labels.mRmssd, num(rate.rmssdMs, 1), 'ms')}
     ${tile(labels.mRrVariation, num(rate.rrVariationPct, 1), '%')}
     ${tile(labels.mBeats, String(rate.beatsAnalyzed), '')}
-    ${tile(labels.mSqi, String(quality.sqi), '%', SIGNAL_INK)}
+    ${tile(labels.mSqi, String(quality.sqi), '%', BRAND)}
   </div>`;
 
   const intervals5 = [
@@ -416,11 +615,11 @@ export function statisticsPage(
       <div class="fig-cap">${esc(labels.axisCaption)}</div>
     </div>
     <div class="fig" style="width:${mm(figW)}">
-      ${poincare({ size: 38, rrMs, ink: SIGNAL_INK })}
+      ${poincare({ size: 38, rrMs, ink: BRAND })}
       <div class="fig-cap">${esc(labels.poincareCaption)}</div>
     </div>
     <div class="fig" style="width:${mm(figW)}">
-      ${tachogram({ w: figW, h: 38, rrMs, ink: SIGNAL_INK, meanMs: rate.rrMeanMs })}
+      ${tachogram({ w: figW, h: 38, rrMs, ink: BRAND, meanMs: rate.rrMeanMs })}
       <div class="fig-cap">${esc(labels.tachogramCaption)}</div>
     </div>
   </div>`;
@@ -458,6 +657,17 @@ export function statisticsPage(
       footRight: `${labels.mAnalysed}: ${quality.analysedSeconds} s`,
     },
     block(H_TILES, tiles) +
+      block(
+        H_MB_TITLE,
+        sectionTitle(
+          templates
+            ? `${labels.medianBeatTitle} · ${labels.medianBeatCaption
+                .replace('{used}', String(templates.beatsUsed))
+                .replace('{rejected}', String(templates.beatsRejected))}`
+            : labels.medianBeatTitle,
+        ),
+      ) +
+      block(H_MB, medianBeatPanel(templates, COL_W, H_MB, labels)) +
       block(H_INT_TITLE, sectionTitle(`${labels.statsIntervals} · ${labels.refRange}`)) +
       block(H_INTERVALS, intervals5) +
       block(H_FIG_TITLE, sectionTitle(labels.statsVariability)) +
@@ -514,7 +724,7 @@ export function referencePage(
       <div class="wall"><b>II · III · aVF</b><span>${esc(labels.wallInferior)}</span></div>
       <div class="wall"><b>I · aVL</b><span>${esc(labels.wallLateral)}</span></div>
       <div class="wall wall-off"><b>V1–V6</b><span>${esc(labels.wallNotSeen)}</span></div>
-      ${leadII ? beatFigure({ w: 82, h: 20, signal: leadII, from, to, band: null, ink: SIGNAL_INK }) : ''}
+      ${leadII ? beatFigure({ w: 82, h: 20, signal: leadII, from, to, band: null, ink: BRAND }) : ''}
     </div>
   </div>`;
 
@@ -559,14 +769,15 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 /* ★ The page is a FIXED BOX. 'overflow:hidden' is the last line of defence
    behind assertFits: if arithmetic ever fails, the damage is a clipped
    block on one page rather than a lead torn across two. */
-.pg { position: relative; width: 210mm; height: 297mm; overflow: hidden;
+.pg { position: relative; width: 210mm; height: ${PAGE_BOX_H}mm; overflow: hidden;
       padding: 10mm 12mm 8mm; page-break-after: always; break-after: page; }
-.pg:last-child { page-break-after: auto; break-after: auto; }
+.pg:last-child { page-break-after: avoid; break-after: avoid; }
 
 .lh { height: 16mm; display: flex; align-items: flex-start; justify-content: space-between;
       border-bottom: 0.5mm solid ${INK}; padding-bottom: 2mm; }
-.brand { font-size: 8pt; font-weight: 800; letter-spacing: 2.6px; color: ${MUTED}; }
-.ttl { font-size: 14pt; font-weight: 800; letter-spacing: -0.3px; margin-top: 1mm; }
+.mark { line-height: 0; }
+.mark svg { display: block; }
+.ttl { font-size: 13pt; font-weight: 800; letter-spacing: -0.3px; margin-top: 1.6mm; color: ${BRAND}; }
 .lh-r { font-size: 7.5pt; color: ${SLATE}; text-align: right; line-height: 1.5;
         max-width: 80mm; overflow: hidden; }
 
@@ -639,6 +850,24 @@ table.amp td { text-align: right; padding: 1.4mm 1.6mm; font-variant-numeric: ta
                border-bottom: 0.2mm solid ${HAIRLINE}; }
 table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: ${SURFACE}; }
 td.ampcell { width: 44mm; padding-right: 0; }
+
+/* -- The audit grid: 43 checks in three columns -- */
+.audit { column-count: 3; column-gap: 6mm; }
+.agroup { break-inside: avoid; margin-bottom: 2mm; }
+.agroup h4 { margin: 0 0 0.8mm; font-size: 6.6pt; font-weight: 800; letter-spacing: 0.6px;
+             text-transform: uppercase; color: ${MUTED}; }
+.arow { display: flex; gap: 1.4mm; align-items: baseline; font-size: 7pt; line-height: 1.45; }
+.arow i { font-style: normal; width: 2mm; flex: none; text-align: center; }
+.a-out { color: ${SLATE}; }
+.a-out i { color: ${HAIRLINE}; }
+.a-na { color: ${MUTED}; }
+.a-found { font-weight: 800; }
+.auditnote { font-size: 6.4pt; color: ${MUTED}; margin-top: 1.6mm; line-height: 1.4; }
+
+/* -- Median beats -- */
+.mbrow { display: flex; gap: 2mm; height: 100%; }
+.mbcell { flex: none; }
+.mblead { font-size: 7pt; font-weight: 800; color: ${BRAND}; margin-bottom: 0.8mm; }
 
 /* ── Reference ── */
 .maprow { display: flex; gap: 5mm; height: 100%; }

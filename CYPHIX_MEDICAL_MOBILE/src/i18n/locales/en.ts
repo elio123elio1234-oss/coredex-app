@@ -1251,6 +1251,12 @@ export const en = {
   pdfHow3: 'The short marks along the top of lead II are the detected R peaks. Every rate and interval on the following pages was computed from those detections.',
   pdfHow4: 'A recording longer than about 7 seconds continues on the next sheet, consecutive in time. Nothing is truncated.',
 
+  pdfSheetWindow: '{from}\u2013{to} s shown of {total} s recorded',
+  pdfAuditTitle: 'Every check that was made',
+  pdfAuditNote: '\u25CF present \u00B7 \u2013 ruled out \u00B7 ? could not be evaluated. A ruled-out check means the pattern was looked for on these six leads and was not there; it does not exclude conditions these leads cannot see (last page).',
+  pdfMedianBeatTitle: 'Representative beat',
+  pdfMedianBeatCap: 'median of {used} beats, {rejected} rejected',
+
   /* ── Shared ── */
   back: 'Back',
   exit: 'Exit',

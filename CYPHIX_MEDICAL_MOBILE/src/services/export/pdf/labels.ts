@@ -43,6 +43,8 @@ export interface PdfLabels {
   pageStatistics: string;
   pageReference: string;
   sheetOf: string;
+  /** "0.0-7.1 s of 9.9 s recorded" — the window against the total. */
+  sheetWindow: string;
   pageOf: string;
   continued: string;
 
@@ -53,6 +55,12 @@ export interface PdfLabels {
   evidenceTitle: string;
   criterion: string;
   borderlineNote: string;
+  /** The 43-check audit. */
+  auditTitle: string;
+  auditNote: string;
+  medianBeatTitle: string;
+  /** Carries {used} and {rejected}. */
+  medianBeatCaption: string;
   confidenceTitle: string;
 
   /* ── Statistics page ── */

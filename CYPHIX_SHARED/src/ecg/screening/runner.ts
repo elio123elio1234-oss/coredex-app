@@ -24,6 +24,7 @@ import type {
   EcgScreening,
   FindingId,
   ScreeningContext,
+  ScreeningCheck,
   ScreeningFinding,
   ScreeningLevel,
 } from '../../types/ecgScreening';
@@ -131,6 +132,11 @@ export function screenLimbEcg(
   const ctx = buildContext(leads, analysis, patient);
 
   const fired: ScreeningFinding[] = [];
+  /* ★ The AUDIT, not just the count. A clinician wants the negative list at
+     least as much as the positive one: "atrial fibrillation: not present" is
+     a clinical statement, and its absence is why an automated "no abnormal
+     finding" reads as an empty gesture. */
+  const checks: ScreeningCheck[] = [];
   let rulesEvaluated = 0;
 
   for (const rule of ALL_RULES) {
@@ -142,15 +148,23 @@ export function screenLimbEcg(
          other 42 with it, and it must not be counted as having passed —
          silently reporting "clear" because a rule crashed is the single
          worst outcome available here. */
+      checks.push({ id: rule.id, category: rule.category, status: 'notEvaluated' });
       continue;
     }
 
     /* `null` means the measurement was unavailable: the rule did not run,
        so it is not counted as evaluated. This is the distinction the whole
        checks-run denominator rests on. */
-    if (result === null) continue;
+    if (result === null) {
+      checks.push({ id: rule.id, category: rule.category, status: 'notEvaluated' });
+      continue;
+    }
     rulesEvaluated++;
-    if (result === false) continue;
+    if (result === false) {
+      checks.push({ id: rule.id, category: rule.category, status: 'notPresent' });
+      continue;
+    }
+    checks.push({ id: rule.id, category: rule.category, status: 'found' });
 
     fired.push({
       id: rule.id,
@@ -183,6 +197,11 @@ export function screenLimbEcg(
     if (!firedIds.has(rule.id)) continue;
     for (const victim of rule.suppresses ?? []) suppressed.add(victim);
   }
+
+  /* A suppressed finding is not `found` on the audit sheet. It was explained
+     away by a stronger or more specific rule, and listing it as present
+     beside the rule that supersedes it would report one fact twice. */
+  for (const c of checks) if (c.status === 'found' && suppressed.has(c.id)) c.status = 'notPresent';
 
   const findings = fired
     .filter((f) => !suppressed.has(f.id))
@@ -220,6 +239,7 @@ export function screenLimbEcg(
     return {
       level: 'inconclusive',
       findings: findings.filter((f) => f.category === 'technical'),
+      checks,
       blindSpots: [...LIMB_LEAD_BLIND_SPOTS],
       stats,
     };
@@ -253,9 +273,12 @@ export function screenLimbEcg(
       ? 'attention'
       : 'clear';
 
-  return { level, findings, blindSpots: [...LIMB_LEAD_BLIND_SPOTS], stats };
+  return { level, findings, checks, blindSpots: [...LIMB_LEAD_BLIND_SPOTS], stats };
 }
 
+// v2.1.0 — Reports the AUDIT (`checks`): every rule and whether the pattern was
+//          found, ruled out, or could not be evaluated. A count says how much of
+//          the screen was possible; only the list says what was looked for.
 // v2.0.0 — Rebuilt as a runner over 43 independent rule files. Adds `margin`
 //          and the borderline demotion that keeps a hair-past-threshold
 //          measurement from turning a well person's screen amber, and catches a

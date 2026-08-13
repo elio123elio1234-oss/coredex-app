@@ -1,5 +1,91 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.49.0 - 2026-08-13 - the report stops wasting paper and starts showing its work
+
+*"Why is there a blank page after every page? Why is there half a page of ECG
+for the remaining leads? Why are you not using my logo and writing it in plain
+text? A whole page for that one line - are you serious? Green is not my brand
+colour. It is ugly and does not look like a report a doctor would be impressed
+by. Add the average beats from the ECG ID tab."*
+
+Six complaints, six causes. Two of them were bugs shipped in v0.48.0.
+
+### The blank page was one millimetre
+
+`.pg` was `height: 297mm` inside a 297 mm page. WebKit lays print out in CSS
+pixels: 297 mm is 1122.52 px, which it rounds **up** to 1123 - so the box was
+half a pixel taller than the page holding it. The engine then honoured
+`page-break-after: always` on a box that had **already overflowed**, and half a
+pixel of nothing became a sheet of paper. After every single page.
+
+`PAGE_BOX_H` is 296 now, and `:last-child` breaks with `avoid` rather than
+`auto`.
+
+### The half page of ECG is gone
+
+The recording no longer paginates at all. 186 mm at 25 mm/s holds 7.1 s, so a
+10 s capture used to become two sheets - and the second was six leads stopping
+a third of the way across. That was the ugly half of a trade nobody had asked
+for.
+
+One sheet now, with the window stated against the total in the caption.
+Compressing 10 s into 186 mm would mean 18.6 mm/s, and rescaling the time axis
+is banned for a good reason (`ecgPath.ts`): every interval measured off the
+paper would be wrong by a quarter. CSV and EDF export still carry every sample.
+
+### The logo is the logo
+
+`pdf/logo.ts` carries the wordmark as plain SVG - path data copied verbatim
+from `components/atoms/BrandLogo`, which cannot be imported here because it
+renders through `react-native-svg` into native views. 34 mm on every
+letterhead.
+
+### The ruler is on the paper
+
+A label per second along the time axis, +/-0.5 and +/-1 mV against the
+baseline, and the calibration pulse named. A grid without numbers asks the
+reader to remember that a large square is 200 ms and 0.5 mV - which every
+clinician knows, and which is exactly the recall a document should not spend.
+
+### Green is not the brand
+
+And it should never have been the verdict colour. `clear` is the wordmark's own
+navy `#0D2041` now. Green survives **only** as the reference band on an
+interval bar and the normal sector on the dial, where it is not identity but
+the universal chart convention for "inside the expected range".
+
+### A whole page for one line - and the fix is not "make it smaller"
+
+The interpretation page carried a ring, a headline and one finding on 297 mm of
+paper. The emptiness was the symptom. The disease was that **"no abnormal
+finding" is a claim with no content unless the reader knows what was looked
+for.**
+
+`screenLimbEcg` now returns a per-rule **audit**, and the page prints all 43
+checks in three columns, grouped by the category a reader triages by, each
+marked present / ruled out / could not be evaluated. A clinician wants the
+negative list at least as much as the positive one: *"atrial fibrillation: not
+present"* is a clinical statement, and a report that omits it is asking to be
+trusted rather than read.
+
+### The representative beat, all six leads
+
+From `buildBeatTemplates` - the **same** function the ECG ID tab uses, so the
+beat on paper and the beat on that screen are one computation rather than two
+derivations that will one day disagree.
+
+Real ECG machines print exactly this panel beside the rhythm strip, and the
+reason is clinical: a median beat is what a reader inspects when asking about a
+Q wave or an ST segment. A ten-second strip shows rhythm, not morphology.
+
+### Re-verified
+
+Nine cases in Node: **4 pages** (was 5), 0 unsized SVGs, 0 percentage
+dimensions, 0 unresolved placeholders, 0 inconsistent page numbers, 0 NaN, and
+43 audit rows plus 6 median beats present in the output.
+
+**OTA**: TypeScript only, so `app.json` stays at 0.34.0.
+
 ## v0.48.0 - 2026-08-13 - the report is a real document now, and it cannot tear across a page
 
 *"The PDF is not laid out for the page. The graphs stretch across two pages.

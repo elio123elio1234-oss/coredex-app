@@ -61,13 +61,18 @@ import {
 } from '@cyphix/shared';
 import type { PdfLabels } from './labels';
 import {
+  buildBeatTemplates,
+  LIMB_LEAD_ORDER as TEMPLATE_LEAD_ORDER,
+} from '@cyphix/shared';
+import {
   countEcgSheets,
-  chunkFindings,
+  countInterpretationPages,
   ecgPages,
   interpretationPages,
   referencePage,
   statisticsPage,
   REPORT_CSS,
+  type TemplatePanel,
 } from './pages';
 import { esc } from './theme';
 
@@ -131,9 +136,26 @@ export function buildRecordingHtml(input: ReportInput): string {
     : screenLimbEcg(leads, analysis, patient);
 
   /* ── Page numbering, counted before anything is built ── */
-  const ecgSheets = countEcgSheets(n, fs);
-  const interpChunks = screening ? chunkFindings(screening.findings).length : 0;
-  const totalPages = ecgSheets + interpChunks + 2;
+  /* ★ The representative beat, from the SAME function the ECG ID tab uses.
+     Computed once here and handed to the statistics page, so the beat printed
+     on paper and the beat drawn on that screen are the same beat rather than
+     two derivations that will one day disagree. */
+  const tpl = buildBeatTemplates(leads, analysis.rPeaks, fs, 'II');
+  const templates: TemplatePanel | null =
+    tpl.beatsUsed > 0
+      ? {
+          leads: TEMPLATE_LEAD_ORDER.flatMap((name) => {
+            const t = tpl.leads[name];
+            return t ? [{ name, data: t.samples }] : [];
+          }),
+          beatsUsed: tpl.beatsUsed,
+          beatsRejected: tpl.beatsRejected,
+        }
+      : null;
+
+  const ecgSheets = countEcgSheets();
+  const interpPages = screening ? countInterpretationPages(screening.findings) : 0;
+  const totalPages = ecgSheets + interpPages + 2;
 
   const when = new Date(recording.recordedAt).toLocaleString();
   const chrome = {
@@ -158,7 +180,7 @@ export function buildRecordingHtml(input: ReportInput): string {
     : { html: '', pages: 0 };
   pageNo += interp.pages;
 
-  const stats = statisticsPage(analysis, screening, chrome, labels, totalPages, pageNo);
+  const stats = statisticsPage(analysis, screening, templates, chrome, labels, totalPages, pageNo);
   pageNo += 1;
 
   const reference = referencePage(

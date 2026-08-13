@@ -43,6 +43,25 @@
 export const PAGE_W = 210;
 export const PAGE_H = 297;
 
+/**
+ * ★ WHAT THE PAGE BOX IS ACTUALLY DRAWN AT, AND WHY IT IS NOT 297.
+ *
+ * ⚠️ THIS ONE MILLIMETRE IS A BUG FIX, NOT A MARGIN. Reported: "why is there
+ * a blank page after every page?" — and there was, exactly one, after every
+ * single sheet.
+ *
+ * A box declared `height: 297mm` inside a 297 mm page is not safe. WebKit
+ * lays print out in CSS pixels: 297 mm is 1122.52 px, which it rounds UP to
+ * 1123. The box is then half a pixel taller than the page it sits in, the
+ * engine honours `page-break-after: always` on a box that has ALREADY
+ * overflowed, and the overflow — half a pixel of nothing — becomes a page.
+ *
+ * Drawing at 296 mm puts the box comfortably inside the rounding on every
+ * engine and every paper size that claims to be A4. The millimetre costs
+ * nothing: it sits below the footer, where there is already white space.
+ */
+export const PAGE_BOX_H = 296;
+
 /** Side margin. 12 mm leaves 186 mm of column — a multiple of 6, so the
     two- and three-column grids below divide without a remainder. */
 export const MARGIN_X = 12;
@@ -52,7 +71,7 @@ export const MARGIN_BOTTOM = 8;
 /** The usable column. */
 export const COL_W = PAGE_W - MARGIN_X * 2;
 /** The usable height between the margins. */
-export const COL_H = PAGE_H - MARGIN_TOP - MARGIN_BOTTOM;
+export const COL_H = PAGE_BOX_H - MARGIN_TOP - MARGIN_BOTTOM;
 
 /** The letterhead band at the top of every page. */
 export const HEADER_H = 16;
@@ -100,9 +119,19 @@ export const TRACE = '#0A2540';
 export const MARKER = 'rgba(47, 107, 216, 0.60)';
 
 /** Instrument green — the same token the app draws the ECG ID in. */
-export const SIGNAL = '#00A862';
-export const SIGNAL_INK = '#00764B';
-export const SIGNAL_SOFT = '#E3F6EE';
+/* ★ THE BRAND IS NAVY, AND THE REPORT IS NAVY.
+   The first version drew a clear result in the app's instrument green.
+   Reported, correctly: "green is not my brand colour." It is not — the
+   wordmark is #0D2041 lettering on a #0A2540 mark with #7A829E for
+   "MEDICAL", and a document with a green ring at the top of it belongs to
+   some other company. Green survives ONLY as the thin reference band on the
+   interval bars, where it is not identity but the universal chart
+   convention for "inside the normal range". */
+export const BRAND = '#0D2041';
+export const BRAND_DEEP = '#0A2540';
+export const BRAND_SOFT = '#EEF1F7';
+export const BAND_OK = '#2E9E6B';
+export const BAND_OK_SOFT = 'rgba(46, 158, 107, 0.16)';
 
 export const BLUE = '#2F6BD8';
 export const BLUE_SOFT = '#E8F0FD';
@@ -118,7 +147,11 @@ export const GREY_SOFT = '#EEF1F6';
 /** Level → (ink, fill). One table, so the ring, the chips and the finding
     rules can never disagree about what amber means. */
 export const LEVEL_COLOR: Record<string, { ink: string; soft: string }> = {
-  clear: { ink: SIGNAL_INK, soft: SIGNAL_SOFT },
+  /* Navy, not green — see BRAND above. A clear result is the brand speaking
+     in its own voice; amber and red are kept because on a clinical document
+     those two are not decoration, they are the convention a reader triages
+     by and inventing a house colour for "act now" would cost a second. */
+  clear: { ink: BRAND, soft: BRAND_SOFT },
   attention: { ink: GOLD, soft: GOLD_SOFT },
   urgent: { ink: RED, soft: RED_SOFT },
   inconclusive: { ink: SLATE, soft: GREY_SOFT },
@@ -160,6 +193,10 @@ export function assertFits(page: string, blocks: number[], available = BODY_H): 
   return available - total;
 }
 
+// v1.1.0 — PAGE_BOX_H is 296, not 297: a box declared at exactly the page
+//          height rounds UP to 1123 px in WebKit's print layout, overflows the
+//          page by half a pixel, and that half pixel became a BLANK PAGE after
+//          every sheet. Palette moved off green onto the wordmark's own navy.
 // v1.0.0 — Page geometry in millimetres and the print palette. Every box has an
 //          explicit height and `assertFits` throws rather than letting a page
 //          overflow, which is what tore the old report across two sheets.
