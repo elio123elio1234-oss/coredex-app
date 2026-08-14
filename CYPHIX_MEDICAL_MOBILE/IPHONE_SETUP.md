@@ -106,6 +106,18 @@ eas submit --platform ios --latest
 זה מעלה ל‑App Store Connect. ואז **עוד 5–15 דקות עיבוד אצל Apple**
 לפני שזה מופיע ב‑TestFlight — זה נורמלי, לא תקוע.
 
+> ⚠️ **`--non-interactive` נכשל בלי `ascAppId`** (נתקלנו בזה ב‑v0.56.0).
+> במצב אינטראקטיבי EAS שואל את App Store Connect מה מזהה האפליקציה
+> ופותר את זה לבד; בלי טרמינל אינטראקטיבי אין את מי לשאול, והוא נופל
+> על `Set ascAppId in the submit profile (eas.json)`. המזהה הוא
+> **6798398407**, והוא כתוב עכשיו ב‑`eas.json` תחת
+> `submit.production.ios.ascAppId` — כך שגם סקריפט וגם סוכן יכולים
+> להגיש. **איפה מוצאים אותו אם הוא הולך לאיבוד:**
+> `eas submit:list --platform ios` מדפיס `ASC App ID` של כל הגשה קודמת
+> (או App Store Connect → My Apps → CYPHIX Medical → App Information →
+> Apple ID). זכור ש‑`eas.json` **לא מקבל הערות** (§5A.5 ב‑CLAUDE.md),
+> ולכן ההסבר יושב כאן ולא לידו.
+
 ## E.4 להתקין על האייפון
 
 1. פתח **App Store Connect** בדפדפן → My Apps → CYPHIX Medical → לשונית
@@ -598,4 +610,5 @@ npx expo run:ios --device --configuration Release
 
 ---
 
+<!-- v0.56.0 — §E.3: מלכודת ה‑ascAppId בהגשה לא‑אינטראקטיבית, המזהה עצמו, ואיפה למצוא אותו מחדש. -->
 <!-- v0.23.0 — המסלול המלא מ‑Windows למקבוק Intel לאייפון עם Apple ID חינמי. -->

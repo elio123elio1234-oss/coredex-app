@@ -247,6 +247,16 @@ It is validated against a strict schema that rejects unknown keys, so the
 `"//"` convention used elsewhere in this repo breaks it (`"//" is not
 allowed`). Rationale for the build profiles lives in `IPHONE_SETUP.md` §E.
 
+### 5A.6 A non-interactive `eas submit` needs `ascAppId`
+
+Interactive submissions ask App Store Connect which app this is and resolve
+the id themselves, so it never had to be written down — which is why
+`submit.production` sat empty until v0.56.0, and why the first scripted
+submit died on `Set ascAppId in the submit profile (eas.json)`. It is
+**6798398407** and now lives in `eas.json`. If it is ever lost,
+`eas submit:list --platform ios` prints the `ASC App ID` of every past
+submission. Full note: `IPHONE_SETUP.md` §E.3.
+
 ## 6. Definition of Done (mobile)
 
 - [ ] `npx tsc --noEmit` clean.

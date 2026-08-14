@@ -81,6 +81,34 @@ band — the document idiom v0.50 established is intact, in colour.
   receiving future OTAs — the same menu item falls back to the direct share.
   A preview is a luxury; the export never breaks for its sake.
 
+### Shipping this one: the `ascAppId` trap
+
+The rebuild itself was uneventful (build **8**, runtime **0.35.0**, from
+commit `284acab` — credentials already on EAS, no interactive step). The
+*submission* was not: `eas submit --non-interactive` failed immediately with
+
+```
+Set ascAppId in the submit profile (eas.json) or re-run this command in interactive mode.
+```
+
+Every previous submission was made interactively, where EAS asks App Store
+Connect which app this is and resolves the id itself — so the id had never
+been written down anywhere. `eas.json`'s `submit.production` was an empty
+object.
+
+The id is **6798398407**, recovered from `eas submit:list --platform ios`
+(it prints `ASC App ID` for every past submission — worth knowing, because
+that is the only place it was recorded). It now lives in `eas.json` under
+`submit.production.ios.ascAppId`, so a script — or an agent — can submit
+without a human at the terminal. The rationale sits in `IPHONE_SETUP.md`
+§E.3 rather than beside the setting, because `eas.json` is schema-validated
+and rejects comments (CLAUDE.md §5A.5).
+
+⚠️ **`APP_VERSION` is deliberately NOT bumped for that fix.** The badge's
+whole job is to say which bundle is on the phone; the binary was already
+built from 0.56.0, and printing 0.56.1 for a change that alters no shipped
+code would make the badge lie until the next OTA.
+
 ### Verified
 
 `tsc --noEmit` · `expo export` both platforms · `expo-doctor` · **and
