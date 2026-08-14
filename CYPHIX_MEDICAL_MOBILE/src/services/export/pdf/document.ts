@@ -193,7 +193,20 @@ export function buildRecordingHtml(input: ReportInput): string {
     : { html: '', pages: 0 };
   pageNo += interp.pages;
 
-  const stats = statisticsPage(analysis, screening, templates, chrome, labels, totalPages, pageNo);
+  /* ★ A SIMULATED report used to have NO identification grid at all — it
+     lives on the interpretation page, which simulated studies rightly do not
+     get. It renders on the statistics page instead, so every document that
+     leaves the phone says whose it is, when, and on what. */
+  const stats = statisticsPage(
+    analysis,
+    screening,
+    templates,
+    screening ? null : identity,
+    chrome,
+    labels,
+    totalPages,
+    pageNo,
+  );
   pageNo += 1;
 
   const reference = referencePage(
@@ -231,6 +244,9 @@ ${reference}
 }
 
 
+// v1.1.0 - A simulated report carries the identification grid on its statistics
+//          page (it used to have none anywhere — the grid lived only on the
+//          interpretation page, which simulated studies rightly do not get).
 // v1.0.0 - The document builder, split out of recordingPdf so it imports NOTHING
 //          from expo and can therefore be built and asserted on in Node. That is
 //          not a nicety: a PDF cannot be diffed, so the page arithmetic is only

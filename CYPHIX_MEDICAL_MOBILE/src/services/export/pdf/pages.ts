@@ -48,8 +48,10 @@ import { wordmark } from './logo';
 import {
   BAND_OK,
   BLUE,
+  BLUE_SOFT,
   BODY_H,
   BRAND,
+  BRAND_DEEP,
   BRAND_SOFT,
   GOLD,
   GREY_SOFT,
@@ -96,11 +98,20 @@ function page(chrome: Chrome, bodyHtml: string): string {
      writing it in plain text?" - and there is no answer, the logo existed as
      `components/atoms/BrandLogo` the whole time. It is 34 mm wide: large
      enough to be the issuer of a clinical document at a glance, small enough
-     that the study title beside it is still the loudest thing on the page. */
+     that the study title beside it is still the loudest thing on the page.
+
+     ★ v0.56.0: THE LETTERHEAD IS A BAND, NOT A RULE. Reported: "not colourful
+     enough … no added value." A modern lab report is not grayscale — it
+     carries its issuer's colour as a full-width band on every sheet, and
+     that one block is most of what separates "printout" from "document
+     someone designed". The band bleeds into the page margins with negative
+     margins + matching padding, so its FLOW height is exactly the 16 mm the
+     geometry has always reserved (`HEADER_H`) — `assertFits` arithmetic is
+     untouched. */
   return `<section class="pg">
   <header class="lh">
     <div class="lh-l">
-      <div class="mark">${wordmark(34)}</div>
+      <div class="mark">${wordmark(34, true)}</div>
       <div class="ttl">${esc(chrome.title)}</div>
     </div>
     <div class="lh-r">${esc(chrome.subtitle)}</div>
@@ -108,7 +119,7 @@ function page(chrome: Chrome, bodyHtml: string): string {
   <div class="body">${bodyHtml}</div>
   <footer class="ft">
     <span>${esc(chrome.brand)}</span>
-    <span>${esc(chrome.pageLabel)}</span>
+    <span class="ft-page">${esc(chrome.pageLabel)}</span>
     <span>${esc(chrome.footRight)}</span>
   </footer>
 </section>`;
@@ -400,7 +411,7 @@ export function interpretationPages(
      report states its conclusion in a ruled block with a heavy left edge —
      the same shape a pathology report puts its impression in — because the
      conclusion is a STATEMENT the issuer is standing behind, not a widget. */
-  const verdict = `<div class="stmt" style="border-left-color:${c.ink}">
+  const verdict = `<div class="stmt" style="border-left-color:${c.ink};background:${c.soft}">
     <div class="stmt-l">
       <div class="stmt-kicker">${esc(labels.pageInterpretation)}</div>
       <div class="stmt-head" style="color:${c.ink}">${esc(copy.headline)}</div>
@@ -520,7 +531,7 @@ export function countInterpretationPages(findings: readonly ScreeningFinding[]):
  * needs to answer "whose, when, on what" before anything else, and they
  * should not have to read a sentence to do it.
  */
-function idBlock(rows: { label: string; value: string }[]): string {
+export function idBlock(rows: { label: string; value: string }[]): string {
   return `<div class="idgrid">${rows
     .map(
       (r) => `<div class="idcell"><span>${esc(r.label)}</span><b>${esc(r.value)}</b></div>`,
@@ -630,6 +641,12 @@ export function statisticsPage(
   analysis: EcgAnalysis,
   screening: EcgScreening | null,
   templates: TemplatePanel | null,
+  /* ★ Non-null for a SIMULATED report (v0.56.0): the identification grid
+     normally opens the interpretation page, but a simulated study has none —
+     which used to mean a report with NO "whose / when / on what" block at
+     all. It renders here instead, and the figures below give up exactly the
+     millimetres it takes. */
+  identity: { label: string; value: string }[] | null,
   chrome: Omit<Chrome, 'title' | 'pageLabel' | 'footRight'>,
   labels: PdfLabels,
   totalPages: number,
@@ -644,17 +661,22 @@ export function statisticsPage(
   }
 
   /* ── Block heights, declared before anything is drawn ── */
+  const withId = identity !== null;
+  const H_ID = withId ? 15 : 0;
+  const H_ID_GAP = withId ? 3 : 0;
   const H_MB_TITLE_FIRST = 7;
-  const H_TILES = 42;
+  const H_TILES = withId ? 38 : 42;
   const H_MB_TITLE = 7;
-  const H_MB = 30;
+  const H_MB = withId ? 24 : 30;
   const H_INT_TITLE = 7;
   const H_INTERVALS = 13 * 5;
   const H_FIG_TITLE = 7;
-  const H_FIGS = 46;
+  const H_FIGS = withId ? 38 : 46;
   const H_AMP_TITLE = 7;
   const H_AMPS = 33;
   assertFits('statistics', [
+    H_ID,
+    H_ID_GAP,
     H_MB_TITLE_FIRST,
     H_TILES,
     H_MB_TITLE,
@@ -705,18 +727,21 @@ export function statisticsPage(
   ].join('');
 
   const figW = (COL_W - 8) / 3;
+  /* The figures shrink when the ID grid is on this page — the millimetres
+     have to come from somewhere, and `assertFits` will not be argued with. */
+  const figSize = withId ? 29 : 38;
   const level = screening ? (LEVEL_COLOR[screening.level] ?? LEVEL_COLOR.clear) : LEVEL_COLOR.clear;
   const figs = `<div class="figrow">
     <div class="fig" style="width:${mm(figW)}">
-      ${hexaxial({ size: 38, degrees: axis.degrees, ink: level.ink })}
+      ${hexaxial({ size: figSize, degrees: axis.degrees, ink: level.ink })}
       <div class="fig-cap">${esc(labels.axisCaption)}</div>
     </div>
     <div class="fig" style="width:${mm(figW)}">
-      ${poincare({ size: 38, rrMs, ink: BRAND })}
+      ${poincare({ size: figSize, rrMs, ink: BRAND })}
       <div class="fig-cap">${esc(labels.poincareCaption)}</div>
     </div>
     <div class="fig" style="width:${mm(figW)}">
-      ${tachogram({ w: figW, h: 38, rrMs, ink: BRAND, meanMs: rate.rrMeanMs })}
+      ${tachogram({ w: figW - 4, h: figSize, rrMs, ink: BRAND, meanMs: rate.rrMeanMs })}
       <div class="fig-cap">${esc(labels.tachogramCaption)}</div>
     </div>
   </div>`;
@@ -753,7 +778,8 @@ export function statisticsPage(
       pageLabel: labels.pageOf.replace('{n}', String(pageNumber)).replace('{total}', String(totalPages)),
       footRight: `${labels.mAnalysed}: ${quality.analysedSeconds} s`,
     },
-    block(H_MB_TITLE_FIRST, sectionTitle(labels.statsRate)) +
+    (withId ? block(H_ID, idBlock(identity)) + block(H_ID_GAP, '') : '') +
+      block(H_MB_TITLE_FIRST, sectionTitle(labels.statsRate)) +
       block(H_TILES, tiles) +
       block(
         H_MB_TITLE,
@@ -787,21 +813,30 @@ export function referencePage(
   totalPages: number,
   pageNumber: number,
 ): string {
+  /* ★ v0.56.0: THE LAYPERSON TUTORIAL IS GONE. "How to read this report" —
+     four numbered sentences explaining that a small square is 40 ms — was
+     doctor-irrelevant on a document addressed to a doctor, and its fourth
+     sentence had been FALSE since v0.49 (it promised continuation sheets
+     that no longer exist). What replaced it earns its millimetres: the
+     SIGNAL QUALITY table — SQI, analysed window, beats, RR range, ectopy
+     burden — which the engine has always computed and the paper never
+     showed, and which is the first thing a clinician uses to decide how
+     much to trust every number before it. */
   const H_MAP_TITLE = 7;
   const H_MAP = 62;
+  const H_QUAL_TITLE = 7;
+  const H_QUAL = 34;
   const H_BLIND_TITLE = 7;
   const H_BLIND = 34;
-  const H_HOW_TITLE = 7;
-  const H_HOW = 34;
   const H_NOTE = note ? 26 : 0;
   const H_DISC = 22;
   assertFits('reference', [
     H_MAP_TITLE,
     H_MAP,
+    H_QUAL_TITLE,
+    H_QUAL,
     H_BLIND_TITLE,
     H_BLIND,
-    H_HOW_TITLE,
-    H_HOW,
     H_NOTE,
     H_DISC,
   ]);
@@ -832,7 +867,30 @@ export function referencePage(
         .join('')}</ul>`
     : '';
 
-  const how = `<ol class="how">${labels.howToRead.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>`;
+  /* The quality table. `measureRow`'s ruled shape, hand-rolled where a value
+     is a range rather than a number. Ectopy comes from the screening stats
+     and is honestly '—' on a simulated study, which is never screened. */
+  const { rate, quality } = analysis;
+  const rrRange =
+    rate.rrMinMs !== null && rate.rrMaxMs !== null
+      ? `${Math.round(rate.rrMinMs)}–${Math.round(rate.rrMaxMs)}`
+      : '—';
+  const ectopy =
+    screening && screening.stats.ectopyBurdenPct !== null
+      ? screening.stats.ectopyBurdenPct.toFixed(1)
+      : '—';
+  const qualRow = (label: string, value: string, unit: string) =>
+    `<tr><th>${esc(label)}</th><td class="num">${value}</td><td class="unit">${esc(unit)}</td><td class="ref">—</td><td class="flag"></td></tr>`;
+  const qualityTable = `<div class="qualwrap"><table class="mt">
+    <thead><tr><th>${esc(labels.measureCol)}</th><th class="num">${esc(labels.resultCol)}</th><th></th><th class="ref">${esc(labels.refCol)}</th><th class="flag"></th></tr></thead>
+    <tbody>
+      ${qualRow(labels.mSqi, String(quality.sqi), '%')}
+      ${qualRow(labels.mAnalysed, String(quality.analysedSeconds), 's')}
+      ${qualRow(labels.mBeats, String(rate.beatsAnalyzed), '')}
+      ${qualRow(labels.mRrRange, rrRange, 'ms')}
+      ${qualRow(labels.mEctopy, ectopy, '%')}
+    </tbody>
+  </table></div>`;
 
   return page(
     {
@@ -843,10 +901,10 @@ export function referencePage(
     },
     block(H_MAP_TITLE, sectionTitle(labels.leadMapTitle)) +
       block(H_MAP, map) +
+      block(H_QUAL_TITLE, sectionTitle(labels.statsQuality)) +
+      block(H_QUAL, qualityTable) +
       block(H_BLIND_TITLE, sectionTitle(labels.blindTitle)) +
       block(H_BLIND, blind) +
-      block(H_HOW_TITLE, sectionTitle(labels.howToReadTitle)) +
-      block(H_HOW, how) +
       (note
         ? block(H_NOTE, `<div class="note"><b>${esc(labels.noteTitle)}</b><br/>${esc(note)}</div>`)
         : '') +
@@ -870,27 +928,34 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
       padding: 10mm 12mm 8mm; page-break-after: always; break-after: page; }
 .pg:last-child { page-break-after: avoid; break-after: avoid; }
 
-.lh { height: 16mm; display: flex; align-items: flex-start; justify-content: space-between;
-      border-bottom: 0.6mm solid ${INK}; padding-bottom: 2mm; }
+/* ★ THE LETTERHEAD BAND (v0.56.0). Full-bleed brand navy on every page —
+   negative margins pull it over the page padding, and the matching top
+   padding hands the space back, so the band's height IN FLOW is exactly the
+   16 mm HEADER_H has always reserved. The blue keyline under it is the
+   report's accent running the full width of every sheet. */
+.lh { height: 26mm; display: flex; align-items: flex-start; justify-content: space-between;
+      background: ${BRAND_DEEP}; margin: -10mm -12mm 0; padding: 11mm 12mm 2mm;
+      border-bottom: 0.8mm solid ${BLUE}; }
 .mark { line-height: 0; }
 .mark svg { display: block; }
 .ttl { font-size: 11pt; font-weight: 800; letter-spacing: 0.4px; margin-top: 1.8mm;
-       color: ${INK}; text-transform: uppercase; }
-.lh-r { font-size: 7pt; color: ${SLATE}; text-align: right; line-height: 1.55;
+       color: ${PAPER}; text-transform: uppercase; }
+.lh-r { font-size: 7pt; color: #C3CDE2; text-align: right; line-height: 1.55;
         max-width: 82mm; overflow: hidden; white-space: pre-line; }
 
 .body { height: ${BODY_H}mm; }
 .blk { overflow: hidden; }
 .ft { position: absolute; left: 12mm; right: 12mm; bottom: 8mm; height: 7mm;
       display: flex; align-items: flex-end; justify-content: space-between;
-      font-size: 6.6pt; color: ${MUTED}; border-top: 0.2mm solid ${HAIRLINE};
+      font-size: 6.6pt; color: ${MUTED}; border-top: 0.5mm solid ${BLUE};
       letter-spacing: 0.3px; }
+.ft-page { color: ${BRAND}; font-weight: 800; }
 
-/* ★ THE SECTION RULE. Uppercase, letterspaced, on a heavy hairline that runs
-   the full column. This one selector does more to make the sheet read as a
-   document than any other rule in the file. */
+/* ★ THE SECTION RULE. Uppercase, letterspaced, on a rule that runs the full
+   column — in the report's blue (v0.56.0), so every section opens with the
+   same accent the letterhead closes with. */
 .sec { font-size: 7pt; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase;
-       color: ${INK}; border-bottom: 0.35mm solid ${INK}; padding-bottom: 1.2mm; }
+       color: ${BRAND}; border-bottom: 0.45mm solid ${BLUE}; padding-bottom: 1.2mm; }
 
 /* -- ECG -- */
 .sheet { border: 0.25mm solid ${HAIRLINE}; overflow: hidden;
@@ -899,8 +964,11 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 .cap { display: flex; justify-content: space-between; align-items: center;
        font-size: 6.6pt; color: ${SLATE}; padding-top: 2mm; letter-spacing: 0.2px; }
 
-/* -- Identification grid -- */
-.idgrid { display: flex; flex-wrap: wrap; border-top: 0.2mm solid ${HAIRLINE}; }
+/* -- Identification grid: a tinted band with the brand's heavy left edge,
+      so "whose / when / on what" is the first colour block after the
+      letterhead (v0.56.0) -- */
+.idgrid { display: flex; flex-wrap: wrap; background: ${BRAND_SOFT};
+          border-left: 1.4mm solid ${BRAND}; padding: 0 0 0 2.6mm; }
 .idcell { width: 25%; border-bottom: 0.2mm solid ${HAIRLINE}; padding: 1.6mm 2mm 1.6mm 0;
           overflow: hidden; }
 .idcell span { display: block; font-size: 6.2pt; letter-spacing: 0.8px; text-transform: uppercase;
@@ -908,7 +976,10 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 .idcell b { display: block; font-size: 8.5pt; font-weight: 700; margin-top: 0.4mm;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* -- The interpretation statement -- */
+/* -- The interpretation statement. The background is the LEVEL's soft tint,
+      set inline by the builder (v0.56.0) — a clear result sits on the brand
+      wash, an urgent one on the red wash, so the verdict is a colour block
+      before it is a sentence. -- */
 .stmt { display: flex; align-items: center; justify-content: space-between; gap: 6mm;
         height: 100%; border-left: 1.4mm solid; padding: 3mm 4mm; background: ${SURFACE}; }
 .stmt-l { min-width: 0; }
@@ -940,17 +1011,20 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .empty { font-size: 8pt; color: ${SLATE}; padding: 3mm 0; }
 
-/* -- Measurement tables -- */
+/* -- Measurement tables. BRAND header rows and a soft blue zebra (v0.56.0):
+      the shape every lab report prints, in the issuer's colour. Cell padding
+      trimmed 0.2 mm to pay for the header's fill. -- */
 .twocol { display: flex; gap: 6mm; height: 100%; }
 .twocol > table { flex: 1; }
 table.mt { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
 table.mt thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
-                    text-transform: uppercase; color: ${MUTED}; text-align: left;
-                    padding: 0 1.2mm 1mm 0; border-bottom: 0.35mm solid ${INK}; }
+                    text-transform: uppercase; color: ${PAPER}; text-align: left;
+                    background: ${BRAND}; padding: 1mm 1.2mm; }
+table.mt tbody tr:nth-child(even) th, table.mt tbody tr:nth-child(even) td { background: #F2F6FD; }
 table.mt tbody th { text-align: left; font-weight: 600; color: ${SLATE};
-                    padding: 1.5mm 1.2mm 1.5mm 0; border-bottom: 0.2mm solid ${HAIRLINE};
+                    padding: 1.3mm 1.2mm 1.3mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE};
                     white-space: nowrap; overflow: hidden; }
-table.mt td { padding: 1.5mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
+table.mt td { padding: 1.3mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
 table.mt .num { text-align: right; font-weight: 800; font-size: 8.6pt; width: 16mm; }
 table.mt .unit { color: ${MUTED}; font-size: 6.8pt; width: 9mm; }
 table.mt .ref { text-align: right; color: ${MUTED}; font-size: 6.8pt; width: 16mm; }
@@ -958,19 +1032,25 @@ table.mt .flag { text-align: center; width: 6mm; font-weight: 800; font-size: 8p
 table.mt tr.hi .num, table.mt tr.hi .flag { color: ${GOLD}; }
 table.mt tr.lo .num, table.mt tr.lo .flag { color: ${BLUE}; }
 
-/* -- Figures -- */
+/* -- Figures. Every data visualisation sits on a soft blue panel with a
+      blue keyline (v0.56.0) — the figures ARE the added value, and a panel
+      says so before the caption is read. -- */
 .figrow { display: flex; gap: 4mm; height: 100%; }
-.fig { text-align: center; }
+.fig { text-align: center; background: ${BLUE_SOFT}; border-top: 0.5mm solid ${BLUE};
+       padding-top: 1.5mm; }
 .fig-cap { font-size: 6.2pt; color: ${MUTED}; line-height: 1.3; margin-top: 1mm; }
+/* The quality table shares .mt but takes only the width it needs. */
+.qualwrap { width: 120mm; }
 
 table.amp { width: 100%; border-collapse: collapse; font-size: 7.6pt; }
 table.amp thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
-                     text-transform: uppercase; color: ${MUTED}; text-align: right;
-                     padding: 0 1.4mm 1mm; border-bottom: 0.35mm solid ${INK}; }
+                     text-transform: uppercase; color: ${PAPER}; text-align: right;
+                     background: ${BRAND}; padding: 1mm 1.4mm; }
 table.amp thead th:first-child { text-align: left; }
+table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: #F2F6FD; }
 table.amp tbody th { text-align: left; font-weight: 800; font-size: 8pt;
-                     padding: 1.2mm 1.4mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
-table.amp td { text-align: right; padding: 1.2mm 1.4mm;
+                     padding: 1mm 1.4mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
+table.amp td { text-align: right; padding: 1mm 1.4mm;
                border-bottom: 0.2mm solid ${HAIRLINE}; }
 td.ampcell { width: 44mm; padding-right: 0; }
 
@@ -988,8 +1068,9 @@ td.ampcell { width: 44mm; padding-right: 0; }
 .a-found { font-weight: 800; }
 .auditnote { font-size: 6.2pt; color: ${MUTED}; margin-top: 1.6mm; line-height: 1.4; }
 
-/* -- Median beats -- */
-.mbrow { display: flex; gap: 2mm; height: 100%; }
+/* -- Median beats: the same blue panel as the other figures (v0.56.0) -- */
+.mbrow { display: flex; gap: 2mm; height: 100%; background: ${BLUE_SOFT};
+         border-top: 0.5mm solid ${BLUE}; padding: 1mm 2mm 0; }
 .mbcell { flex: none; }
 .mblead { font-size: 6.6pt; font-weight: 800; color: ${INK}; margin-bottom: 0.6mm;
           letter-spacing: 0.5px; }
@@ -1005,12 +1086,23 @@ td.ampcell { width: 44mm; padding-right: 0; }
 .wall span { color: ${SLATE}; }
 .wall-off b, .wall-off span { color: ${MUTED}; }
 ul.blind { margin: 0; padding-left: 4mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.5; }
-ol.how { margin: 0; padding-left: 4.5mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.5; }
-.note { font-size: 7.6pt; line-height: 1.45; background: ${SURFACE};
-        border-left: 1mm solid ${HAIRLINE}; padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
+.note { font-size: 7.6pt; line-height: 1.45; background: ${BRAND_SOFT};
+        border-left: 1mm solid ${BRAND}; padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
 .disc { font-size: 6.4pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
 `;
 
+// v2.0.0 — The colour pass (v0.56.0), reported as "not colourful enough, no
+//          added value": a full-bleed navy letterhead band with the white
+//          wordmark on every page (flow height unchanged — assertFits
+//          arithmetic untouched), blue section rules and footer keylines,
+//          BRAND header rows + soft blue zebra on every ruled table, blue
+//          panels under every figure, the verdict statement on its level's
+//          tint, and the identification grid as a tinted band. Content: the
+//          layperson "how to read" tutorial is gone (its fourth sentence had
+//          been false since v0.49) and the SIGNAL QUALITY table — SQI,
+//          analysed window, beats, RR range, ectopy burden — prints at last;
+//          a simulated report now carries the identification grid on its
+//          statistics page instead of having none at all.
 // v1.0.0 — Every page of the report at an exact millimetre, with assertFits
 //          refusing a layout that would spill. Page 1 is the six-lead ECG at
 //          full page; then the verdict, the statistics with real figures, and

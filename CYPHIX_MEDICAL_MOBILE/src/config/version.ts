@@ -1,7 +1,57 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.55.0';
-export const APP_BUILD_LABEL = 'a control may not sit on its own label, and the privacy line stops lying';
+export const APP_VERSION = '0.56.0';
+export const APP_BUILD_LABEL = 'the report knows whose it is, wears the brand, and shows itself first';
+
+// v0.56.0 - "The PDF does not look like a professional report (except the
+//           waveform page) - not colourful enough, has things a doctor does
+//           not need, no added value. And I want to SEE the report in the
+//           app before exporting."  ⚠️ NATIVE REBUILD: app.json 0.34.0→0.35.0
+//           (react-native-webview). Ship with `eas build --platform ios
+//           --profile production` then `eas submit`; do NOT `eas update`
+//           until the 0.35.0 binary is live (§5A.2). v0.53-0.55 were
+//           published OTA to runtime 0.34.0 BEFORE this bump.
+//           * ★ THE BUG THAT MATTERED MOST WAS NOT COLOUR: `patientName` and
+//             the ScreeningContext existed in the builder since v0.48 and
+//             were NEVER PASSED. The letterhead named nobody, the ID grid
+//             printed "Patient —", and the PDF screened without sex/age so
+//             the paper could DISAGREE with the Findings tab it was exported
+//             from. `useReportContext` now attaches both, under the same
+//             "provably theirs" guard as the screen (patientContext.ts) - a
+//             clinician exporting someone else's study gets an anonymous
+//             conservative report, never a mislabelled one.
+//           * THE COLOUR PASS (the user chose the bolder direction): a
+//             full-bleed navy letterhead band with the WHITE wordmark on
+//             every page (negative margins - flow height unchanged, so the
+//             assertFits arithmetic is untouched), blue section rules and
+//             footer keylines, BRAND header rows + soft blue zebra on every
+//             ruled table, blue panels under every figure, the verdict
+//             statement on its level's tint, the ID grid as a tinted band.
+//             Green stays reference-band-only (v0.49) and there are still no
+//             pills or rounded cards (v0.50) - it is a lab report in the
+//             issuer's colour, not the app on paper.
+//           * CONTENT: the layperson "how to read" tutorial is CUT (wrong
+//             reader, and its fourth sentence - continuation sheets - has
+//             been false since v0.49); the SIGNAL QUALITY table (SQI,
+//             analysed window, beats, RR range, ectopy burden) prints at
+//             last; a SIMULATED report now carries the ID grid on its
+//             statistics page instead of having none anywhere; dead labels
+//             deleted from the contract.
+//           * THE EXPORT HAS A FACE: ExportOverlay blocks and says
+//             "preparing" while the DSP + 43 rules + print engine run on the
+//             JS thread - it used to be fire-and-forget, which read as a
+//             dead tap.
+//           * ★ THE PREVIEW: ReportPreviewScreen renders the EXACT HTML the
+//             printer receives (buildRecordingHtml) in a WebView with an A4
+//             viewport - one source of truth, previewed and printed; a third
+//             hand-kept page layout was rejected. The ⋯ menu leads with
+//             "View report"; on a binary without the module (OTA to 0.34.0)
+//             `OptionalWebView` is null and the same item falls back to the
+//             direct share - no dead menu entries.
+//           * scripts/verify-pdf.ts makes the v0.48 "nine cases" Node
+//             harness repeatable: page counts vs footers, letterhead per
+//             page, ID grid everywhere incl. simulated, quality table,
+//             name present iff passed, no unsized SVGs / NaN / placeholders.
 
 // v0.55.0 - "The Settings tab is a real mess - the texts climb on top of the
 //           tiles. Not professional, not user friendly."

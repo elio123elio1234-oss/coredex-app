@@ -1,5 +1,97 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.56.0 - 2026-08-14 - the report knows whose it is, wears the brand, and shows itself first
+
+*"The PDF does not look like a professional medical report (except the page
+with the waves) - not colourful enough, there are things a doctor does not
+need, it gives no added value. I also want to see the report inside the app
+before exporting - like a preview."*
+
+⚠️ **NATIVE REBUILD REQUIRED.** This change adds `react-native-webview`
+(13.15.0, the SDK 54 pin), so `app.json` goes 0.34.0 → **0.35.0**. To ship:
+`eas build --platform ios --profile production` then `eas submit --platform
+ios --latest`. Per §5A.2, do **not** `eas update` until the 0.35.0 binary is
+installed — updates now target the new runtime. v0.53–v0.55 were published
+OTA to runtime 0.34.0 *before* this bump, so the phone already has them.
+
+### The bug that mattered more than colour: the report named nobody
+
+`buildRecordingHtml` has accepted `patientName` and a `ScreeningContext`
+since v0.48 — and no caller ever passed them. Three consequences: the
+letterhead carried no patient line, the identification grid printed
+"Patient —", and the PDF's screening ran without sex/age, so **the paper
+could disagree with the Findings tab it was exported from** (sex moves the
+long-QT threshold by 10 ms). `useReportContext` now attaches both, under the
+same "provably theirs" subject-match guard the screen uses
+(`patientContext.ts`, one copy since v0.53.0). A clinician exporting someone
+else's study gets an anonymous, conservatively-thresholded report — never a
+mislabelled one.
+
+### The colour pass — a lab report in the issuer's colour
+
+The user chose the bolder direction, knowing v0.49 removed green-as-identity
+and v0.50 removed the app idioms. Both rulings stand; what changed is that
+"documentary" no longer means "grayscale":
+
+- a **full-bleed navy letterhead band** with the white wordmark on every
+  page — negative margins with matching padding, so the band's flow height
+  is exactly the 16 mm `HEADER_H` always reserved and the `assertFits`
+  arithmetic is untouched;
+- **blue section rules** and a blue footer keyline with brand page numbers;
+- **BRAND header rows and a soft blue zebra** on every ruled table;
+- **blue panels** under every figure (hexaxial, Poincaré, tachogram, median
+  beats) — the figures are the added value, and a panel says so;
+- the **verdict statement sits on its level's tint** (brand wash for clear,
+  red wash for urgent);
+- the identification grid is a tinted band with the brand's heavy left edge.
+
+Still no pills, no rounded cards, and green survives only as the reference
+band — the document idiom v0.50 established is intact, in colour.
+
+### Content: cut what serves nobody, print what was missing
+
+- The layperson **"how to read the ECG sheet" tutorial is gone** — it was
+  addressed to the wrong reader on a clinical document, and its fourth
+  sentence ("a longer recording continues on the next sheet") has been FALSE
+  since v0.49 removed pagination.
+- The **signal-quality table finally prints**: SQI, analysed window, beats
+  analysed, RR range, ectopy burden — labels that were declared in v0.48 and
+  never rendered. It is the first thing a clinician uses to decide how much
+  to trust every number before it.
+- A **simulated recording now carries the identification grid** on its
+  statistics page. It used to have none at all — the grid lived only on the
+  interpretation page, which simulated studies rightly do not get.
+- Dead labels removed from the copy contract (`sheetOf`, evidence/confidence
+  /poincare/tachogram titles, `mPBefore`, the how-to list).
+
+### The export has a face, and the report shows itself first
+
+- **ExportOverlay**: the whole DSP chain, 43 rules and the print engine run
+  on the JS thread — seconds on a long recording — and it used to be
+  fire-and-forget: the sheet closed and nothing happened until the share
+  sheet appeared. Now a blocking scrim says "Preparing the report…".
+- **ReportPreviewScreen**: renders the *exact* HTML `printToFileAsync`
+  receives, in a WebView with an A4-width viewport and pinch zoom. One
+  source of truth, previewed and printed — a third hand-maintained copy of
+  four pages of layout was rejected on the grounds that every figure already
+  exists twice. The ⋯ menu now leads with "View report"; **Share PDF** is the
+  preview's one action.
+- **`OptionalWebView`**: the WebView resolves behind a require guard (the
+  `cyphix-ble` pattern). On a binary without the module — a 0.34.0 install
+  receiving future OTAs — the same menu item falls back to the direct share.
+  A preview is a luxury; the export never breaks for its sake.
+
+### Verified
+
+`tsc --noEmit` · `expo export` both platforms · `expo-doctor` · **and
+`npx tsx scripts/verify-pdf.ts`** — the v0.48 "nine cases" harness, now a
+committed script: build never throws (assertFits holds), footer page counts
+match rendered pages, letterhead on every page, ID grid everywhere including
+simulated, quality table present, patient name present exactly when passed,
+no unsized SVGs / NaN / unresolved placeholders. All nine pass. That proves
+the arithmetic; the printed sheet and the preview stay 🔬 until touched on a
+device.
+
 ## v0.55.0 - 2026-08-14 - a control may not sit on its own label, and the privacy line stops lying
 
 *"The Settings tab is a real mess - the texts climb on top of the tiles. Not

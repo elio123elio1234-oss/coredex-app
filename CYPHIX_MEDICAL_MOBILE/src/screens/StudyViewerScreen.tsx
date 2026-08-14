@@ -74,12 +74,14 @@ import {
   type RecordingAnnotation,
 } from '@cyphix/shared';
 import GlassSurface from '@/components/atoms/GlassSurface';
+import { OptionalWebView } from '@/components/atoms/OptionalWebView';
 import ToolToggle from '@/components/atoms/ToolToggle';
 import ActionSheet, { type ActionSheetItem } from '@/components/molecules/ActionSheet';
 import AnnotationComposer from '@/components/molecules/AnnotationComposer';
 import ClinicalNote from '@/components/molecules/ClinicalNote';
 import CompareSheet from '@/components/molecules/CompareSheet';
 import ConfirmDialog from '@/components/molecules/ConfirmDialog';
+import ExportOverlay from '@/components/molecules/ExportOverlay';
 import { CAL_WIDTH_MM, GHOST_NUDGE_LIMIT_MM } from '@/components/molecules/EcgReviewStrip';
 import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
@@ -96,6 +98,7 @@ import {
 import { IDENTITY_OVERLAY_ID, useIdentityGhost } from '@/features/history/hooks/useIdentityGhost';
 import { useRecordingNote } from '@/features/history/hooks/useRecordingNote';
 import { usePdfLabels } from '@/features/history/hooks/usePdfLabels';
+import { useReportContext } from '@/features/history/hooks/useReportContext';
 import { useRecordingView } from '@/features/history/hooks/useRecordingView';
 import { useScreening } from '@/features/history/hooks/useScreening';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
@@ -135,6 +138,7 @@ type Tab = 'waveform' | 'measurements' | 'screening';
 type ViewerRoute = RouteProp<{ StudyViewer: { id: string } }, 'StudyViewer'>;
 type Nav = {
   goBack: () => void;
+  navigate: (screen: string, params?: object) => void;
   setOptions: (o: { orientation?: 'portrait_up' | 'landscape' }) => void;
 };
 
@@ -243,6 +247,9 @@ export default function StudyViewerScreen() {
      signals. Returns null for a simulated study — see the hook. */
   const screening = useScreening(recording, view);
   const pdfLabels = usePdfLabels();
+  /* Who the printed report is about — same guard as `useScreening`. */
+  const reportCtx = useReportContext(recording);
+  const [exporting, setExporting] = useState(false);
 
   /* ★ TWO SOURCES, ONE GHOST — v0.43.0.
      The comparison can now be either another STUDY or the patient's own
@@ -428,8 +435,13 @@ export default function StudyViewerScreen() {
 
 
   const runExport = async (kind: 'csv' | 'edf' | 'pdf') => {
-    if (!recording) return;
+    if (!recording || exporting) return;
+    setExporting(true);
     try {
+      /* One painted frame before the synchronous work starts — without it
+         the overlay is set and never seen, and the export reads as a dead
+         tap (the old, reported behaviour). */
+      await new Promise<void>((resolve) => setTimeout(resolve, 30));
       if (kind === 'csv') {
         await shareFile(
           recordingFilename(recording, 'csv'),
@@ -448,13 +460,27 @@ export default function StudyViewerScreen() {
         /* The report re-runs the whole chain from RAW rather than taking
            `view` — a printed artefact must carry the full standard filter
            set, not whichever stages the reader happened to have switched
-           off on screen (see recordingPdf's header). */
-        await shareRecordingPdf({ recording, labels: pdfLabels }, tr('printReport'));
+           off on screen (see recordingPdf's header).
+           ★ v0.56.0: the patient rides along, under the same "provably
+           theirs" guard as the Findings tab — the paper used to print
+           "Patient —" and screen without sex/age, so it could disagree
+           with the screen it was exported from. */
+        await shareRecordingPdf(
+          {
+            recording,
+            labels: pdfLabels,
+            patient: reportCtx.context,
+            patientName: reportCtx.patientName,
+          },
+          tr('printReport'),
+        );
       }
       exportAudit(kind);
     } catch {
       exportAudit(kind, false);
       setBanner(tr('histExportFailed'));
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -462,13 +488,24 @@ export default function StudyViewerScreen() {
   const actionItems: ActionSheetItem[] = [
     ...(features.has('exportPdf')
       ? [
-          {
-            id: 'pdf',
-            label: tr('printReport'),
-            hint: tr('pdfHint'),
-            icon: 'document-text-outline' as const,
-            onSelect: () => void runExport('pdf'),
-          },
+          /* Preview-first when this binary carries the WebView; the direct
+             share is the fallback on older builds receiving this via OTA —
+             a menu item must never dead-end (see OptionalWebView). */
+          OptionalWebView
+            ? {
+                id: 'pdf',
+                label: tr('viewerViewReport'),
+                hint: tr('pdfHint'),
+                icon: 'document-text-outline' as const,
+                onSelect: () => navigation.navigate('ReportPreview', { id: selectedId }),
+              }
+            : {
+                id: 'pdf',
+                label: tr('printReport'),
+                hint: tr('pdfHint'),
+                icon: 'document-text-outline' as const,
+                onSelect: () => void runExport('pdf'),
+              },
         ]
       : []),
     ...(features.has('exportRaw')
@@ -1340,6 +1377,9 @@ export default function StudyViewerScreen() {
       </GlassSurface>
 
       {sheets}
+
+      {/* The export's honest blocking state — see ExportOverlay. */}
+      {exporting && <ExportOverlay label={tr('pdfPreparing')} />}
     </View>
   );
 }
@@ -1510,6 +1550,12 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.2.0 - The report export finally carries the patient (name + sex/age,
+//          under the Findings tab's own "provably theirs" guard — the paper
+//          could disagree with the screen before), shows an honest blocking
+//          overlay while the DSP and print run, and the ⋯ menu leads to the
+//          WYSIWYG ReportPreview when this binary has the WebView, falling
+//          back to the direct share when it does not.
 // v5.1.0 - Findings LEADS the segmented control and is the initial tab for a
 //          patient (a clinician still lands on ECG; the order is the same for
 //          everyone so the control can be learned). Reverses v5.0.0's

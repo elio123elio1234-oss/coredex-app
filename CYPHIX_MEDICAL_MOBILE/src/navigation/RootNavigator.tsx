@@ -57,6 +57,7 @@ import LimbMeasureScreen from '@/screens/LimbMeasureScreen';
 import PersonalDetailsScreen from '@/screens/PersonalDetailsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import RemindersScreen from '@/screens/RemindersScreen';
+import ReportPreviewScreen from '@/screens/ReportPreviewScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import StudyViewerScreen from '@/screens/StudyViewerScreen';
 import TestsScreen from '@/screens/TestsScreen';
@@ -153,6 +154,13 @@ export default function RootNavigator() {
           component={PersonalDetailsScreen}
           options={{ animation: 'slide_from_right' }}
         />
+        {/* The report, exactly as it prints, before it is shared. Pushed from
+            the study viewer's actions menu. */}
+        <Stack.Screen
+          name="ReportPreview"
+          component={ReportPreviewScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
         {/* Reading a study is a full-screen job: the dock's five destinations
             would be competing with a toolbar, and the trace wants the height.
             It stays PORTRAIT (inherited from the stack) — the six leads are
@@ -168,6 +176,7 @@ export default function RootNavigator() {
   );
 }
 
+// v3.4.0 — Adds the ReportPreview route, pushed from the study viewer.
 // v3.3.0 — Adds the PersonalDetails route, pushed from Profile.
 // v3.2.0 — Adds the Reminders route, pushed from Settings.
 // v3.1.0 — Adds the StudyViewer route (Scan History's reading screen) above the

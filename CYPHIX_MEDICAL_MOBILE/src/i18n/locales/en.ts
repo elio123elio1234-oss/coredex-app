@@ -392,6 +392,13 @@ export const en = {
   histExportFailed: 'Could not export this recording.',
   printReport: 'Share PDF report',
   pdfHint: 'The printable sheet, at 25 mm/s',
+  /* ── Report preview (v0.56.0) ── */
+  viewerViewReport: 'View report',
+  pdfPreviewTitle: 'Report',
+  pdfPreviewShare: 'Share PDF',
+  pdfPreviewUnavailable:
+    'The preview needs a newer build of the app. You can still share the PDF from the study menu.',
+  pdfPreparing: 'Preparing the report…',
   pdfSheetOf: 'Sheet {n} of {total}',
   reportRecorded: 'Recorded',
 
@@ -1271,8 +1278,6 @@ export const en = {
   pdfCriterion: 'Criterion',
   pdfBorderline: 'borderline',
   pdfNoFindings: 'No abnormal pattern was detected in what these six leads can observe. Read this together with the limitations on the last page.',
-  pdfEvidenceTitle: 'Measured',
-  pdfConfidenceTitle: 'Confidence',
   pdfStatsVariability: 'Axis and beat-to-beat variability',
   mRrVariation: 'RR variation',
 
@@ -1285,11 +1290,9 @@ export const en = {
   pdfWallInferior: 'the bottom (inferior) wall',
   pdfWallLateral: 'the side (high lateral) wall',
   pdfWallNotSeen: 'the front and back walls — chest electrodes, NOT recorded here',
-  pdfHowToTitle: 'How to read the ECG sheet',
-  pdfHow1: 'Paper speed 25 mm/s and gain 10 mm/mV. One small square is 40 ms wide and 0.1 mV tall; one large square is 200 ms and 0.5 mV.',
-  pdfHow2: 'The step at the left of every lead is a 1 mV calibration pulse. It should stand exactly two large squares tall — if it does not, the gain on this sheet is not what the label says.',
-  pdfHow3: 'The short marks along the top of lead II are the detected R peaks. Every rate and interval on the following pages was computed from those detections.',
-  pdfHow4: 'A recording longer than about 7 seconds continues on the next sheet, consecutive in time. Nothing is truncated.',
+  /* v0.56.0: the four-sentence "how to read" tutorial was removed from the
+     report — addressed to the wrong reader, and its last sentence had been
+     false since v0.49 (there are no continuation sheets). */
 
   pdfSheetWindow: '{from}\u2013{to} s shown of {total} s recorded',
   pdfAuditTitle: 'Every check that was made',

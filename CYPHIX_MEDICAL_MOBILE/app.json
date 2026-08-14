@@ -2,7 +2,7 @@
   "expo": {
     "name": "CYPHIX Medical",
     "slug": "elio-el-hassrouny",
-    "version": "0.34.0",
+    "version": "0.35.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "cyphix",

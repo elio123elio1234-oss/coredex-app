@@ -42,7 +42,6 @@ export interface PdfLabels {
   pageInterpretation: string;
   pageStatistics: string;
   pageReference: string;
-  sheetOf: string;
   /** "0.0-7.1 s of 9.9 s recorded" — the window against the total. */
   sheetWindow: string;
   pageOf: string;
@@ -52,7 +51,6 @@ export interface PdfLabels {
   checksRan: string;
   findingsTitle: string;
   noFindings: string;
-  evidenceTitle: string;
   criterion: string;
   borderlineNote: string;
   /** The 43-check audit. */
@@ -61,7 +59,6 @@ export interface PdfLabels {
   medianBeatTitle: string;
   /** Carries {used} and {rejected}. */
   medianBeatCaption: string;
-  confidenceTitle: string;
 
   /* ── Statistics page ── */
   statsRate: string;
@@ -83,29 +80,27 @@ export interface PdfLabels {
   mRmssd: string;
   mRrVariation: string;
   mBeats: string;
-  mPBefore: string;
   mSqi: string;
   mAnalysed: string;
   mEctopy: string;
 
-  poincareTitle: string;
   poincareCaption: string;
-  tachogramTitle: string;
   tachogramCaption: string;
   axisCaption: string;
 
   ampLead: string;
   ampUnit: string;
 
-  /* ── Reference page ── */
+  /* ── Reference page ──
+     v0.56.0: the layperson "how to read" list is gone (it was addressed to
+     the wrong reader, and its fourth sentence had been false since v0.49);
+     the signal-quality table renders in its place. */
   leadMapTitle: string;
   leadMapCaption: string;
   wallInferior: string;
   wallLateral: string;
   wallNotSeen: string;
   blindTitle: string;
-  howToReadTitle: string;
-  howToRead: string[];
   disclaimer: string;
   noteTitle: string;
 
@@ -117,6 +112,10 @@ export interface PdfLabels {
   blindSpot: (b: BlindSpotId) => string;
 }
 
+// v1.1.0 — Dead labels removed (declared, never rendered: sheetOf,
+//          evidence/confidence/poincare/tachogram titles, mPBefore, the
+//          how-to-read list); the quality vocabulary (mSqi/mAnalysed/mBeats/
+//          mRrRange/mEctopy/statsQuality) finally has a table to appear in.
 // v1.0.0 — The report's copy contract: static chrome spelled out, the engine's
 //          enumerated vocabulary resolved by callback so adding a rule does not
 //          touch this file.

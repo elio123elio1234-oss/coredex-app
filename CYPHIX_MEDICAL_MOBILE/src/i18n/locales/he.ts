@@ -370,6 +370,13 @@ export const he: Record<TranslationKey, string> = {
   histExportFailed: 'לא הצלחנו לייצא את ההקלטה.',
   printReport: 'שיתוף דוח PDF',
   pdfHint: 'הדף להדפסה, בקנה 25 mm/s',
+  /* ── תצוגה מקדימה של הדוח (v0.56.0) ── */
+  viewerViewReport: 'צפייה בדוח',
+  pdfPreviewTitle: 'דוח',
+  pdfPreviewShare: 'שיתוף PDF',
+  pdfPreviewUnavailable:
+    'התצוגה המקדימה דורשת גרסה חדשה יותר של האפליקציה. עדיין אפשר לשתף את ה-PDF מתפריט ההקלטה.',
+  pdfPreparing: 'מכין את הדוח…',
   pdfSheetOf: 'דף {n} מתוך {total}',
   reportRecorded: 'נרשם',
 
@@ -1168,8 +1175,6 @@ export const he: Record<TranslationKey, string> = {
   pdfCriterion: 'קריטריון',
   pdfBorderline: 'גבולי',
   pdfNoFindings: 'לא זוהה דפוס חריג בתחום שששת הלידים הללו יכולים לראות. יש לקרוא זאת יחד עם המגבלות שבעמוד האחרון.',
-  pdfEvidenceTitle: 'נמדד',
-  pdfConfidenceTitle: 'רמת ודאות',
   pdfStatsVariability: 'ציר ושונות בין פעימות',
   mRrVariation: 'שונות RR',
 
@@ -1182,11 +1187,7 @@ export const he: Record<TranslationKey, string> = {
   pdfWallInferior: 'הדופן התחתונה',
   pdfWallLateral: 'הדופן הצדדית (לטרלית גבוהה)',
   pdfWallNotSeen: 'הדפנות הקדמית והאחורית — אלקטרודות חזה, אינן מוקלטות כאן',
-  pdfHowToTitle: 'כיצד לקרוא את גיליון הא.ק.ג',
-  pdfHow1: 'מהירות נייר 25 מ"מ/שנייה והגבר 10 מ"מ/מילי-וולט. ריבוע קטן אחד הוא 40 מילישניות ברוחב ו-0.1 מילי-וולט בגובה; ריבוע גדול הוא 200 מילישניות ו-0.5 מילי-וולט.',
-  pdfHow2: 'המדרגה בצד של כל ליד היא דופק כיול של 1 מילי-וולט. עליה לעמוד בגובה שני ריבועים גדולים בדיוק — אם לא, ההגבר בגיליון הזה אינו מה שהתווית אומרת.',
-  pdfHow3: 'הסימונים הקצרים לאורך החלק העליון של ליד II הם שיאי ה-R שזוהו. כל קצב וכל מרווח בעמודים הבאים חושבו מהזיהויים האלה.',
-  pdfHow4: 'הקלטה ארוכה מכ-7 שניות ממשיכה בגיליון הבא, ברצף זמן. שום דבר אינו נחתך.',
+  /* v0.56.0: מדריך "כיצד לקרוא" הוסר מהדוח — ראו את ההערה ב-en.ts. */
 
   pdfSheetWindow: '\u05de\u05d5\u05e6\u05d2\u05d5\u05ea {from}\u2013{to} \u05e9\u05e0\u05d9\u05d5\u05ea \u05de\u05ea\u05d5\u05da {total} \u05e9\u05e0\u05e7\u05dc\u05d8\u05d5',
   pdfAuditTitle: '\u05db\u05dc \u05d4\u05d1\u05d3\u05d9\u05e7\u05d5\u05ea \u05e9\u05d1\u05d5\u05e6\u05e2\u05d5',
