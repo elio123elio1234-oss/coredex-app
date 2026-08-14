@@ -1,5 +1,79 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.5 - 2026-08-14 - the builder decides on the UI thread, so the buzz cannot outlive the tab
+
+*"On the Insights tab, playing with the green bar is perfect. Then I go back to
+the Studies tab and I STILL FEEL the vibration from the Insights tab! And then
+when I go back to Insights it doesn't work again!"*
+
+### The theory I did not ship
+
+The obvious reading is that the hidden Insights pane is still catching touches
+— it is kept mounted and hidden with `display: none`, and that decision has
+already caused one regression (v0.58.4's zero width). So it was the first place
+I looked, and this time I read the platform source before acting on it:
+
+```objc
+// react-native/React/Fabric/Mounting/UIView+ComponentViewProtocol.mm
+self.hidden = layoutMetrics.displayType == DisplayType::None;
+```
+
+A hidden `UIView` is never returned by `hitTest:`, so a `display: none` pane
+cannot receive a touch at all. **Nothing was being stolen.** Shipping the
+"obvious" fix would have changed the pane strategy, introduced whatever that
+costs, and left the real defect in place — which is precisely what v0.58.3 did.
+
+### What it actually was: a queue, and the buzz was the tail of a drag already finished
+
+Two causes, compounding.
+
+**`useEcgIdentity` returned a bare object literal.** So `view` was a new
+reference on every render — and `EcgIdentityPanel` lists `view` in five
+`useMemo` dependency arrays, one of which is `buildBaselineSequence` over every
+template in the history. The panel was re-fusing the entire baseline on *every
+render*, including every render the drag itself caused. It is memoised now: the
+fusion runs when its inputs change, which is the only time its answer can
+differ.
+
+**`BeatBuilder` sent every pointer sample across the thread boundary.** 60–120
+`runOnJS` calls a second, each of which discovered *in JS* that the finger was
+still on the same notch, and returned. This file's header has always said the
+tick fires once per study crossed — that was true of the haptic and false of
+the plumbing. With JS saturated by the fusion above, `runOnJS` **queues**: the
+buzz ran behind the finger, went on firing after the tab had changed, and the
+next drag started behind a thread still retiring the previous one. All three
+symptoms, one mechanism.
+
+The crossing test now runs **in the gesture worklet**, against shared values.
+JS is entered once per notch — about eleven times in a full sweep instead of
+several hundred.
+
+### And a mute, because a queue can never be proved empty
+
+The panel takes `active`, the builder takes `enabled`, and a crossing retired
+after the reader has left the tab is **dropped rather than buzzed**. The
+caliper is gated the same way (`measurable={active}`) — it fires the strongest
+haptic in the app. Coming back on show resyncs the worklet's guard from the
+prop, or a crossing dropped while muted would swallow the first drag back to
+that notch.
+
+⚠️ Splitting that guard across two threads created a hazard that did not exist
+while it was a single ref: copying `value` back into the worklet mid-drag
+*rewinds* it, because JS is a notch behind by construction — and the next
+sample would then re-report a notch already reported, as a double thump. The
+sync ignores an echo of the control's own commit and copies only a value it did
+not ask for.
+
+### Still true from v0.58.4
+
+Keeping both panes mounted is still the right call — it is what stopped the
+flicker — but the ledger of what that costs is now two entries long, and
+neither was obvious: Yoga lays a hidden pane out at **zero** (so any `onLayout`
+inside one must reject zero), and every control in a hidden pane **still
+exists** and can still be reached by work that was already in flight.
+
+---
+
 ## v0.58.4 - 2026-08-14 - a refresh circle we draw ourselves, and the builder gets its width back
 
 *"There is NO loading. No, there isn't, look. And the bug with the green bar

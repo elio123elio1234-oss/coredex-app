@@ -167,6 +167,17 @@ interface Props {
       earn its hairline the same way it does over the studies list. */
   onScroll?: (offsetY: number) => void;
   onOpenStudy: (recordingId: string) => void;
+  /**
+   * Whether this tab is the one on show.
+   *
+   * ★ History MOUNTS this panel on its first visit and never unmounts it,
+   * so that returning to Insights is not a rebuild. The price is that
+   * every control in here outlives its own screen, and the two that
+   * VIBRATE — the builder and the caliper — must not fire into a tab the
+   * reader has left. A buzz with nothing moving behind it reads as the
+   * phone misbehaving, and that is exactly how it was reported.
+   */
+  active?: boolean;
 }
 
 /**
@@ -213,6 +224,7 @@ export default function EcgIdentityPanel({
   paddingTop = 0,
   onScroll,
   onOpenStudy,
+  active = true,
 }: Props) {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
@@ -544,7 +556,10 @@ export default function EcgIdentityPanel({
             width={sheetWidth}
             mmPerMv={mmPerMv}
             label={lead}
-            measurable
+            /* Measurable only while this tab is the one on show — the
+               caliper's tick is the strongest haptic in the app, and it
+               must not reach a reader who is looking at something else. */
+            measurable={active}
           />
         </View>
       )}
@@ -589,6 +604,10 @@ export default function EcgIdentityPanel({
              that too, but handing it churn on purpose is how the next
              control inherits the bug. */
           onChange={onBuiltChange}
+          /* Muted while Studies is on show: this panel stays mounted, so
+             a crossing still in flight when the tab changed would buzz
+             into a screen with nothing moving on it. */
+          enabled={active}
           caption={
             built === null
               ? tr('insBuiltAll', { n: String(sequence.length) })
@@ -1073,6 +1092,12 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 12.5, lineHeight: 17, paddingTop: 2, textAlign: 'center' },
 });
 
+// v6.3.0 — An `active` prop, because this panel outlives its own tab: History
+//          mounts it once and hides it rather than unmounting it, so both
+//          controls that vibrate — the builder and the caliper — could fire
+//          into a screen the reader had already left. Reported as still
+//          feeling the Insights vibration from the Studies tab. `active`
+//          mutes them; it does not unmount anything.
 // v6.2.0 — The caliper reading no longer passes through this component. It was
 //          held in a `caliper` state that nothing has rendered since v0.44.0
 //          deleted the readout strip — so every millimetre the finger moved

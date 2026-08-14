@@ -60,13 +60,34 @@
        they merge into one long rumble. The value still updates; only the
        buzz is skipped, so the picture never lags the finger.
 
+   ══ ★ WHERE THE NOTCH IS DECIDED — MOVED TO THE UI THREAD IN v3.0.0 ══
+   "One tick per study crossed" was true of the HAPTIC and false of the
+   plumbing: every pointer sample — 60 to 120 a second — was marshalled
+   into JS with `runOnJS`, and only there did it discover that the finger
+   was still on the same notch and return. That is fine while JS is idle
+   and it is not fine while JS is busy, because `runOnJS` QUEUES.
+
+   And JS was busy: each crossing re-rendered the panel above, which was
+   re-fusing the entire baseline every render (`useEcgIdentity` v1.2.0).
+   So the queue grew under the finger, the buzz ran behind the drag, and
+   it went on firing after the reader had already switched to Studies —
+   reported, in as many words, as still feeling the vibration from a tab
+   they had left. Nothing was leaking touches. The thread was still
+   working through a drag that had ended.
+
+   The crossing test now runs in the gesture worklet against shared
+   values, so JS is entered ONCE PER NOTCH — about eleven times in a full
+   sweep instead of several hundred. `enabled` is the second half of the
+   same fix: a queued crossing that arrives after the host has gone off
+   show is DROPPED rather than buzzed.
+
    Purely presentational: it reports the index it is on.
    ================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
 
@@ -81,6 +102,17 @@ interface Props {
   /** Shown when fewer than all are selected — tapping restores all. */
   resetLabel: string;
   rtl?: boolean;
+  /**
+   * Whether the host is actually on show.
+   *
+   * ★ Not a styling flag — a mute. History keeps the Insights tab MOUNTED
+   * when the reader switches to Studies, so this control outlives the
+   * screen it is on, and any crossing still queued when the tab changed
+   * would otherwise buzz into a screen where nothing is moving. A
+   * vibration with no visible cause is worse than a missing one: it reads
+   * as the phone misbehaving.
+   */
+  enabled?: boolean;
 }
 
 const TRACK_H = 28;
@@ -104,50 +136,134 @@ export default function BeatBuilder({
   caption,
   resetLabel,
   rtl,
+  enabled = true,
 }: Props) {
   const t = useTheme();
-  const trackW = useRef(0);
+
+  /* ── What the worklet needs, as shared values ──
+     Everything the crossing test reads has to be legible from the UI
+     thread, or the test cannot run there. Shared values are stable
+     objects, which is also what keeps the gesture built once. */
+  const trackW = useSharedValue(0);
+  const totalSv = useSharedValue(total);
+  const rtlSv = useSharedValue(rtl === true);
+  const liveSv = useSharedValue(enabled);
   /** The notch the caller is actually showing — the guard that stops a
       redraw per frame. It must FOLLOW the prop, not only the finger:
       when the value is changed from outside (the reset link, a lead
       switch, a rebuilt identity) a stale guard would swallow the first
       drag back to that same notch and read as a dead control. */
-  const last = useRef(value);
+  const notchSv = useSharedValue(value);
+
   useEffect(() => {
-    last.current = value;
-  }, [value]);
+    totalSv.value = total;
+  }, [total, totalSv]);
+  useEffect(() => {
+    rtlSv.value = rtl === true;
+  }, [rtl, rtlSv]);
+
+  /** The last notch this control itself reported. See the effect below. */
+  const committed = useRef(value);
+  /** The current prop, readable from an effect that must not depend on it. */
+  const valueRef = useRef(value);
+
+  /* ══ ⚠️ SYNC THE GUARD FROM OUTSIDE, BUT NEVER FROM OUR OWN ECHO ══
+     The guard has to follow the `value` prop, or an external change (the
+     reset link, a lead switch, a rebuilt identity) leaves it stale and
+     swallows the first drag back to that notch — a dead control.
+
+     But the two now live on different threads, and a naive copy
+     REGRESSES the guard mid-drag: the UI thread reaches notch 6 while JS
+     is still retiring the commit for 5, and copying `value` back would
+     rewind the worklet to 5, so the very next pointer sample re-reports 6
+     and the reader gets the same notch twice — a double thump. So an
+     echo of our own commit is ignored, and only a value this control did
+     not ask for is copied down. */
+  useEffect(() => {
+    valueRef.current = value;
+    if (value === committed.current) return;
+    notchSv.value = value;
+  }, [value, notchSv]);
+
+  /* ── The same three, as refs, for the JS half ──
+     `commit` must keep ONE identity for the life of the mount (it is
+     captured by the worklet), so it cannot close over props. */
+  const onChangeRef = useRef(onChange);
+  const totalRef = useRef(total);
+  const liveRef = useRef(enabled);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  useEffect(() => {
+    totalRef.current = total;
+  }, [total]);
+  /* Both halves of the mute flip together, and coming back ON SHOW also
+     RESYNCS the guard: a crossing that was dropped while muted left the
+     worklet holding a notch the panel never drew, which would swallow the
+     first drag back to it. Whatever the caller is showing is the truth. */
+  useEffect(() => {
+    liveRef.current = enabled;
+    liveSv.value = enabled;
+    if (enabled) {
+      notchSv.value = valueRef.current;
+      committed.current = valueRef.current;
+    }
+  }, [enabled, liveSv, notchSv]);
   /** When the last impact was fired — see `MIN_TICK_MS`. */
   const lastTick = useRef(0);
 
-  const move = useCallback(
+  /* Reached once per study crossed, never per frame — the worklet below
+     has already established that the notch changed. */
+  const commit = useCallback((next: number) => {
+    /* ★ The late arrival. A crossing can be queued on the UI thread and
+       retired on the JS thread after the reader has moved to another tab;
+       buzzing then is a vibration with nothing on screen to explain it. */
+    if (!liveRef.current) return;
+    committed.current = next;
+
+    /* ★ The value moves FIRST and unconditionally: the throttle below is
+       allowed to skip a buzz, never a redraw. Gating the state on the
+       haptic clock is how a scrubber comes to stutter under a fast
+       finger. */
+    onChangeRef.current(next);
+
+    const now = Date.now();
+    if (now - lastTick.current < MIN_TICK_MS) return;
+    lastTick.current = now;
+    /* Heavy at the ends, Medium in between — the end-stop is what lets a
+       finger find the first and the last study without looking. */
+    const atEnd = next === 1 || next === totalRef.current;
+    void Haptics.impactAsync(
+      atEnd ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium,
+    );
+  }, []);
+
+  /**
+   * Finger x → the notch it is on, decided ON THE UI THREAD.
+   *
+   * This is the whole of v3.0.0: the early return for "still on the same
+   * notch" now happens before the thread boundary, so a saturated JS
+   * thread cannot accumulate a queue of pointer samples that each turn
+   * out to have nothing to say. See the header.
+   */
+  const settle = useCallback(
     (x: number) => {
-      if (trackW.current <= 0 || total <= 0) return;
+      'worklet';
+      if (!liveSv.value) return;
+      const w = trackW.value;
+      const n = totalSv.value;
+      if (w <= 0 || n <= 0) return;
       /* RTL is handled HERE rather than by reversing the layout: the
          notches are a timeline, and time runs left-to-right in Hebrew as
          it does everywhere else. What mirrors is which end the finger
          starts from, which is what a reader expects of a control. */
-      const ratio = rtl ? 1 - x / trackW.current : x / trackW.current;
-      const next = Math.max(1, Math.min(total, Math.ceil(ratio * total)));
-      if (next === last.current) return;
-      last.current = next;
-
-      /* ★ The value moves FIRST and unconditionally: the throttle below
-         is allowed to skip a buzz, never a redraw. Gating the state on
-         the haptic clock is how a scrubber comes to stutter under a fast
-         finger. */
-      onChange(next);
-
-      const now = Date.now();
-      if (now - lastTick.current < MIN_TICK_MS) return;
-      lastTick.current = now;
-      /* Heavy at the ends, Medium in between — the end-stop is what lets
-         a finger find the first and the last study without looking. */
-      const atEnd = next === 1 || next === total;
-      void Haptics.impactAsync(
-        atEnd ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium,
-      );
+      const ratio = rtlSv.value ? 1 - x / w : x / w;
+      const next = Math.max(1, Math.min(n, Math.ceil(ratio * n)));
+      if (next === notchSv.value) return;
+      notchSv.value = next;
+      runOnJS(commit)(next);
     },
-    [total, onChange, rtl],
+    [commit, liveSv, trackW, totalSv, rtlSv, notchSv],
   );
 
   /* ══ ⚠️ THE GESTURE OBJECT IS BUILT ONCE AND NEVER REBUILT ══
@@ -156,23 +272,17 @@ export default function BeatBuilder({
      handing `GestureDetector` a NEW gesture object mid-drag.
 
      The chain: the caller passes `onChange` as an inline arrow, so it is
-     a new function on every render; `move` is a `useCallback` on it, so
-     that is new too; the gesture was a `useMemo` on `move`, so THAT was
+     a new function on every render; `move` was a `useCallback` on it, so
+     that was new too; the gesture was a `useMemo` on it, so THAT was
      new — and every notch the finger crosses calls `onChange`, which
      re-renders the panel. So the detector was being reconfigured on
      every crossing, in the middle of the interaction it was tracking,
      and a reconfigured handler can drop the gesture it was in.
 
-     The fix is to stop the churn reaching the detector at all: the
-     gesture closes over ONE stable callback that reads the current
-     `move` out of a ref. The caller can be as careless with its props as
-     it likes; the handler is configured once and lives for the mount. */
-  const moveRef = useRef(move);
-  useEffect(() => {
-    moveRef.current = move;
-  }, [move]);
-  const dispatchMove = useCallback((x: number) => moveRef.current(x), []);
-
+     `settle` closes over shared values and one permanent callback, so it
+     keeps its identity whatever the caller does with its props —
+     `enabled` included, which is why muting the control does not
+     reconfigure the handler either. */
   /* Same axis discipline as the signature above it: this track sits in a
      vertical ScrollView, so it claims horizontal movement and explicitly
      FAILS on vertical, handing the page back. A tap jumps to a study;
@@ -197,11 +307,11 @@ export default function BeatBuilder({
              turning a drag into a control that dies when the thumb
              wanders. */
           .shouldCancelWhenOutside(false)
-          .onStart((e) => runOnJS(dispatchMove)(e.x))
-          .onUpdate((e) => runOnJS(dispatchMove)(e.x)),
-        Gesture.Tap().onEnd((e) => runOnJS(dispatchMove)(e.x)),
+          .onStart((e) => settle(e.x))
+          .onUpdate((e) => settle(e.x)),
+        Gesture.Tap().onEnd((e) => settle(e.x)),
       ),
-    [dispatchMove],
+    [settle],
   );
 
   const partial = value < total;
@@ -229,7 +339,7 @@ export default function BeatBuilder({
                lives, so the last real measurement is always the right
                one to keep. */
             const w = e.nativeEvent.layout.width;
-            if (w > 0) trackW.current = w;
+            if (w > 0) trackW.value = w;
           }}
           style={[styles.track, rtl && styles.trackRtl]}
           /* Generous, because the track itself is 26 pt and a timeline you
@@ -260,7 +370,8 @@ export default function BeatBuilder({
              exactly what this does — snapping back to the whole
              baseline should not feel lighter than reaching it by hand. */
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          last.current = total;
+          notchSv.value = total;
+          committed.current = total;
           lastTick.current = Date.now();
           onChange(total);
         }}
@@ -292,6 +403,21 @@ const styles = StyleSheet.create({
   reset: { fontSize: 13.5, fontWeight: '700', textDecorationLine: 'underline' },
 });
 
+// v3.0.0 — ⚠️ "I still feel the vibration from the Insights tab after I go back
+//          to Studies, and then the drag doesn't work again." Neither half was
+//          a touch problem, and the hidden tab was not stealing anything (a
+//          `display: none` view is `hidden` in the native hierarchy and cannot
+//          be hit-tested). It was a QUEUE. Every pointer sample crossed into
+//          JS through `runOnJS` and only discovered there that the finger was
+//          still on the same notch — 60–120 marshalled calls a second — while
+//          the panel above re-fused the whole baseline on every render
+//          (`useEcgIdentity` v1.2.0). The queue outlived the drag, so the buzz
+//          arrived on a screen that had already changed, and the next drag
+//          started behind a thread that was still catching up.
+//          The crossing test now runs in the gesture worklet against shared
+//          values: JS is entered ONCE PER NOTCH. And `enabled` mutes a late
+//          arrival — a crossing retired after the host went off show is
+//          dropped, not buzzed.
 // v2.2.0 — ⚠️ The drag died again after v2.1.0, and the second cause was not
 //          the gesture at all: `onLayout` accepted a width of ZERO. `move`
 //          cannot compute a ratio without a width, so it returns — and since

@@ -416,6 +416,17 @@ export default function HistoryScreen() {
             again. `display: none` keeps both alive; Yoga drops a hidden
             pane from layout, so nothing is measured or drawn for it.
 
+            ⚠️ WHAT KEEPING A PANE ALIVE COSTS, AND WHAT IT DOES NOT.
+            It does NOT leak touches: RN sets `hidden` on the native view
+            for `display: none` (`UIView+ComponentViewProtocol.mm`), and a
+            hidden view cannot be hit-tested. It DOES mean every control
+            in the hidden pane still exists, still holds state, and can
+            still be reached by work that was already in flight — so the
+            pane is handed `active`, and anything that vibrates has to
+            honour it (`EcgIdentityPanel.active`). It also means Yoga lays
+            the pane out at ZERO, so any `onLayout` measurement inside one
+            must reject a zero (`BeatBuilder`).
+
             Insights is still MOUNTED LAZILY. It runs the identity backfill,
             which is real DSP over the whole history; paying for that on a
             tab the reader has not opened would be the opposite trade. */}
@@ -540,6 +551,10 @@ export default function HistoryScreen() {
               paddingHorizontal={padH}
               paddingTop={contentTop}
               onScroll={onContentScroll}
+              /* ★ This pane is HIDDEN, not unmounted — so its controls
+                 outlive the tab. `active` is what stops the builder and
+                 the caliper vibrating into the Studies list. */
+              active={activeTab === 'insights'}
               onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
             />
           </View>
@@ -743,6 +758,11 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.7.0 — The hidden Insights pane is told it is hidden (`active`). Keeping it
+//          mounted is still right — it is what stopped the flicker — but a
+//          mounted pane's controls outlive the tab, and the builder's haptics
+//          were arriving on the Studies list. Hiding a view stops touches; it
+//          does not stop work already in flight.
 // v1.6.0 — The header is a frosted bar the page scrolls UNDER: title, count
 //          and tabs on GlassSurface, measured rather than assumed (it grows a
 //          progress clause, a tab row and an error banner), with the hairline

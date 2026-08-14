@@ -69,6 +69,15 @@ import { useAppDispatch } from '@/store/hooks';
 /** Templates staged before the disk is touched. See `templateCache` header. */
 const FLUSH_EVERY = 5;
 
+/**
+ * One empty list, shared.
+ *
+ * `list.data ?? []` mints a fresh array every render, and this hook's whole
+ * contract is that its result only changes when something really changed —
+ * see the `useMemo` on the return value.
+ */
+const NO_STUDIES: RecordingListItem[] = [];
+
 export interface EcgIdentityView {
   identity: EcgIdentity | null;
   stats: MeasurementStats | null;
@@ -256,22 +265,65 @@ export function useEcgIdentity(
   const templateOf = useCallback((id: string) => byId.get(id) ?? null, [byId]);
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
-  return {
-    identity,
-    stats,
-    studies: list.data ?? [],
-    templateOf,
-    /* A disabled hook is not "building" — it is idle. Reporting otherwise
-       would leave a caller that never enabled it showing a spinner
-       forever, waiting for a pass that will never start. */
-    isBuilding: enabled && templates === null && !list.isError,
-    progress,
-    isLoading: list.isLoading,
-    isError: list.isError,
-    refresh,
-  };
+  /* A disabled hook is not "building" — it is idle. Reporting otherwise
+     would leave a caller that never enabled it showing a spinner forever,
+     waiting for a pass that will never start. */
+  const isBuilding = enabled && templates === null && !list.isError;
+  const studies = list.data ?? NO_STUDIES;
+
+  /* ══ ⚠️ THE RESULT IS MEMOISED, AND IT IS NOT A MICRO-OPTIMISATION ══
+     This used to be a bare object literal, so `view` was a NEW REFERENCE on
+     every render of every caller. `EcgIdentityPanel` builds five `useMemo`s
+     that list `view` in their dependencies — including `sequence`, which is
+     `buildBaselineSequence` over every template in the history. A fresh
+     `view` invalidates all of them, so the panel was re-running the whole
+     baseline fusion on EVERY RENDER, including every render caused by the
+     reader dragging the builder.
+
+     What that cost, on the phone: dragging the green bar queued gesture
+     events faster than the JS thread could retire them, so the haptics ran
+     BEHIND THE FINGER — and kept firing after the reader had already
+     switched to the Studies tab, which is exactly how it was reported
+     ("I still feel the vibration from the Insights tab"). The control was
+     not leaking touches; the thread was still working through the drag that
+     had already ended.
+
+     A memo does not make the fusion cheap. It makes it happen when the
+     INPUTS change, which is the only time its answer can differ. */
+  return useMemo(
+    () => ({
+      identity,
+      stats,
+      studies,
+      templateOf,
+      isBuilding,
+      progress,
+      isLoading: list.isLoading,
+      isError: list.isError,
+      refresh,
+    }),
+    [
+      identity,
+      stats,
+      studies,
+      templateOf,
+      isBuilding,
+      progress,
+      list.isLoading,
+      list.isError,
+      refresh,
+    ],
+  );
 }
 
+// v1.2.0 — ⚠️ The returned view is MEMOISED. It was a bare object literal, so
+//          every caller got a new reference on every render — and
+//          `EcgIdentityPanel` lists `view` in five `useMemo` dependency
+//          arrays, one of which is `buildBaselineSequence` over the whole
+//          history. The panel was therefore re-fusing the entire baseline on
+//          every render, including every render the builder's drag caused.
+//          On the phone that read as haptics running behind the finger and
+//          continuing after the reader had left the tab.
 // v1.1.0 — An `enabled` option. The hook is no longer used only by the screen
 //          that IS the ECG ID: the study viewer can lay the identity over a
 //          strip, and a cold first pass decodes and re-analyses every study in

@@ -1,7 +1,54 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.4';
-export const APP_BUILD_LABEL = 'a refresh circle we draw ourselves, and the builder gets its width back';
+export const APP_VERSION = '0.58.5';
+export const APP_BUILD_LABEL = 'the builder decides on the UI thread, so the buzz cannot outlive the tab';
+
+// v0.58.5 - "On the Insights tab, playing with the green bar is perfect. Then I
+//           go back to the Studies tab and I STILL FEEL the vibration from the
+//           Insights tab! And then when I go back to Insights it doesn't work
+//           again!"
+//           ★ FIRST, THE THEORY I DID NOT SHIP. The obvious reading is that the
+//           hidden Insights pane is still catching touches - and I checked it
+//           in the RN source instead of assuming, because assuming is exactly
+//           what made v0.58.3 useless. It is not true:
+//           `UIView+ComponentViewProtocol.mm` sets `self.hidden = displayType
+//           == None`, and a hidden UIView is never returned by hitTest, so a
+//           `display: none` pane cannot receive a touch at all. Nothing was
+//           being stolen.
+//           ★ WHAT IT ACTUALLY WAS: A QUEUE, and the vibration the user felt on
+//           Studies was the tail of the drag they had already finished. Two
+//           causes, compounding.
+//           * `useEcgIdentity` returned a BARE OBJECT LITERAL, so `view` was a
+//             new reference on every render - and `EcgIdentityPanel` lists
+//             `view` in five useMemo dependency arrays, one of which is
+//             `buildBaselineSequence` over every template in the history. The
+//             panel was re-fusing the whole baseline on EVERY RENDER, including
+//             every render the drag itself caused. Memoised now: the fusion
+//             happens when its inputs change, which is the only time its answer
+//             can differ.
+//           * `BeatBuilder` marshalled EVERY POINTER SAMPLE into JS through
+//             `runOnJS` - 60 to 120 a second - and only there discovered that
+//             the finger was still on the same notch and returned. The header
+//             has always said the tick fires once per study crossed; that was
+//             true of the haptic and false of the plumbing. With JS saturated
+//             by the fusion above, `runOnJS` QUEUED, so the buzz ran behind the
+//             finger, kept firing after the tab had changed, and the next drag
+//             began behind a thread still retiring the last one. The crossing
+//             test now runs in the gesture worklet against shared values: JS is
+//             entered ONCE PER NOTCH, ~11 times a sweep instead of hundreds.
+//           * AND A MUTE, because a queue can never be proved empty: the panel
+//             takes `active`, the builder takes `enabled`, and a crossing
+//             retired after the reader has left is DROPPED rather than buzzed.
+//             The caliper is gated the same way (`measurable={active}`) - it
+//             fires the strongest haptic in the app. Coming back on show
+//             resyncs the worklet's guard from the prop, or a crossing dropped
+//             while muted would swallow the first drag back to that notch.
+//           ⚠️ Splitting a guard across two threads introduced a hazard that
+//           did not exist while it was one ref: copying `value` back into the
+//           worklet mid-drag REWINDS it (JS is a notch behind by construction),
+//           and the next sample would re-report a notch already reported - a
+//           double thump. The sync now ignores an echo of the control's own
+//           commit and copies only a value it did not ask for.
 
 // v0.58.4 - "There is NO loading. No, there isn't, look. And the bug with the
 //           green bar in the average beat not sliding is back - you didn't
