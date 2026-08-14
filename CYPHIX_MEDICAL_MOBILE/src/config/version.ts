@@ -1,7 +1,30 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.2';
-export const APP_BUILD_LABEL = 'the beat builder stops losing your finger mid-drag';
+export const APP_VERSION = '0.58.3';
+export const APP_BUILD_LABEL = 'the refresh spinner comes out from behind the glass';
+
+// v0.58.3 - "In Studies, when you pull down and it loads and refreshes, there
+//           is no refresh circle - it visually looks like it gets stuck at a
+//           height and then releases after a few seconds, when it is clearly
+//           refreshing."
+//           Exactly right, including the diagnosis hidden in "it is clearly
+//           refreshing": the sync WAS running and the pull WAS holding. The
+//           only missing part was the one that says so.
+//           A refresh indicator is positioned at the top of the SCROLL VIEW,
+//           and since v0.58.0 the top of the scroll view is behind a frosted
+//           header ~180 pt tall. The spinner span there the whole time,
+//           perfectly, invisibly - a regression the glass header introduced
+//           and nothing on this machine could have caught, because a hidden
+//           spinner typechecks and bundles like a visible one.
+//           `progressViewOffset={headerH}` moves it into the space the pull
+//           opens up. ⚠️ Verified in the RN 0.81.5 source rather than
+//           assumed, because this prop has a reputation for being
+//           Android-only: the iOS spec declares it
+//           (`PullToRefreshViewNativeComponent`), `RefreshControl.js` strips
+//           only enabled/colors/progressBackgroundColor/size before
+//           spreading the rest to the iOS view, and `RCTRefreshControl.m`
+//           implements it by offsetting the control's frame. It works on
+//           both.
 
 // v0.58.2 - "In Insights the slide feature - where I drag to see the average
 //           beat built up over time - sometimes just doesn't work. It's like

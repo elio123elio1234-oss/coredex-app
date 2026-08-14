@@ -506,6 +506,18 @@ export default function HistoryScreen() {
                 refreshing={sync.phase === 'syncing' || (list.isFetching && !list.isLoading)}
                 onRefresh={() => void (sync.enabled ? sync.refresh() : list.refetch())}
                 tintColor={t.textSecondary}
+                /* ★ THE SPINNER LIVES UNDER THE GLASS WITHOUT THIS.
+                   A refresh indicator is positioned at the top of the
+                   SCROLL VIEW, and since v0.58.0 the top of the scroll
+                   view is behind a frosted header ~180 pt tall — so it
+                   span there, perfectly, invisibly. Reported as "there's
+                   no refresh circle, it just looks stuck at a height and
+                   then releases": the pull was holding, the work was
+                   running, and the only thing missing was the one part
+                   that says so.
+                   Offset by the header's own height, so it appears in the
+                   space the pull opens up rather than beneath the bar. */
+                progressViewOffset={headerH}
               />
             }
           />

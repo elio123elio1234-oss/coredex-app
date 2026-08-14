@@ -1,5 +1,40 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.3 - 2026-08-14 - the refresh spinner comes out from behind the glass
+
+*"In Studies, when you pull down and it loads and refreshes, there is no
+refresh circle — it visually looks like it gets stuck at a height and then
+releases after a few seconds, when it's clearly refreshing."*
+
+The diagnosis was in the report: *"it's clearly refreshing."* The sync was
+running and the pull was holding. The only part that was missing was the one
+that says so.
+
+A refresh indicator is positioned at the top of the **scroll view** — and
+since v0.58.0 the top of the scroll view is behind a frosted header about
+180 pt tall. The spinner had been spinning there the whole time, perfectly,
+invisibly. A regression the glass header introduced, and one nothing on this
+machine could have caught: a hidden spinner typechecks and bundles exactly
+like a visible one.
+
+`progressViewOffset={headerH}` moves it into the space the pull opens up.
+
+⚠️ **Verified in the RN 0.81.5 source rather than assumed**, because this prop
+has a reputation for being Android-only:
+
+- the iOS spec declares it — `PullToRefreshViewNativeComponent`,
+  `progressViewOffset?: WithDefault<Float, 0>`;
+- `RefreshControl.js` strips only `enabled` / `colors` /
+  `progressBackgroundColor` / `size` on iOS and spreads everything else to the
+  native view, so it is forwarded;
+- `RCTRefreshControl.m` implements `setProgressViewOffset:` by offsetting the
+  control's frame, converting from the scroll view parent's coordinate space.
+
+It works on both platforms.
+
+Verified: `tsc --noEmit`, `expo export` both platforms. 🔬 — pull down in
+Studies and the circle should now appear just under the frosted bar.
+
 ## v0.58.2 - 2026-08-14 - the beat builder stops losing your finger mid-drag
 
 *"In Insights, the slide feature — where I drag to see the average beat built
