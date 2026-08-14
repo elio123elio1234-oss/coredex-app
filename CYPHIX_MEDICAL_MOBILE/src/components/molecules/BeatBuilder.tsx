@@ -63,7 +63,7 @@
    Purely presentational: it reports the index it is on.
    ================================================================== */
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -107,7 +107,15 @@ export default function BeatBuilder({
 }: Props) {
   const t = useTheme();
   const trackW = useRef(0);
+  /** The notch the caller is actually showing — the guard that stops a
+      redraw per frame. It must FOLLOW the prop, not only the finger:
+      when the value is changed from outside (the reset link, a lead
+      switch, a rebuilt identity) a stale guard would swallow the first
+      drag back to that same notch and read as a dead control. */
   const last = useRef(value);
+  useEffect(() => {
+    last.current = value;
+  }, [value]);
   /** When the last impact was fired — see `MIN_TICK_MS`. */
   const lastTick = useRef(0);
 
@@ -142,6 +150,29 @@ export default function BeatBuilder({
     [total, onChange, rtl],
   );
 
+  /* ══ ⚠️ THE GESTURE OBJECT IS BUILT ONCE AND NEVER REBUILT ══
+     Reported: the drag "sometimes just doesn't work, it's like it loses
+     touch". It was not the touch handling — it was this component
+     handing `GestureDetector` a NEW gesture object mid-drag.
+
+     The chain: the caller passes `onChange` as an inline arrow, so it is
+     a new function on every render; `move` is a `useCallback` on it, so
+     that is new too; the gesture was a `useMemo` on `move`, so THAT was
+     new — and every notch the finger crosses calls `onChange`, which
+     re-renders the panel. So the detector was being reconfigured on
+     every crossing, in the middle of the interaction it was tracking,
+     and a reconfigured handler can drop the gesture it was in.
+
+     The fix is to stop the churn reaching the detector at all: the
+     gesture closes over ONE stable callback that reads the current
+     `move` out of a ref. The caller can be as careless with its props as
+     it likes; the handler is configured once and lives for the mount. */
+  const moveRef = useRef(move);
+  useEffect(() => {
+    moveRef.current = move;
+  }, [move]);
+  const dispatchMove = useCallback((x: number) => moveRef.current(x), []);
+
   /* Same axis discipline as the signature above it: this track sits in a
      vertical ScrollView, so it claims horizontal movement and explicitly
      FAILS on vertical, handing the page back. A tap jumps to a study;
@@ -152,12 +183,25 @@ export default function BeatBuilder({
       Gesture.Race(
         Gesture.Pan()
           .activeOffsetX([-4, 4])
-          .failOffsetY([-12, 12])
-          .onStart((e) => runOnJS(move)(e.x))
-          .onUpdate((e) => runOnJS(move)(e.x)),
-        Gesture.Tap().onEnd((e) => runOnJS(move)(e.x)),
+          /* 16, not 12. This is the tolerance for how much the finger may
+             drift vertically BEFORE the pan claims the touch, and a real
+             thumb starting a horizontal drag on a 28 pt track is never
+             purely horizontal. Too tight and an ordinary diagonal start
+             fails the pan and scrolls the page instead — which is the
+             other half of "sometimes it doesn't work". Still small enough
+             that a deliberate vertical scroll from the track hands off. */
+          .failOffsetY([-16, 16])
+          /* ★ Explicit, because the track is 28 pt tall and a finger
+             dragging across it WILL leave those bounds. Pan already
+             defaults to false; stating it stops a future edit from
+             turning a drag into a control that dies when the thumb
+             wanders. */
+          .shouldCancelWhenOutside(false)
+          .onStart((e) => runOnJS(dispatchMove)(e.x))
+          .onUpdate((e) => runOnJS(dispatchMove)(e.x)),
+        Gesture.Tap().onEnd((e) => runOnJS(dispatchMove)(e.x)),
       ),
-    [move],
+    [dispatchMove],
   );
 
   const partial = value < total;
@@ -233,6 +277,19 @@ const styles = StyleSheet.create({
   reset: { fontSize: 13.5, fontWeight: '700', textDecorationLine: 'underline' },
 });
 
+// v2.1.0 — ⚠️ "It sometimes loses touch." The gesture OBJECT was being rebuilt
+//          mid-drag: the caller's inline `onChange` → a new `move` → a new
+//          `useMemo` gesture, on every notch crossed, because crossing a notch
+//          re-renders the caller. `GestureDetector` reconfigures on a new
+//          gesture, and a reconfigured handler can drop the interaction it is
+//          tracking. It now closes over one stable callback reading `move`
+//          from a ref, so the handler is configured once per mount whatever
+//          the caller does. Also: `failOffsetY` 12 → 16 (a thumb starting a
+//          horizontal drag is never purely horizontal, and too tight a
+//          tolerance scrolls the page instead), `shouldCancelWhenOutside`
+//          stated explicitly, and `last` now follows the `value` prop so an
+//          external change cannot leave a stale guard swallowing the first
+//          drag back to that notch.
 // v2.0.0 — Haptics strengthened after the tick was reported as too faint to
 //          feel: Medium impact per study crossed instead of `selectionAsync`
 //          (the lightest event iOS has, easy to miss through a case while the

@@ -1,7 +1,43 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.1';
-export const APP_BUILD_LABEL = 'the newest study gets room to breathe, and the tabs stop rebuilding the screen';
+export const APP_VERSION = '0.58.2';
+export const APP_BUILD_LABEL = 'the beat builder stops losing your finger mid-drag';
+
+// v0.58.2 - "In Insights the slide feature - where I drag to see the average
+//           beat built up over time - sometimes just doesn't work. It's like
+//           it loses touch."
+//           ★ THE GESTURE OBJECT WAS BEING REBUILT MID-DRAG, and it is the
+//           same class of bug as v0.57.1's re-render storm wearing different
+//           clothes. The chain: `EcgIdentityPanel` passed `onChange` as an
+//           inline arrow, so it was a new function every render; `move` is a
+//           `useCallback` on it, so that was new too; the gesture was a
+//           `useMemo` on `move`, so THAT was new - and crossing a notch calls
+//           `onChange`, which re-renders the panel. So every notch the finger
+//           crossed handed `GestureDetector` a brand-new gesture, which
+//           reconfigures the native handler IN THE MIDDLE OF the interaction
+//           it is tracking, and a reconfigured handler can drop it. The
+//           control did not "sometimes" fail - it failed whenever the timing
+//           of a reconfiguration landed inside a drag, which is exactly the
+//           intermittency that was reported.
+//           `BeatBuilder` now builds its gesture ONCE and closes over a
+//           stable callback that reads the live `move` out of a ref, so a
+//           careless caller can no longer reach the detector. The caller was
+//           also fixed (`onBuiltChange`, keyed on the sequence LENGTH rather
+//           than the array) - defending in one place is a fix, defending in
+//           both is a rule.
+//           Two smaller faults found in the same read:
+//           * `failOffsetY` was ±12, the tolerance for vertical drift BEFORE
+//             the pan claims the touch. A thumb starting a horizontal drag on
+//             a 28 pt track is never purely horizontal, and too tight a
+//             tolerance fails the pan and scrolls the page instead - the
+//             other half of "sometimes it doesn't work". Now ±16, still small
+//             enough that a deliberate vertical scroll hands off.
+//           * `last` (the guard that stops a redraw per frame) never followed
+//             the `value` prop, so an external change - the reset link, a lead
+//             switch, a rebuilt identity - left it stale and the first drag
+//             back to that same notch did nothing.
+//           `shouldCancelWhenOutside(false)` is now stated rather than
+//           inherited: the track is 28 pt tall and a dragging finger leaves it.
 
 // v0.58.1 - "1) The newest recording sits right up against the top bar, it
 //           looks unprofessional and ugly. 2) There is still some flicker

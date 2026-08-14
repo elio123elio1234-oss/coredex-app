@@ -1,5 +1,57 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.2 - 2026-08-14 - the beat builder stops losing your finger mid-drag
+
+*"In Insights, the slide feature — where I drag to see the average beat built
+up over time — sometimes just doesn't work. It's like it loses touch."*
+
+### The gesture object was being rebuilt in the middle of the drag
+
+This is v0.57.1's re-render storm wearing different clothes, and it is worth
+spelling out because the mechanism is not obvious:
+
+1. `EcgIdentityPanel` passed `onChange` as an inline arrow → a new function
+   on every render.
+2. `BeatBuilder`'s `move` is a `useCallback` on `onChange` → new too.
+3. The gesture was a `useMemo` on `move` → **new gesture object**.
+4. Crossing a notch calls `onChange`, which re-renders the panel.
+
+So every notch the finger crossed handed `GestureDetector` a brand-new
+gesture, which **reconfigures the native handler in the middle of the
+interaction it is tracking** — and a reconfigured handler can drop it.
+
+The control was never "sometimes" broken. It failed whenever the timing of a
+reconfiguration landed inside a drag, which is precisely the intermittency
+that got reported.
+
+`BeatBuilder` now builds its gesture **once** and closes over a single stable
+callback that reads the live `move` out of a ref, so a careless caller can no
+longer reach the detector at all. The caller was fixed too (`onBuiltChange`,
+keyed on the sequence *length* rather than the array): defending in one place
+is a fix, defending in both is a rule.
+
+### Two smaller faults found in the same read
+
+- **`failOffsetY` was ±12 pt.** That is the tolerance for how far the finger
+  may drift vertically *before* the pan claims the touch — and a thumb
+  starting a horizontal drag on a 28 pt track is never purely horizontal. Too
+  tight, and an ordinary diagonal start fails the pan and scrolls the page
+  instead, which is the other half of "sometimes it doesn't work". Now ±16,
+  still small enough that a deliberate vertical scroll hands the page back.
+- **The redraw guard never followed the prop.** `last` is what stops a redraw
+  per frame, but it only ever tracked the finger. When the value changed from
+  outside — the reset link, a lead switch, a rebuilt identity — it went stale,
+  and the first drag back to that same notch did nothing at all.
+
+`shouldCancelWhenOutside(false)` is now stated rather than inherited: the
+track is 28 pt tall, a dragging finger leaves it, and that default is not
+something the next edit should have to know by heart.
+
+Verified: `tsc --noEmit`, `expo export` both platforms. 🔬 — an intermittent
+gesture is the definition of something no check here can confirm; the test is
+a dozen drags, including ones that start diagonally and ones that start right
+after tapping the reset link.
+
 ## v0.58.1 - 2026-08-14 - the newest study gets room to breathe, and the tabs stop rebuilding the screen
 
 *"1) The newest recording sits right up against the top bar — it looks

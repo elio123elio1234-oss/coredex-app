@@ -279,6 +279,15 @@ export default function EcgIdentityPanel({
     return buildBaselineSequence(templates, (x) => weights.get(x.recordingId) ?? 0, lead);
   }, [identity, view, lead]);
 
+  /* Keyed on the LENGTH, not the array: the sequence is rebuilt whenever
+     the identity or the lead changes, but its length is what this handler
+     actually reads — so the callback survives those rebuilds. */
+  const sequenceLen = sequence.length;
+  const onBuiltChange = useCallback(
+    (v: number) => setBuilt(v >= sequenceLen ? null : v),
+    [sequenceLen],
+  );
+
   /** The signature actually drawn: the finished baseline, or a partial one. */
   const shown = useMemo(() => {
     const full = identity?.leads[lead] ?? null;
@@ -572,8 +581,14 @@ export default function EcgIdentityPanel({
           /* Landing on the last notch IS "all of them", so it resolves
              back to null rather than to a number that happens to equal
              the total — one state for one situation, and the overlay
-             comes back on its own. */
-          onChange={(v) => setBuilt(v >= sequence.length ? null : v)}
+             comes back on its own.
+             ⚠️ STABLE, not an inline arrow: every notch the finger
+             crosses re-renders this panel, and a handler minted per
+             render used to reach `GestureDetector` as a new gesture
+             object mid-drag. `BeatBuilder` now defends itself against
+             that too, but handing it churn on purpose is how the next
+             control inherits the bug. */
+          onChange={onBuiltChange}
           caption={
             built === null
               ? tr('insBuiltAll', { n: String(sequence.length) })
