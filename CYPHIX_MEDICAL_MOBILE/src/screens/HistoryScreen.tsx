@@ -58,6 +58,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -317,6 +318,9 @@ export default function HistoryScreen() {
   const headerH = measuredHeaderH || estimateHeaderH(insets.top, !empty, showTabs);
   /** Where content actually starts: under the glass, plus air. */
   const contentTop = headerH + CONTENT_TOP_GAP;
+  /* One expression for the state, read by the RefreshControl (which owns
+     the gesture) and by the badge (which is what anyone actually sees). */
+  const refreshing = sync.phase === 'syncing' || (list.isFetching && !list.isLoading);
   /* The padding the shell would have applied, now applied here — one
      number, from one function, so the header and the scroll content can
      never disagree about where the margin is. */
@@ -503,21 +507,25 @@ export default function HistoryScreen() {
                    the tag — so this list updates as a consequence. When
                    there is no backend there is nothing to sync and the
                    old refetch is still the honest gesture. */
-                refreshing={sync.phase === 'syncing' || (list.isFetching && !list.isLoading)}
+                refreshing={refreshing}
                 onRefresh={() => void (sync.enabled ? sync.refresh() : list.refetch())}
-                tintColor={t.textSecondary}
-                /* ★ THE SPINNER LIVES UNDER THE GLASS WITHOUT THIS.
+                /* ⚠️ THE NATIVE INDICATOR IS LEFT WHERE IT IS — BEHIND THE
+                   GLASS — AND A VISIBLE ONE IS DRAWN OURSELVES.
                    A refresh indicator is positioned at the top of the
-                   SCROLL VIEW, and since v0.58.0 the top of the scroll
-                   view is behind a frosted header ~180 pt tall — so it
-                   span there, perfectly, invisibly. Reported as "there's
-                   no refresh circle, it just looks stuck at a height and
-                   then releases": the pull was holding, the work was
-                   running, and the only thing missing was the one part
-                   that says so.
-                   Offset by the header's own height, so it appears in the
-                   space the pull opens up rather than beneath the bar. */
-                progressViewOffset={headerH}
+                   SCROLL VIEW, and since v0.58.0 that is behind a frosted
+                   header ~180 pt tall, so it span there invisibly.
+                   `progressViewOffset` was the obvious fix and it is NOT
+                   dependable on iOS: RN implements it by rewriting the
+                   UIRefreshControl's frame from `layoutSubviews`, through
+                   a converging coordinate conversion, and its own source
+                   warns that "setting the frame breaks integration with
+                   ContentInset". It shipped in v0.58.3 and changed
+                   nothing on the phone.
+                   So this control keeps only the JOB IT IS GOOD AT — the
+                   pull gesture and the refreshing state — and the thing
+                   the reader actually looks at is `styles.refreshBadge`
+                   below, at a position this screen owns. One indicator,
+                   both platforms, no native quirk in the path. */
               />
             }
           />
@@ -534,6 +542,26 @@ export default function HistoryScreen() {
               onScroll={onContentScroll}
               onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
             />
+          </View>
+        )}
+
+        {/* ── The refresh indicator this screen draws itself ──
+            Placed by us, at a position we own, so no floating header can
+            hide it and no platform's idea of "the top of the scroll view"
+            is involved. Non-interactive: it reports, it is not a button. */}
+        {refreshing && activeTab === 'studies' && (
+          <View
+            pointerEvents="none"
+            style={[styles.refreshBadgeRow, { top: headerH + 10 }]}
+          >
+            <View
+              style={[
+                styles.refreshBadge,
+                { backgroundColor: t.surface, borderColor: t.border },
+              ]}
+            >
+              <ActivityIndicator size="small" color={t.textSecondary} />
+            </View>
           </View>
         )}
 
@@ -659,6 +687,17 @@ const styles = StyleSheet.create({
      so the only children are full-bleed scrollers. */
   root: { flex: 1 },
   pane: { flex: 1 },
+  /* Absolutely placed by this screen — see the badge's comment. `left/right`
+     rather than a width, so it centres without measuring anything. */
+  refreshBadgeRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  refreshBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   /* Yoga drops a `display: none` subtree from layout entirely — it is not
      measured and not drawn — so the inactive tab costs nothing while
      keeping its state, its scroll position and its animations. */

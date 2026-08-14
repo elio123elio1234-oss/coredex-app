@@ -1,5 +1,64 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.4 - 2026-08-14 - a refresh circle we draw ourselves, and the builder gets its width back
+
+*"There is NO loading. No, there isn't, look. And the bug with the green bar
+in the average beat not sliding is back — you didn't really fix it."*
+
+Both correct, and in each case the previous attempt was aimed at the wrong
+layer.
+
+### The refresh spinner: I shipped a prop I had only half-read
+
+v0.58.3 added `progressViewOffset`. I checked that the prop reaches the iOS
+native view and stopped there. What I did not read is *what the native code
+does with it*:
+
+```objc
+// Setting the UIRefreshControl's frame breaks integration with ContentInset
+// from the superview if it is a UIScrollView.
+if (_progressViewOffset == 0.f) return;
+...
+CGPoint converted = [self convertPoint:rawOffset fromView:target];
+self.frame = CGRectOffset(self.frame, 0, converted.y);
+```
+
+It rewrites the control's frame from `layoutSubviews`, through a coordinate
+conversion that *converges* rather than computes — and the same file warns
+that doing this breaks the control's own inset integration. It changed nothing
+on the phone, which is exactly what was reported.
+
+So the `RefreshControl` now keeps only the job it is good at — the pull
+gesture and the `refreshing` state — and its indicator is left where it has
+always been: behind the glass, invisible, harmless. **What the reader sees is
+a badge this screen draws itself**, at a position this screen owns. One
+indicator, both platforms, no native quirk anywhere in the path.
+
+### The builder's drag: my own flicker fix armed the second cause
+
+The gesture fix in v0.58.2 was real, but there was a **second** cause and it
+was not a gesture problem at all: `onLayout` accepted a width of **zero**.
+
+`move` cannot compute a ratio without a track width, so it returns and the
+control is simply dead. And something does write zero — **v0.58.1**, where
+History began keeping both tabs mounted and hiding the inactive one with
+`display: none`. Yoga lays a hidden subtree out at zero, so every trip to
+Studies blanked this width, and coming back left the drag dead until some
+later layout pass happened to write a real number. That is precisely the
+"it came back" the report describes.
+
+A zero is never a measurement. The track's width does not change while the
+panel lives, so the last real one is always the right one to keep.
+
+Worth stating plainly: the fix for one report (v0.58.1's flicker) created the
+regression in another. That is the cost of keeping a subtree alive instead of
+rebuilding it, and it is the second thing on this screen that `display: none`
+has changed the meaning of.
+
+Verified: `tsc --noEmit`, `expo export` both platforms. 🔬 — pull down in
+Studies for the circle; drag the green bar after switching Insights →
+Studies → Insights, which is the exact path that used to kill it.
+
 ## v0.58.3 - 2026-08-14 - the refresh spinner comes out from behind the glass
 
 *"In Studies, when you pull down and it loads and refreshes, there is no

@@ -1,7 +1,37 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.3';
-export const APP_BUILD_LABEL = 'the refresh spinner comes out from behind the glass';
+export const APP_VERSION = '0.58.4';
+export const APP_BUILD_LABEL = 'a refresh circle we draw ourselves, and the builder gets its width back';
+
+// v0.58.4 - "There is NO loading. No, there isn't, look. And the bug with the
+//           green bar in the average beat not sliding is back - you didn't
+//           really fix it."
+//           Both correct. Two fixes, and in each case my previous attempt was
+//           aimed at the wrong layer.
+//           * ★ THE REFRESH SPINNER: `progressViewOffset` (v0.58.3) is NOT
+//             dependable on iOS and I should have read the implementation
+//             before shipping it rather than only the prop table. RN moves
+//             the UIRefreshControl by REWRITING ITS FRAME from
+//             `layoutSubviews`, through a coordinate conversion that
+//             converges rather than computes, and the same file warns that
+//             "setting the frame breaks integration with ContentInset". It
+//             changed nothing on the phone.
+//             The RefreshControl now keeps only the job it is good at - the
+//             pull gesture and the refreshing state - and its indicator is
+//             left where it always was, behind the glass, invisible and
+//             harmless. What the reader sees is a badge THIS SCREEN draws,
+//             at a position this screen owns: one indicator, both platforms,
+//             no native quirk anywhere in the path.
+//           * ★ THE BUILDER'S DRAG: the gesture fix in v0.58.2 was real, but
+//             there was a SECOND cause and it was not a gesture problem at
+//             all - `onLayout` accepted a width of ZERO. `move` cannot
+//             compute a ratio without a width, so it returns and the control
+//             is simply dead. And something writes zero: v0.58.1 made History
+//             keep both tabs mounted and hide the inactive one with
+//             `display: none`, and Yoga lays a hidden subtree out at zero -
+//             so every trip to Studies blanked the track's width. My own
+//             flicker fix armed this one. A zero is never a measurement; the
+//             track's width does not change while the panel lives.
 
 // v0.58.3 - "In Studies, when you pull down and it loads and refreshes, there
 //           is no refresh circle - it visually looks like it gets stuck at a

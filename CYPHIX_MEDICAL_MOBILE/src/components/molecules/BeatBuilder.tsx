@@ -214,7 +214,22 @@ export default function BeatBuilder({
           accessibilityLabel={caption}
           accessibilityValue={{ min: 1, max: total, now: value }}
           onLayout={(e) => {
-            trackW.current = e.nativeEvent.layout.width;
+            /* ★ A ZERO IS NEVER A MEASUREMENT, AND ACCEPTING ONE KILLS
+               THE CONTROL. `move` refuses to act on a track of width 0
+               (it cannot compute a ratio), so whatever writes 0 here
+               silently disables dragging until some later layout pass
+               happens to write a real number.
+               Something does write 0: since v0.58.1 History keeps both
+               tabs mounted and hides the inactive one with
+               `display: none`, and Yoga lays a hidden subtree out at
+               zero. So every trip to Studies used to blank this width,
+               and coming back to Insights left the drag dead until the
+               next layout — which is exactly the "it came back" report.
+               The width of this track does not change while the panel
+               lives, so the last real measurement is always the right
+               one to keep. */
+            const w = e.nativeEvent.layout.width;
+            if (w > 0) trackW.current = w;
           }}
           style={[styles.track, rtl && styles.trackRtl]}
           /* Generous, because the track itself is 26 pt and a timeline you
@@ -277,6 +292,14 @@ const styles = StyleSheet.create({
   reset: { fontSize: 13.5, fontWeight: '700', textDecorationLine: 'underline' },
 });
 
+// v2.2.0 — ⚠️ The drag died again after v2.1.0, and the second cause was not
+//          the gesture at all: `onLayout` accepted a width of ZERO. `move`
+//          cannot compute a ratio without a width, so it returns — and since
+//          History v0.58.1 keeps both tabs mounted and hides the inactive one
+//          with `display: none`, Yoga lays the hidden subtree out at zero and
+//          blanked this width on every trip to Studies. The track's width does
+//          not change while the panel lives, so a zero is never a measurement
+//          worth keeping.
 // v2.1.0 — ⚠️ "It sometimes loses touch." The gesture OBJECT was being rebuilt
 //          mid-drag: the caller's inline `onChange` → a new `move` → a new
 //          `useMemo` gesture, on every notch crossed, because crossing a notch
