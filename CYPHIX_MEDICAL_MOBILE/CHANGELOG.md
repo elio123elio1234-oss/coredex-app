@@ -1,5 +1,75 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.57.1 - 2026-08-14 - the sweep stops costing a frame: static paper, a sliding curtain
+
+*"The animation works, but something in your design is broken — it slows the
+whole History tab down drastically, you can't scroll there at all, it lags."*
+
+Correct, and worth writing down properly because it was not a missing
+optimisation. It was **the wrong mechanism**, chosen twice over.
+
+### 1. A dashed stroke is a geometry rebuild, not an effect
+
+v0.57.0 revealed the trace with `strokeDasharray` plus an animated
+`strokeDashoffset`. That *looks* like the cheap, standard way to animate a
+line drawing itself, and for one short path it is. It is not what it costs
+here: to render a dashed stroke the engine must walk the path, measure its
+length, and construct the dash geometry — and it must **redo that every time
+the offset changes**. That is every frame, for a ~700-point polyline, on
+every visible row at once.
+
+Running it on the UI thread did not rescue it. That only decided *where* the
+dropped frames landed; the work was still per-frame, still O(points), and
+still multiplied by the number of rows.
+
+**Now the SVG is drawn once and never touched again.** Above it sits a plain
+`Animated.View` in the card's own colour — a curtain — sliding off to the
+right on a `translateX`. A native view transform is the cheapest thing this
+runtime can animate: no measurement, no geometry, no rasterisation, no SVG
+involvement at all. The pen dot is a second small view riding the curtain's
+edge.
+
+One deliberate consequence: the curtain covers the second-tick hairlines as
+well as the trace, so the whole strip writes on together like paper leaving a
+printer. Clipping only the trace would put per-frame work back inside the
+SVG, which is the thing being fixed.
+
+Trace resolution also dropped from 1.0 to **0.6 points per pixel** — ~700
+points became ~420. That is detail a 44 pt strip cannot show, and it was
+being paid for on every row that scrolled into existence.
+
+### 2. A re-render storm, from a trap this repo already documents
+
+Every viewability event called `setState`, which re-rendered **every mounted
+row** — and `StudyCard` was not memoised, and was being handed a freshly
+built `{ samples, sampleRate }` object and a freshly minted `onPress` closure
+on every render. So each of those re-renders was a real one, for every card.
+
+`PARITY.md` has recorded this exact inline-object/memo trap since the
+`StudyViewerScreen` flicker. I walked into it a second time.
+
+`StudyCard` is now `memo`ised and every prop is a primitive or a stable
+reference: `id` plus one shared `onOpen` instead of a per-row closure, the
+digest's own `Float32Array` instead of a wrapper object, memoised labels. A
+viewability tick now re-renders exactly the one row whose `animate` flipped.
+
+### 3. The safety timer was the bug (found by reasoning, not reported)
+
+v0.57.0 revealed a trace on a 1.2 s timer if the row had not been reported
+visible — a net for a case that probably never happens. It was actively
+harmful: **FlatList mounts rows a screen or more before they are seen**, so
+the timer drew them off-screen, and then *reaching* them set `animate`,
+blanked the strip and re-drew it. A flash, caused by the safety net.
+
+There is no timer now. Only visibility starts a sweep, a `swept` latch means
+nothing can restart one, and the viewability threshold dropped to **30 %** so
+a row peeking in at the bottom of the screen still qualifies — with the timer
+gone, that threshold is the only thing that ever puts a waveform on the page.
+
+Verified: `tsc --noEmit`, `expo export` both platforms. 🔬 — the whole point
+of this entry is that the previous version also typechecked and bundled
+cleanly (§6.4). The measurement that matters is a thumb on a list.
+
 ## v0.57.0 - 2026-08-14 - the trace writes itself, in the brand navy, with no capsule around the verdict
 
 *"Something is off with the colours in History. First, I don't want the finding

@@ -42,6 +42,7 @@
    row's digest-derived facts, and a press handler.
    ================================================================== */
 
+import { memo, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ScreeningLevel } from '@cyphix/shared';
@@ -66,7 +67,20 @@ export interface StudyCardLabels {
   previewA11y: string;
 }
 
+/*
+ * ⚠️ EVERY PROP IS A PRIMITIVE OR A STABLE REFERENCE, BECAUSE THIS
+ * COMPONENT IS `memo`ised AND THE LIST DEPENDS ON THAT.
+ *
+ * History re-renders whenever a row is first scrolled into view, which
+ * during a flick is constantly. With a shallow-compared memo that costs
+ * nothing — but only while the props survive the comparison, so the
+ * waveform arrives as `previewSamples` (the digest's own Float32Array,
+ * never a fresh `{ samples, … }` wrapper) and the press handler as
+ * `onOpen(id)` rather than a closure minted per render. An inline object
+ * or arrow here silently disables the memo and takes the scroll with it.
+ */
 interface Props {
+  id: string;
   when: string;
   bpm: number | null;
   durationSec: number;
@@ -78,22 +92,24 @@ interface Props {
   /** `undefined` = digest not built yet (placeholder); `null` = simulated
       (never screened — the SIMULATION chip renders instead). */
   verdict: ScreeningLevel | null | undefined;
-  /** The 4 s lead II preview, when the digest has one. */
-  preview: { samples: Float32Array; sampleRate: number } | null;
+  /** The digest's own array — a stable reference, or null while it builds. */
+  previewSamples: Float32Array | null;
+  previewSampleRate: number;
   /** True once this row has been scrolled into view — the trace then
       sweeps on rather than simply being there. See `EcgMiniPreview`. */
   animate?: boolean;
   selected?: boolean;
   rtl: boolean;
   labels: StudyCardLabels;
-  onPress: () => void;
+  onOpen: (id: string) => void;
 }
 
 /** The preview strip's height — enough for a QRS to be a shape, small
     enough that ~4 rows still fit a phone screen. */
 const PREVIEW_H = 44;
 
-export default function StudyCard({
+function StudyCard({
+  id,
   when,
   bpm,
   durationSec,
@@ -103,15 +119,17 @@ export default function StudyCard({
   annotationCount,
   hasNote,
   verdict,
-  preview,
+  previewSamples,
+  previewSampleRate,
   animate = false,
   selected,
   rtl,
   labels,
-  onPress,
+  onOpen,
 }: Props) {
   const t = useTheme();
   const align = rtl ? ('right' as const) : ('left' as const);
+  const onPress = useCallback(() => onOpen(id), [onOpen, id]);
 
   const verdictLabel: Record<ScreeningLevel, string> = {
     clear: labels.verdictClear,
@@ -183,10 +201,10 @@ export default function StudyCard({
       </View>
 
       {/* ── Row 2: what the recording looks like ── */}
-      {preview ? (
+      {previewSamples ? (
         <EcgMiniPreview
-          samples={preview.samples}
-          sampleRate={preview.sampleRate}
+          samples={previewSamples}
+          sampleRate={previewSampleRate}
           height={PREVIEW_H}
           /* ★ The BRAND's navy (#0D2041 — the wordmark's own lettering),
              not `accentLive`. That token means "a live UI element" and is
@@ -196,6 +214,8 @@ export default function StudyCard({
              decision here. */
           stroke={t.brandNavy}
           gridColor={t.border}
+          /* What the reveal curtain is painted in — the card's own ground. */
+          surface={t.surface}
           animate={animate}
           accessibilityLabel={labels.previewA11y}
         />
@@ -277,6 +297,16 @@ const styles = StyleSheet.create({
   },
 });
 
+/* `memo`, and the reason is in the Props comment: History re-renders on
+   every first-sighting of a row, and without this each one re-rendered
+   every mounted card. Default shallow compare is enough BECAUSE the props
+   are primitives and stable references. */
+export default memo(StudyCard);
+
+// v2.2.0 — ⚠️ `memo` + primitive/stable props (`id` + `onOpen` instead of a
+//          per-render closure, `previewSamples` instead of a fresh wrapper
+//          object). Without it, one viewability tick re-rendered every card in
+//          the list, which is half of why the sweep made History unscrollable.
 // v2.1.0 — The verdict loses its capsule (a filled lozenge is an app badge; a
 //          conclusion is stated in words) — a dot in the level's colour and the
 //          words in its ink. SIMULATION keeps a chip on purpose: a safety label

@@ -1,7 +1,44 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.57.0';
-export const APP_BUILD_LABEL = 'the trace writes itself, in the brand navy, with no capsule around the verdict';
+export const APP_VERSION = '0.57.1';
+export const APP_BUILD_LABEL = 'the sweep stops costing a frame: static paper, a sliding curtain';
+
+// v0.57.1 - "The animation works, but something in your design is broken - it
+//           slows the whole History tab down drastically, you can't scroll
+//           there at all, it lags."
+//           Correct, and it was a wrong MECHANISM rather than a missing
+//           optimisation. Two causes, both mine, both from v0.57.0:
+//           * ★ `strokeDasharray` + an animated `strokeDashoffset` IS NOT A
+//             CHEAP EFFECT - IT IS A PER-FRAME GEOMETRY REBUILD. To draw a
+//             dashed stroke the renderer walks the path, measures it and
+//             constructs the dash segments, and it must redo that every time
+//             the offset moves: every frame, for a ~700-point polyline, times
+//             every visible row. Running on the UI thread did not save it; it
+//             only moved where the frames were dropped.
+//             The SVG is now drawn ONCE and never touched again. The reveal
+//             is a plain `Animated.View` in the card's own colour sliding off
+//             on a `translateX` - the cheapest thing this runtime animates.
+//             The pen dot is a second small view riding its edge. Trace
+//             resolution also dropped 1.0 -> 0.6 points per pixel: detail a
+//             44 pt strip cannot show, paid for on every row that scrolls in.
+//           * ★ A RE-RENDER STORM. Every viewability event called setState,
+//             which re-rendered EVERY mounted row - and `StudyCard` was not
+//             memoised, and was being handed a fresh `{samples, sampleRate}`
+//             object and a fresh `onPress` closure per render. This is the
+//             exact inline-object/memo trap PARITY already records from
+//             `StudyViewerScreen`, walked into a second time.
+//             `StudyCard` is `memo`ised and every prop is now a primitive or
+//             a stable reference (`id` + one shared `onOpen`, the digest's
+//             own Float32Array, memoised labels), so a viewability tick
+//             re-renders exactly the one row whose `animate` flipped.
+//           * Fixed while there, found by reasoning rather than by the
+//             report: the "reveal anyway" timer was harmful. FlatList mounts
+//             rows a screen or more before they are seen, so the timer drew
+//             them off-screen and REACHING them blanked the strip and
+//             re-drew it. There is no timer now - only visibility starts a
+//             sweep, a `swept` latch stops anything restarting it, and the
+//             viewability threshold dropped to 30 % so a row peeking in at
+//             the bottom still qualifies (nothing else would ever draw it).
 
 // v0.57.0 - "Something is off with the colours in History. First, I don't want
 //           the finding sitting inside a coloured capsule - it looks cheap.

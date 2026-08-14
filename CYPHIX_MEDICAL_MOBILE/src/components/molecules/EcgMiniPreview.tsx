@@ -22,14 +22,36 @@
    Time scale is FIXED per row width: the window always fills the card, so
    every row in the list shares one sweep speed and rates compare by eye.
 
-   ══ ★ THE SWEEP — WHY IT IS DRAWN AND NOT JUST SHOWN ══
-   Asked for: "add an animation as if the wave is being created live."
-   The trace writes itself left to right at CONSTANT speed (`Easing.linear`
-   — a monitor's stylus does not accelerate; easing it would read as a UI
-   wipe rather than an instrument), with a small pen dot travelling at the
-   writing edge and fading out as it lands. Mechanically it is
-   `strokeDasharray` + an animated `strokeDashoffset` on the UI thread, so
-   a list of these costs the JS thread nothing.
+   ══ ★ THE SWEEP, AND THE VERSION OF IT THAT KILLED THE SCREEN ══
+   Asked for: "an animation as if the wave is being created live." The
+   trace writes itself left to right at CONSTANT speed (`Easing.linear` —
+   a monitor's stylus does not accelerate; easing it reads as a UI wipe
+   rather than an instrument), with a pen dot at the writing edge that
+   fades as it lands.
+
+   ⚠️ v2.0.0 IMPLEMENTED THAT WITH `strokeDasharray` + AN ANIMATED
+   `strokeDashoffset`, AND IT MADE HISTORY UNSCROLLABLE. Reported as
+   "drastically slow, you can't scroll at all". The mistake is not a
+   missing optimisation, it is the wrong mechanism: **a dashed stroke is
+   not a cheap visual effect, it is a geometry rebuild.** To draw a dashed
+   line the renderer must walk the path, measure it, and construct the
+   dash segments — and it must redo that EVERY TIME THE OFFSET CHANGES,
+   i.e. every frame, for a ~700-point polyline, times every visible row.
+   Being on the UI thread does not save you; it just moves where the
+   frames are dropped.
+
+   ★ WHAT IT DOES NOW: the SVG is drawn ONCE and never touched again.
+   Above it sits a plain `Animated.View` in the card's own colour — a
+   curtain — which slides off to the right on a `translateX`. A native
+   view transform is the single cheapest thing this runtime can animate:
+   no geometry, no rasterisation, no SVG involvement at all. The pen dot
+   is a second small view riding the curtain's edge.
+
+   The reveal covers the second-ticks as well as the trace, so the whole
+   strip writes on together like paper leaving a printer. That is a
+   deliberate consequence of using one opaque curtain rather than clipping
+   the trace alone — clipping puts per-frame work back inside the SVG,
+   which is the thing being fixed.
 
    ★ It runs when the row BECOMES VISIBLE, not on mount — the caller
    passes `animate` off its FlatList viewability. Rows below the fold draw
@@ -41,21 +63,22 @@
    thumb would turn an instrument into a fidget toy. (A row that FlatList
    recycles far off-screen and later remounts does draw again, which is
    the same "it just arrived" reading and is left alone.)
+
+   ⚠️ Nothing except visibility ever reveals the trace — there is
+   deliberately no timer. See the `swept` latch for the flash that one
+   caused.
    ================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
-  useAnimatedProps,
+  useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, { Line, Path } from 'react-native-svg';
 import { buildEcgPath } from '@cyphix/shared';
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface Props {
   /** Downsampled preview samples, mV (from the study digest). */
@@ -67,6 +90,8 @@ interface Props {
   stroke: string;
   /** Second-tick hairlines. */
   gridColor: string;
+  /** What is BEHIND the strip — the curtain is painted in it. */
+  surface: string;
   /** True once the row has been scrolled into view — see the header. */
   animate?: boolean;
   accessibilityLabel: string;
@@ -83,38 +108,17 @@ const EDGE_PX = 2;
  * revealed it.
  */
 const DRAW_MS = 1100;
-/** Samples the pen dot's vertical position is looked up from. */
-const PEN_STEPS = 96;
+/** Steps the pen dot's vertical position is looked up from. */
+const PEN_STEPS = 64;
+const PEN_R = 2.2;
 /**
- * If viewability never reports (an edge case in a short list that fits
- * without scrolling), reveal the trace anyway. A preview that never
- * appears is a far worse failure than one that did not animate.
- */
-const REVEAL_FALLBACK_MS = 1200;
-
-/**
- * Length of a polyline `d` string, in user units.
+ * Output resolution of the trace, in points per pixel of width.
  *
- * `buildEcgPath` emits only absolute `M`/`L` with two decimals, so pairing
- * the numbers off is exact rather than a heuristic. The dash animation
- * needs a real length: a guessed upper bound would finish drawing early
- * and then sit still for the rest of the duration.
+ * 1.0 gave ~700 points for a 350 pt card — detail no 44 pt strip can
+ * show, paid for on every row that scrolls into existence. 0.6 keeps a
+ * QRS its shape and costs a third less to rasterise.
  */
-function polylineLength(d: string): number {
-  const nums = d.match(/-?\d+(?:\.\d+)?/g);
-  if (!nums || nums.length < 4) return 0;
-  let total = 0;
-  let px = Number(nums[0]);
-  let py = Number(nums[1]);
-  for (let i = 2; i + 1 < nums.length; i += 2) {
-    const x = Number(nums[i]);
-    const y = Number(nums[i + 1]);
-    total += Math.hypot(x - px, y - py);
-    px = x;
-    py = y;
-  }
-  return total;
-}
+const BUCKETS_PER_PX = 0.6;
 
 export default function EcgMiniPreview({
   samples,
@@ -122,6 +126,7 @@ export default function EcgMiniPreview({
   height = 44,
   stroke,
   gridColor,
+  surface,
   animate = false,
   accessibilityLabel,
 }: Props) {
@@ -147,14 +152,12 @@ export default function EcgMiniPreview({
             mmPerSec: width / durationSec,
             mmPerMv: pxPerMv,
             baselineMm: baselinePx,
-            bucketsPerMm: 1, // one min/max pair per px — the data is pre-decimated
+            bucketsPerMm: BUCKETS_PER_PX,
             clipMm: clipPx,
           })
         : '',
     [ready, samples, sampleRate, width, durationSec, pxPerMv, baselinePx, clipPx],
   );
-
-  const length = useMemo(() => polylineLength(path), [path]);
 
   /* Where the pen sits at each step of the sweep. Precomputed on the JS
      thread and read by the worklet — deriving it per frame would put the
@@ -172,34 +175,40 @@ export default function EcgMiniPreview({
 
   /** 0 = nothing drawn, 1 = the whole trace is on the page. */
   const progress = useSharedValue(0);
+  /**
+   * ★ ONE SWEEP PER MOUNT, ENFORCED HERE RATHER THAN HOPED FOR.
+   *
+   * An earlier version revealed the trace on a timer when the row had not
+   * been reported visible yet — which was wrong in a way that only shows
+   * on a device: FlatList mounts rows a screen or more BEFORE they are
+   * seen, so the timer drew them off-screen, and reaching them then blanked
+   * the strip and re-drew it. A flash, caused by the safety net.
+   *
+   * Now nothing but visibility ever starts the sweep, and once it has
+   * started this latch means a later prop change cannot restart it.
+   */
+  const swept = useRef(false);
 
   useEffect(() => {
-    if (!ready || length <= 0) return;
-    if (animate) {
-      progress.value = 0;
-      progress.value = withTiming(1, { duration: DRAW_MS, easing: Easing.linear });
-      return;
-    }
-    /* Not (yet) reported visible — see REVEAL_FALLBACK_MS. */
-    const timer = setTimeout(() => {
-      progress.value = 1;
-    }, REVEAL_FALLBACK_MS);
-    return () => clearTimeout(timer);
-  }, [animate, ready, length, progress]);
+    if (!ready || !animate || swept.current) return;
+    swept.current = true;
+    progress.value = 0;
+    progress.value = withTiming(1, { duration: DRAW_MS, easing: Easing.linear });
+  }, [animate, ready, progress]);
 
-  const traceProps = useAnimatedProps(() => ({
-    strokeDashoffset: length * (1 - progress.value),
+  /* One native transform. This is the whole animation. */
+  const curtainStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: progress.value * width }],
   }));
 
-  const penProps = useAnimatedProps(() => {
+  const penStyle = useAnimatedStyle(() => {
     const p = progress.value;
     const i = Math.max(0, Math.min(penYs.length - 1, Math.round(p * (penYs.length - 1))));
     return {
-      cx: p * width,
-      cy: penYs[i],
+      transform: [{ translateX: p * width - PEN_R }, { translateY: penYs[i] - PEN_R }],
       /* Absent before the sweep starts, and fading through the last tenth
          so the stylus lifts off the page rather than vanishing mid-stroke. */
-      opacity: p <= 0 ? 0 : p >= 1 ? 0 : p > 0.9 ? (1 - p) / 0.1 : 1,
+      opacity: p <= 0 || p >= 1 ? 0 : p > 0.9 ? (1 - p) / 0.1 : 1,
     };
   });
 
@@ -213,27 +222,35 @@ export default function EcgMiniPreview({
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
     >
-      {ready && length > 0 && (
-        <Svg width={width} height={height}>
-          {Array.from({ length: Math.max(0, Math.ceil(durationSec) - 1) }, (_, i) => {
-            const x = ((i + 1) / durationSec) * width;
-            return (
-              <Line key={x} x1={x} y1={0} x2={x} y2={height} stroke={gridColor} strokeWidth={1} />
-            );
-          })}
-          <AnimatedPath
-            d={path}
-            stroke={stroke}
-            strokeWidth={1.6}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray={[length, length]}
-            animatedProps={traceProps}
+      {ready && (
+        <>
+          {/* Rasterised once. Nothing below animates it. */}
+          <Svg width={width} height={height}>
+            {Array.from({ length: Math.max(0, Math.ceil(durationSec) - 1) }, (_, i) => {
+              const x = ((i + 1) / durationSec) * width;
+              return (
+                <Line key={x} x1={x} y1={0} x2={x} y2={height} stroke={gridColor} strokeWidth={1} />
+              );
+            })}
+            <Path
+              d={path}
+              stroke={stroke}
+              strokeWidth={1.6}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.curtain, { backgroundColor: surface }, curtainStyle]}
           />
-          {/* The stylus. Small enough to be a pen and not a marker. */}
-          <AnimatedCircle r={2.2} fill={stroke} animatedProps={penProps} />
-        </Svg>
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.pen, { backgroundColor: stroke }, penStyle]}
+          />
+        </>
       )}
     </View>
   );
@@ -241,11 +258,18 @@ export default function EcgMiniPreview({
 
 const styles = StyleSheet.create({
   box: { width: '100%', overflow: 'hidden' },
+  curtain: { ...StyleSheet.absoluteFillObject },
+  pen: { position: 'absolute', top: 0, left: 0, width: PEN_R * 2, height: PEN_R * 2, borderRadius: PEN_R },
 });
 
-// v2.0.0 — The trace SWEEPS on: constant-speed dash reveal with a pen dot at
-//          the writing edge, on the UI thread, fired when the row scrolls into
-//          view rather than on mount. Once per visit — re-drawing on every
-//          scroll pass would make an instrument into a fidget toy.
+// v3.0.0 — ⚠️ PERFORMANCE FIX: the dash-based reveal made History
+//          unscrollable. A dashed stroke is a per-frame GEOMETRY REBUILD of
+//          the whole polyline, not a cheap effect, and being on the UI thread
+//          only moved where the frames dropped. The SVG is now static and the
+//          reveal is one `translateX` on a plain view. Trace resolution also
+//          dropped to 0.6 points/px — detail a 44 pt strip cannot show.
+// v2.0.0 — The trace SWEEPS on: constant-speed reveal with a pen dot at the
+//          writing edge, fired when the row scrolls into view rather than on
+//          mount. Once per mounted row.
 // v1.0.0 — A 4 s lead II preview for the History row: fixed time scale, second
 //          ticks only (deliberately not ECG paper), recognition not measurement.

@@ -36,7 +36,7 @@
    list deliberately never loads.
    ================================================================== */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -120,9 +120,13 @@ export default function HistoryScreen() {
      list: React Native throws "Changing onViewableItemsChanged on the fly
      is not supported" if the prop identity changes between renders. */
   const viewabilityConfig = useRef({
-    /* Half a card is enough to call it seen — waiting for the whole row
-       means the last one never draws until it is fully clear of the dock. */
-    itemVisiblePercentThreshold: 50,
+    /* ★ 30 %, and low on purpose. There is no timer revealing a trace that
+       was never reported visible — a timer drew rows off-screen and made
+       them flash when reached (see `EcgMiniPreview`) — so this threshold is
+       the ONLY thing that puts a waveform on the page. A row peeking in at
+       the bottom of the screen must qualify, or it sits blank until the
+       reader scrolls. */
+    itemVisiblePercentThreshold: 30,
     minimumViewTime: 0,
   }).current;
 
@@ -220,52 +224,68 @@ export default function HistoryScreen() {
      never disagree about where the margin is. */
   const padH = shellPaddingH(insets);
 
-  const cardLabels = {
-    bpm: tr('bpm'),
-    simulated: tr('histSimulated'),
-    lowQuality: tr('histLowQuality'),
-    notes: tr('histNotes'),
-    hasNote: tr('noteTitle'),
-    leadSet: tr('reportLeadSetShort'),
-    verdictClear: tr('histVerdictClear'),
-    verdictAttention: tr('histVerdictAttention'),
-    verdictUrgent: tr('histVerdictUrgent'),
-    verdictInconclusive: tr('histVerdictInconclusive'),
-    previewA11y: tr('histPreviewA11y'),
-  };
+  /* ⚠️ MEMOISED, and it is not a micro-optimisation: `StudyCard` is
+     `memo`ised, and a labels object rebuilt every render would defeat the
+     shallow compare for every row at once. */
+  const cardLabels = useMemo(
+    () => ({
+      bpm: tr('bpm'),
+      simulated: tr('histSimulated'),
+      lowQuality: tr('histLowQuality'),
+      notes: tr('histNotes'),
+      hasNote: tr('noteTitle'),
+      leadSet: tr('reportLeadSetShort'),
+      verdictClear: tr('histVerdictClear'),
+      verdictAttention: tr('histVerdictAttention'),
+      verdictUrgent: tr('histVerdictUrgent'),
+      verdictInconclusive: tr('histVerdictInconclusive'),
+      previewA11y: tr('histPreviewA11y'),
+    }),
+    [tr],
+  );
 
-  const renderCard = ({ item, index }: { item: RecordingListItem; index: number }) => {
-    const digest = digests[item.id];
-    /* First-landing stagger only (see `mountedAt`). Capped so a row far
-       down a fast scroll never waits noticeably. */
-    const stagger = Date.now() - mountedAt.current < 900 ? Math.min(index, 8) * 45 : 0;
-    return (
-      <FadeUpView delay={stagger} duration={420} distance={10}>
-        <StudyCard
-          when={fmtWhen(item.recordedAt)}
-          /* Imported CSVs store a null summary bpm; the digest measured one. */
-          bpm={item.summary.bpm ?? digest?.bpm ?? null}
-          durationSec={item.durationSec}
-          sampleRate={item.sampleRate}
-          isSimulated={item.isSimulated}
-          insufficient={item.summary.insufficient}
-          annotationCount={item.annotations.length}
-          hasNote={Boolean(item.note && item.note.trim() !== '')}
-          verdict={digest ? digest.screeningLevel : undefined}
-          preview={
-            digest ? { samples: digest.previewSamples, sampleRate: digest.previewSampleRate } : null
-          }
-          animate={drawnIds.current.has(item.id)}
-          rtl={rtl}
-          labels={cardLabels}
-          onPress={() => {
-            void Haptics.selectionAsync();
-            navigation.navigate('StudyViewer', { id: item.id });
-          }}
-        />
-      </FadeUpView>
-    );
-  };
+  /* One handler for every row, so no card is handed a fresh closure. */
+  const openStudy = useCallback(
+    (id: string) => {
+      void Haptics.selectionAsync();
+      navigation.navigate('StudyViewer', { id });
+    },
+    [navigation],
+  );
+
+  const renderCard = useCallback(
+    ({ item, index }: { item: RecordingListItem; index: number }) => {
+      const digest = digests[item.id];
+      /* First-landing stagger only (see `mountedAt`). Capped so a row far
+         down a fast scroll never waits noticeably. */
+      const stagger = Date.now() - mountedAt.current < 900 ? Math.min(index, 8) * 45 : 0;
+      return (
+        <FadeUpView delay={stagger} duration={420} distance={10}>
+          <StudyCard
+            id={item.id}
+            when={fmtWhen(item.recordedAt)}
+            /* Imported CSVs store a null summary bpm; the digest measured one. */
+            bpm={item.summary.bpm ?? digest?.bpm ?? null}
+            durationSec={item.durationSec}
+            sampleRate={item.sampleRate}
+            isSimulated={item.isSimulated}
+            insufficient={item.summary.insufficient}
+            annotationCount={item.annotations.length}
+            hasNote={Boolean(item.note && item.note.trim() !== '')}
+            verdict={digest ? digest.screeningLevel : undefined}
+            /* The digest's own array, never a wrapper object — see StudyCard. */
+            previewSamples={digest?.previewSamples ?? null}
+            previewSampleRate={digest?.previewSampleRate ?? 0}
+            animate={drawnIds.current.has(item.id)}
+            rtl={rtl}
+            labels={cardLabels}
+            onOpen={openStudy}
+          />
+        </FadeUpView>
+      );
+    },
+    [digests, fmtWhen, rtl, cardLabels, openStudy],
+  );
 
   return (
     /* Both tabs scroll, so the dock's clearance belongs on their content
