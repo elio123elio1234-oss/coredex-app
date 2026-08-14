@@ -30,6 +30,21 @@
    The control sits UNDER the title, not beside it: it belongs to History,
    and a switch level with a heading reads as a switch for the screen.
 
+   ══ THE HEADER IS GLASS, AND THE PAGE GOES UNDER IT ══
+   The title, the count and the tab switch sit on a frosted bar pinned to
+   the top, and the list scrolls BEHIND it — the same material and the
+   same rules as the study viewer's header and the dock. Two consequences
+   worth knowing before editing this file:
+
+     · the bar is absolutely positioned, so its height is not part of the
+       layout. Every scroller therefore carries `headerH` on its CONTENT
+       inset (`PatientShell.bleedTop` explains the third axis of this),
+       and that height is MEASURED, because the bar grows a count line, a
+       progress clause, a tab row and an error banner depending on state.
+     · anything that would sit "between the header and the list" has to
+       go INSIDE the glass instead. A sibling gets pushed down by the
+       clearance and then the list pads for the header again below it.
+
    ══ THIS SCREEN OWNS FETCHING ══
    Cards take data as props. Storage, RBAC and audit live behind hooks.
    `EcgIdentityPanel` owns its own — it needs the WAVEFORMS, which this
@@ -54,6 +69,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
+import GlassSurface, { IS_LIQUID_GLASS } from '@/components/atoms/GlassSurface';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import StudyCard from '@/components/molecules/StudyCard';
@@ -73,10 +89,19 @@ import {
 } from '@/services/api/endpoints/recordingApi';
 import { dockFootprint } from '@/navigation/dockMetrics';
 import { RADIUS } from '@/theme/tokens';
-import { useTheme } from '@/theme/useTheme';
+import { useIsDark, useTheme } from '@/theme/useTheme';
+
+/** The glass bar's own bottom padding, added back when measuring it. */
+const HEADER_PAD_BOTTOM = 12;
+/** Points of scroll before the header earns its edge. Below this nothing is
+    behind it yet and a hairline would divide nothing from nothing. */
+const HEADER_SHADOW_AT = 6;
+/** First-frame estimate, replaced by `onLayout` on the next one. */
+const HEADER_H_GUESS = 148;
 
 export default function HistoryScreen() {
   const t = useTheme();
+  const dark = useIsDark();
   const { t: tr, lang, rtl } = useTranslation();
   const navigation = useNavigation<{ navigate: (screen: string, params: object) => void }>();
   const insets = useSafeAreaInsets();
@@ -104,6 +129,22 @@ export default function HistoryScreen() {
      refetches re-render the same mounted rows (same keys), so they never
      re-stagger; rows mounted later by scrolling animate briefly, capped. */
   const mountedAt = useRef(Date.now());
+
+  /* ── The frosted header's own state ──
+     Its height is MEASURED rather than assumed: it carries a title, an
+     optional count line that grows a progress clause, and tabs that only
+     exist once there are studies, so any constant here would be wrong in
+     at least one of those states. `HEADER_H_GUESS` covers the first frame
+     only — without it the first cards paint under the bar and jump. */
+  const [headerH, setHeaderH] = useState(HEADER_H_GUESS);
+  const [scrolled, setScrolled] = useState(false);
+
+  /* Only re-render when the header actually crosses the threshold — an
+     onScroll that setStates every frame would re-render the whole list. */
+  const onContentScroll = useCallback((offsetY: number) => {
+    const past = offsetY > HEADER_SHADOW_AT;
+    setScrolled((was) => (was === past ? was : past));
+  }, []);
 
   /* ── Which rows have been LOOKED AT ──
      A trace sweeps on when its row reaches the screen, so the ids that
@@ -217,6 +258,23 @@ export default function HistoryScreen() {
   };
 
   const align = rtl ? ('right' as const) : ('left' as const);
+
+  /* ── The header's material ──
+     Denser than the dock's (0.38/0.55) and lighter than the study
+     viewer's (0.74), for a reason on each side: this bar carries a 30 pt
+     title that has to stay readable while cards pass under it, but it was
+     asked for as "glass like the dock", and the dock is a small floating
+     pill over a strip of page rather than a full-width bar over a list.
+     Liquid Glass tints itself a little, so it takes the lower pair —
+     the same split the dock makes, for the same v0.19.2 reason. */
+  const headerTint = IS_LIQUID_GLASS
+    ? dark
+      ? 'rgba(19, 27, 44, 0.46)'
+      : 'rgba(255, 255, 255, 0.50)'
+    : dark
+      ? 'rgba(19, 27, 44, 0.58)'
+      : 'rgba(255, 255, 255, 0.64)';
+
   const empty = !list.data || list.data.length === 0;
   const showTabs = !list.isLoading && !list.isError && !empty;
   /* The padding the shell would have applied, now applied here — one
@@ -298,95 +356,34 @@ export default function HistoryScreen() {
        cut at the scroller's frame, which is what was clipping the trace
        and the lead label. So the SHELL drops its side padding and this
        screen applies the same `shellPaddingH` itself, per element. */
-    <PatientShell scrollsUnderDock bleedHorizontal>
+    /* `bleedTop`: the title and tabs now ride a frosted bar that the page
+       passes UNDER, so the shell must not also push the content down —
+       the header takes the safe area, and the scrollers take the header's
+       measured height on their content inset. */
+    <PatientShell scrollsUnderDock bleedHorizontal bleedTop>
       <View style={styles.root}>
-        <View style={[styles.head, { paddingHorizontal: padH }, rtl && styles.rowRtl]}>
-          <View style={styles.headText}>
-            <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
-              {tr('histTitle')}
-            </Text>
-            {!empty && (
-              <Text style={[styles.count, { color: t.textSecondary, textAlign: align }]}>
-                {tr('histCount', { n: String(list.data?.length ?? 0) })}
-                {selfOnly ? ` · ${tr('histOwnOnly')}` : ''}
-                {/* A visible backfill is a screen doing work; a list quietly
-                    filling with verdicts is a screen that might be broken. */}
-                {digesting
-                  ? ` · ${tr('histDigestProgress', {
-                      done: String(digesting.done),
-                      total: String(digesting.total),
-                    })}`
-                  : ''}
-              </Text>
-            )}
-          </View>
-
-          {/* Import lives on the LIST, not inside a study: it CREATES a study,
-              and an action that adds a row belongs where the rows are. It is
-              hidden on Insights for the same reason — nothing there is a row. */}
-          {features.has('exportRaw') && tab === 'studies' && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={tr('histImport')}
-              disabled={importing}
-              onPress={() => void handleImport()}
-              style={({ pressed }) => [
-                styles.importBtn,
-                {
-                  backgroundColor: t.surface,
-                  borderColor: t.border,
-                  opacity: importing ? 0.4 : pressed ? 0.6 : 1,
-                },
-              ]}
-            >
-              <Ionicons name="add" size={22} color={t.textPrimary} />
-            </Pressable>
-          )}
-        </View>
-
-        {/* The switch appears only once there is a second view worth
-            switching to. Offering "Insights" over an empty history would
-            promise a baseline that cannot exist yet. */}
-        {showTabs && (
-          <View style={{ paddingHorizontal: padH }}>
-            <SegmentedTabs
-              options={[
-                { value: 'studies', label: tr('insTabStudies') },
-                { value: 'insights', label: tr('insTabInsights') },
-              ]}
-              value={tab}
-              onChange={setTab}
-              accessibilityLabel={tr('histTitle')}
-            />
-          </View>
-        )}
-
-        {importError && (
-          <Text
-            style={[
-              styles.error,
-              { color: t.danger, backgroundColor: t.dangerSoft, marginHorizontal: padH },
-            ]}
-          >
-            {importError}
-          </Text>
-        )}
-
         {showTabs && tab === 'insights' ? (
           <EcgIdentityPanel
             patientId={subject}
             paddingHorizontal={padH}
+            paddingTop={headerH}
+            onScroll={onContentScroll}
             onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
           />
         ) : list.isLoading ? (
-          <View style={{ paddingHorizontal: padH }}>
+          <View style={{ paddingHorizontal: padH, paddingTop: headerH }}>
             <HistorySkeleton />
           </View>
         ) : list.isError ? (
           <View
             style={[
               styles.card,
-              { backgroundColor: t.surface, borderColor: t.border, marginHorizontal: padH },
+              {
+                backgroundColor: t.surface,
+                borderColor: t.border,
+                marginHorizontal: padH,
+                marginTop: headerH,
+              },
             ]}
           >
             <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
@@ -410,7 +407,12 @@ export default function HistoryScreen() {
           <View
             style={[
               styles.card,
-              { backgroundColor: t.surface, borderColor: t.border, marginHorizontal: padH },
+              {
+                backgroundColor: t.surface,
+                borderColor: t.border,
+                marginHorizontal: padH,
+                marginTop: headerH,
+              },
             ]}
           >
             <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
@@ -435,10 +437,16 @@ export default function HistoryScreen() {
               styles.listContent,
               {
                 paddingHorizontal: padH,
+                /* The frosted header's clearance, on the CONTENT — so cards
+                   pass behind the glass instead of starting below it. The
+                   dock's clearance below does the same job (PatientShell). */
+                paddingTop: headerH,
                 paddingBottom: dockFootprint(insets.bottom, screenH),
               },
             ]}
             showsVerticalScrollIndicator={false}
+            scrollEventThrottle={32}
+            onScroll={(e) => onContentScroll(e.nativeEvent.contentOffset.y)}
             accessibilityLabel={tr('histListLabel')}
             refreshControl={
               <RefreshControl
@@ -456,13 +464,139 @@ export default function HistoryScreen() {
             }
           />
         )}
+
+        {/* ── The frosted header, over everything ──
+            Same material and the same behaviour as the study viewer's:
+            the page travels underneath it, and the hairline appears only
+            once something is actually behind it. It is drawn LAST so it
+            sits above the list without needing a zIndex argument. */}
+        <GlassSurface
+          dark={dark}
+          tint={headerTint}
+          style={[
+            styles.header,
+            {
+              paddingTop: insets.top + 6,
+              paddingLeft: Math.max(insets.left, 0),
+              paddingRight: Math.max(insets.right, 0),
+              borderBottomColor: scrolled ? t.border : 'transparent',
+            },
+          ]}
+        >
+          <View
+            onLayout={(e) => {
+              /* The measured View is INSIDE the glass, so the bar's own
+                 padding has to be added back — without it the first card
+                 sits under the tabs (the study viewer paid for this one). */
+              const h = e.nativeEvent.layout.height + insets.top + 6 + HEADER_PAD_BOTTOM;
+              setHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+            }}
+          >
+            <View style={[styles.head, { paddingHorizontal: padH }, rtl && styles.rowRtl]}>
+              <View style={styles.headText}>
+                <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
+                  {tr('histTitle')}
+                </Text>
+                {!empty && (
+                  <Text style={[styles.count, { color: t.textSecondary, textAlign: align }]}>
+                    {tr('histCount', { n: String(list.data?.length ?? 0) })}
+                    {selfOnly ? ` · ${tr('histOwnOnly')}` : ''}
+                    {/* A visible backfill is a screen doing work; a list
+                        quietly filling with verdicts is a screen that might
+                        be broken. */}
+                    {digesting
+                      ? ` · ${tr('histDigestProgress', {
+                          done: String(digesting.done),
+                          total: String(digesting.total),
+                        })}`
+                      : ''}
+                  </Text>
+                )}
+              </View>
+
+              {/* Import lives on the LIST, not inside a study: it CREATES a
+                  study, and an action that adds a row belongs where the rows
+                  are. Hidden on Insights — nothing there is a row. */}
+              {features.has('exportRaw') && tab === 'studies' && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={tr('histImport')}
+                  disabled={importing}
+                  onPress={() => void handleImport()}
+                  style={({ pressed }) => [
+                    styles.importBtn,
+                    {
+                      backgroundColor: t.surface,
+                      borderColor: t.border,
+                      opacity: importing ? 0.4 : pressed ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="add" size={22} color={t.textPrimary} />
+                </Pressable>
+              )}
+            </View>
+
+            {/* The switch appears only once there is a second view worth
+                switching to. Offering "Insights" over an empty history would
+                promise a baseline that cannot exist yet. */}
+            {showTabs && (
+              <View style={{ paddingHorizontal: padH, paddingTop: 10 }}>
+                <SegmentedTabs
+                  options={[
+                    { value: 'studies', label: tr('insTabStudies') },
+                    { value: 'insights', label: tr('insTabInsights') },
+                  ]}
+                  value={tab}
+                  onChange={setTab}
+                  accessibilityLabel={tr('histTitle')}
+                />
+              </View>
+            )}
+
+            {/* ★ INSIDE the glass, not below it. As a sibling of the list it
+                would be pushed down by the header's clearance and then the
+                list would pad for the header AGAIN underneath it, leaving a
+                header-sized hole. In here it is part of what `onLayout`
+                measures, so the list simply starts lower while it shows —
+                and it belongs to the Import button either way. */}
+            {importError && (
+              <Text
+                style={[
+                  styles.error,
+                  {
+                    color: t.danger,
+                    backgroundColor: t.dangerSoft,
+                    marginHorizontal: padH,
+                    marginTop: 10,
+                  },
+                ]}
+              >
+                {importError}
+              </Text>
+            )}
+          </View>
+        </GlassSurface>
       </View>
     </PatientShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, gap: 12 },
+  /* No `gap`: the header floats above this box rather than sitting in it,
+     so the only children are full-bleed scrollers. */
+  root: { flex: 1 },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: HEADER_PAD_BOTTOM,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    /* The material must clip to its own box or the blur bleeds past the
+       bar on Android. */
+    overflow: 'hidden',
+  },
   rowRtl: { flexDirection: 'row-reverse' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headText: { flex: 1, flexShrink: 1, gap: 2 },
@@ -493,6 +627,11 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.6.0 — The header is a frosted bar the page scrolls UNDER: title, count
+//          and tabs on GlassSurface, measured rather than assumed (it grows a
+//          progress clause, a tab row and an error banner), with the hairline
+//          earned only once something is behind it. Both tabs report their
+//          scroll for that.
 // v1.5.0 — Tracks which rows have been SEEN (FlatList viewability) so each
 //          trace sweeps on as it is scrolled to, once per visit. Kept in a ref
 //          with a counter rather than state, so a flick does not rebuild a Set

@@ -1,5 +1,64 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.0 - 2026-08-14 - history gets a frosted header, and the studies pass underneath it
+
+*"Can the top bar — where the Scan History title and the Studies / Insights
+buttons are — get the glass effect like the tab bar at the bottom, so you see
+the waves behind it as if you're looking through glass?"*
+
+Yes. And it is the same material and the same rules the study viewer's header
+and the dock already use: `GlassSurface`, so a phone with Liquid Glass gets
+Liquid Glass and everything else gets a real blur (never the flat translucent
+rectangle Android renders without `dimezisBlurView`).
+
+### A floating header moves where the space lives
+
+A bar that floats is not part of the layout, so the space it occupies has to
+come from somewhere else: every scroller now carries the header's height on
+its **content inset**. That is the same inversion `scrollsUnderDock` made at
+the bottom of the screen in v2.3.0, so it arrives as its third axis —
+`PatientShell.bleedTop`.
+
+Without it the shell's own safe-area padding would push the list down and the
+glass would have nothing but empty page behind it, which is exactly the
+failure the dock's row already warns about: *"a scrolling screen that stops at
+a hard edge defeats the whole point of a frosted bar, which is to have
+something passing underneath it to refract."*
+
+### The height is measured, because it is not one height
+
+The bar grows a count line, an "analysing n of m" clause during the digest
+backfill, a tab row that only exists once there are studies, and an
+import-error banner. Any constant would be wrong in at least one of those
+states, so it is an `onLayout` on the inner view **plus the glass's own
+padding added back** — the study viewer already paid for that addition; without
+it the first card hides behind the tabs.
+
+### Anything "between the header and the list" has to go inside the glass
+
+The import error used to be a sibling of the list. As a sibling it gets pushed
+down by the header clearance, and then the list pads for the header *again*
+below it — a header-sized hole in the page. It now lives inside the bar, which
+is where it belonged anyway (it is about the Import button two rows up), and
+is part of what `onLayout` measures.
+
+### Small things
+
+- The hairline under the bar is **earned**: it appears once ~6 pt has scrolled
+  under it, because an edge drawn over an unscrolled page divides nothing from
+  nothing. Insights reports its scroll offset too, so the rule holds on both
+  tabs rather than only the one that happened to be a `FlatList`.
+- Tint sits between the dock's (0.38 / 0.55) and the study viewer header's
+  (0.74): denser than the dock because a 30 pt title has to stay readable with
+  cards travelling under it, lighter than the viewer's because this was asked
+  for as *the dock's* glass. Liquid Glass takes the lower pair — the same
+  split the dock makes, for the same reason it makes it.
+
+Verified: `tsc --noEmit`, `expo export` both platforms, `expo-doctor`. 🔬 —
+and this one genuinely needs a device: `GLASS_MATERIAL` in Settings › About
+says which material actually resolved, and that is the first thing to read if
+the bar looks flat rather than frosted.
+
 ## v0.57.1 - 2026-08-14 - the sweep stops costing a frame: static paper, a sliding curtain
 
 *"The animation works, but something in your design is broken — it slows the

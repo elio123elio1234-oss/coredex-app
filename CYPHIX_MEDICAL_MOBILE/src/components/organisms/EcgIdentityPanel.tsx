@@ -157,6 +157,15 @@ interface Props {
    * view's children at its frame.
    */
   paddingHorizontal: number;
+  /**
+   * Clearance for History's frosted header, applied to this panel's own
+   * scroll CONTENT — the mirror of `paddingBottom`'s dock clearance below.
+   * The panel passes BEHIND the glass; it does not start under it.
+   */
+  paddingTop?: number;
+  /** Lets History know when this tab has been scrolled, so the header can
+      earn its hairline the same way it does over the studies list. */
+  onScroll?: (offsetY: number) => void;
   onOpenStudy: (recordingId: string) => void;
 }
 
@@ -198,7 +207,13 @@ const EXCLUSION_LABEL: Record<ExclusionReason, TranslationKey> = {
   outlier: 'insExOutlier',
 };
 
-export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenStudy }: Props) {
+export default function EcgIdentityPanel({
+  patientId,
+  paddingHorizontal,
+  paddingTop = 0,
+  onScroll,
+  onOpenStudy,
+}: Props) {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -459,10 +474,13 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         styles.content,
         {
           paddingHorizontal,
+          paddingTop,
           paddingBottom: dockFootprint(insets.bottom, screenH),
         },
       ]}
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={32}
+      onScroll={onScroll ? (e) => onScroll(e.nativeEvent.contentOffset.y) : undefined}
       /* The signature and the builder both own horizontal drags; without
          this the scroll view steals them the moment a finger slides. */
       directionalLockEnabled

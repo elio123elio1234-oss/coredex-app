@@ -66,6 +66,20 @@ interface Props {
    * full width cancels it with a negative margin that now has room to go.
    */
   bleedHorizontal?: boolean;
+  /**
+   * ★ The screen owns its TOP clearance, because it has its own floating
+   * header.
+   *
+   * The third axis of the same idea as `scrollsUnderDock`: a screen whose
+   * title sits on a frosted bar cannot also be pushed down by the shell's
+   * safe-area padding, or the bar would float over an empty strip and the
+   * list would start below both. With this set the content box starts at
+   * the very top of the screen, the header takes the safe area itself, and
+   * the scroll container carries the header's measured height as its
+   * CONTENT inset — so cards pass behind the glass instead of stopping
+   * above it, which is the entire point of a frosted header.
+   */
+  bleedTop?: boolean;
 }
 
 export default function PatientShell({
@@ -74,6 +88,7 @@ export default function PatientShell({
   dock = chrome,
   scrollsUnderDock = false,
   bleedHorizontal = false,
+  bleedTop = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
@@ -103,7 +118,7 @@ export default function PatientShell({
                hidden that height goes back to the content it was covering
                for. The screens are vertically centred, so this reads as the
                content settling up by ~29 pt rather than as a gap closing. */
-            paddingTop: insets.top + (wordmark ? 70 : 12),
+            paddingTop: bleedTop ? 0 : insets.top + (wordmark ? 70 : 12),
             // Landscape puts the notch on a SIDE, so the horizontal padding
             // has to clear it — 20 is only the floor. A bleeding screen
             // takes both the padding and that responsibility on itself
@@ -143,6 +158,9 @@ const styles = StyleSheet.create({
   content: { flex: 1, justifyContent: 'center' },
 });
 
+// v2.5.0 — `bleedTop`: a screen with its own frosted header takes the top
+//          clearance onto its scroll content, so the page travels behind the
+//          glass rather than starting below it. Third axis of `scrollsUnderDock`.
 // v2.4.0 — `bleedHorizontal` + `shellPaddingH`: a screen with something that
 //          must reach the screen edge takes the side padding onto its own
 //          scroll content. A negative margin cannot escape a ScrollView —

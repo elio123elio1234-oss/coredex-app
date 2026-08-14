@@ -1,7 +1,46 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.57.1';
-export const APP_BUILD_LABEL = 'the sweep stops costing a frame: static paper, a sliding curtain';
+export const APP_VERSION = '0.58.0';
+export const APP_BUILD_LABEL = 'history gets a frosted header, and the studies pass underneath it';
+
+// v0.58.0 - "Can the top bar - where the Scan History title and the
+//           Studies/Insights buttons are - get the glass effect like the tab
+//           bar at the bottom, so you see the waves behind it as if looking
+//           through glass?"
+//           Yes, and it is the same material and the same rules the study
+//           viewer's header and the dock already use - `GlassSurface`, so a
+//           phone with Liquid Glass gets Liquid Glass and everything else
+//           gets a real blur.
+//           * THE BAR IS ABSOLUTE, WHICH MOVES WHERE THE SPACE LIVES. A
+//             header that floats is not part of the layout, so every
+//             scroller carries its height on its CONTENT inset instead -
+//             the same inversion `scrollsUnderDock` made at the bottom in
+//             v2.3.0, now as `PatientShell.bleedTop` at the top. Without
+//             that third axis the shell's safe-area padding would push the
+//             list down and the glass would have nothing but empty page to
+//             refract, which is the failure the dock's own row warns about.
+//           * THE HEIGHT IS MEASURED, NOT ASSUMED. The bar grows a count
+//             line, a "analysing n of m" clause, a tab row that only exists
+//             once there are studies, and an import-error banner. Any
+//             constant would be wrong in at least one of those states, so it
+//             is an `onLayout` on the inner view plus the glass's own
+//             padding added back - the study viewer paid for that addition
+//             already (without it the first card hides behind the tabs).
+//           * ANYTHING "BETWEEN THE HEADER AND THE LIST" HAS TO GO INSIDE
+//             THE GLASS. The import error was a sibling of the list, and as
+//             a sibling it gets pushed down by the clearance and then the
+//             list pads for the header AGAIN below it - a header-sized hole.
+//             It now lives in the bar it belongs to and is part of what gets
+//             measured.
+//           * The hairline is earned, not drawn: it appears once ~6 pt has
+//             scrolled under the bar, because an edge over an unscrolled
+//             page divides nothing from nothing. Insights reports its scroll
+//             too, so the rule holds on both tabs.
+//           * Tint sits between the dock's (0.38/0.55) and the viewer
+//             header's (0.74) - denser because a 30 pt title has to stay
+//             readable with cards passing under it, lighter because it was
+//             asked for as the DOCK's glass. Liquid Glass takes the lower
+//             pair, the same split the dock makes.
 
 // v0.57.1 - "The animation works, but something in your design is broken - it
 //           slows the whole History tab down drastically, you can't scroll
