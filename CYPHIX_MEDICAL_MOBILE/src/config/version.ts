@@ -1,7 +1,44 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.0';
-export const APP_BUILD_LABEL = 'history gets a frosted header, and the studies pass underneath it';
+export const APP_VERSION = '0.58.1';
+export const APP_BUILD_LABEL = 'the newest study gets room to breathe, and the tabs stop rebuilding the screen';
+
+// v0.58.1 - "1) The newest recording sits right up against the top bar, it
+//           looks unprofessional and ugly. 2) There is still some flicker
+//           when you enter History at first, then it runs smooth - and going
+//           to Insights and back to Studies flickers a little again until it
+//           all comes up."
+//           * ★ AIR UNDER THE GLASS. `paddingTop: headerH` parked the first
+//             card exactly on the bar's edge: the one row a reader looks at
+//             first was the one row with no room. `CONTENT_TOP_GAP` (14) is
+//             a RESTING gap only - the card still travels under the glass
+//             the moment the list moves, which is the point of the header.
+//           * ★ THE TABS WERE REBUILDING THE SCREEN. `showTabs && tab ===
+//             'insights' ? <Insights/> : <list/>` unmounts one pane every
+//             time the reader switches - and a remount replays everything
+//             that makes a first paint expensive: every row's entrance
+//             animation, every visible trace's sweep, the scroll position,
+//             the whole cell window. The "flicker until it all comes up" was
+//             literally the screen being built again. Both panes stay
+//             mounted now and hide each other with `display: none`, which
+//             Yoga drops from layout entirely - nothing measured, nothing
+//             drawn, everything kept. Insights is still mounted LAZILY on
+//             its first visit: it runs the identity backfill over the whole
+//             history, and paying for that on a tab nobody opened is the
+//             opposite trade.
+//           * ★ THE FIRST-ENTRY JOLT WAS MY OWN CONSTANT. The bar's height
+//             is measured (it grows a count line, a progress clause, a tab
+//             row, an error banner), but the first frame paints before any
+//             measurement exists and `HEADER_H_GUESS = 148` was wrong by
+//             ~35 pt on a notched phone - so the list visibly dropped into
+//             place. The estimate is now built from the same blocks the bar
+//             is (`estimateHeaderH`: safe area + title + count + tabs +
+//             padding), lands within a point or two, and the correction is
+//             invisible.
+//           * `activeTab` derives from `tab` AND `showTabs`: the switch
+//             disappears while the list is loading, erroring or empty, and a
+//             stale 'insights' would otherwise hide BOTH panes and leave a
+//             blank screen.
 
 // v0.58.0 - "Can the top bar - where the Scan History title and the
 //           Studies/Insights buttons are - get the glass effect like the tab

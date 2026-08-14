@@ -96,8 +96,32 @@ const HEADER_PAD_BOTTOM = 12;
 /** Points of scroll before the header earns its edge. Below this nothing is
     behind it yet and a hairline would divide nothing from nothing. */
 const HEADER_SHADOW_AT = 6;
-/** First-frame estimate, replaced by `onLayout` on the next one. */
-const HEADER_H_GUESS = 148;
+/**
+ * ★ Air between the glass and the first card.
+ *
+ * `paddingTop: headerH` alone parks the newest study hard against the bar —
+ * reported, and right: the one row a reader looks at first was the one row
+ * with no room to breathe. The gap is the resting position only; the card
+ * still travels under the glass as soon as the list moves.
+ */
+const CONTENT_TOP_GAP = 14;
+
+/* ── The header's height BEFORE it has been measured ──
+   It is measured (`onLayout`) because it grows a count line, a progress
+   clause, a tab row and an error banner — but the first frame paints
+   before any measurement exists, and a flat constant there was wrong by
+   ~35 pt on a notched phone, which is a visible jolt as the list drops
+   into place. These are the same blocks the bar is built from, so the
+   estimate lands within a point or two and the correction is invisible. */
+const EST_TITLE = 36;
+const EST_COUNT = 20;
+const EST_TABS = 56;
+
+function estimateHeaderH(safeTop: number, withCount: boolean, withTabs: boolean): number {
+  return (
+    safeTop + 6 + EST_TITLE + (withCount ? EST_COUNT : 0) + (withTabs ? EST_TABS : 0) + HEADER_PAD_BOTTOM
+  );
+}
 
 export default function HistoryScreen() {
   const t = useTheme();
@@ -113,6 +137,13 @@ export default function HistoryScreen() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [tab, setTab] = useState<'studies' | 'insights'>('studies');
+  /** Insights is mounted on its first visit and never unmounted after — the
+      panel is kept alive so returning to Studies is not a rebuild. */
+  const [insightsSeen, setInsightsSeen] = useState(false);
+  const selectTab = useCallback((next: 'studies' | 'insights') => {
+    if (next === 'insights') setInsightsSeen(true);
+    setTab(next);
+  }, []);
 
   /* A patient sees only their own studies — as the QUERY ARGUMENT, never as
      client-side filtering, so the server can enforce it unchanged. */
@@ -136,7 +167,7 @@ export default function HistoryScreen() {
      exist once there are studies, so any constant here would be wrong in
      at least one of those states. `HEADER_H_GUESS` covers the first frame
      only — without it the first cards paint under the bar and jump. */
-  const [headerH, setHeaderH] = useState(HEADER_H_GUESS);
+  const [measuredHeaderH, setMeasuredHeaderH] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
   /* Only re-render when the header actually crosses the threshold — an
@@ -277,6 +308,15 @@ export default function HistoryScreen() {
 
   const empty = !list.data || list.data.length === 0;
   const showTabs = !list.isLoading && !list.isError && !empty;
+  /* Which pane is on show. Not simply `tab`: the switch itself disappears
+     while the list is loading, erroring or empty, and a stale `insights`
+     would then hide BOTH panes and leave an empty screen. */
+  const activeTab = showTabs ? tab : 'studies';
+  /* The measurement once it exists, an estimate built from the same blocks
+     until then — see `estimateHeaderH`. */
+  const headerH = measuredHeaderH || estimateHeaderH(insets.top, !empty, showTabs);
+  /** Where content actually starts: under the glass, plus air. */
+  const contentTop = headerH + CONTENT_TOP_GAP;
   /* The padding the shell would have applied, now applied here — one
      number, from one function, so the header and the scroll content can
      never disagree about where the margin is. */
@@ -362,16 +402,22 @@ export default function HistoryScreen() {
        measured height on their content inset. */
     <PatientShell scrollsUnderDock bleedHorizontal bleedTop>
       <View style={styles.root}>
-        {showTabs && tab === 'insights' ? (
-          <EcgIdentityPanel
-            patientId={subject}
-            paddingHorizontal={padH}
-            paddingTop={headerH}
-            onScroll={onContentScroll}
-            onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
-          />
-        ) : list.isLoading ? (
-          <View style={{ paddingHorizontal: padH, paddingTop: headerH }}>
+        {/* ── ★ THE TABS HIDE EACH OTHER, THEY DO NOT REPLACE EACH OTHER ──
+            Rendering one OR the other unmounts the list every time the
+            reader looks at Insights, and a remount replays everything that
+            makes a first paint expensive: every row's entrance animation,
+            every visible trace's sweep, the scroll position. Reported as
+            "a little flicker until it all comes up, every time I go back
+            to Studies" — and it was, literally, the screen being built
+            again. `display: none` keeps both alive; Yoga drops a hidden
+            pane from layout, so nothing is measured or drawn for it.
+
+            Insights is still MOUNTED LAZILY. It runs the identity backfill,
+            which is real DSP over the whole history; paying for that on a
+            tab the reader has not opened would be the opposite trade. */}
+        <View style={[styles.pane, activeTab !== 'studies' && styles.paneHidden]}>
+          {list.isLoading ? (
+          <View style={{ paddingHorizontal: padH, paddingTop: contentTop }}>
             <HistorySkeleton />
           </View>
         ) : list.isError ? (
@@ -382,7 +428,7 @@ export default function HistoryScreen() {
                 backgroundColor: t.surface,
                 borderColor: t.border,
                 marginHorizontal: padH,
-                marginTop: headerH,
+                marginTop: contentTop,
               },
             ]}
           >
@@ -411,7 +457,7 @@ export default function HistoryScreen() {
                 backgroundColor: t.surface,
                 borderColor: t.border,
                 marginHorizontal: padH,
-                marginTop: headerH,
+                marginTop: contentTop,
               },
             ]}
           >
@@ -440,7 +486,7 @@ export default function HistoryScreen() {
                 /* The frosted header's clearance, on the CONTENT — so cards
                    pass behind the glass instead of starting below it. The
                    dock's clearance below does the same job (PatientShell). */
-                paddingTop: headerH,
+                paddingTop: contentTop,
                 paddingBottom: dockFootprint(insets.bottom, screenH),
               },
             ]}
@@ -463,6 +509,20 @@ export default function HistoryScreen() {
               />
             }
           />
+        )}
+        </View>
+
+        {/* Mounted on first visit and kept alive from then on. */}
+        {insightsSeen && (
+          <View style={[styles.pane, activeTab !== 'insights' && styles.paneHidden]}>
+            <EcgIdentityPanel
+              patientId={subject}
+              paddingHorizontal={padH}
+              paddingTop={contentTop}
+              onScroll={onContentScroll}
+              onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
+            />
+          </View>
         )}
 
         {/* ── The frosted header, over everything ──
@@ -489,7 +549,7 @@ export default function HistoryScreen() {
                  padding has to be added back — without it the first card
                  sits under the tabs (the study viewer paid for this one). */
               const h = e.nativeEvent.layout.height + insets.top + 6 + HEADER_PAD_BOTTOM;
-              setHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+              setMeasuredHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
             }}
           >
             <View style={[styles.head, { paddingHorizontal: padH }, rtl && styles.rowRtl]}>
@@ -517,7 +577,7 @@ export default function HistoryScreen() {
               {/* Import lives on the LIST, not inside a study: it CREATES a
                   study, and an action that adds a row belongs where the rows
                   are. Hidden on Insights — nothing there is a row. */}
-              {features.has('exportRaw') && tab === 'studies' && (
+              {features.has('exportRaw') && activeTab === 'studies' && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={tr('histImport')}
@@ -548,7 +608,7 @@ export default function HistoryScreen() {
                     { value: 'insights', label: tr('insTabInsights') },
                   ]}
                   value={tab}
-                  onChange={setTab}
+                  onChange={selectTab}
                   accessibilityLabel={tr('histTitle')}
                 />
               </View>
@@ -586,6 +646,11 @@ const styles = StyleSheet.create({
   /* No `gap`: the header floats above this box rather than sitting in it,
      so the only children are full-bleed scrollers. */
   root: { flex: 1 },
+  pane: { flex: 1 },
+  /* Yoga drops a `display: none` subtree from layout entirely — it is not
+     measured and not drawn — so the inactive tab costs nothing while
+     keeping its state, its scroll position and its animations. */
+  paneHidden: { display: 'none' },
   header: {
     position: 'absolute',
     top: 0,

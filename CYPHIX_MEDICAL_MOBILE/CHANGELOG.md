@@ -1,5 +1,59 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.1 - 2026-08-14 - the newest study gets room to breathe, and the tabs stop rebuilding the screen
+
+*"1) The newest recording sits right up against the top bar — it looks
+unprofessional and ugly. 2) There is still some flicker when you first enter
+History, then it runs smooth; and going to Insights and back to Studies
+flickers a little again until it all comes up."*
+
+### Air under the glass
+
+`paddingTop: headerH` put the first card exactly on the bar's edge — so the
+one row a reader looks at first was the one row with no room around it.
+`CONTENT_TOP_GAP` (14 pt) fixes it, and it is a **resting** gap only: the card
+still slides under the glass the moment the list moves, which is the whole
+point of a frosted header.
+
+### The tabs were rebuilding the screen
+
+`showTabs && tab === 'insights' ? <Insights/> : <list/>` **unmounts** a pane
+every time the reader switches. A remount replays everything that makes a
+first paint expensive: every row's entrance animation, every visible trace's
+sweep, the cell window, the scroll position. The "flicker until it all comes
+up" was not a rendering artefact — it was the screen being built again, on
+purpose, every time.
+
+Both panes stay mounted now and hide each other with `display: none`, which
+Yoga drops from layout entirely: the inactive tab is not measured and not
+drawn, but keeps its state, its scroll position and its animations.
+
+Insights is still **mounted lazily** on its first visit. It runs the identity
+backfill over the whole history, and paying for that on a tab nobody has
+opened would be the opposite trade.
+
+### The first-entry jolt was my own constant
+
+The bar's height has to be measured — it grows a count line, an "analysing n
+of m" clause, a tab row and an error banner — but the first frame paints
+before any measurement exists, and the placeholder I left there
+(`HEADER_H_GUESS = 148`) was wrong by roughly 35 pt on a notched phone. The
+list therefore painted high and then visibly dropped into place.
+
+The estimate is now built from the same blocks the bar is
+(`estimateHeaderH`: safe-area inset + title + count + tabs + padding), so it
+lands within a point or two of the truth and the correction is invisible.
+
+### Also
+
+`activeTab` derives from `tab` **and** `showTabs`. The switch disappears while
+the list is loading, erroring or empty, and a stale `insights` selection would
+otherwise hide both panes and leave a blank screen.
+
+Verified: `tsc --noEmit`, `expo export` both platforms. 🔬 — the two things
+this entry is about are a gap you have to look at and a flicker you have to
+catch, neither of which any check on this machine can see.
+
 ## v0.58.0 - 2026-08-14 - history gets a frosted header, and the studies pass underneath it
 
 *"Can the top bar — where the Scan History title and the Studies / Insights
