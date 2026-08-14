@@ -59,10 +59,33 @@
    wave to protect the layout would be the one change that makes this
    trace lie.
 
-   ══ THE CALIPER'S READOUT IS NOT ON THE SHEET ══
-   It is handed up to the caller and drawn in the chrome. History's
-   calipers learned this the hard way in v0.16.0: a readout floating on
-   the trace covers the deflections whose position it reports.
+   ══ ★ THE CALIPER, REBUILT IN v5.0.0 — IT LIVES ONLY UNDER THE FINGER ══
+   Three linked changes, all from one report: *"the line that runs over
+   the wave should vibrate as hard as possible, and when I lift my finger
+   the green line should disappear, and while it's there it should write
+   the wave's value nicely."* Each one is a correction to a decision that
+   was right when it was made and stopped being right afterwards.
+
+   1. THE READOUT IS BACK, AND IT IS ON THE SHEET. It used to be handed
+      up to the caller and drawn in the chrome above, on the rule History
+      learned in v0.16.0: a readout floating on the trace covers the
+      deflections whose position it reports. That rule is still true and
+      is why this label sits at the TOP EDGE, on paper, beside the line
+      and never on it — flipping to whichever side of the caliper has
+      room. What changed is that v0.44.0 deleted the chrome strip, so
+      from then on the caliper reported into nothing: a green line you
+      could drag along your own ECG that told you no value at all.
+   2. IT VANISHES ON RELEASE. It used to stay where it was left, so that
+      the reader was not holding a finger over the point they were trying
+      to read. That reasoning depended entirely on the readout being
+      elsewhere and PERSISTENT — with the number travelling with the line
+      and gone on lift, a parked caliper is just a green line sitting on
+      the trace saying nothing, which is what was reported.
+   3. THE TICK IS THE HARDEST THE PLATFORM HAS. See `moveCaliper`.
+
+   ⚠️ The lead label hides while the caliper is out. Two floating chips at
+   the top edge is precisely the clutter this screen was stripped for, and
+   nobody measuring a beat is wondering which lead they are on.
    ================================================================== */
 
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
@@ -163,7 +186,19 @@ interface Props {
   label: string;
   /** Extra note appended to the scale caption. */
   caption?: string;
-  /** Reports the caliper as it moves. Absent = no caliper at all. */
+  /**
+   * Whether the sheet can be measured at all.
+   *
+   * ★ Separate from `onCaliper` since v5.0.0. The gesture used to be
+   * gated on a listener being passed, which meant the ONLY way to switch
+   * the caliper on was to subscribe to it — so `EcgIdentityPanel` kept a
+   * `caliper` state it no longer rendered anywhere, and every millimetre
+   * the finger moved re-rendered the entire Insights tree at gesture
+   * rate. The reading is drawn on the sheet now, so nobody has to listen
+   * to it to have it.
+   */
+  measurable?: boolean;
+  /** Optional listener, for a caller that wants the reading elsewhere. */
   onCaliper?: (reading: CaliperReading | null) => void;
 }
 
@@ -193,6 +228,11 @@ export const SIGNATURE_HEIGHT_MM = 26;
 export const SHEET_MARGIN = 10;
 /** Space kept clear of the sheet edges so a tall R is not shaved by it. */
 const HEADROOM_MM = 5;
+
+/** How far the floating readout sits from the caliper line, in points. */
+const READOUT_GAP = 10;
+/** …and the least it may come to the sheet's own edge. */
+const READOUT_EDGE = 8;
 
 /**
  * The standard gains, largest first. Only these three: a gain a clinician
@@ -225,6 +265,23 @@ export function pickGain(peakMv: number, heightMm = SIGNATURE_HEIGHT_MM): number
  * feel, which is the whole point of putting a caliper on paper.
  */
 const TICK_MM = 1;
+
+/**
+ * ★ The floor between two taptic events while dragging the caliper.
+ *
+ * A square is 1 mm and the sheet is ~40 mm wide, so an unhurried sweep
+ * crosses 40 squares in about a second — and asking the engine for a
+ * HEAVY impact every 25 ms is asking for more than it can reproduce.
+ * Past that rate the thumps stop being separate events and merge into
+ * one flat rumble, which is weaker in the hand than a slower train of
+ * distinct hits even though it is nominally "more vibration".
+ *
+ * So the strongest tick the platform has is paired with a floor that
+ * lets each one actually land. This throttles the BUZZ only — the line
+ * and its readout still move on every square, so the picture never lags
+ * the finger.
+ */
+const MIN_TICK_MS = 45;
 
 /**
  * The corridor as ONE closed polygon: the upper bound left-to-right, the
@@ -277,6 +334,7 @@ export default function BeatSignature({
   heightMm = SIGNATURE_HEIGHT_MM,
   label,
   caption,
+  measurable = false,
   onCaliper,
 }: Props) {
   const t = useTheme();
@@ -289,6 +347,10 @@ export default function BeatSignature({
   const [cursor, setCursor] = useState<number | null>(null);
   /** Last square the finger crossed — the tick fires on change, not per frame. */
   const lastTick = useRef<number | null>(null);
+  /** When the last tick actually fired — see `MIN_TICK_MS`. */
+  const lastTickAt = useRef(0);
+  /** Measured width of the floating readout, so it can be kept on the sheet. */
+  const [readoutW, setReadoutW] = useState(0);
 
   const geometry = useMemo(() => {
     const durationSec = baseline.length / sampleRate;
@@ -362,11 +424,25 @@ export default function BeatSignature({
       const index = sampleAt(px);
       setCursor(index);
 
-      // One tick per small square crossed — see TICK_MM.
+      /* ★ ONE HEAVY TICK PER SMALL SQUARE CROSSED — v5.0.0.
+         `Heavy` is the strongest single event either platform exposes
+         through `expo-haptics`; the only thing louder in the API is
+         `notificationAsync`, which is a multi-thump PATTERN meaning
+         success / warning / error and would be both wrong here and
+         impossible to fire at scrubbing rate.
+         It replaces `selectionAsync`, the lightest event iOS defines —
+         reported as too faint, which it is: it is tuned for a picker
+         wheel under a resting thumb, and this finger is moving.
+         `MIN_TICK_MS` keeps consecutive hits far enough apart that the
+         engine can actually deliver them as separate thumps. */
       const square = Math.round((index / sampleRate) * mmPerSec / TICK_MM);
       if (lastTick.current !== square) {
         lastTick.current = square;
-        void Haptics.selectionAsync();
+        const now = Date.now();
+        if (now - lastTickAt.current >= MIN_TICK_MS) {
+          lastTickAt.current = now;
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        }
       }
 
       onCaliper?.({
@@ -381,11 +457,17 @@ export default function BeatSignature({
 
   const releaseCaliper = useCallback(() => {
     lastTick.current = null;
-    /* The caliper STAYS where it was left. A line that vanishes on release
-       makes the reader hold their finger over the very point they are
-       trying to read — which is the same mistake as printing the readout
-       on the paper. */
-  }, []);
+    /* ★ THE CALIPER EXISTS ONLY WHILE THE FINGER IS DOWN — v5.0.0.
+       It used to stay where it was left, so the reader was not holding a
+       finger over the point they were trying to read. That was sound
+       while the readout lived in the chrome ABOVE the sheet and stayed
+       up: you parked the line, then read the figures. Once the chrome
+       strip was deleted (v0.44.0) and the number moved onto the sheet
+       under the finger, a parked line reports nothing — it is a green
+       mark left on someone's own ECG. Reported exactly that way. */
+    setCursor(null);
+    onCaliper?.(null);
+  }, [onCaliper]);
 
   /* ★ A TAP places the caliper; a HORIZONTAL drag carries it; a VERTICAL
      drag is not ours and must reach the page behind us.
@@ -405,16 +487,66 @@ export default function BeatSignature({
      would be a crash rather than a slowdown. The work per event is one
      array index, not a re-render of the sheet. */
   const gesture = useMemo(() => {
-    if (!onCaliper) return null;
+    if (!measurable && !onCaliper) return null;
     const pan = Gesture.Pan()
       .activeOffsetX([-6, 6])
       .failOffsetY([-12, 12])
       .onStart((e) => runOnJS(moveCaliper)(e.x))
       .onUpdate((e) => runOnJS(moveCaliper)(e.x))
       .onFinalize(() => runOnJS(releaseCaliper)());
-    const tap = Gesture.Tap().onEnd((e) => runOnJS(moveCaliper)(e.x));
-    return Gesture.Race(pan, tap);
-  }, [onCaliper, moveCaliper, releaseCaliper]);
+
+    /* ★ THE TAP IS GONE, AND A HOLD REPLACES IT — v5.0.0.
+       A tap fires on RELEASE, and the caliper is now gone on release, so
+       tapping could only ever flash a line that erased itself. Holding
+       still is the gesture that matches the new behaviour: press, the
+       line and its value appear where the finger is; slide, they follow;
+       lift, they are gone.
+       180 ms so that a finger passing through on its way to scrolling
+       the page does not drop a caliper — the same defect `onBegin`
+       caused in v2.0.0, arrived at from the other direction. The huge
+       `maxDistance` is what turns a long-press into a hold-and-drag:
+       without it, gesture-handler cancels the press the moment the
+       finger travels, and the caliper would die under a slow sweep. */
+    const hold = Gesture.LongPress()
+      .minDuration(180)
+      .maxDistance(10_000)
+      .onStart((e) => runOnJS(moveCaliper)(e.x))
+      .onTouchesMove((e) => {
+        const touch = e.allTouches[0];
+        if (touch) runOnJS(moveCaliper)(touch.x);
+      })
+      .onFinalize(() => runOnJS(releaseCaliper)());
+
+    return Gesture.Race(pan, hold);
+  }, [measurable, onCaliper, moveCaliper, releaseCaliper]);
+
+  /* ── The floating readout ──────────────────────────────────────
+     Drawn as real text in a View rather than as SVG `<Text>`: this is
+     the one label on the sheet a reader has to READ rather than glance
+     at, and react-native-svg's text lays out through each platform's own
+     path renderer — weights, tabular figures and letter-spacing do not
+     land identically on iOS and Android. A View also gets the paper fill
+     for free, which is what keeps the figures legible when the finger is
+     over a dense part of the trace.
+
+     ⚠️ It is placed BESIDE the caliper, on whichever side has room, and
+     never centred on it: centred, the line runs straight through the
+     number, and at either end of the sheet half the label would be
+     clipped by the rounded corner. */
+  const readout = useMemo(() => {
+    if (cursor === null) return null;
+    const ms = ((cursor - rIndex) / sampleRate) * 1000;
+    const mv = baseline[cursor] ?? 0;
+    const ov = overlay ? (overlay[cursor] ?? null) : null;
+    return {
+      /* The sign is the information: this beat is aligned on R, so a
+         negative number is "before the R wave" and that is how every
+         interval on this screen is quoted. */
+      time: `${ms > 0 ? '+' : ''}${Math.round(ms)} ms`,
+      mv: `${mv >= 0 ? '' : '−'}${Math.abs(mv).toFixed(2)} mV`,
+      overlay: ov === null ? null : `${ov >= 0 ? '' : '−'}${Math.abs(ov).toFixed(2)} mV`,
+    };
+  }, [cursor, rIndex, sampleRate, baseline, overlay]);
 
   const cursorX = cursor === null ? null : LEAD_IN_MM + (cursor / sampleRate) * mmPerSec;
   const cursorY =
@@ -539,9 +671,59 @@ export default function BeatSignature({
         />
       </Svg>
 
-      <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
-        {label}
-      </Text>
+      {/* ⚠️ The lead name steps aside while the caliper is out. Two chips
+          at the top edge is the clutter this screen was stripped for, and
+          nobody measuring a beat is wondering which lead they are on. */}
+      {readout === null && (
+        <Text style={[styles.label, { color: c.trace }]} allowFontScaling={false}>
+          {label}
+        </Text>
+      )}
+
+      {readout !== null && cursorX !== null && (
+        <View
+          pointerEvents="none"
+          onLayout={(e) => setReadoutW(e.nativeEvent.layout.width)}
+          style={[
+            styles.readout,
+            {
+              backgroundColor: c.paper,
+              borderColor: c.edge,
+              /* Beside the line on the side with room, clamped so it can
+                 never hang past the sheet's rounded corner. `readoutW`
+                 is 0 on the very first frame, which parks it left of the
+                 line for one frame — invisible at 60 Hz, and the
+                 alternative is measuring before painting, which is a
+                 frame of blank. */
+              left: Math.max(
+                READOUT_EDGE,
+                Math.min(
+                  width - readoutW - READOUT_EDGE,
+                  cursorX * pxPerMm < width / 2
+                    ? cursorX * pxPerMm + READOUT_GAP
+                    : cursorX * pxPerMm - READOUT_GAP - readoutW,
+                ),
+              ),
+            },
+          ]}
+        >
+          <Text style={[styles.readoutTime, { color: t.textSecondary }]} allowFontScaling={false}>
+            {readout.time}
+          </Text>
+          <Text style={[styles.readoutMv, { color: c.trace }]} allowFontScaling={false}>
+            {readout.mv}
+          </Text>
+          {/* The compared study's value at the same instant, in the same
+              colour it is drawn in — the pair IS the comparison, and
+              quoting one number without the other makes the reader hold
+              the second one in their head while dragging. */}
+          {readout.overlay !== null && (
+            <Text style={[styles.readoutMv, { color: t.signal }]} allowFontScaling={false}>
+              {readout.overlay}
+            </Text>
+          )}
+        </View>
+      )}
       {/* ★ The scale is ALWAYS printed, and the caption is appended to it
           rather than replacing it. A sheet whose speed and gain are not
           stated cannot be measured, and this one is not on the defaults. */}
@@ -586,8 +768,51 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     fontVariant: ['tabular-nums'],
   },
+  /* One row, at the top edge, on paper. The border is the sheet's own
+     hairline so the chip reads as part of the instrument rather than as
+     a tooltip from another design language. */
+  readout: {
+    position: 'absolute',
+    top: 5,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  /* Tabular figures on both, without exception: a number that reflows as
+     the finger moves is a number nobody can read while moving it. */
+  readoutTime: { fontSize: 13, fontVariant: ['tabular-nums'] },
+  readoutMv: { fontSize: 14.5, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
+// v5.0.0 — ★ The caliper lives only under the finger, and it says what it is
+//          sitting on. From one report: "the line over the wave should vibrate
+//          as hard as possible, when I lift my finger it should disappear, and
+//          while it's there it should write the wave's value nicely."
+//          • THE READING IS BACK, ON THE SHEET — a paper chip at the top edge
+//            beside the line (never centred on it, never over the trace),
+//            carrying ms from R, the baseline's mV, and the compared study's mV
+//            in the colour it is drawn in. v0.44.0 deleted the chrome strip the
+//            caliper reported into and did not move the numbers, so since then
+//            it had been a line you could drag along your own ECG that told you
+//            nothing.
+//          • IT VANISHES ON RELEASE. Persisting was right only while the
+//            readout was elsewhere AND stayed up; with the number travelling
+//            with the line, a parked caliper is a green mark left on the trace.
+//          • THE TICK IS `Heavy`, the strongest single event either platform
+//            exposes — `selectionAsync` is the LIGHTEST iOS defines and was
+//            reported as unfeelable. MIN_TICK_MS (45 ms) spaces them so the
+//            engine delivers separate thumps instead of one flat rumble; it
+//            throttles the buzz only, never the line.
+//          • THE TAP IS GONE, a 180 ms HOLD replaces it: a tap fires on release
+//            and the caliper is now gone on release, so it could only flash a
+//            line that erased itself.
+//          • `measurable` replaces "gated on someone listening" — that gate
+//            made `EcgIdentityPanel` keep a reading it no longer drew, and
+//            re-render the whole Insights tree at gesture rate.
 // v4.0.0 — The sheet is PAPER again: a ground of its own, a hairline edge and
 //          a low soft shadow. Reported as "the rounded rectangle with no
 //          outline and no shadow behind it doesn't look professional", and both

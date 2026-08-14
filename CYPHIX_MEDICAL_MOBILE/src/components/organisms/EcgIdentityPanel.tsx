@@ -126,11 +126,7 @@ import {
   type IdentityMatch,
   type MeasurementStats,
 } from '@cyphix/shared';
-import BeatSignature, {
-  pickGain,
-  SHEET_MARGIN,
-  type CaliperReading,
-} from '@/components/molecules/BeatSignature';
+import BeatSignature, { pickGain, SHEET_MARGIN } from '@/components/molecules/BeatSignature';
 import BeatBuilder from '@/components/molecules/BeatBuilder';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
 import GoalWeek from '@/components/molecules/GoalWeek';
@@ -211,7 +207,6 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
   const reminders = useReminders();
 
   const [lead, setLead] = useState<EcgLeadName>('II');
-  const [caliper, setCaliper] = useState<CaliperReading | null>(null);
   /** How many studies the builder is averaging. null = all of them. */
   const [built, setBuilt] = useState<number | null>(null);
   /** Which study the timeline is showing detail for. null = the newest. */
@@ -494,12 +489,17 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
           The rule this screen now holds to, and it is stricter than
           "prose is one line or it is deleted": if a line does not change
           what the reader does next, it is not on the screen. */}
-      {/* The caliper readout row is gone with the rest of the chrome.
-          The caliper itself still works — dragging the trace still reads
-          it out through `onCaliper` — but a fixed 30 pt strip of figures
-          above the ECG, present whether or not anyone is measuring, is
-          exactly the kind of always-on instrumentation this screen was
-          asked to stop being. */}
+      {/* The caliper readout ROW is gone — a fixed 30 pt strip of figures
+          above the ECG, present whether or not anyone was measuring, is
+          exactly the always-on instrumentation this screen was asked to
+          stop being.
+          ⚠️ v0.52.0: deleting the strip in v0.44.0 without moving the
+          numbers left the caliper reporting into nothing — a line you
+          could drag along your own ECG that told you no value at all.
+          The reading now travels WITH the line, on the sheet, and both
+          vanish when the finger lifts (`BeatSignature` v5.0.0). The
+          panel no longer holds the reading in state: it was re-rendering
+          this whole tree at gesture rate for a value nothing drew. */}
       {/* ★ ONE VIEWPORT. Everything from the trace to the plain reading
           is given exactly the height of the first screen, so the ECG is
           never half-visible and the reader never has to scroll to find
@@ -517,7 +517,7 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
             width={sheetWidth}
             mmPerMv={mmPerMv}
             label={lead}
-            onCaliper={setCaliper}
+            measurable
           />
         </View>
       )}
@@ -1040,6 +1040,11 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 12.5, lineHeight: 17, paddingTop: 2, textAlign: 'center' },
 });
 
+// v6.2.0 — The caliper reading no longer passes through this component. It was
+//          held in a `caliper` state that nothing has rendered since v0.44.0
+//          deleted the readout strip — so every millimetre the finger moved
+//          re-rendered the entire Insights tree for a value that was thrown
+//          away. `BeatSignature` draws it on the sheet now (`measurable`).
 // v6.1.0 — The builder is back, under the trace. v6.0.0 cut it with the legend
 //          row and the explainer as "an explanation nobody asked for", and that
 //          was half right: the legend TOLD the reader something, this one lets

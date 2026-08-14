@@ -1,5 +1,87 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.52.0 - 2026-08-14 - the caliper hits hard, says what it found, and gets out of the way
+
+*"The line that runs over the wave should vibrate as hard as possible, and when
+I lift my finger the green line should disappear, and while it's there it should
+write the wave's value nicely."*
+
+Three linked changes. Each one corrects a decision that was right when it was
+made and stopped being right afterwards - worth saying plainly, because the
+reasoning that produced them is still in the file and would otherwise look like
+it had simply been overruled.
+
+### The tick is as hard as the platform goes
+
+`Heavy` is the strongest **single** event either platform exposes through
+`expo-haptics`. The only louder thing in the API is `notificationAsync`, and
+that is a multi-thump *pattern* meaning success / warning / error - wrong here
+by meaning, and impossible to fire at scrubbing rate.
+
+What it replaces is `selectionAsync`: the **lightest** event iOS defines, tuned
+for a picker wheel spinning under a thumb resting on glass. Semantically it was
+the right family (this is scrubbing through discrete positions, not an impact)
+and in the hand it was not there at all.
+
+`MIN_TICK_MS` (45 ms) is not a compromise on "as hard as possible" - it is what
+makes it possible. A small square is 1 mm on a ~40 mm sheet, so an unhurried
+sweep crosses about forty of them a second, and a Heavy impact every 25 ms is
+more than the taptic engine can reproduce. Past that rate the thumps stop being
+separate events and merge into one flat rumble, which is **weaker** in the hand
+than a slower train of distinct hits. The throttle applies to the buzz only: the
+line and its reading still move on every square, so the picture never lags the
+finger.
+
+### It says what it is sitting on
+
+A paper chip at the top edge of the sheet, beside the caliper and never centred
+on it, carrying **ms from R**, the **baseline's mV**, and - when a study is laid
+over the signature - **that study's mV**, in the colour it is drawn in. The pair
+is the comparison; quoting one without the other makes the reader hold the
+second in their head while dragging.
+
+The rule this was kept off the sheet for is still true. History's calipers
+learned it in v0.16.0: a readout floating on the trace covers the deflections
+whose position it reports. That is exactly why the chip sits at the top edge, on
+paper, beside the line - not under the finger. What changed is that **v0.44.0
+deleted the chrome strip the caliper reported into, and did not move the
+numbers**. From that release until this one, dragging along your own ECG
+produced a green line that told you nothing.
+
+### It vanishes when you lift
+
+Persisting was right only while the readout lived elsewhere **and stayed up**:
+you parked the line, then read the figures at leisure, and the alternative would
+have had you holding a finger over the very point you were trying to read. With
+the number travelling with the line, a parked caliper is just a green mark left
+on someone's own trace.
+
+The tap went with it - a tap fires on **release**, and the caliper is now gone
+on release, so tapping could only ever flash a line that erased itself. A
+**180 ms hold** replaces it: press and the line appears where the finger is,
+slide and it follows, lift and it is gone. 180 rather than 0 so that a finger
+passing through on its way to scrolling the page does not drop a caliper - the
+same defect `onBegin` caused in v2.0.0, arrived at from the other direction.
+
+The lead name steps aside while the caliper is out. Two chips at the top edge is
+the clutter this screen was stripped for, and nobody measuring a beat is
+wondering which lead they are on.
+
+### A bug found while reading it
+
+The panel held the caliper reading in a `caliper` state that **nothing has
+rendered since v0.44.0** removed the readout strip. Every millimetre the finger
+moved therefore re-rendered the entire Insights tree - the timeline, the readout
+table, the goal rings, all of it - to store a value that was thrown away. The
+gesture is gated on a `measurable` prop now instead of on someone subscribing to
+the reading, and the state is gone.
+
+### Not verified on a device
+
+Typechecks and bundles. Haptic strength is by definition something only a hand
+can judge, and the hold-vs-scroll arbitration is exactly the kind of gesture
+behaviour a bundle cannot check - `PARITY.md` keeps these rows marked.
+
 ## v0.51.0 - 2026-08-14 - drag your ID together again, and feel it this time
 
 *"You took away the progress bar I could play with to see how my ID gets built

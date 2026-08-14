@@ -1,7 +1,54 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.51.0';
-export const APP_BUILD_LABEL = 'drag your ID together again, and feel it this time';
+export const APP_VERSION = '0.52.0';
+export const APP_BUILD_LABEL = 'the caliper hits hard, says what it found, and gets out of the way';
+
+// v0.52.0 - "The line that runs over the wave should vibrate as hard as
+//           possible, and when I lift my finger the green line should
+//           disappear, and while it's there it should write the wave's value
+//           nicely."
+//           Three linked changes, each correcting a decision that was right
+//           when it was made and stopped being right afterwards.
+//           * THE TICK IS Heavy - the strongest single event either platform
+//             exposes through expo-haptics. The only louder thing in the API is
+//             notificationAsync, a multi-thump PATTERN meaning success /
+//             warning / error, which is both wrong here and impossible to fire
+//             at scrubbing rate. What it replaces is selectionAsync, the
+//             LIGHTEST event iOS defines - tuned for a picker wheel under a
+//             resting thumb, and this finger is moving.
+//             MIN_TICK_MS (45 ms) is not a compromise on that: a 1 mm square on
+//             a ~40 mm sheet means an unhurried sweep crosses 40 squares a
+//             second, and asking for a Heavy impact every 25 ms asks for more
+//             than the engine can reproduce - past that rate the thumps merge
+//             into one flat rumble, which is WEAKER in the hand than a slower
+//             train of distinct hits. It throttles the buzz only; the line and
+//             its reading still move on every square.
+//           * THE READING IS BACK, AND IT IS ON THE SHEET: a paper chip at the
+//             top edge, beside the line and never centred on it, carrying ms
+//             from R, the baseline's mV, and - when a study is laid over - that
+//             study's mV in the colour it is drawn in.
+//             WARNING: the rule it was kept off the sheet for (v0.16.0 - a
+//             readout floating on the trace covers the deflections whose
+//             position it reports) is still true, and is exactly why it sits at
+//             the top edge on paper rather than under the finger. What changed
+//             is that v0.44.0 deleted the chrome strip it reported INTO without
+//             moving the numbers, so from then on this was a line you could
+//             drag along your own ECG that told you no value at all.
+//           * IT VANISHES ON RELEASE. Persisting was right only while the
+//             readout lived elsewhere and STAYED UP - you parked the line, then
+//             read the figures. With the number travelling with the line, a
+//             parked caliper is a green mark left on someone's own trace.
+//             The tap went with it (a tap fires on release, so it could only
+//             flash a line that erased itself); a 180 ms HOLD replaces it, long
+//             enough that a finger on its way to scrolling the page does not
+//             drop a caliper.
+//           * The lead name steps aside while the caliper is out - two chips at
+//             the top edge is the clutter this screen was stripped for.
+//           * BUG, found while reading it: the panel held the caliper reading in
+//             state that nothing has drawn since v0.44.0, so every millimetre
+//             the finger moved re-rendered the whole Insights tree for a value
+//             thrown away. The gesture is gated on a measurable prop now rather
+//             than on someone subscribing to it.
 
 // v0.51.0 - "You removed the progress bar I could play with to see how my ID
 //           gets built over time, and that's a shame because it was cool with
