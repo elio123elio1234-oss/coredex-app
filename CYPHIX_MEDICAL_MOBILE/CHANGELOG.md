@@ -1,5 +1,69 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.51.0 - 2026-08-14 - drag your ID together again, and feel it this time
+
+*"You took away the progress bar I could play with to see how my ID gets built
+over time, and that's a shame because it was cool with the vibration (and the
+vibration needs strengthening). Can it come back?"*
+
+### The builder is back, and cutting it was over-applying a good rule
+
+v0.44.0 removed it alongside the legend row and the three-line explainer, on the
+argument that all three were explanations nobody had asked for. Half of that was
+right, and the half that was wrong is worth stating precisely:
+
+**The legend and the explainer TOLD the reader something. The builder lets them
+DO something** - and the thing they do is the only demonstration anywhere in the
+app of the claim the entire feature rests on, that averaging many recordings
+cancels what is not the heart. Written down, a reader has to take that on faith.
+Given the control, they watch it happen in about two seconds and the argument
+makes itself. That is the opposite of the pile-on the redesign was aimed at.
+
+It sits **under the trace and above the lead buttons**: a control has to be
+adjacent to the thing it changes, and what it changes is the curve directly
+above it. Putting it below the lead buttons would separate the two.
+
+It does not break the one-viewport promise. That block already reserves the full
+remaining window height and its content sat roughly 130 pt short of it on a
+modern handset, so the builder is absorbed by slack that was there anyway -
+nothing else on the first screen moved.
+
+While a **partial** baseline is drawn, the latest-study overlay hides itself.
+Laying one recording over "the first three studies" invites reading a comparison
+against something that is not this person's baseline.
+
+### The haptic was weak for a reason, and the reason is fixable
+
+The old tick was `selectionAsync` - the picker-wheel event. Semantically correct
+(this is scrubbing through discrete items, not an impact) and in practice too
+faint: it is the **lightest event iOS defines**, tuned for a wheel spinning under
+a thumb resting on glass. Through a case, one-handed, with the finger already
+moving, it is easy to miss entirely. A control whose feedback you cannot feel is
+a control you have to watch, which defeats the point of putting the sensation
+there at all.
+
+Now:
+
+- **Medium** impact per study crossed.
+- **Heavy** at either END of the timeline - an end-stop, so the finger finds the
+  first and the last study without looking, the way a picker's rubber-band tells
+  you the list is over. Tapping "show all" gets the same weight, because landing
+  on the last notch is exactly what it does.
+- `MIN_TICK_MS` (32 ms) so a fast flick cannot merge the ticks into one
+  continuous rumble - at 120 Hz on a ProMotion display an impact every 8 ms is
+  more than the taptic engine can reproduce, and they blur into the featureless
+  vibration this was rebuilt to stop being. It throttles the **buzz** only: the
+  value still updates on every crossing, so the picture never lags the finger.
+
+The caption also went 11.5 -> 13.5 pt, and the track and notches up 2 pt. Same
+brief as the rest of Insights: no text on this screen may need good eyes.
+
+### Not verified on a device
+
+Typechecks and bundles. Haptic strength is by definition something only a hand
+can judge, and so is whether the first screen still ends where it should now
+that there is one more control on it - `PARITY.md` keeps these rows marked.
+
 ## v0.50.0 - 2026-08-13 - the report stops being the app on paper, and the tabs stop touching
 
 *"The PDF does not look like a professional medical report (except page 1 with

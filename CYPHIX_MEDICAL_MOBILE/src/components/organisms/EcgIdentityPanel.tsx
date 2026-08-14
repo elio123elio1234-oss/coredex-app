@@ -115,6 +115,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  buildBaselineSequence,
   CORRIDOR_BAND_SIGMA,
   plainVerdictOf,
   summariseIdentityPlainly,
@@ -130,6 +131,7 @@ import BeatSignature, {
   SHEET_MARGIN,
   type CaliperReading,
 } from '@/components/molecules/BeatSignature';
+import BeatBuilder from '@/components/molecules/BeatBuilder';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
 import GoalWeek from '@/components/molecules/GoalWeek';
 import LeadCoverageGrid from '@/components/molecules/LeadCoverageGrid';
@@ -210,6 +212,8 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
 
   const [lead, setLead] = useState<EcgLeadName>('II');
   const [caliper, setCaliper] = useState<CaliperReading | null>(null);
+  /** How many studies the builder is averaging. null = all of them. */
+  const [built, setBuilt] = useState<number | null>(null);
   /** Which study the timeline is showing detail for. null = the newest. */
   const [picked, setPicked] = useState<string | null>(null);
 
@@ -252,16 +256,34 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
     return pickGain(peak);
   }, [identity, latest, view]);
 
-  /** The finished signature for the chosen lead. */
-  const shown = useMemo(() => identity?.leads[lead] ?? null, [identity, lead]);
+  /* ★ RESTORED in v0.51.0 — the baseline as it stood after each study,
+     which is what the builder scrubs through. Incremental, so the whole
+     sequence costs about one extra pass over the templates rather than
+     one full fusion per position. */
+  const sequence = useMemo(() => {
+    if (!identity) return [];
+    const weights = new Map(identity.matches.map((m) => [m.recordingId, m.weight]));
+    const templates = identity.matches
+      .map((m) => view.templateOf(m.recordingId))
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    return buildBaselineSequence(templates, (x) => weights.get(x.recordingId) ?? 0, lead);
+  }, [identity, view, lead]);
+
+  /** The signature actually drawn: the finished baseline, or a partial one. */
+  const shown = useMemo(() => {
+    const full = identity?.leads[lead] ?? null;
+    if (!full) return null;
+    if (built === null || sequence.length === 0) return full;
+    return sequence[Math.min(sequence.length, Math.max(1, built)) - 1] ?? full;
+  }, [identity, lead, built, sequence]);
 
   const overlay = useMemo(() => {
     // A partial baseline is being explained, not compared — laying a study
     // over "the first three studies" invites a reading of a thing that is
     // not the patient's baseline.
-    if (!identity || !latest) return null;
+    if (built !== null || !identity || !latest) return null;
     return view.templateOf(latest.recordingId)?.leads[lead]?.samples ?? null;
-  }, [identity, latest, lead, view]);
+  }, [built, identity, latest, lead, view]);
 
   /** The SELECTED study's discarded beats — evidence about that study. */
   const rejected = useMemo(() => {
@@ -500,10 +522,52 @@ export default function EcgIdentityPanel({ patientId, paddingHorizontal, onOpenS
         </View>
       )}
 
-      {/* The step-by-step builder and the legend row went with the
-          chrome. Both were good explanations of a thing nobody had asked
-          to have explained, and both put a control between the reader and
-          the trace on the one screen that is supposed to BE the trace. */}
+      {/* ══ ★ THE BUILDER — REMOVED IN v0.44.0, BACK IN v0.51.0 ═══════
+          Reported as: "you took away the progress bar I could play with
+          to see how my ID gets built over time, and that's a shame
+          because it was cool with the vibration."
+
+          v0.44.0 cut it with the legend row and the explainer, on the
+          argument that both were explanations nobody had asked for and
+          both put a control between the reader and the trace. Half of
+          that was right and half of it was not, and the difference is
+          worth writing down: the legend and the explainer TOLD the
+          reader something. This one lets them DO something, and the
+          thing they do is the only demonstration in the app of the claim
+          the whole feature rests on — that averaging many recordings
+          cancels what is not the heart. Nobody has to read that; they
+          drag, and they watch it happen. That is the opposite of the
+          pile-on the redesign was aimed at.
+
+          It sits directly under the trace, not under the lead buttons: a
+          control has to be adjacent to the thing it changes, and what it
+          changes is the curve above it.
+
+          ⚠️ While a partial baseline is drawn the latest-study overlay is
+          suppressed (`overlay`) — laying one study over "the first three
+          studies" invites reading a comparison against something that is
+          not this person's baseline. */}
+      {sequence.length > 1 && (
+        <BeatBuilder
+          total={sequence.length}
+          value={built ?? sequence.length}
+          /* Landing on the last notch IS "all of them", so it resolves
+             back to null rather than to a number that happens to equal
+             the total — one state for one situation, and the overlay
+             comes back on its own. */
+          onChange={(v) => setBuilt(v >= sequence.length ? null : v)}
+          caption={
+            built === null
+              ? tr('insBuiltAll', { n: String(sequence.length) })
+              : tr('insBuiltPartial', { k: String(built), n: String(sequence.length) })
+          }
+          resetLabel={tr('insBuiltReset')}
+          rtl={rtl}
+        />
+      )}
+
+      {/* The legend row stays gone. It named two things the reader can
+          see, on the screen that was asked to stop naming things. */}
       <LeadCoverageGrid
         coverage={identity.coverage}
         selected={lead}
@@ -976,6 +1040,14 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 12.5, lineHeight: 17, paddingTop: 2, textAlign: 'center' },
 });
 
+// v6.1.0 — The builder is back, under the trace. v6.0.0 cut it with the legend
+//          row and the explainer as "an explanation nobody asked for", and that
+//          was half right: the legend TOLD the reader something, this one lets
+//          them DO something — and what they do is the only demonstration in
+//          the app of the claim the feature rests on, that averaging many
+//          recordings cancels what is not the heart. Reported as "a shame, I
+//          could play with it to watch my ID get built". The latest-study
+//          overlay still hides while a partial baseline is drawn.
 // v6.0.0 — The ECG first, and almost nothing else. Reported as "it feels like
 //          you just piled more information on me instead of minimalism, and a
 //          patient doesn't know what that 'agree' in the green circle is" —

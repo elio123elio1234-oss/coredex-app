@@ -1,7 +1,43 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.50.0';
-export const APP_BUILD_LABEL = 'the report stops being the app on paper, and the tabs stop touching';
+export const APP_VERSION = '0.51.0';
+export const APP_BUILD_LABEL = 'drag your ID together again, and feel it this time';
+
+// v0.51.0 - "You removed the progress bar I could play with to see how my ID
+//           gets built over time, and that's a shame because it was cool with
+//           the vibration (and the vibration needs strengthening)."
+//           * THE BUILDER IS BACK, directly under the trace on the first
+//             screen. v0.44.0 cut it together with the legend row and the
+//             explainer, on the argument that all three were explanations
+//             nobody had asked for. Half of that was right and the difference
+//             matters: the legend and the explainer TOLD the reader something.
+//             The builder lets them DO something, and the thing they do is the
+//             only demonstration in the app of the claim the whole feature
+//             rests on - that averaging many recordings cancels what is not the
+//             heart. Nobody has to read that; they drag, and they watch it
+//             happen. That is the opposite of the pile-on the redesign was
+//             aimed at, and cutting it was over-applying a good rule.
+//             It sits UNDER the trace and above the lead buttons, because a
+//             control has to be adjacent to the thing it changes. It fits in
+//             the one-viewport budget: that block reserves the full remaining
+//             window height and its content was ~130 pt short of it, so the
+//             builder is absorbed by slack that already existed.
+//           * THE HAPTIC IS STRONGER, and the old one was weak for a reason
+//             worth recording: `selectionAsync` is the LIGHTEST event iOS
+//             defines - tuned for a picker wheel under a thumb resting on
+//             glass - so through a case, one-handed, with the finger already
+//             moving, it is easy to miss entirely. A control whose feedback
+//             you cannot feel is a control you have to watch, which defeats
+//             the point of the sensation. Now a Medium impact per study
+//             crossed, and a HEAVY one at either end of the timeline so the
+//             finger can find the first and last study without looking.
+//             MIN_TICK_MS (32 ms) stops a fast flick merging the ticks into
+//             one continuous rumble - it throttles the BUZZ only, never the
+//             value, so the picture never lags the finger.
+//           * While a partial baseline is drawn, the latest-study overlay stays
+//             hidden - laying one study over "the first three studies" invites
+//             reading a comparison against something that is not the person's
+//             baseline.
 
 // v0.50.0 - "The PDF does not look like a professional medical report (except
 //           page 1 with the graphs). And the three tabs at the top are really

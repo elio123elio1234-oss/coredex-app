@@ -33,10 +33,32 @@
    slider would invite the finger to stop between two of them, which means
    nothing, and would hide how few studies a young baseline rests on.
 
-   ══ HAPTICS ══
-   One `selectionAsync` per study crossed — the picker-wheel event, because
-   this is scrubbing through discrete items and not an impact. Firing per
-   frame would buzz continuously and say nothing.
+   ══ HAPTICS — ★ STRENGTHENED IN v2.0.0 ══
+   It was one `selectionAsync` per study crossed: the picker-wheel event,
+   correct on paper because this is scrubbing through discrete items and
+   not an impact. Reported from the phone as too faint to feel, and that
+   is the honest outcome rather than a preference — `selectionAsync` is
+   the LIGHTEST event iOS defines, it is tuned for a wheel spinning under
+   a thumb resting on glass, and through a case, one-handed, with a
+   finger already moving, it is easy to miss entirely. A control whose
+   feedback you cannot feel is a control you have to watch, which defeats
+   the point of putting the sensation there at all.
+
+   So: `Medium` impact per study crossed, and `Heavy` at either END of
+   the timeline. The end-stop is the part that earns its place — it is
+   how the finger learns where the first and the last study are without
+   looking, the same way a picker's rubber-band tells you the list is
+   over.
+
+   ⚠️ TWO THINGS THAT MUST NOT BE UNDONE:
+     • The tick fires ONE PER STUDY CROSSED, never per frame. Per frame
+       is a continuous buzz that says nothing and drains the taptic
+       engine's headroom, after which it starts dropping events.
+     • `MIN_TICK_MS` guards a fast flick. `move` can already only fire
+       once per frame, but at 120 Hz on a ProMotion display that is a
+       medium impact every 8 ms — the engine cannot reproduce them, so
+       they merge into one long rumble. The value still updates; only the
+       buzz is skipped, so the picture never lags the finger.
 
    Purely presentational: it reports the index it is on.
    ================================================================== */
@@ -61,8 +83,19 @@ interface Props {
   rtl?: boolean;
 }
 
-const TRACK_H = 26;
+const TRACK_H = 28;
 const NOTCH_RADIUS = 2;
+
+/**
+ * The floor between two taptic events, in ms.
+ *
+ * Not a debounce on the VALUE — the baseline still redraws on every
+ * crossing, so the picture never lags the finger. It is a floor on the
+ * BUZZ, because impacts fired closer together than the engine can
+ * reproduce them merge into one continuous rumble, which is precisely
+ * the featureless vibration this control was rebuilt to stop being.
+ */
+const MIN_TICK_MS = 32;
 
 export default function BeatBuilder({
   total,
@@ -75,6 +108,8 @@ export default function BeatBuilder({
   const t = useTheme();
   const trackW = useRef(0);
   const last = useRef(value);
+  /** When the last impact was fired — see `MIN_TICK_MS`. */
+  const lastTick = useRef(0);
 
   const move = useCallback(
     (x: number) => {
@@ -87,8 +122,22 @@ export default function BeatBuilder({
       const next = Math.max(1, Math.min(total, Math.ceil(ratio * total)));
       if (next === last.current) return;
       last.current = next;
-      void Haptics.selectionAsync();
+
+      /* ★ The value moves FIRST and unconditionally: the throttle below
+         is allowed to skip a buzz, never a redraw. Gating the state on
+         the haptic clock is how a scrubber comes to stutter under a fast
+         finger. */
       onChange(next);
+
+      const now = Date.now();
+      if (now - lastTick.current < MIN_TICK_MS) return;
+      lastTick.current = now;
+      /* Heavy at the ends, Medium in between — the end-stop is what lets
+         a finger find the first and the last study without looking. */
+      const atEnd = next === 1 || next === total;
+      void Haptics.impactAsync(
+        atEnd ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium,
+      );
     },
     [total, onChange, rtl],
   );
@@ -148,8 +197,12 @@ export default function BeatBuilder({
         accessibilityRole={partial ? 'button' : 'text'}
         disabled={!partial}
         onPress={() => {
-          void Haptics.selectionAsync();
+          /* Same weight as landing on the last notch, because that is
+             exactly what this does — snapping back to the whole
+             baseline should not feel lighter than reaching it by hand. */
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           last.current = total;
+          lastTick.current = Date.now();
           onChange(total);
         }}
         style={({ pressed }) => [styles.captionRow, rtl && styles.rowRtl, { opacity: pressed ? 0.6 : 1 }]}
@@ -171,12 +224,22 @@ const styles = StyleSheet.create({
   rowRtl: { flexDirection: 'row-reverse' },
   track: { flexDirection: 'row', alignItems: 'center', height: TRACK_H, gap: 3 },
   trackRtl: { flexDirection: 'row-reverse' },
-  notch: { flex: 1, height: 14, borderRadius: NOTCH_RADIUS },
+  notch: { flex: 1, height: 16, borderRadius: NOTCH_RADIUS },
   captionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  caption: { fontSize: 11.5, flexShrink: 1, fontVariant: ['tabular-nums'] },
-  reset: { fontSize: 11.5, fontWeight: '700', textDecorationLine: 'underline' },
+  /* 13.5, not 11.5: this caption is the only thing that says what the
+     control is doing, and Insights is aimed at a reader for whom no text
+     on the screen may need good eyes (v0.44.0). */
+  caption: { fontSize: 13.5, flexShrink: 1, fontVariant: ['tabular-nums'] },
+  reset: { fontSize: 13.5, fontWeight: '700', textDecorationLine: 'underline' },
 });
 
+// v2.0.0 — Haptics strengthened after the tick was reported as too faint to
+//          feel: Medium impact per study crossed instead of `selectionAsync`
+//          (the lightest event iOS has, easy to miss through a case while the
+//          finger is already moving), Heavy at either end of the timeline as an
+//          end-stop, and MIN_TICK_MS so a fast flick cannot merge them into one
+//          rumble. The value is never throttled, only the buzz. Track and
+//          notches up 2 pt, caption 11.5 -> 13.5 for the older reader.
 // v1.0.0 — Drag through the studies and watch the median beat assemble: one
 //          notch per contributing study, one haptic tick per study crossed, and
 //          the caption doubles as the reset once the selection is partial.
