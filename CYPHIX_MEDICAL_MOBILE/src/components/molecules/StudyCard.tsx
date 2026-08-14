@@ -9,11 +9,25 @@
 
    * The half that held: 10 seconds in 40 pt IS unreadable, and the row's
      clinical statement should never be a squiggle. So the statement is a
-     VERDICT PILL — the same `ScreeningLevel`, palette and honesty rules
-     as the Findings tab (computed by the full 43-rule engine via the
-     study digest cache, never a shortcut), so the row and the detail
-     screen cannot disagree. A simulated study shows the SIMULATION chip
-     where the verdict would go, because synthetic data is never screened.
+     VERDICT — the same `ScreeningLevel`, palette and honesty rules as the
+     Findings tab (computed by the full 43-rule engine via the study
+     digest cache, never a shortcut), so the row and the detail screen
+     cannot disagree. A simulated study shows the SIMULATION chip where
+     the verdict would go, because synthetic data is never screened.
+
+     ★ v2.1: THE VERDICT IS NOT IN A CAPSULE. It was a filled pill, and
+     it was reported as looking cheap — correctly. A coloured lozenge is
+     an app badge; a conclusion is not a badge, and every clinical
+     document this project prints states its impression as plain words
+     (the PDF's statement block makes the same argument at page scale).
+     It is now a small dot in the level's colour and the words in the
+     level's ink, with nothing behind them.
+
+     The dot is NOT the thing v1 rejected. That objection was to "two
+     8 px dots distinguished only by hue" — colour carrying the meaning
+     ALONE, with the words hidden behind a hover a phone does not have.
+     Here the words are right beside it and say the same thing; the dot
+     only makes the row scannable down a column.
    * The half that did not: a FOUR-second window at a fixed time scale is
      not a squiggle — it is the preview Kardia ships on every row, and it
      lets a reader recognise a recording ("the noisy one", "the fast one")
@@ -66,6 +80,9 @@ interface Props {
   verdict: ScreeningLevel | null | undefined;
   /** The 4 s lead II preview, when the digest has one. */
   preview: { samples: Float32Array; sampleRate: number } | null;
+  /** True once this row has been scrolled into view — the trace then
+      sweeps on rather than simply being there. See `EcgMiniPreview`. */
+  animate?: boolean;
   selected?: boolean;
   rtl: boolean;
   labels: StudyCardLabels;
@@ -87,6 +104,7 @@ export default function StudyCard({
   hasNote,
   verdict,
   preview,
+  animate = false,
   selected,
   rtl,
   labels,
@@ -126,18 +144,24 @@ export default function StudyCard({
       {/* ── Row 1: the claim (verdict / SIMULATION) and the rate ── */}
       <View style={[styles.headRow, rtl && styles.rowRtl]}>
         {isSimulated ? (
-          <View style={[styles.pill, { backgroundColor: t.dangerSoft }]}>
-            <Text style={[styles.pillText, { color: t.danger }]}>{labels.simulated}</Text>
+          /* SIMULATION keeps its filled chip, and the inconsistency is the
+             point: it is not a finding, it is a warning that this trace did
+             not come from a heart (mobile CLAUDE.md §4). A safety label is
+             allowed to shout where a conclusion may not. */
+          <View style={[styles.simChip, { backgroundColor: t.dangerSoft }]}>
+            <Text style={[styles.simChipText, { color: t.danger }]}>{labels.simulated}</Text>
           </View>
         ) : pill && verdict != null ? (
-          <View style={[styles.pill, styles.pillRow, rtl && styles.rowRtl, { backgroundColor: pill.soft }]}>
-            <View style={[styles.pillDot, { backgroundColor: pill.accent }]} />
-            <Text style={[styles.pillText, { color: pill.ink }]}>{verdictLabel[verdict]}</Text>
+          <View style={[styles.verdict, rtl && styles.rowRtl]}>
+            <View style={[styles.verdictDot, { backgroundColor: pill.accent }]} />
+            <Text style={[styles.verdictText, { color: pill.ink }]} numberOfLines={1}>
+              {verdictLabel[verdict]}
+            </Text>
           </View>
         ) : (
-          /* Digest still computing: a quiet slot of the same height, so the
-             pill's arrival never reflows the card. */
-          <View style={[styles.pill, styles.pillGhost, { backgroundColor: t.surfaceHover }]} />
+          /* Digest still computing: an empty slot of the same height, so the
+             verdict's arrival never reflows the card. */
+          <View style={styles.verdict} />
         )}
 
         <View style={styles.spacer} />
@@ -164,8 +188,15 @@ export default function StudyCard({
           samples={preview.samples}
           sampleRate={preview.sampleRate}
           height={PREVIEW_H}
-          stroke={t.accentLive}
+          /* ★ The BRAND's navy (#0D2041 — the wordmark's own lettering),
+             not `accentLive`. That token means "a live UI element" and is
+             a generic product blue; a stored clinical trace is neither
+             live nor generic. `brandNavy` carries its own dark-theme
+             translation, so the trace stays legible without a second
+             decision here. */
+          stroke={t.brandNavy}
           gridColor={t.border}
+          animate={animate}
           accessibilityLabel={labels.previewA11y}
         />
       ) : (
@@ -211,19 +242,22 @@ const styles = StyleSheet.create({
   rowRtl: { flexDirection: 'row-reverse' },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   spacer: { flex: 1 },
-  /* The pill is a VIEW that owns radius + padding, never a bare Text with
+  /* No background, no radius, no padding — see the header. `minHeight`
+     holds the slot open so the ghost, the verdict and the SIMULATION chip
+     are all the same height and nothing reflows. */
+  verdict: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 26, flexShrink: 1 },
+  verdictDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  verdictText: { fontSize: 14, fontWeight: '700', letterSpacing: -0.1, flexShrink: 1 },
+  /* The chip is a VIEW that owns radius + padding, never a bare Text with
      `overflow: hidden` — a stadium radius on a text node clips glyphs. */
-  pill: {
+  simChip: {
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
     minHeight: 26,
     justifyContent: 'center',
   },
-  pillRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  pillGhost: { width: 96 },
-  pillDot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
+  simChipText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
   rate: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   bpm: { fontSize: 21, fontWeight: '800', fontVariant: ['tabular-nums'], lineHeight: 24 },
   bpmUnit: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
@@ -243,6 +277,12 @@ const styles = StyleSheet.create({
   },
 });
 
+// v2.1.0 — The verdict loses its capsule (a filled lozenge is an app badge; a
+//          conclusion is stated in words) — a dot in the level's colour and the
+//          words in its ink. SIMULATION keeps a chip on purpose: a safety label
+//          may shout where a conclusion may not. The trace is drawn in the
+//          BRAND's navy rather than the generic `accentLive`, and sweeps on when
+//          the row is scrolled into view.
 // v2.0.0 — Kardia-style row: verdict pill (full 43-rule level, via the study
 //          digest cache) or SIMULATION where the verdict would go, a real 4 s
 //          lead II preview at fixed time scale, then date · meta · flags.

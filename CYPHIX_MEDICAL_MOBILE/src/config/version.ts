@@ -1,7 +1,51 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.56.0';
-export const APP_BUILD_LABEL = 'the report knows whose it is, wears the brand, and shows itself first';
+export const APP_VERSION = '0.57.0';
+export const APP_BUILD_LABEL = 'the trace writes itself, in the brand navy, with no capsule around the verdict';
+
+// v0.57.0 - "Something is off with the colours in History. First, I don't want
+//           the finding sitting inside a coloured capsule - it looks cheap.
+//           Second, the ECG traces are lovely, but (1) make the blue the dark
+//           medical navy of my logo, and (2) add an animation as if the wave
+//           is being created live - and the ones you can't see, say further
+//           down, should only run when you scroll to them."
+//           Three changes to the row, one of them structural:
+//           * THE VERDICT LEAVES ITS CAPSULE. It was a filled lozenge, and
+//             "cheap" is the right word: a coloured pill is an APP BADGE, and
+//             a clinical conclusion is not a badge - the PDF makes the same
+//             argument at page scale, where the verdict is a ruled statement
+//             block rather than a card (v0.50.0). It is now a dot in the
+//             level's colour plus the words in the level's ink, nothing
+//             behind them, one size up (14 pt) now that the capsule is not
+//             constraining it.
+//             ⚠️ The dot is NOT what StudyCard v1 rejected. That objection
+//             was to "two 8 px dots distinguished only by hue" - colour
+//             carrying the meaning ALONE with the words behind a hover a
+//             phone does not have. The words are beside it here.
+//             SIMULATION deliberately KEEPS its chip: it is not a finding, it
+//             is a warning that the trace did not come from a heart (§4), and
+//             a safety label may shout where a conclusion may not.
+//           * THE TRACE IS THE BRAND'S NAVY (#0D2041 - the wordmark's own
+//             lettering), not `accentLive`. That token means "a live UI
+//             element" and is a generic product blue; a stored clinical trace
+//             is neither live nor generic. `brandNavy` already carries its
+//             dark-theme translation (#9FB4D8), so legibility on the dark
+//             surface needed no second decision.
+//           * ★ THE TRACE SWEEPS ON. `strokeDasharray` + an animated
+//             `strokeDashoffset` on the UI thread, at CONSTANT speed
+//             (Easing.linear - a stylus does not accelerate, and easing it
+//             reads as a UI wipe rather than an instrument), with a pen dot
+//             travelling at the writing edge that fades as it lands. ~1.1 s,
+//             not the recording's own 4 s: a list you have to wait for is not
+//             a list. It fires from FlatList VIEWABILITY, so rows below the
+//             fold draw as they are reached - the animation is a reward for
+//             arriving somewhere, not something that happened off-screen. A
+//             mounted row draws once and then holds still.
+//             The seen-ids live in a ref with a counter, not a state Set:
+//             this is written from a scroll callback, and rebuilding a Set
+//             into state per viewability event would re-render the list
+//             mid-flick. `onViewableItemsChanged` and its config are
+//             ref-stable - RN throws if that prop's identity changes.
 
 // v0.56.0 - "The PDF does not look like a professional report (except the
 //           waveform page) - not colourful enough, has things a doctor does

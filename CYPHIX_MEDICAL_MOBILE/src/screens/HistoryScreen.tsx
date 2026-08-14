@@ -105,6 +105,40 @@ export default function HistoryScreen() {
      re-stagger; rows mounted later by scrolling animate briefly, capped. */
   const mountedAt = useRef(Date.now());
 
+  /* ── Which rows have been LOOKED AT ──
+     A trace sweeps on when its row reaches the screen, so the ids that
+     have been visible have to be tracked. A ref plus a counter rather than
+     a state Set: this is written from a scroll callback, and rebuilding a
+     Set into state on every viewability event would re-render the list
+     mid-flick. The counter only ticks when a row is seen for the FIRST
+     time, so scrolling back over drawn rows costs nothing and — by
+     design — does not re-draw them. */
+  const drawnIds = useRef<Set<string>>(new Set());
+  const [drawnCount, setDrawnCount] = useState(0);
+
+  /* ⚠️ Both of these must be reference-stable for the lifetime of the
+     list: React Native throws "Changing onViewableItemsChanged on the fly
+     is not supported" if the prop identity changes between renders. */
+  const viewabilityConfig = useRef({
+    /* Half a card is enough to call it seen — waiting for the whole row
+       means the last one never draws until it is fully clear of the dock. */
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 0,
+  }).current;
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: { item?: RecordingListItem; isViewable: boolean }[] }) => {
+      let discovered = false;
+      for (const entry of viewableItems) {
+        const id = entry.item?.id;
+        if (!entry.isViewable || !id || drawnIds.current.has(id)) continue;
+        drawnIds.current.add(id);
+        discovered = true;
+      }
+      if (discovered) setDrawnCount((n) => n + 1);
+    },
+  ).current;
+
   const fmtWhen = useCallback(
     (iso: string) =>
       new Date(iso).toLocaleString(lang, {
@@ -221,6 +255,7 @@ export default function HistoryScreen() {
           preview={
             digest ? { samples: digest.previewSamples, sampleRate: digest.previewSampleRate } : null
           }
+          animate={drawnIds.current.has(item.id)}
           rtl={rtl}
           labels={cardLabels}
           onPress={() => {
@@ -370,10 +405,12 @@ export default function HistoryScreen() {
             data={list.data}
             keyExtractor={(item) => item.id}
             renderItem={renderCard}
-            /* Rows read `digests` from the closure; without this, a row
-               already rendered would keep its placeholder after its digest
-               lands. */
-            extraData={digests}
+            /* Rows read `digests` and `drawnIds` from the closure; without
+               this, a row already rendered would keep its placeholder after
+               its digest lands — and would never learn it had been seen. */
+            extraData={`${Object.keys(digests).length}:${drawnCount}`}
+            viewabilityConfig={viewabilityConfig}
+            onViewableItemsChanged={onViewableItemsChanged}
             contentContainerStyle={[
               styles.listContent,
               {
@@ -436,6 +473,10 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.5.0 — Tracks which rows have been SEEN (FlatList viewability) so each
+//          trace sweeps on as it is scrolled to, once per visit. Kept in a ref
+//          with a counter rather than state, so a flick does not rebuild a Set
+//          into state on every frame.
 // v1.4.0 — Kardia-style rows: each card carries its verdict pill and a 4 s
 //          preview from the study digest cache (computed once per study, off
 //          the render path, with visible progress), a first-landing stagger,

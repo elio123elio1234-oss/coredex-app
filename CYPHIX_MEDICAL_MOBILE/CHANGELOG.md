@@ -1,5 +1,82 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.57.0 - 2026-08-14 - the trace writes itself, in the brand navy, with no capsule around the verdict
+
+*"Something is off with the colours in History. First, I don't want the finding
+sitting inside a coloured capsule — it looks cheap. Second, the ECG traces are
+lovely, but (1) make the blue the dark medical navy of my logo, and (2) add an
+animation as if the wave is being created live — and the ones you can't see,
+say further down, should only run when you scroll to them. That would be
+brilliant!"*
+
+### The verdict leaves its capsule
+
+"Cheap" is the right diagnosis. A filled coloured lozenge is an **app badge**,
+and a clinical conclusion is not a badge — this project already argued exactly
+that at page scale in v0.50.0, where the PDF's verdict became a ruled
+statement block instead of a card, because "a rounded box with a coloured fill
+is an app component photographed onto paper". The row was still doing the
+thing the report had stopped doing.
+
+It is now a dot in the level's colour and the words in the level's ink, with
+nothing behind them — and a size up (14 pt, was 12) now that no capsule is
+squeezing it.
+
+⚠️ **The dot is not what StudyCard v1 rejected.** That objection was to *"two
+8 px dots distinguished only by hue"* — colour carrying the meaning alone,
+with the words hidden behind a hover a phone does not have. Here the words sit
+beside the dot and say the same thing; the dot only makes a column of rows
+scannable.
+
+**SIMULATION deliberately keeps its chip.** It is not a finding — it is a
+warning that the trace did not come from a heart (mobile CLAUDE.md §4), and a
+safety label is allowed to shout where a conclusion is not. The inconsistency
+is the message.
+
+### The trace is the brand's navy
+
+`#0D2041` — the wordmark's own lettering — replacing `accentLive` (`#2F6BD8`).
+That token means "a live UI element" and is a generic product blue; a stored
+clinical trace is neither live nor generic. `brandNavy` already carries its
+dark-theme translation (`#9FB4D8`), so nothing extra had to be decided to keep
+the trace legible on the dark surface.
+
+### ★ The trace sweeps on, when you reach it
+
+`strokeDasharray` plus an animated `strokeDashoffset`, driven on the **UI
+thread** by Reanimated, so a screenful of them costs the JS thread nothing —
+which matters on the one screen that is also running the digest backfill.
+
+Three decisions worth recording:
+
+- **Constant speed** (`Easing.linear`). A monitor's stylus does not
+  accelerate; an eased sweep reads as a UI wipe rather than an instrument.
+- **~1.1 s, not the recording's own 4 s.** A list where each row takes four
+  seconds to become readable is a list you have to wait for.
+- **A pen dot rides the writing edge** and fades through the last tenth, so
+  the stylus lifts off the page instead of vanishing mid-stroke. Its vertical
+  position is precomputed on the JS thread and read by the worklet — deriving
+  it per frame would put the signal back on the thread this whole design keeps
+  it off.
+
+It fires from **FlatList viewability**, not on mount: rows below the fold draw
+as they are scrolled to. A mounted row draws once and then holds still —
+re-drawing under every passing thumb would turn an instrument into a fidget
+toy. (A row FlatList recycles far off-screen and later remounts draws again;
+that reads as "it just arrived" and is left alone.)
+
+Two implementation notes for whoever touches this next: the seen-ids live in a
+**ref with a counter**, not a state `Set` — this is written from a scroll
+callback, and rebuilding a Set into state on every viewability event would
+re-render the list mid-flick. And `onViewableItemsChanged` and its config are
+**ref-stable**, because React Native throws *"Changing onViewableItemsChanged
+on the fly is not supported"* if that prop's identity changes between renders.
+
+Verified: `tsc --noEmit`, `expo export` both platforms. 🔬 on device — an
+animation is exactly the class of thing that typechecks perfectly and stutters
+in the hand (§6.4): the sweep during a fast flick, with the digest backfill
+running, in both themes.
+
 ## v0.56.0 - 2026-08-14 - the report knows whose it is, wears the brand, and shows itself first
 
 *"The PDF does not look like a professional medical report (except the page
