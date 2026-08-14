@@ -1,7 +1,46 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.54.0';
-export const APP_BUILD_LABEL = 'the numbers on the card are finally yours to correct';
+export const APP_VERSION = '0.55.0';
+export const APP_BUILD_LABEL = 'a control may not sit on its own label, and the privacy line stops lying';
+
+// v0.55.0 - "The Settings tab is a real mess - the texts climb on top of the
+//           tiles. Not professional, not user friendly."
+//           Correct, and the root cause is one layout rule misapplied, not
+//           many small ones: SettingsRow clamps its inline control slot to
+//           52% of the row, but Yoga's default flexShrink is 0 and RN views
+//           default overflow:visible - so a control WIDER than the slot (a
+//           3-segment theme control is ~200 pt; the slot on a 390 pt phone
+//           is ~161 pt) kept its natural width, was pinned to the row's end
+//           by alignItems:'flex-end', and painted LEFTWARD over its own
+//           label. Under Hebrew the unflipped alignItems made the same bug
+//           spill toward the card's outer edge instead. Clamping harder just
+//           moves the collision; the honest fix is the one the language and
+//           background pickers always used:
+//           * SettingsRow gains `layout="stack"` - a wide control gets the
+//             WHOLE row, under its label. Opted in: Theme, Care connection,
+//             the role-chip group, and About's three long values (build
+//             label, session diagnostic, compliance), which used to wrap
+//             4-6 lines beside two-word labels.
+//           * The control slot's cross-axis now FLIPS with rtl.
+//           * SegmentedControl may shrink as a last resort (flexShrink on
+//             track+options, font fit at 0.8) - degradation is compression,
+//             never overpainting.
+//           * SettingsChip is a View around a Text: borderRadius 999 +
+//             overflow:hidden on a bare wrapping Text node clipped the first
+//             and last glyphs of every line ("Secure On-Device Processing").
+//           * Section art centres against its heading; the swatch row wraps;
+//             the full-width pickers take the row rhythm so dividers
+//             underline groups.
+//           * ★ THE PRIVACY COPY WAS FALSE AND IS REWRITTEN: "Your ECG never
+//             leaves this device. There is no server today." has not been
+//             true since the backend and sync engine shipped. It now says
+//             what happens: analysed on the phone, synced encrypted to the
+//             account. A stale privacy promise is not reassurance.
+//           * Sections land with the house FadeUpView stagger (Profile and
+//             History got theirs in v0.53-0.54).
+//           * PARITY housekeeping: preview-as-role row was stale (shipped
+//             v0.28.0), notifications row predated Reminders, app-lock had
+//             no row at all.
 
 // v0.54.0 - "The Profile tab is ancient - personal details cannot be edited."
 //           True, and the strange part is WHY: `PATCH /patients/:id/card` has

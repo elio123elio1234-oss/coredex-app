@@ -281,9 +281,11 @@ export const he: Record<TranslationKey, string> = {
 
   setSecPrivacy: 'פרטיות ואבטחה',
   setSecPrivacyDesc: 'הנתונים שלך וכיצד הם מוגנים',
-  setPrivacyOnDevice: 'עיבוד במכשיר',
-  setPrivacyOnDeviceDesc: 'האק"ג שלך לא עוזב את המכשיר הזה. אין שרת כרגע.',
-  encryptionBadge: 'עיבוד מאובטח במכשיר',
+  setPrivacyOnDevice: 'ניתוח במכשיר',
+  /* שוכתב ב-v0.55.0 — המשפט הישן ("אין שרת כרגע") הפסיק להיות נכון. */
+  setPrivacyOnDeviceDesc:
+    'האק"ג שלך נמדד ומנותח בטלפון הזה. ההקלטות מסונכרנות מוצפנות לחשבון ה-CYPHIX שלך, כדי שהמרפאה והמכשירים האחרים שלך יראו אותן.',
+  encryptionBadge: 'מוצפן',
   setPrivacyExport: 'ייצוא הנתונים שלי',
   setPrivacyExportDesc: 'הורדת כל מה שנשמר במכשיר הזה',
 

@@ -270,17 +270,19 @@ divergence, spelled out row by row below.
 | Appearance › Background | ✅ | 🔬 | 🔬 | Named swatches, never colour alone |
 | Appearance › Text size | ✅ 4-step scale | — | — | **Deliberate divergence.** The web scales its own root font because a browser page has one. iOS and Android already own text size system-wide (Dynamic Type / Font size) and every screen here respects it; a second app-only scale would fight the phone's own setting and confuse exactly the patients it is for. The row explains this instead |
 | Appearance › Language (en/he) | ✅ `<select>` | 🔬 | 🔬 | v0.13.0. **Deliberate UI divergence:** a row of 44 pt pills, not a dropdown — RN has no non-modal `<select>`, and a patient who opened the app in a language they cannot read must not have to open a menu whose label is in that language to escape it. Registry-driven from `LANG_META`, so it wraps rather than redesigns when a third language is added. Placed **first** in Appearance for the same reason. Each language is named in its own script (`English`, `עברית`), never translated |
-| Notifications (3 toggles) | ✅ | 🔬 | 🔬 | Stored; **nothing schedules a notification yet** — the switches are the flags a future push service reads, exactly as on the web |
+| Notifications (3 toggles) | ✅ | 🔬 | 🔬 | **Row updated v0.55.0 — it predated Reminders.** Test reminders is REAL: the switch gates the schedule and the row opens the Reminders screen (see the Reminders rows above, v0.43.0+). Results-ready and doctor-messages remain stored flags a future push service reads, exactly as on the web |
 | Care connection | ✅ | 🔬 | 🔬 | Ported |
 | ECG Device | ✅ | 🔬 | 🔬 | Status / device name / connect / disconnect. **Not ported:** the "Live Scan" debug entry — no scan engine on mobile yet |
-| Privacy › On-device processing | ✅ | 🔬 | 🔬 | Ported |
+| Privacy › On-device processing | ✅ | 🔬 | 🔬 | Ported. **v0.55.0: the copy was FALSE and is rewritten** — it still said "Your ECG never leaves this device. There is no server today", which stopped being true when the backend and sync engine shipped. It now says: analysed on the phone, synced encrypted to the account. A privacy sentence describing an app that no longer exists is a false statement on the one screen that must never make one |
 | Privacy › AI voice-guide key | ✅ | ⏳ | ⏳ | Gemini Live is web-only today; a key field here would configure nothing |
 | Privacy › Export my data | ✅ Coming soon | 🔬 | 🔬 | Same "Coming soon" chip as the web |
 | Account › Name / Role | ✅ | 🔬 | 🔬 | v0.19.0: the NAME is the signed-in account's. The role chip still reads Patient — see the RBAC row in the Onboarding table |
 | Account › Sign out | ✅ | 🔬 | 🔬 | v0.19.0: live, behind a `ConfirmDialog` that says what it costs (the password, or a face). It is also the only route back into the onboarding flow |
-| Account › Preview as role | ✅ (demo control) | ⏳ | ⏳ | Needs RBAC on mobile first |
+| Account › Preview as role | ✅ (demo control) | 🔬 | 🔬 | **Row corrected v0.55.0 — it was stale:** shipped in v0.28.0 (see the dedicated ★ row in the History table), this table was never updated. Grants nothing; the server still authorises against the real role |
+| Account › Lock when unattended | — (web has no device lock) | 🔬 | 🔬 | **Row added v0.55.0 — shipped earlier with no ledger row.** Offered only where the OS can honour it (`canUseAppLock`); a security switch that silently does nothing is worse than no switch |
 | Clinic & Server (admin) | ✅ | ⏳ | ⏳ | Admin-gated on the web; there is no role to check against yet |
 | About | ✅ | 🔬 | 🔬 | Version + build label + compliance. **Not ported:** the "AI model" row — no ONNX artifact ships on mobile yet |
+| ★ Settings layout — wide controls STACK (v0.55.0) | ✅ (web rows wrap in CSS) | 🔬 | 🔬 | **Bug fix, reported as "texts climb on top of the tiles".** Root cause: the inline control slot is capped at 52 % of the row, but Yoga's default `flexShrink` is 0 and RN views default `overflow: visible` — so a 3-segment control (~200 pt intrinsic) kept its width, pinned to the row's end, and painted LEFTWARD over its own label; under Hebrew the unflipped `alignItems` made it spill toward the card edge instead. Fix: `SettingsRow layout="stack"` gives wide controls the whole row under the label (Theme, Care connection, role chips, long About values); the segmented track may now shrink as a last resort; `SettingsChip` is a View around a Text so a stadium radius stops clipping glyphs; the swatch row wraps; section art centres against its heading |
 
 ## Phone-scale departures from the web layout (v0.9.0)
 

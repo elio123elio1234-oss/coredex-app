@@ -291,9 +291,15 @@ export const en = {
 
   setSecPrivacy: 'Privacy & Security',
   setSecPrivacyDesc: 'Your data and how it is protected',
-  setPrivacyOnDevice: 'On-device processing',
-  setPrivacyOnDeviceDesc: 'Your ECG never leaves this device. There is no server today.',
-  encryptionBadge: 'Secure On-Device Processing',
+  setPrivacyOnDevice: 'On-device analysis',
+  /* ★ Rewritten in v0.55.0 because the old sentence — "Your ECG never
+     leaves this device. There is no server today." — stopped being true
+     the day the backend and the sync engine shipped. A privacy line that
+     describes an app that no longer exists is not reassurance, it is a
+     false statement on the one screen that must never make one. */
+  setPrivacyOnDeviceDesc:
+    'Your ECG is measured and analysed on this phone. Recordings sync encrypted to your CYPHIX account, so your clinic and your other devices can see them.',
+  encryptionBadge: 'Encrypted',
   setPrivacyExport: 'Export my data',
   setPrivacyExportDesc: 'Download everything stored on this device',
 

@@ -1,5 +1,64 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.55.0 - 2026-08-14 - a control may not sit on its own label, and the privacy line stops lying
+
+*"The Settings tab is a real mess - the texts climb on top of the tiles. Not
+professional, not user friendly."*
+
+### One root cause, not many small ones
+
+`SettingsRow` caps its inline control slot at 52 % of the row - added in
+v1.2.0 to stop a long chip from bullying the label column, and right for
+anything that can shrink. But Yoga's default `flexShrink` is **0** and RN
+views default `overflow: visible`, so a control **wider than the slot** - the
+three-segment Theme control is ~200 pt of intrinsic width against a ~161 pt
+slot on a 390 pt phone - kept its natural width, was pinned to the row's end
+by `alignItems: 'flex-end'`, and painted **leftward over its own label**.
+Under Hebrew the same bug drew a different picture: the cross-axis alignment
+never flipped with `rtl`, so the overflow spilled toward the card's outer
+edge instead.
+
+Clamping harder just moves the collision. The honest fix is the pattern the
+language and background pickers used all along: **a control wider than half
+the row gets the whole row, under its label.**
+
+- `SettingsRow` gains `layout="stack"`. Opted in: Theme, Care connection, the
+  role-chip group (four 44 pt chips crammed into a 161 pt column), and
+  About's three long values - build label, session diagnostic, compliance -
+  which used to wrap 4-6 lines beside two-word labels and read as a wall.
+- The inline control slot's cross-axis now flips with `rtl`.
+- `SegmentedControl` may shrink as a last resort (`flexShrink` on track and
+  options, font fit floor 0.8): degradation is now compression, never
+  overpainting.
+- `SettingsChip` is a **View around a Text**, not a rounded Text:
+  `borderRadius: 999` + `overflow: 'hidden'` on a bare wrapping text node
+  clips the first and last glyphs of every line - which is exactly what
+  "Secure On-Device Processing" was doing.
+- `SettingsSection`'s 48 pt art centres against its heading instead of
+  hanging below a one-line title; the background swatch row wraps instead of
+  overflowing a longer language silently; the full-width pickers take the row
+  rhythm so the next divider underlines the group.
+
+### The privacy sentence was false
+
+Privacy & Security still said: *"Your ECG never leaves this device. There is
+no server today."* That stopped being true when the backend and the sync
+engine shipped - recordings sync to the CYPHIX server, encrypted, by design.
+The row now says exactly that. A stale privacy promise is not a nicety; it is
+a false statement on the one screen that must never make one.
+
+### Also
+
+- Settings sections land with the house `FadeUpView` stagger, completing the
+  set (History v0.53.0, Profile v0.54.0).
+- PARITY housekeeping: the preview-as-role row in the Settings table was
+  stale (shipped v0.28.0), the notifications row predated Reminders, and the
+  app-lock switch had shipped with no ledger row at all.
+
+Verified: `tsc --noEmit`, `expo export` both platforms, `expo-doctor`. 🔬 on
+device: the Theme row in English AND Hebrew on a 390 pt phone, About in both
+themes, the role chips, the swatch wrap.
+
 ## v0.54.0 - 2026-08-14 - the numbers on the card are finally yours to correct
 
 *"The Profile tab is ancient - personal details cannot be edited."*

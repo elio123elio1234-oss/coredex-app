@@ -6,7 +6,7 @@
    the tone only reinforces them (web CLAUDE.md §6 / accessibility).
    ================================================================== */
 
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
 
 interface Props {
@@ -18,12 +18,21 @@ export default function SettingsChip({ label, tone = 'neutral' }: Props) {
   const t = useTheme();
   const skin =
     tone === 'ok'
-      ? { backgroundColor: t.successSoft, color: t.success }
+      ? { back: t.successSoft, ink: t.success }
       : tone === 'warn'
-        ? { backgroundColor: t.dangerSoft, color: t.danger }
-        : { backgroundColor: t.accentSoft, color: t.textSecondary };
+        ? { back: t.dangerSoft, ink: t.danger }
+        : { back: t.accentSoft, ink: t.textSecondary };
 
-  return <Text style={[styles.chip, skin]}>{label}</Text>;
+  /* ★ A VIEW owns the pill, the Text only carries words. It used to be a
+     bare <Text> with `borderRadius: 999 + overflow: 'hidden'` — and when a
+     long label wrapped to two lines, a stadium radius on a ~44 pt-tall
+     text node CLIPPED the first and last glyphs of each line. A view clips
+     its padding box, never its glyphs. */
+  return (
+    <View style={[styles.chip, { backgroundColor: skin.back }]}>
+      <Text style={[styles.text, { color: skin.ink }]}>{label}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -32,10 +41,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    overflow: 'hidden',
-    fontSize: 12,
-    fontWeight: '700',
+    alignSelf: 'flex-start',
   },
+  text: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
 });
 
+// v1.1.0 — The pill is a View around the Text, not a rounded Text: a stadium
+//          radius with overflow:hidden on a wrapping text node clips the first
+//          and last glyphs of every line.
 // v1.0.0 — Status pill for settings rows.

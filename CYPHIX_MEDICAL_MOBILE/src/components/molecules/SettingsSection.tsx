@@ -58,13 +58,18 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
   },
-  head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 6 },
+  /* `center`, not `flex-start`: the 48 pt art is taller than a one-line
+     heading block, and top-aligning left it hanging below the text — the
+     header baseline read as broken on every section without a description. */
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
   headRtl: { flexDirection: 'row-reverse' },
   heading: { flex: 1, minWidth: 0 },
-  title: { fontSize: 16.5, fontWeight: '800', marginTop: 2 },
+  title: { fontSize: 16.5, fontWeight: '800' },
   desc: { fontSize: 12.5, lineHeight: 18.75, marginTop: 3 },
   aside: { flexShrink: 0 },
   body: { marginTop: 6 },
 });
 
+// v1.2.0 — The 48 pt art centres against the heading block instead of hanging
+//          below a one-line title.
 // v1.1.0 — Header reverses and re-aligns under an RTL language.

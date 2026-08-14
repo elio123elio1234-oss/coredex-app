@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Pressable } from 'react-native';
+import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import { GLASS_MATERIAL } from '@/components/atoms/GlassSurface';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import SettingsChip from '@/components/atoms/SettingsChip';
@@ -114,7 +115,7 @@ export default function SettingsScreen() {
   const nav = useNavigation<{ goBack: () => void; navigate: (screen: string) => void }>();
   const insets = useSafeAreaInsets();
   const { prefs, setTheme, setBackground, setNotification, setCareMode } = usePreferences();
-  const { t: tr, lang, setLang } = useTranslation();
+  const { t: tr, lang, setLang, rtl } = useTranslation();
   const ble = useBle();
   const { user, logout } = useAuth();
   const dispatch = useAppDispatch();
@@ -213,14 +214,15 @@ export default function SettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <FadeUpView duration={420} distance={10} style={styles.header}>
           <Text style={[styles.title, { color: t.textPrimary }]}>{tr('settingsTitle')}</Text>
           <Text style={[styles.subtitle, { color: t.textSecondary }]}>
             {tr('settingsSubtitle')}
           </Text>
-        </View>
+        </FadeUpView>
 
         {/* ── Appearance ── */}
+        <FadeUpView delay={50} duration={420} distance={10}>
         <SettingsSection
           art={AppearanceIllustration}
           title={tr('setSecAppearance')}
@@ -234,11 +236,21 @@ export default function SettingsScreen() {
               thing under the first heading, and its options are written in
               their own scripts rather than translated. */}
           <SettingsRow first label={tr('language')} description={tr('languageDesc')} />
-          <LanguageSelectRow value={lang} onChange={setLang} accessibilityLabel={tr('language')} />
+          {/* The picker belongs to the label row above it: a bottom inset of
+              its own so the next row's divider underlines the GROUP, not the
+              swatches. */}
+          <View style={styles.pickerBlock}>
+            <LanguageSelectRow value={lang} onChange={setLang} accessibilityLabel={tr('language')} />
+          </View>
 
+          {/* ★ `stack`: three segments are ~200 pt of intrinsic width, and the
+              inline slot on a 390 pt phone is ~161 pt — the track used to
+              paint over its own label (SettingsRow's header tells the whole
+              story). Wide controls get the row, under the label. */}
           <SettingsRow
             label={tr('setTheme')}
             description={tr('setThemeDesc')}
+            layout="stack"
             control={
               <SegmentedControl
                 options={THEME_OPTIONS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
@@ -263,10 +275,14 @@ export default function SettingsScreen() {
               and the control stack — the same thing `.bg-select` does on the
               web, where the picker gets its own full-width block. */}
           <SettingsRow label={tr('bgLabel')} description={tr('bgLabelDesc')} />
-          <BackgroundSelectRow value={prefs.background} onChange={setBackground} />
+          <View style={styles.pickerBlock}>
+            <BackgroundSelectRow value={prefs.background} onChange={setBackground} />
+          </View>
         </SettingsSection>
+        </FadeUpView>
 
         {/* ── Notifications ── */}
+        <FadeUpView delay={100} duration={420} distance={10}>
         <SettingsSection
           art={NotificationsIllustration}
           title={tr('setSecNotifications')}
@@ -326,19 +342,24 @@ export default function SettingsScreen() {
             }
           />
         </SettingsSection>
+        </FadeUpView>
 
         {/* ── Care connection (who your messages go to) ── */}
+        <FadeUpView delay={150} duration={420} distance={10}>
         <SettingsSection
           art={CareConnectionIllustration}
           title={tr('setSecCare')}
           description={tr('setSecCareDesc')}
         >
+          {/* `stack` for the same reason as Theme: two segments sat exactly
+              at the inline clamp and grazed the label at some font metrics. */}
           <SettingsRow
             first
             label={tr('setCareConnection')}
             description={
               prefs.careMode === 'clinic' ? tr('setCareClinicDesc') : tr('setCareClinicianDesc')
             }
+            layout="stack"
             control={
               <SegmentedControl
                 options={CARE_OPTIONS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
@@ -349,8 +370,10 @@ export default function SettingsScreen() {
             }
           />
         </SettingsSection>
+        </FadeUpView>
 
         {/* ── ECG Device ── */}
+        <FadeUpView delay={200} duration={420} distance={10}>
         <SettingsSection
           art={EcgDeviceIllustration}
           title={tr('setSecDevice')}
@@ -378,8 +401,10 @@ export default function SettingsScreen() {
             />
           )}
         </SettingsSection>
+        </FadeUpView>
 
         {/* ── Privacy & Security ── */}
+        <FadeUpView delay={250} duration={420} distance={10}>
         <SettingsSection
           art={PrivacyIllustration}
           title={tr('setSecPrivacy')}
@@ -397,8 +422,10 @@ export default function SettingsScreen() {
             value={<SettingsChip label={tr('setComingSoon')} />}
           />
         </SettingsSection>
+        </FadeUpView>
 
         {/* ── Account ── */}
+        <FadeUpView delay={300} duration={420} distance={10}>
         <SettingsSection
           art={AccountIllustration}
           title={tr('setSecAccount')}
@@ -424,8 +451,11 @@ export default function SettingsScreen() {
           <SettingsRow
             label={tr('setDevRole')}
             description={tr('setDevRoleDesc')}
+            /* Four 44 pt chips are a control group, not a control — inline
+               they stacked into a tall dense column beside the description. */
+            layout="stack"
             control={
-              <View style={styles.roleRow}>
+              <View style={[styles.roleRow, rtl && styles.roleRowRtl]}>
                 {DEBUG_ROLES.map((r) => (
                   <Pressable
                     key={r}
@@ -496,8 +526,10 @@ export default function SettingsScreen() {
             onPress={() => setConfirmSignOut(true)}
           />
         </SettingsSection>
+        </FadeUpView>
 
         {/* ── About ── */}
+        <FadeUpView delay={350} duration={420} distance={10}>
         <SettingsSection
           art={AboutIllustration}
           title={tr('setSecAbout')}
@@ -506,8 +538,10 @@ export default function SettingsScreen() {
           <SettingsRow first label={tr('setAboutVersion')} value={APP_VERSION} />
           {/* The build label is a developer identifier, not patient copy —
               it stays in English on purpose so a bug report quotes the same
-              string the changelog does. */}
-          <SettingsRow label={tr('setAboutBuild')} value={APP_BUILD_LABEL} />
+              string the changelog does. `stack`: it is a sentence, and a
+              sentence wedged into half a row beside a two-word label read
+              as a wall of fragments. */}
+          <SettingsRow label={tr('setAboutBuild')} value={APP_BUILD_LABEL} layout="stack" />
           {/* Which frosted material this phone actually resolved. "It doesn't
               look like glass" has three causes that look identical — no
               Liquid Glass on this iOS, no `expo-glass-effect` in this client,
@@ -517,9 +551,14 @@ export default function SettingsScreen() {
           <SettingsRow label={tr('setAboutMaterial')} value={GLASS_MATERIAL} />
           {/* English like the build label and the material, so a bug report
               quotes a string that can be grepped for. */}
-          <SettingsRow label={tr('setAboutSession')} value={sessionState} />
-          <SettingsRow label={tr('setAboutCompliance')} value={tr('setAboutComplianceValue')} />
+          <SettingsRow label={tr('setAboutSession')} value={sessionState} layout="stack" />
+          <SettingsRow
+            label={tr('setAboutCompliance')}
+            value={tr('setAboutComplianceValue')}
+            layout="stack"
+          />
         </SettingsSection>
+        </FadeUpView>
       </ScrollView>
 
       <ConfirmDialog
@@ -542,10 +581,15 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' },
+  /* Stacked full-width now, so the chips start where reading starts. */
+  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  roleRowRtl: { flexDirection: 'row-reverse' },
   // 44 pt of touch on a chip that is drawn smaller — the chip is the label,
   // the Pressable is the target.
   roleChipHit: { minHeight: 44, justifyContent: 'center' },
+  /* The full-width pickers (language pills, background swatches) take the
+     row's own bottom inset, so the next divider underlines the group. */
+  pickerBlock: { paddingBottom: 13 },
   root: { flex: 1 },
   topBar: { paddingHorizontal: 12, paddingBottom: 4 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 6 },
@@ -557,6 +601,13 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.0.0 — The page stops fighting its own width: wide controls (Theme, Care
+//          connection, role chips, the long About values) use the new
+//          SettingsRow `stack` layout instead of painting over their labels;
+//          the language/background pickers take the row rhythm; sections land
+//          with the house FadeUpView stagger; and the privacy copy stops
+//          describing an app with no server (there is one, and recordings
+//          sync to it encrypted).
 // v2.4.0 — About reports what the ENCLAVE holds (`sessionDiagnostic`). Two
 //          rounds of "it sent me to the sign-in screen" were spent guessing
 //          between four indistinguishable causes, at a release each.

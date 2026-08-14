@@ -82,12 +82,17 @@ export default function BackgroundSelectRow({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 14, paddingVertical: 4 },
+  /* `flexWrap`: four swatches fit today's two languages; a third language
+     with longer colour names must wrap to a second line, not overflow
+     silently off the card. */
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingVertical: 4 },
   rowRtl: { flexDirection: 'row-reverse', justifyContent: 'flex-start' },
   swatch: { alignItems: 'center', gap: 6 },
   chip: { width: 46, height: 34, borderRadius: 10 },
   label: { fontSize: 11.5 },
 });
 
+// v1.2.0 — The swatch row wraps instead of overflowing when a language's
+//          colour names outgrow one line.
 // v1.1.0 — Swatch names come from the locale; the row follows the reading
 //          direction, so the first swatch is where the eye starts.
