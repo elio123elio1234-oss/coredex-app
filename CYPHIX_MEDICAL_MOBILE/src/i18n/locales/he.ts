@@ -325,6 +325,14 @@ export const he: Record<TranslationKey, string> = {
   histLowQuality: 'איכות אות נמוכה',
   histDevice: 'מכשיר',
   histSelectOne: 'בחרו הקלטה מהרשימה.',
+  /* תגיות הפסיקה בשורות — צורות מקוצרות של scrLevel* הארוכים. אותו
+     ScreeningLevel, אותה פלטה, כדי ששורה וטאב הממצאים לעולם לא יסתרו. */
+  histVerdictClear: 'ללא ממצאים',
+  histVerdictAttention: 'שווה בדיקה',
+  histVerdictUrgent: 'דורש התייחסות',
+  histVerdictInconclusive: 'לא קריא',
+  histDigestProgress: 'מנתח {done} מתוך {total}…',
+  histPreviewA11y: 'תצוגה מקדימה של הא.ק.ג, ארבע שניות',
 
   /* ── שמירת מדידה שהסתיימה ── */
   histSaving: 'שומר להיסטוריה…',

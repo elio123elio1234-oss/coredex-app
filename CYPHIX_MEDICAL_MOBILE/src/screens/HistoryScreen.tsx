@@ -36,7 +36,7 @@
    list deliberately never loads.
    ================================================================== */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -53,6 +53,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
+import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import StudyCard from '@/components/molecules/StudyCard';
@@ -60,6 +61,7 @@ import EcgIdentityPanel from '@/components/organisms/EcgIdentityPanel';
 import PatientShell, { shellPaddingH } from '@/components/templates/PatientShell';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
+import { useStudyDigests } from '@/features/history/hooks/useStudyDigests';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
 import { useSync } from '@/features/sync/useSync';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -93,6 +95,15 @@ export default function HistoryScreen() {
   const subject = selfOnly ? (user?.linkedPatientId ?? 'MOCK-SELF') : undefined;
   const list = useListRecordingsQuery({ patientId: subject, limit: HISTORY_PAGE_SIZE });
   const [createRecording] = useCreateRecordingMutation();
+
+  /* Verdicts + previews, computed once per study and cached on device —
+     the list itself still never decodes a waveform. */
+  const { digests, progress: digesting } = useStudyDigests(list.data);
+
+  /* Rows animate in only on the screen's first landing. Digest updates and
+     refetches re-render the same mounted rows (same keys), so they never
+     re-stagger; rows mounted later by scrolling animate briefly, capped. */
+  const mountedAt = useRef(Date.now());
 
   const fmtWhen = useCallback(
     (iso: string) =>
@@ -182,26 +193,44 @@ export default function HistoryScreen() {
     notes: tr('histNotes'),
     hasNote: tr('noteTitle'),
     leadSet: tr('reportLeadSetShort'),
+    verdictClear: tr('histVerdictClear'),
+    verdictAttention: tr('histVerdictAttention'),
+    verdictUrgent: tr('histVerdictUrgent'),
+    verdictInconclusive: tr('histVerdictInconclusive'),
+    previewA11y: tr('histPreviewA11y'),
   };
 
-  const renderCard = ({ item }: { item: RecordingListItem }) => (
-    <StudyCard
-      when={fmtWhen(item.recordedAt)}
-      bpm={item.summary.bpm}
-      durationSec={item.durationSec}
-      sampleRate={item.sampleRate}
-      isSimulated={item.isSimulated}
-      insufficient={item.summary.insufficient}
-      annotationCount={item.annotations.length}
-      hasNote={Boolean(item.note && item.note.trim() !== '')}
-      rtl={rtl}
-      labels={cardLabels}
-      onPress={() => {
-        void Haptics.selectionAsync();
-        navigation.navigate('StudyViewer', { id: item.id });
-      }}
-    />
-  );
+  const renderCard = ({ item, index }: { item: RecordingListItem; index: number }) => {
+    const digest = digests[item.id];
+    /* First-landing stagger only (see `mountedAt`). Capped so a row far
+       down a fast scroll never waits noticeably. */
+    const stagger = Date.now() - mountedAt.current < 900 ? Math.min(index, 8) * 45 : 0;
+    return (
+      <FadeUpView delay={stagger} duration={420} distance={10}>
+        <StudyCard
+          when={fmtWhen(item.recordedAt)}
+          /* Imported CSVs store a null summary bpm; the digest measured one. */
+          bpm={item.summary.bpm ?? digest?.bpm ?? null}
+          durationSec={item.durationSec}
+          sampleRate={item.sampleRate}
+          isSimulated={item.isSimulated}
+          insufficient={item.summary.insufficient}
+          annotationCount={item.annotations.length}
+          hasNote={Boolean(item.note && item.note.trim() !== '')}
+          verdict={digest ? digest.screeningLevel : undefined}
+          preview={
+            digest ? { samples: digest.previewSamples, sampleRate: digest.previewSampleRate } : null
+          }
+          rtl={rtl}
+          labels={cardLabels}
+          onPress={() => {
+            void Haptics.selectionAsync();
+            navigation.navigate('StudyViewer', { id: item.id });
+          }}
+        />
+      </FadeUpView>
+    );
+  };
 
   return (
     /* Both tabs scroll, so the dock's clearance belongs on their content
@@ -225,6 +254,14 @@ export default function HistoryScreen() {
               <Text style={[styles.count, { color: t.textSecondary, textAlign: align }]}>
                 {tr('histCount', { n: String(list.data?.length ?? 0) })}
                 {selfOnly ? ` · ${tr('histOwnOnly')}` : ''}
+                {/* A visible backfill is a screen doing work; a list quietly
+                    filling with verdicts is a screen that might be broken. */}
+                {digesting
+                  ? ` · ${tr('histDigestProgress', {
+                      done: String(digesting.done),
+                      total: String(digesting.total),
+                    })}`
+                  : ''}
               </Text>
             )}
           </View>
@@ -333,6 +370,10 @@ export default function HistoryScreen() {
             data={list.data}
             keyExtractor={(item) => item.id}
             renderItem={renderCard}
+            /* Rows read `digests` from the closure; without this, a row
+               already rendered would keep its placeholder after its digest
+               lands. */
+            extraData={digests}
             contentContainerStyle={[
               styles.listContent,
               {
@@ -395,6 +436,10 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v1.4.0 — Kardia-style rows: each card carries its verdict pill and a 4 s
+//          preview from the study digest cache (computed once per study, off
+//          the render path, with visible progress), a first-landing stagger,
+//          and imported rows borrow the digest's measured bpm.
 // v1.3.0 — Both tabs take the dock's clearance on their own content inset, so
 //          the page passes BEHIND the frosted bar instead of ending on a bare
 //          strip above it.

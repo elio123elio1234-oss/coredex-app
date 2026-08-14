@@ -24,37 +24,19 @@
    not a heart.)
 
    ══ 2. THE PATIENT CONTEXT IS PASSED ONLY WHEN IT IS PROVABLY THEIRS ══
-   Sex moves the long-QT threshold by 10 ms. `usePatientCard` returns the
-   ACTIVE patient, which is not necessarily the subject of the recording
-   being viewed — a clinician opening someone else's study would otherwise
-   have that person screened against the wrong limit, silently. The
-   subject reference is compared first, and a mismatch passes no context
-   at all, which makes the engine fall back to the more conservative
-   limit. Under-calling a borderline QT is recoverable; screening a woman
-   against a man's threshold because of a UI coincidence is not.
+   The rule itself lives in `patientContext.ts` — it now has three
+   consumers (this tab, the History digest backfill, the PDF export) and
+   three hand copies of a safety rule is how one of them drifts. Short
+   version: the recording's `subject` is compared to the active patient
+   first, and a mismatch passes NO context, so the engine falls back to
+   the more conservative threshold.
    ================================================================== */
 
 import { useMemo } from 'react';
-import {
-  screenLimbEcg,
-  type EcgScreening,
-  type ScreeningContext,
-  type StoredRecording,
-} from '@cyphix/shared';
+import { screenLimbEcg, type EcgScreening, type StoredRecording } from '@cyphix/shared';
+import { screeningContextFor } from '@/features/history/patientContext';
 import { usePatientCard } from '@/features/profile/usePatientCard';
 import type { RecordingView } from '@/features/history/hooks/useRecordingView';
-
-/** Whole years between an ISO birth date and now; null when unusable. */
-function ageFrom(birthDate: string | undefined): number | undefined {
-  if (!birthDate) return undefined;
-  const born = new Date(birthDate);
-  if (!Number.isFinite(born.getTime())) return undefined;
-  const now = new Date();
-  let age = now.getFullYear() - born.getFullYear();
-  const monthDelta = now.getMonth() - born.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < born.getDate())) age--;
-  return age >= 0 && age < 130 ? age : undefined;
-}
 
 export function useScreening(
   recording: StoredRecording | undefined,
@@ -62,31 +44,23 @@ export function useScreening(
 ): EcgScreening | null {
   const { card, patientId, isDemo } = usePatientCard();
 
-  /* "Patient/pat-001" → "pat-001". The recording stores a FHIR-style
-     reference; the card stores a bare id. */
-  const subjectId = recording?.subject?.split('/').pop() ?? null;
-  const isOwnRecord = !isDemo && patientId !== null && subjectId === patientId;
-
-  const sex = isOwnRecord ? card.gender : undefined;
-  const ageYears = isOwnRecord ? ageFrom(card.birthDate) : undefined;
+  const { context, ctxKey } = screeningContextFor(recording?.subject, card, patientId, isDemo);
 
   return useMemo(() => {
     if (!view || !recording) return null;
     if (recording.isSimulated) return null;
 
-    const context: ScreeningContext = {};
-    if (sex) context.sex = sex;
-    if (ageYears !== undefined) context.ageYears = ageYears;
-
     return screenLimbEcg(view.leads, view.analysis, context);
-    /* Keyed on the STUDY and on the two context values, not on `view` — the
-       view object is a fresh reference whenever the filters recompute, and
-       43 rules over six leads on the JS thread is not something to re-run
-       on a scroll. */
+    /* Keyed on the STUDY and on the context's stable key, not on `view` or
+       the context object — both are fresh references whenever something
+       recomputes, and 43 rules over six leads on the JS thread is not
+       something to re-run on a scroll. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recording?.id, recording?.isSimulated, view, sex, ageYears]);
+  }, [recording?.id, recording?.isSimulated, view, ctxKey]);
 }
 
+// v1.1.0 — The "provably theirs" context rule moved to patientContext.ts so the
+//          Findings tab, the History digests and the PDF export share one copy.
 // v1.0.0 — Screens a measured recording. Refuses to screen simulated data
 //          (returns null), and passes patient sex/age only when the study
 //          provably belongs to the active patient.

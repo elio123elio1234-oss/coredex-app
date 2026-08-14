@@ -1,9 +1,48 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.52.0';
-export const APP_BUILD_LABEL = 'the caliper hits hard, says what it found, and gets out of the way';
+export const APP_VERSION = '0.53.0';
+export const APP_BUILD_LABEL = 'history answers before you ask: a verdict and a real wave on every row';
 
-// v0.52.0 - "The line that runs over the wave should vibrate as hard as
+// v0.53.0 - "The first thing a patient sees is a list of dates… in Kardia you
+//           see a screenshot of the recording itself. Only when I open a study
+//           and press Findings do I see whether the signal is fine. Maybe the
+//           insights first? Plan it."
+//           The History redesign, in three linked decisions:
+//           * EVERY ROW NOW CARRIES ITS VERDICT — the full 43-rule screening
+//             level, never the rejected 6-rule summary shortcut (PARITY's old
+//             verdict-dot row explains why that shortcut was banned: it could
+//             disagree with the detail screen). The cost problem that row
+//             documented — decoding every waveform to draw a list — is paid
+//             ONCE per study by a new device-side cache, `studyDigestCache`,
+//             built exactly like `templateCache` (one heavy entry, version
+//             gate, PINNED filters, staged writes, pruned on delete) and
+//             backfilled one study at a time off the render path with visible
+//             progress (`useStudyDigests`, the `useEcgIdentity` pattern).
+//             The honesty rules bind unchanged: a simulated study is never
+//             screened (SIMULATION chip where the pill would go), and patient
+//             sex/age reach the engine only when the study provably belongs to
+//             the active patient — that rule now lives ONCE, in
+//             `patientContext.ts`, imported by the Findings tab and the
+//             backfill alike, with the context recorded per digest (`ctxKey`)
+//             so a card that loads late updates the verdicts exactly once.
+//           * EVERY ROW NOW SHOWS FOUR SECONDS OF LEAD II. StudyCard v1's
+//             header argued a thumbnail would be "an unreadable squiggle" -
+//             true of 10 s in 40 pt, not true of a 4 s window at a fixed time
+//             scale (the Kardia pattern). `EcgMiniPreview` deliberately does
+//             NOT look like ECG paper - no grid, no calibration pulse, only
+//             second-ticks - so recognition and measurement stay different
+//             things. Placeholders reserve both slots; a card never reflows
+//             as knowledge arrives. Imported CSVs, whose stored summary bpm
+//             is null, borrow the digest's measured rate.
+//           * FINDINGS LEADS THE STUDY VIEWER - first segment, and the
+//             initial tab for a patient (a clinician still lands on ECG; the
+//             ORDER is the same for everyone so the control can be learned).
+//             Reverses v5.0.0's trailing-edge decision at the user's request:
+//             the answer first, the evidence after.
+//           Save-time digesting was considered and skipped: the backfill
+//           computes a fresh capture's digest within one History visit, and
+//           the auto-save path stays untouched.
+
 //           possible, and when I lift my finger the green line should
 //           disappear, and while it's there it should write the wave's value
 //           nicely."

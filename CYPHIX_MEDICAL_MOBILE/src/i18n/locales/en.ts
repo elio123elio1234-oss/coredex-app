@@ -338,6 +338,17 @@ export const en = {
   histLowQuality: 'Low signal quality',
   histDevice: 'Device',
   histSelectOne: 'Select a recording from the list.',
+  /* Row verdict pills — COMPRESSED forms of the long `scrLevel*` verdicts.
+     Same ScreeningLevel, same palette, so a row and the Findings tab can
+     never disagree in substance, only in word count. "No findings" (not
+     "Normal") because the engine's claim is that nothing was found, not
+     that the heart is fine — the blind-spots rule applies to a pill too. */
+  histVerdictClear: 'No findings',
+  histVerdictAttention: 'Worth a look',
+  histVerdictUrgent: 'Needs attention',
+  histVerdictInconclusive: 'Unreadable',
+  histDigestProgress: 'analysing {done} of {total}…',
+  histPreviewA11y: 'Four-second ECG preview',
 
   /* ── Saving a finished capture ── */
   histSaving: 'Saving to history…',

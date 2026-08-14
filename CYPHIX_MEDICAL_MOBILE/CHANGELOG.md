@@ -1,5 +1,84 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.53.0 - 2026-08-14 - history answers before you ask: a verdict and a real wave on every row
+
+*"The first thing a patient sees is a list of dates… in Kardia you see a
+screenshot of the recording itself, which is more intuitive. Only when I open a
+study and press Findings do I see whether the signal is fine or not. Maybe the
+insights first? The whole History tab feels unintuitive and dated."*
+
+The complaint is correct, and the fix is not cosmetic - the list was
+structurally unable to answer the patient's question. `listRecordings` returns
+metadata only, by design, and PARITY.md carried a row explaining why a verdict
+dot was deliberately NOT built: re-running 43 rules per row means decoding
+every waveform to draw a list, and the 6-rule shortcut from the cached summary
+was rejected because it could disagree with the detail screen.
+
+### The verdict, computed once and cached - `studyDigestCache`
+
+The answer to "too expensive per visit" was never "don't"; it was "once". A
+recording is immutable, so its verdict and its preview are immutable too. A new
+device-side cache (`services/db/studyDigestCache.ts`, modelled line-for-line on
+`templateCache`: one heavy entry, a version gate, PINNED filters, staged writes
+flushed in batches, pruned on delete) stores per study: the **full 43-rule
+screening level**, ~4 s of filtered lead II (min/max-pair downsampled, the
+`buildEcgPath` argument), the measured bpm, and the screening context it was
+computed under. `useStudyDigests` backfills it the way `useEcgIdentity`
+backfills templates - after interactions, one study at a time, a real macrotask
+yield between studies, `subscribe: false` so waveforms are released, visible
+"analysing n of m" progress in the header.
+
+The honesty rules bind on a pill exactly as they bind on a screen:
+
+- A **simulated** study is never screened - its digest carries `null` and the
+  row shows the SIMULATION chip where the verdict would go.
+- Patient sex/age reach the engine **only when the study provably belongs to
+  the active patient**. That rule used to live inside `useScreening`; it now
+  has three consumers, so it moved to its own file (`patientContext.ts`) and
+  everyone imports it - three hand copies of a safety rule is how one drifts.
+  Each digest records its `ctxKey`, so a card that loads after the list (or a
+  corrected birth date) invalidates the affected rows exactly once.
+
+### The preview - answering StudyCard's own argument
+
+StudyCard v1's header argued a waveform thumbnail would be "an unreadable
+squiggle that nonetheless looks like clinical information". Half held: 10 s in
+40 pt IS unreadable, and the row's clinical statement is the PILL, not the
+picture. Half did not: a **four-second window at a fixed time scale** is the
+preview Kardia ships on every row, and it lets a reader recognise "the noisy
+one" / "the fast one" before any number. `EcgMiniPreview` deliberately does not
+look like ECG paper - no grid, no calibration pulse, second-ticks only - so
+recognition and measurement stay different things; `EcgStripSvg` remains the
+only component allowed to look like paper. Both slots render fixed-size
+placeholders until the digest lands: a card must not change height as
+knowledge arrives.
+
+A side effect worth naming: imported CSVs store `bpm: null` in their summary
+(the importer never analysed them), so their rows showed "-" forever. The
+digest measured the rate anyway; the row now borrows it.
+
+### Findings first
+
+The study viewer's segmented control now reads **Findings | ECG | Values**, and
+a patient LANDS on Findings; a clinician still lands on ECG (they open the
+viewer for the trace). The order is the same for every role - a control whose
+segments move between roles cannot be learned. This reverses v5.0.0's
+documented trailing-edge decision, at the user's request: the answer first,
+the evidence after.
+
+### Also
+
+- History rows land with a short first-visit stagger (`FadeUpView`, capped at
+  8 × 45 ms) - the house animation, not a new idiom.
+- Save-time digesting was considered and skipped: the backfill computes a
+  fresh capture's digest within one History visit, and the auto-save path -
+  the code that must never lose a recording - stays untouched.
+
+Verified: `tsc --noEmit` clean, `expo export` both platforms, `expo-doctor`
+clean. That proves well-formed, not working (§6.4): the rows, the stagger, the
+backfill's scroll behaviour and the RTL/dark variants are 🔬 until touched on a
+device.
+
 ## v0.52.0 - 2026-08-14 - the caliper hits hard, says what it found, and gets out of the way
 
 *"The line that runs over the wave should vibrate as hard as possible, and when

@@ -123,12 +123,14 @@ import {
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
-/* Three views of one study, in the order they earn each other: what was
-   recorded, what can be measured from it, and what those measurements look
-   like. `screening` is last in the type and FIRST in usefulness to a
-   patient — the segmented control puts it on the trailing edge because the
-   waveform is what a clinician opens the viewer for, and the report's own
-   order (waveform → measurements) predates it. */
+/* Three views of one study. The segmented control now leads with FINDINGS
+   (v0.53.0, at the user's request): a patient opens a study to settle one
+   question — am I fine? — and the old order made them cross two tabs of
+   raw signal and raw numbers to reach the answer. The initial tab is
+   role-aware for the same reason in reverse: a clinician opens the viewer
+   for the trace, so they still land on ECG. The ORDER is the same for
+   everyone — a control whose segments move between roles cannot be
+   learned. */
 type Tab = 'waveform' | 'measurements' | 'screening';
 type ViewerRoute = RouteProp<{ StudyViewer: { id: string } }, 'StudyViewer'>;
 type Nav = {
@@ -164,7 +166,7 @@ export default function StudyViewerScreen() {
   const features = useViewerFeatures();
 
   const [selectedId, setSelectedId] = useState(route.params.id);
-  const [tab, setTab] = useState<Tab>('waveform');
+  const [tab, setTab] = useState<Tab>(user?.role === 'patient' ? 'screening' : 'waveform');
   const [settings, setSettings] = useState<ViewerSettings>(DEFAULT_VIEWER_SETTINGS);
   const [mode, setMode] = useState<ViewerMode>('read');
   const [fullscreen, setFullscreen] = useState(false);
@@ -1320,10 +1322,12 @@ export default function StudyViewerScreen() {
                     own two-tab version keeps the long names — it has the
                     room, and nothing there was cramped. */}
                 <SegmentedTabs
+                  /* Findings leads (v0.53.0): the answer first, the evidence
+                     after — the same order the screening sheet itself uses. */
                   options={[
+                    { value: 'screening' as const, label: tr('vtTabFindings') },
                     { value: 'waveform' as const, label: tr('vtTabTrace') },
                     { value: 'measurements' as const, label: tr('vtTabValues') },
-                    { value: 'screening' as const, label: tr('vtTabFindings') },
                   ]}
                   value={tab}
                   onChange={setTab}
@@ -1506,6 +1510,11 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.1.0 - Findings LEADS the segmented control and is the initial tab for a
+//          patient (a clinician still lands on ECG; the order is the same for
+//          everyone so the control can be learned). Reverses v5.0.0's
+//          trailing-edge decision, at the user's request: the answer first,
+//          the evidence after.
 // v5.0.0 - A THIRD TAB: Interpretation. The viewer showed what was recorded and
 //          what could be measured from it, and stopped exactly where the person
 //          whose heart it is starts caring. `useScreening` reads the SAME
