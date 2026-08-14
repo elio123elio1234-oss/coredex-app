@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import BrandLogo from '@/components/atoms/BrandLogo';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import {
@@ -70,6 +71,7 @@ function Section({
   children,
   onEdit,
   editLabel,
+  enter = 0,
 }: {
   title: string;
   art: React.ComponentType<IllustrationProps>;
@@ -77,11 +79,13 @@ function Section({
   /** When set, the header carries an Edit button. */
   onEdit?: () => void;
   editLabel?: string;
+  /** Entering-stagger delay (ms). The house `FadeUpView`, capped by callers. */
+  enter?: number;
 }) {
   const t = useTheme();
   const { rtl } = useTranslation();
   return (
-    <View style={styles.section}>
+    <FadeUpView delay={enter} duration={420} distance={10} style={styles.section}>
       <View style={[styles.sectionHead, rtl && styles.rowReverse]}>
         <Art size={48} />
         <Text
@@ -112,7 +116,7 @@ function Section({
       <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
         {children}
       </View>
-    </View>
+    </FadeUpView>
   );
 }
 
@@ -267,6 +271,13 @@ export default function ProfileScreen() {
           ? card.familyHistory.map((f) => ({ display: f }))
           : [];
 
+  /* ★ The DOSE survives the round-trip. `CodedAnswer` has no dose field —
+     the editor edits WHICH medicines, not how much — so the dose is
+     rejoined from the card by name on the way out. Without this, opening
+     the Medications editor and pressing Save wiped "10 mg · once daily"
+     off every medicine, because the server replaces the whole array. */
+  const doseOf = (name: string) => card.medications.find((m) => m.name === name)?.dose;
+
   const saveList = async (next: CodedAnswer[]) => {
     if (!patientId || !editing) return;
     setSaveError(false);
@@ -277,7 +288,14 @@ export default function ProfileScreen() {
       editing === 'allergy'
         ? { allergies: next }
         : editing === 'medication'
-          ? { medications: next.map((n) => ({ name: n.display, code: n.code, system: n.system })) }
+          ? {
+              medications: next.map((n) => ({
+                name: n.display,
+                code: n.code,
+                system: n.system,
+                dose: doseOf(n.display),
+              })),
+            }
           : { familyHistory: next.map((n) => n.display) };
     try {
       await updateCard({ id: patientId, patch }).unwrap();
@@ -330,7 +348,7 @@ export default function ProfileScreen() {
         }
       >
         {/* ── Header: portrait + identity + care team ── */}
-        <View style={[styles.header, rtl && styles.rowReverse]}>
+        <FadeUpView duration={420} distance={10} style={[styles.header, rtl && styles.rowReverse]}>
           {/* Tappable ONLY where there is a record to write to. Offline the
               card is a fixture, and a picker that saved nowhere would be a
               control that appears to work. */}
@@ -402,7 +420,7 @@ export default function ProfileScreen() {
             )}
           </View>
           {isLoading && <ActivityIndicator color={t.textTertiary} />}
-        </View>
+        </FadeUpView>
 
         {/* The portrait's own failures, said where the portrait is. A
             refusal is not an error — the patient declined a permission,
@@ -439,7 +457,16 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <Section title={tr('profileDetails')} art={DetailsIllustration}>
+        <Section
+          title={tr('profileDetails')}
+          art={DetailsIllustration}
+          enter={60}
+          /* Height, weight, blood type and the emergency contact are the
+             patient's to correct — `PATCH /patients/:id/card` has accepted
+             them all along; only this button was missing. */
+          editLabel={canEdit ? tr('cardEdit') : undefined}
+          onEdit={canEdit ? () => nav.navigate('PersonalDetails') : undefined}
+        >
           <Row label={tr('profileAge')} value={String(card.ageYears ?? '—')} />
           <Row label={tr('profileSex')} value={sexLabel} />
           <Row label={tr('profileBlood')} value={card.bloodType ?? '—'} />
@@ -463,13 +490,14 @@ export default function ProfileScreen() {
         {/* The chips' TEXT is the clinical `display` of a coded concept (ICD-10 /
             SNOMED), not UI copy — it is data that arrives with the record and is
             not translated here. Only the empty-state sentence is. */}
-        <Section title={tr('profileConditions')} art={ConditionsIllustration}>
+        <Section title={tr('profileConditions')} art={ConditionsIllustration} enter={120}>
           <Chips items={card.conditions} empty={tr('profileNoneRecorded')} />
         </Section>
 
         <Section
           title={tr('profileAllergies')}
           art={AllergiesIllustration}
+          enter={180}
           editLabel={canEdit ? tr('cardEdit') : undefined}
           onEdit={canEdit ? () => setEditing('allergy') : undefined}
         >
@@ -479,6 +507,7 @@ export default function ProfileScreen() {
         <Section
           title={tr('profileMedications')}
           art={MedicationIllustration}
+          enter={240}
           editLabel={canEdit ? tr('cardEdit') : undefined}
           onEdit={canEdit ? () => setEditing('medication') : undefined}
         >
@@ -506,6 +535,7 @@ export default function ProfileScreen() {
         <Section
           title={tr('profileFamily')}
           art={FamilyHistoryIllustration}
+          enter={300}
           editLabel={canEdit ? tr('cardEdit') : undefined}
           onEdit={canEdit ? () => setEditing('familyHistory') : undefined}
         >
@@ -525,19 +555,38 @@ export default function ProfileScreen() {
           )}
         </Section>
 
-        {card.emergencyContact && (
-          <Section title={tr('profileEmergency')} art={EmergencyIllustration}>
+        {/* ★ ALWAYS rendered, empty or not. These sections used to vanish
+            when empty — and an empty emergency contact is precisely the one
+            a patient most needs to be able to add. Empty ≠ invisible; the
+            Section header's own comment has argued this all along. */}
+        <Section
+          title={tr('profileEmergency')}
+          art={EmergencyIllustration}
+          enter={340}
+          editLabel={canEdit ? tr('cardEdit') : undefined}
+          onEdit={canEdit ? () => nav.navigate('PersonalDetails') : undefined}
+        >
+          {card.emergencyContact ? (
             <Row
               label={card.emergencyContact.name}
               description={card.emergencyContact.relation}
               value={card.emergencyContact.phone}
               last
             />
-          </Section>
-        )}
+          ) : (
+            <Text
+              style={[
+                styles.emptyText,
+                { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('profileEmergencyNone')}
+            </Text>
+          )}
+        </Section>
 
-        {card.careTeam && (
-          <Section title={tr('profileCareTeam')} art={CareTeamIllustration}>
+        <Section title={tr('profileCareTeam')} art={CareTeamIllustration} enter={380}>
+          {card.careTeam ? (
             <Row
               label={card.careTeam.name}
               description={[card.careTeam.role, card.careTeam.clinic]
@@ -545,10 +594,21 @@ export default function ProfileScreen() {
                 .join(' · ')}
               last
             />
-          </Section>
-        )}
+          ) : (
+            /* Read-only on purpose: the clinic assigns itself. The empty
+               sentence says so, instead of implying a missing button. */
+            <Text
+              style={[
+                styles.emptyText,
+                { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
+              {tr('profileCareTeamNone')}
+            </Text>
+          )}
+        </Section>
 
-        <Section title={tr('profileRecent')} art={EcgIllustration}>
+        <Section title={tr('profileRecent')} art={EcgIllustration} enter={400}>
           <Text
             style={[styles.emptyText, { color: t.textTertiary, textAlign: rtl ? 'right' : 'left' }]}
           >
@@ -815,6 +875,14 @@ const styles = StyleSheet.create({
   signOutDesc: { fontSize: 12.5 },
 });
 
+// v3.0.0 — The card's numbers are the patient's to correct: Details and
+//          Emergency contact push the new PersonalDetails editor (the PATCH
+//          endpoint existed all along; only the UI was missing). Two fixes
+//          folded in: the Medications editor no longer WIPES doses on save
+//          (dose is rejoined by name — the server replaces the whole array),
+//          and Emergency contact / Care team sections render when EMPTY, since
+//          an invisible empty section is the one a patient can never fill in.
+//          Sections land with the house FadeUpView stagger.
 // v1.4.0 — Sign out lives here now, at the bottom under the Settings card:
 //          Settings-only was one screen further than anybody looks.
 // v2.0.0 — Renders the SIGNED-IN patient's real record (usePatientCard) with the

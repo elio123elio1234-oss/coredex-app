@@ -1,7 +1,43 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.53.0';
-export const APP_BUILD_LABEL = 'history answers before you ask: a verdict and a real wave on every row';
+export const APP_VERSION = '0.54.0';
+export const APP_BUILD_LABEL = 'the numbers on the card are finally yours to correct';
+
+// v0.54.0 - "The Profile tab is ancient - personal details cannot be edited."
+//           True, and the strange part is WHY: `PATCH /patients/:id/card` has
+//           existed end-to-end (server route, shared contract, wired RTK
+//           mutation) since v0.39.0 - only the UI was missing. So:
+//           * A NEW PUSHED SCREEN, PersonalDetails - reached from the Details
+//             and Emergency-contact section headers. Pushed, not a sheet (the
+//             Reminders precedent: sliders + a grid + a form are a panel), and
+//             built from SettingsSection/SettingsRow for continuity. It edits
+//             exactly what the shared PatientCardPatch accepts - height,
+//             weight, blood group, emergency contact - and SHOWS the identity
+//             fields (name, DOB, sex, phone) with one sentence saying the
+//             clinic changes those. The onboarding step BODIES are reused
+//             (MeasureSlider + UnitToggle, the blood grid with a first-class
+//             "I don't know", the contact fields with relation chips), through
+//             the existing authPalette(dark) - same controls the patient met
+//             at sign-up, no wizard chrome, no new palette.
+//           * THE PATCH IS A DIFF - only touched fields are sent, sliders
+//             track "touched" separately from "different" so an untouched
+//             fallback is never written into the record, and a HALF-TYPED
+//             emergency contact BLOCKS saving rather than being dropped
+//             (server requires name+phone+relation; saving around it would be
+//             the "appeared to work" failure).
+//           * BUG FIX - THE MEDICATION EDITOR ATE DOSES. The list editor
+//             seeds `{display, code}` and the server REPLACES the whole
+//             array, so opening Medications and pressing Save wiped
+//             "10 mg, mornings" off every medicine. The dose is now rejoined
+//             by name on the way out. Dose EDITING remains out of scope;
+//             preservation was the bug.
+//           * EMPTY IS NOT INVISIBLE - Emergency contact and Care team
+//             sections used to vanish when empty, which hid the Add
+//             affordance from precisely the patient who needs it (the Section
+//             component's own header had argued against this all along). They
+//             always render now, with honest empty sentences; Care team stays
+//             read-only because the clinic assigns itself.
+//           * Profile sections land with the house FadeUpView stagger.
 
 // v0.53.0 - "The first thing a patient sees is a list of dates… in Kardia you
 //           see a screenshot of the recording itself. Only when I open a study

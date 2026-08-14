@@ -207,6 +207,26 @@ export const en = {
   profileNoMeds: 'No medications recorded',
   profileNoRecent: 'No recordings yet',
   profileSettingsDesc: 'Appearance, notifications, device and privacy',
+  /* Empty-state sentences for sections that now ALWAYS render — an
+     invisible empty section is the one a patient can never fill in. */
+  profileEmergencyNone: 'No emergency contact yet. Add one so a doctor knows who to call.',
+  profileCareTeamNone: 'No care team assigned yet. Your clinic adds this.',
+
+  /* ── Personal details editor (pushed from Profile) ── */
+  pdTitle: 'Personal details',
+  pdIdentityTitle: 'Identity',
+  pdIdentityNote:
+    'Name, date of birth and sex are part of the medical record. Ask your clinic to correct them.',
+  pdDob: 'Date of birth',
+  pdBodyTitle: 'Body measurements',
+  pdUnitMetric: 'CM · KG',
+  pdUnitImperial: 'FT · LB',
+  pdSave: 'Save changes',
+  pdSaveFailed: 'Could not save. Your changes are still here — try again.',
+  pdEcIncomplete: 'To save the contact, fill in the name, the phone and the relationship.',
+  pdRemoveContact: 'Remove contact',
+  pdRemovedNote: 'The contact will be removed when you save.',
+  pdUndo: 'Keep it',
 
   sexMale: 'Male',
   sexFemale: 'Female',

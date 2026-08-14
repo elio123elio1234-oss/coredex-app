@@ -202,6 +202,24 @@ export const he: Record<TranslationKey, string> = {
   profileNoMeds: 'לא נרשמו תרופות',
   profileNoRecent: 'אין עדיין הקלטות',
   profileSettingsDesc: 'תצוגה, התראות, מכשיר ופרטיות',
+  /* משפטי ריק לסקשנים שמעכשיו תמיד מוצגים. */
+  profileEmergencyNone: 'אין עדיין איש קשר לחירום. הוסיפו אחד כדי שרופא ידע למי להתקשר.',
+  profileCareTeamNone: 'לא שויך עדיין צוות מטפל. המרפאה מוסיפה את זה.',
+
+  /* ── עריכת פרטים אישיים (נדחף מהפרופיל) ── */
+  pdTitle: 'פרטים אישיים',
+  pdIdentityTitle: 'זהות',
+  pdIdentityNote: 'שם, תאריך לידה ומין הם חלק מהרשומה הרפואית. פנו למרפאה כדי לתקן אותם.',
+  pdDob: 'תאריך לידה',
+  pdBodyTitle: 'מדדי גוף',
+  pdUnitMetric: 'ס״מ · ק״ג',
+  pdUnitImperial: 'רגל · ליב׳',
+  pdSave: 'שמירת שינויים',
+  pdSaveFailed: 'לא הצלחנו לשמור. השינויים עדיין כאן — נסו שוב.',
+  pdEcIncomplete: 'כדי לשמור את איש הקשר, מלאו שם, טלפון וקרבה.',
+  pdRemoveContact: 'הסרת איש קשר',
+  pdRemovedNote: 'איש הקשר יוסר בעת השמירה.',
+  pdUndo: 'להשאיר',
 
   sexMale: 'זכר',
   sexFemale: 'נקבה',

@@ -1,5 +1,77 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.54.0 - 2026-08-14 - the numbers on the card are finally yours to correct
+
+*"The Profile tab is ancient - personal details cannot be edited."*
+
+Correct, and the finding worth writing down is WHY it was true: the server
+route (`PATCH /patients/:id/card`), the shared contract (`PatientCardPatch`)
+and the mobile mutation (`useUpdatePatientCardMutation`) have all existed since
+v0.39.0. Nothing needed building on the server or in shared. The editing UI was
+simply never made, and no PARITY row recorded the gap - which is itself the
+lesson: work that ships without its ledger row can stay half-finished
+invisibly.
+
+### PersonalDetails - a pushed editor for the editable half of the card
+
+Reached from the **Details** and **Emergency contact** section headers on
+Profile (the same Edit affordance the list sections already had). A pushed
+screen, not a sheet - the Reminders precedent: two sliders, a blood-group grid
+and a three-field form are a panel of settings, and a panel pushes. Built from
+`SettingsSection`/`SettingsRow` for continuity, and the **onboarding step
+bodies are reused** - `MeasureSlider` + `UnitToggle` for height and weight, the
+eight-cell blood grid with its first-class "I don't know", the contact fields
+with relation chips - through the existing `authPalette(dark)`, so the patient
+meets the same controls here that they met at sign-up.
+
+What it deliberately does NOT edit: name, date of birth, sex, phone. Those are
+identity - part of the medical record, contractually excluded from the patch
+(`healthCatalogue.ts` says why) - and the screen SHOWS them with one sentence
+saying the clinic corrects them, rather than hiding them and leaving the
+patient to wonder where they went.
+
+Honesty rules of the save:
+
+- **The patch is a diff.** Only touched fields are sent; echoing the card back
+  would revert anything edited elsewhere since the screen loaded. Sliders
+  track *touched* separately from *different*, so the 170 cm fallback under an
+  empty card can never be written into the record by opening the screen and
+  pressing Save.
+- **A half-typed emergency contact blocks saving.** The server requires
+  name + phone + relation; silently saving the height while dropping the
+  half-typed contact is the "appeared to work" failure a medical record must
+  never produce. The screen says what is missing instead.
+- **Failure keeps the draft.** The screen stays open with an inline error -
+  same rule as the list editor.
+
+### Bug fix: the medication editor ate doses
+
+`ProfileScreen` seeded the list editor with `{display, code}` - no dose - and
+sent back `{name, code, system}` - still no dose - while the server **replaces
+the whole array**. Net effect: opening the Medications editor and pressing Save
+wiped "10 mg, mornings" off every medicine on the card. The dose is now
+rejoined by name on the way out. Dose *editing* remains out of scope; this fix
+is preservation.
+
+### Empty is not invisible
+
+Emergency contact and Care team sections were conditionally rendered - a
+patient with no emergency contact saw no section and therefore had no way to
+add one, which contradicted the Section component's own header comment
+("including the ones that are currently empty, which are precisely the ones a
+patient most needs to be able to fill in"). Both always render now with honest
+empty sentences; Emergency gets the Edit affordance, Care team stays read-only
+because the clinic assigns itself.
+
+### Also
+
+- Profile header and sections land with the house `FadeUpView` stagger,
+  matching History's new first-visit behaviour.
+
+Verified: `tsc --noEmit`, `expo export` both platforms, `expo-doctor`. 🔬 on
+device: slider feel, Hebrew RTL entry in the contact fields, demo mode showing
+no Edit anywhere, airplane-mode save failure keeping the draft.
+
 ## v0.53.0 - 2026-08-14 - history answers before you ask: a verdict and a real wave on every row
 
 *"The first thing a patient sees is a list of dates… in Kardia you see a

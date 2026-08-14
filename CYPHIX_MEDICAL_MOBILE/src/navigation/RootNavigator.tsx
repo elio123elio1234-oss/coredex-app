@@ -54,6 +54,7 @@ import ChatScreen from '@/screens/ChatScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
 import HomeScreen from '@/screens/HomeScreen';
 import LimbMeasureScreen from '@/screens/LimbMeasureScreen';
+import PersonalDetailsScreen from '@/screens/PersonalDetailsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import RemindersScreen from '@/screens/RemindersScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
@@ -144,6 +145,14 @@ export default function RootNavigator() {
           component={RemindersScreen}
           options={{ animation: 'slide_from_right' }}
         />
+        {/* Pushed FROM Profile, and it looks like the screens around it —
+            the Reminders precedent: two sliders, a blood-group grid and a
+            contact form are a panel of settings, and a panel pushes. */}
+        <Stack.Screen
+          name="PersonalDetails"
+          component={PersonalDetailsScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
         {/* Reading a study is a full-screen job: the dock's five destinations
             would be competing with a toolbar, and the trace wants the height.
             It stays PORTRAIT (inherited from the stack) — the six leads are
@@ -159,6 +168,7 @@ export default function RootNavigator() {
   );
 }
 
+// v3.3.0 — Adds the PersonalDetails route, pushed from Profile.
 // v3.2.0 — Adds the Reminders route, pushed from Settings.
 // v3.1.0 — Adds the StudyViewer route (Scan History's reading screen) above the
 //          tabs, portrait like every route but the exam.
