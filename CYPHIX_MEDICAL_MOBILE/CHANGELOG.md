@@ -1,5 +1,136 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.58.7 - 2026-08-15 - the builder has no touch handler at all while you are on Studies
+
+*"The touch stops working on this bar when you go to STUDIES and then come back
+to INSIGHTS — it's like the bar stops existing."*
+
+### The fifth round, and the first one that is not a new candidate
+
+Four fixes have been shipped for this exact route — drag the green bar, leave
+for Studies, come back, it no longer answers. Each named a real mechanism and
+each was correct on its own terms:
+
+| | cause | fix |
+|---|---|---|
+| v0.58.2 | a new gesture object reaching `GestureDetector` mid-drag | build it once |
+| v0.58.4 | `onLayout` writing a width of zero from a hidden pane | reject zero |
+| v0.58.5 | pointer samples queued into a saturated JS thread | decide in the worklet |
+| v0.58.6 | (belt) the detector might be stale on return | remount it on return |
+
+And it came back after every one of them.
+
+### What the previous round wrote down but did not act on
+
+v0.58.6's own note contains the answer:
+
+> *The caliper already had this property for free — its detector unmounts
+> entirely when `measurable` goes false, so it is mounted fresh on every return
+> by construction.*
+
+That observation is right, and it is the whole thing. `BeatSignature`'s caliper
+crosses the **identical** hide/show boundary, in the **same pane**, gated by the
+**same `active` prop**, and has **never once** been reported dead. Its gesture
+memo returns `null` off show and it renders the bare sheet:
+
+```ts
+if (!gesture) return sheet;
+return <GestureDetector gesture={gesture}>{sheet}</GestureDetector>;
+```
+
+So while Insights is hidden, the caliper has **no gesture handler in the tree at
+all**.
+
+v0.58.6 then implemented the weaker half of its own observation: it kept the
+builder's detector mounted for the entire hidden period and *rebuilt* it on the
+way back, from a `useEffect`, one tick **after** the pane was already visible.
+Those are not the same property, and the difference is the bug.
+
+### Why that difference is the bug
+
+The builder was the **only** control in this app keeping a live
+`GestureDetector` inside a `display: none` subtree — attached to a native view
+that History hides, that Fabric marks hidden, and that Yoga lays out at zero.
+Every fix since v0.58.2 has been an attempt to *repair that handler after the
+fact*: give it a new gesture object, give it back its width, stop queueing
+pointer samples into it, remount it on return. Five rounds of restoring
+something that did not have to be there.
+
+So it is not there. The detector is now mounted by `enabled`, exactly as the
+caliper's is:
+
+- **off show** — absent from the tree; nothing attached, nothing to orphan;
+- **on show** — constructed fresh in the **same commit that reveals the pane**,
+  over a freshly-mounted track whose `onLayout` therefore reports a real,
+  visible width.
+
+Nothing crosses the boundary because nothing exists at the boundary to cross it.
+`visitId` and its keyed remount are removed — one effect-tick late, racing
+RNGH's own re-attach, and leaving the handler live throughout the hidden period,
+which is the very thing that had to stop.
+
+**Why this one is different from its four predecessors.** Each of those was a
+mechanism I named and could not observe from Windows, which is a bad loop with
+the phone as sole adjudicator. This is the observed behaviour of a working
+control in the same pane behind the same prop — the builder was simply the only
+one doing it the other way.
+
+⚠️ *"Built once" (v0.58.2) still holds:* `gesture` memoises on `settle` alone, so
+no re-render of the panel can touch it, and `enabled` changes only on a tab tap —
+which nobody performs with a finger on the track.
+
+⚠️ Verified only as far as this machine allows (§6.4): `tsc --noEmit` clean, both
+platforms bundle. It stays `🔬` until it has been dragged on the phone.
+
+**Rule: a gesture handler must not be left mounted inside a pane hidden with
+`display: none`. Mount it with the pane, not across it.**
+
+## v0.58.6 - 2026-08-14 - the builder is rebuilt from scratch every time you come back to it
+
+*"But WHY does it work on Insights, then I go to Studies and back to Insights
+and it stops working again — why, why?"* … *"FIX IT!!!"*
+
+### This one is a belt, and it is deliberately not a diagnosis
+
+The green bar has been reported dead three times, always on the same route:
+drag it, leave the tab, come back. Each round found a **real** cause and
+shipped a **correct** fix:
+
+| | cause | fix |
+|---|---|---|
+| v0.58.2 | a new gesture object reached `GestureDetector` mid-drag | build it once, over a stable callback |
+| v0.58.4 | `onLayout` accepted a width of zero | a zero is never a measurement |
+| v0.58.5 | every pointer sample queued into a saturated JS thread | decide the notch on the UI thread |
+
+And after every one of them, it came back.
+
+What those three share is not a mechanism — it is a **shape**. Something is
+carried across the hide/show boundary in a state that nothing on a Windows
+machine can observe, and I have now spent three releases naming candidates one
+at a time and asking the phone to adjudicate. That is a bad loop to be in, and
+the user was right to stop asking for another theory.
+
+So the question changes from *"which piece of state is it?"* to *"why is
+anything allowed to survive the trip at all?"*. Coming back on show now
+**remounts the detector with a gesture object of its own**: a fresh native
+handler, a fresh `onLayout` measurement, no half-finished interaction, no
+inherited width — whichever of them it actually was.
+
+⚠️ This does **not** weaken "the gesture is built once" (v0.58.2). That rule
+forbids reconfiguring a handler *during* a drag. `enabled` can only change when
+the reader taps a tab, and nobody taps a tab with a finger on the track: one
+rebuild per visit, never one mid-interaction.
+
+The caliper already had this property for free — its detector unmounts entirely
+when `measurable` goes false (v0.58.5), so it is mounted fresh on every return
+by construction. This makes the builder behave the same way **on purpose rather
+than by accident**.
+
+⚠️ Unverified from this machine, per §6.4: it typechecks and bundles. Whether
+the round trip is finally clean is a question only the phone can answer.
+
+---
+
 ## v0.58.5 - 2026-08-14 - the builder decides on the UI thread, so the buzz cannot outlive the tab
 
 *"On the Insights tab, playing with the green bar is perfect. Then I go back to

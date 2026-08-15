@@ -209,6 +209,7 @@ export default function BeatBuilder({
       committed.current = valueRef.current;
     }
   }, [enabled, liveSv, notchSv]);
+
   /** When the last impact was fired — see `MIN_TICK_MS`. */
   const lastTick = useRef(0);
 
@@ -316,14 +317,48 @@ export default function BeatBuilder({
 
   const partial = value < total;
 
-  return (
-    <View style={styles.root}>
-      <GestureDetector gesture={gesture}>
-        <View
-          accessibilityRole="adjustable"
-          accessibilityLabel={caption}
-          accessibilityValue={{ min: 1, max: total, now: value }}
-          onLayout={(e) => {
+  /* ══ ★ THE DETECTOR DOES NOT EXIST WHILE THE TAB IS HIDDEN ══
+     Reported dead FOUR times on one route: drag it on Insights, go to
+     Studies, come back, nothing. Each round named a real cause and shipped
+     a correct fix — a gesture rebuilt mid-drag (v2.1.0), a width measured
+     as zero (v2.2.0), a queue of pointer samples outliving the drag
+     (v3.0.0), a detector remounted on return (v3.1.0) — and it came back
+     every time.
+
+     The answer was already in the same pane, working. `BeatSignature`'s
+     caliper crosses the identical boundary and has never once been
+     reported dead, and the reason is structural: its `gesture` memo
+     returns `null` when it is off show and it renders the bare sheet, so
+     while Insights is hidden there is NO `GestureDetector` in the tree at
+     all (`BeatSignature.tsx` — `if (!gesture) return sheet`).
+
+     This control was the only one keeping a LIVE detector inside a
+     `display: none` subtree. History hides the pane, Fabric hides the
+     native view and Yoga lays it out at zero, and an RNGH handler that is
+     attached to a view in that state is being asked to survive something
+     nothing else here asks of it. v3.1.0 came close but is not the same
+     thing: the detector still existed throughout the hidden period and was
+     only rebuilt AFTERWARDS, from a `useEffect` — a frame late, racing
+     RNGH's own re-attach on the way back in.
+
+     So the detector is now mounted by `enabled`, exactly as the caliper's
+     is. Off show it is gone; on show it is constructed fresh in the SAME
+     commit that reveals the pane, over a freshly-mounted track whose
+     `onLayout` therefore reports a real, visible width. There is no state
+     to carry across the boundary because there is nothing there to carry
+     it — which is the one property the previous four fixes never had.
+
+     ⚠️ This does NOT weaken "the gesture is built once". That rule forbids
+     reconfiguring a handler DURING a drag; `enabled` can only change when
+     the reader taps a tab, which cannot happen with a finger on the track.
+     `gesture` itself is memoised on `settle` alone, so no re-render of the
+     panel above can touch it. */
+  const track = (
+    <View
+      accessibilityRole="adjustable"
+      accessibilityLabel={caption}
+      accessibilityValue={{ min: 1, max: total, now: value }}
+      onLayout={(e) => {
             /* ★ A ZERO IS NEVER A MEASUREMENT, AND ACCEPTING ONE KILLS
                THE CONTROL. `move` refuses to act on a track of width 0
                (it cannot compute a ratio), so whatever writes 0 here
@@ -338,29 +373,36 @@ export default function BeatBuilder({
                The width of this track does not change while the panel
                lives, so the last real measurement is always the right
                one to keep. */
-            const w = e.nativeEvent.layout.width;
-            if (w > 0) trackW.value = w;
-          }}
-          style={[styles.track, rtl && styles.trackRtl]}
-          /* Generous, because the track itself is 26 pt and a timeline you
-             have to hit precisely is a timeline nobody drags. */
-          hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}
-        >
-          {Array.from({ length: total }, (_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.notch,
-                {
-                  backgroundColor: i < value ? t.signal : t.border,
-                  // The newest included study is the one the finger is on.
-                  opacity: i === value - 1 ? 1 : i < value ? 0.75 : 1,
-                },
-              ]}
-            />
-          ))}
-        </View>
-      </GestureDetector>
+        const w = e.nativeEvent.layout.width;
+        if (w > 0) trackW.value = w;
+      }}
+      style={[styles.track, rtl && styles.trackRtl]}
+      /* Generous, because the track itself is 26 pt and a timeline you
+         have to hit precisely is a timeline nobody drags. */
+      hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}
+    >
+      {Array.from({ length: total }, (_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.notch,
+            {
+              backgroundColor: i < value ? t.signal : t.border,
+              // The newest included study is the one the finger is on.
+              opacity: i === value - 1 ? 1 : i < value ? 0.75 : 1,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+
+  return (
+    <View style={styles.root}>
+      {/* ★ The detector is mounted BY `enabled` — see the note above. Off
+          show it is absent from the tree entirely, so there is no attached
+          native handler to be orphaned while the pane is hidden. */}
+      {enabled ? <GestureDetector gesture={gesture}>{track}</GestureDetector> : track}
 
       <Pressable
         accessibilityRole={partial ? 'button' : 'text'}
@@ -403,6 +445,32 @@ const styles = StyleSheet.create({
   reset: { fontSize: 13.5, fontWeight: '700', textDecorationLine: 'underline' },
 });
 
+// v4.0.0 — ★ THE DETECTOR DOES NOT EXIST WHILE THE TAB IS HIDDEN, and this one
+//          is not another candidate — it is the pattern that was already
+//          working, ten files away. `BeatSignature`'s caliper crosses the exact
+//          same hide/show boundary, is gated by the same `active` prop, and has
+//          never been reported dead once; its gesture memo returns `null` off
+//          show and it renders the bare sheet, so no `GestureDetector` exists in
+//          the tree while Insights is hidden. This control was the ONLY one
+//          keeping a live detector inside a `display: none` subtree — a native
+//          view that Fabric hides and Yoga lays out at zero — which is exactly
+//          the population of one that kept failing. It now mounts its detector
+//          from `enabled` the same way, in the SAME commit that reveals the
+//          pane, over a freshly-mounted track that measures a real width.
+//          v3.1.0's `visitId` remount is removed: it rebuilt the detector one
+//          effect-tick AFTER the return, racing RNGH's re-attach, and it left
+//          the handler attached for the whole hidden period — the very thing
+//          that had to stop.
+// v3.1.0 — ★ NOTHING SURVIVES A TRIP OFF SHOW. Three rounds of fixes, three
+//          real causes, and the drag came back dead after every one of them —
+//          always on the same route (drag it, leave the tab, return). The
+//          common factor is not a mechanism, it is that SOMETHING is carried
+//          across the hide/show boundary in a state no check on this machine
+//          can see. So coming back on show now remounts the detector with its
+//          own gesture object: fresh native handler, fresh `onLayout`, nothing
+//          inherited. It does not weaken "built once" — that rule forbids
+//          reconfiguring DURING a drag, and `enabled` can only change when the
+//          reader taps a tab, which cannot happen with a finger on the track.
 // v3.0.0 — ⚠️ "I still feel the vibration from the Insights tab after I go back
 //          to Studies, and then the drag doesn't work again." Neither half was
 //          a touch problem, and the hidden tab was not stealing anything (a

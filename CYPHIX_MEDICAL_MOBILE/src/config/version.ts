@@ -1,7 +1,73 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.5';
-export const APP_BUILD_LABEL = 'the builder decides on the UI thread, so the buzz cannot outlive the tab';
+export const APP_VERSION = '0.58.7';
+export const APP_BUILD_LABEL = 'the builder has no touch handler at all while you are on Studies';
+
+// v0.58.7 - "the touch stops working on this bar when you go to STUDIES and then
+//           come back to INSIGHTS - it is like the bar stops existing."
+//           ★ THE FIFTH ROUND, AND THE FIRST ONE THAT IS NOT A NEW CANDIDATE.
+//           v0.58.6 wrote down the right observation and then acted on the
+//           weaker half of it. It noted that the CALIPER already survives this
+//           trip for free, because its detector unmounts entirely when
+//           `measurable` goes false - and then, instead of copying that, it kept
+//           the builder's detector mounted the whole time and REBUILT it on the
+//           way back, from a useEffect, one tick after the pane was already
+//           visible.
+//           Those are not the same property, and the difference is the bug. The
+//           caliper has NO gesture handler in the tree for the entire time
+//           Insights is hidden. The builder had one - attached to a native view
+//           that History hides with `display: none`, which Fabric marks hidden
+//           and Yoga lays out at zero. Every fix since v0.58.2 has been an
+//           attempt to repair that handler after the fact: give it a new gesture
+//           object, give it back its width, stop queueing pointer samples into
+//           it, remount it on return. Five rounds of restoring something that
+//           did not have to be there.
+//           So it is not there. The detector is mounted by `enabled` exactly as
+//           the caliper's is: absent while the reader is on Studies, and
+//           constructed fresh in the SAME COMMIT that reveals the pane, over a
+//           freshly-mounted track whose onLayout therefore reports a real,
+//           visible width. Nothing crosses the boundary because nothing exists
+//           at the boundary to cross it.
+//           Why this one is different from its four predecessors: each of those
+//           was a mechanism I named and could not observe from Windows. This is
+//           the observed behaviour of a control in the SAME PANE, behind the
+//           SAME `active` prop, that has never been reported dead - the builder
+//           was simply the only one doing it the other way.
+//           ⚠️ "Built once" (v0.58.2) still holds: `gesture` memoises on
+//           `settle` alone, so no re-render of the panel can touch it, and
+//           `enabled` only changes on a tab tap - which nobody performs with a
+//           finger on the track.
+//           ⚠️ Verified only as far as this machine can (§6.4): tsc clean, both
+//           platforms bundle. It stays needs-device-verify until it is dragged.
+// v0.58.6 - "But WHY does it work on Insights, then I go to Studies and back to
+//           Insights and it stops working again - why, why?"  ... "FIX IT!!!"
+//           ★ THE BELT, AND IT IS DELIBERATELY NOT A DIAGNOSIS. This control
+//           has been reported dead three times on exactly the same route -
+//           drag it, leave the tab, come back - and each round found a REAL
+//           cause and shipped a CORRECT fix: a gesture object rebuilt mid-drag
+//           (v0.58.2), a track width measured as zero (v0.58.4), a queue of
+//           pointer samples outliving the drag (v0.58.5). And after every one
+//           of them it came back.
+//           What those three share is not a mechanism. It is a shape: some
+//           piece of state crosses the hide/show boundary in a condition that
+//           nothing on a Windows machine can observe, and I have now spent
+//           three releases naming candidates one at a time. So the question
+//           stops being "which one is it" and becomes "why is anything allowed
+//           to survive the trip at all". Coming back on show remounts the
+//           detector with a gesture object of its own: a fresh native handler,
+//           a fresh onLayout measurement, no half-finished interaction, no
+//           inherited width - whichever of them it actually was.
+//           ⚠️ This does NOT weaken "the gesture is built once" (v0.58.2). That
+//           rule forbids reconfiguring a handler DURING a drag; `enabled` can
+//           only change when the reader taps a tab, and nobody taps a tab with
+//           a finger on the track. One rebuild per visit, never one mid-drag.
+//           The caliper already had this property for free - its detector
+//           unmounts entirely when `measurable` goes false (v0.58.5), so it is
+//           mounted fresh on every return by construction. This makes the
+//           builder behave the same way, on purpose rather than by accident.
+//           ⚠️ Still unverified from this machine (§6.4): it typechecks and
+//           bundles. Whether the round trip is finally clean is a question only
+//           the phone can answer.
 
 // v0.58.5 - "On the Insights tab, playing with the green bar is perfect. Then I
 //           go back to the Studies tab and I STILL FEEL the vibration from the
