@@ -186,6 +186,17 @@ export const en = {
   /* The seconds suffix on a chip — 's' in English, and NOT the same glyph
      in Hebrew, which is why it is a key and not a literal. */
   valSecUnit: 's',
+
+  /* ── The printed report's measurements page (v0.60.0) ── */
+  pdfPageMeasurements: 'Measurements',
+  pdfHeroKicker: 'Electrocardiogram report',
+  pdfBeatsUnit: 'beats',
+  pdfAmpPp: 'P-P',
+  /* {max} is this recording's own largest wave, so the bars are honest
+     about what one bar-height means. */
+  pdfAmpScale: 'mV, scale ±{max}',
+  /* Says what the ring MEASURED. It does not say the recording was good. */
+  pdfQualityBody: 'Rhythm steadiness across the recording, measured from {beats} analysed beats.',
   valInfoTapHint: 'Tap any value to see what it measures',
   valInfoHr: 'Derived from the mean R-to-R interval across the analysed beats.',
   valInfoRr: 'Average time between consecutive R peaks — the same quantity as the heart rate, expressed as a duration.',
@@ -1395,6 +1406,7 @@ export type TranslationKey = keyof typeof en;
 //          names, the blind spots and the disclaimer. Its copy rule is stricter
 //          than the rest of the file and is written at the top of the block:
 //          this is the screen someone reads while frightened.
+// v1.4.0 — Adds the printed measurements page's copy (`pdf*`).
 // v1.3.0 — Adds the Values screen's copy (`val*`): a sentence per measurement
 //          saying what it IS, and never whether it is good. Plus `dockInsights`
 //          for the dock slot that used to say "My Tests".

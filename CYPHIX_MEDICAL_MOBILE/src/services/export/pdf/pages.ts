@@ -46,6 +46,57 @@ import {
 import type { PdfLabels } from './labels';
 import { wordmark } from './logo';
 import {
+  R_AMP_HEAD,
+  R_AMP_LINE,
+  R_AX_BG_A,
+  R_AX_BG_B,
+  R_AX_INK,
+  R_AX_NUM,
+  R_AX_SECTOR,
+  R_BAND_A,
+  R_BAND_B,
+  R_BODY,
+  R_CHIP_AMBER_BG,
+  R_CHIP_AMBER_FG,
+  R_CHIP_BG,
+  R_CHIP_FG,
+  R_FAINT,
+  R_HERO_A,
+  R_HERO_B,
+  R_HERO_C,
+  R_HERO_KICK,
+  R_HERO_N1,
+  R_HERO_N2,
+  R_HERO_TXT,
+  R_HERO_UNIT,
+  R_INK,
+  R_KICKER,
+  R_MUTE,
+  R_MUTE2,
+  R_NUM,
+  R_OUTLINE,
+  R_PP_A,
+  R_PP_B,
+  R_PP_INK,
+  R_Q_BG_A,
+  R_Q_BG_B,
+  R_Q_NUM,
+  R_RULE,
+  R_T_AMB_BG,
+  R_T_AMB_LB,
+  R_T_AMB_VA,
+  R_T_BLUE_BG,
+  R_T_BLUE_LB,
+  R_T_BLUE_VA,
+  R_T_RED_BG,
+  R_T_RED_LB,
+  R_T_RED_VA,
+  R_T_VIO_BG,
+  R_T_VIO_LB,
+  R_T_VIO_VA,
+  R_TRACK,
+} from './reportPalette';
+import {
   BAND_OK,
   BLUE,
   BLUE_SOFT,
@@ -66,6 +117,7 @@ import {
   MARKER,
   MUTED,
   PAPER,
+  RED,
   SHEET_CAPTION_H,
   SLATE,
   SURFACE,
@@ -78,7 +130,7 @@ import {
 
 /* ══════════════════ The page shell ══════════════════ */
 
-interface Chrome {
+export interface Chrome {
   brand: string;
   title: string;
   /** Right-hand side of the letterhead — the study's date and the patient. */
@@ -93,6 +145,10 @@ interface Chrome {
  * A page. Fixed size, hidden overflow, header and footer absolutely placed
  * so the body's height is a constant the blocks can be checked against.
  */
+export function pageShell(chrome: Chrome, bodyHtml: string): string {
+  return page(chrome, bodyHtml);
+}
+
 function page(chrome: Chrome, bodyHtml: string): string {
   /* The WORDMARK, not the word. Reported: "why are you not using my logo and
      writing it in plain text?" - and there is no answer, the logo existed as
@@ -662,18 +718,30 @@ export function statisticsPage(
 
   /* ── Block heights, declared before anything is drawn ── */
   const withId = identity !== null;
-  const H_ID = withId ? 15 : 0;
+  /* 18, not 15: the grid is eight cells at 25 % width — TWO rows — and 15 mm
+     fits one and a half of them. The second row printed cut through the
+     middle of its own type ("6 limb", "12", "100 %" all sliced). */
+  const H_ID = withId ? 18 : 0;
   const H_ID_GAP = withId ? 3 : 0;
   const H_MB_TITLE_FIRST = 7;
-  const H_TILES = withId ? 38 : 42;
+  /* A ruled row is 2.6 mm of padding plus a LINE BOX (7.8 pt × 1.2 ≈
+     3.3 mm), not 2.6 plus the font size. Seven rows are ~39.6 mm and the
+     block said 38, so the last measurement of each column — SQI on the
+     right, QTc (Fridericia) on the left — was cut in half. */
+  /* 50, measured off a render rather than computed: the RESULT cell is
+     8.6 pt, not the table rule 7.8 pt, so the line box is the tall one and a
+     row is ~7.6 mm. At 44 the sixth measurement of each column — QTc
+     (Fridericia) on the left, signal quality on the right — still did not
+     print. Six data rows plus a header need 50. */
+  const H_TILES = 52;
   const H_MB_TITLE = 7;
-  const H_MB = withId ? 24 : 30;
+  const H_MB = 34;
   const H_INT_TITLE = 7;
-  const H_INTERVALS = 13 * 5;
+  /* Five 13 mm bars, plus a millimetre of cushion. Exact now that the
+     stack has no baseline under each row (see the .stack rule). */
+  const H_INTERVALS = 13 * 5 + 3;
   const H_FIG_TITLE = 7;
-  const H_FIGS = withId ? 38 : 46;
-  const H_AMP_TITLE = 7;
-  const H_AMPS = 33;
+  const H_FIGS = 48;
   assertFits('statistics', [
     H_ID,
     H_ID_GAP,
@@ -685,8 +753,6 @@ export function statisticsPage(
     H_INTERVALS,
     H_FIG_TITLE,
     H_FIGS,
-    H_AMP_TITLE,
-    H_AMPS,
   ]);
 
   /* ★ A RULED TABLE WITH REFERENCE RANGES AND FLAGS, not six app tiles.
@@ -729,7 +795,7 @@ export function statisticsPage(
   const figW = (COL_W - 8) / 3;
   /* The figures shrink when the ID grid is on this page — the millimetres
      have to come from somewhere, and `assertFits` will not be argued with. */
-  const figSize = withId ? 29 : 38;
+  const figSize = 40;
   const level = screening ? (LEVEL_COLOR[screening.level] ?? LEVEL_COLOR.clear) : LEVEL_COLOR.clear;
   const figs = `<div class="figrow">
     <div class="fig" style="width:${mm(figW)}">
@@ -746,30 +812,18 @@ export function statisticsPage(
     </div>
   </div>`;
 
-  const peak = Math.max(
-    0.2,
-    ...LIMB_LEAD_ORDER.flatMap((l) => {
-      const a = amplitudes[l];
-      return [a?.pMv ?? 0, a?.qMv ?? 0, a?.rMv ?? 0, a?.sMv ?? 0, a?.tMv ?? 0].map(Math.abs);
-    }),
-  );
-  const cell = (v: number | null): string =>
-    `<td>${v === null ? '—' : (v > 0 ? '+' : '') + v.toFixed(2)}</td>`;
-
-  const ampRows = LIMB_LEAD_ORDER.map((l) => {
-    const a = amplitudes[l];
-    return `<tr>
-      <th>${l}</th>
-      ${cell(a?.pMv ?? null)}${cell(a?.qMv ?? null)}${cell(a?.rMv ?? null)}${cell(a?.sMv ?? null)}${cell(a?.tMv ?? null)}
-      <td class="ampcell">${amplitudeBar({ w: 42, values: [a?.pMv ?? null, a?.qMv ?? null, a?.rMv ?? null, a?.sMv ?? null, a?.tMv ?? null], peak })}</td>
-    </tr>`;
-  }).join('');
-
-  const amps = `<table class="amp">
-    <thead><tr><th>${esc(labels.ampLead)}</th><th>P</th><th>Q</th><th>R</th><th>S</th><th>T</th><th></th></tr></thead>
-    <tbody>${ampRows}</tbody>
-  </table>
-  <div class="fig-cap">${esc(labels.ampUnit)}</div>`;
+  /* ★ THE AMPLITUDE TABLE IS GONE FROM THIS PAGE (v0.60.0).
+     It was printing THREE OF SIX LEADS. Each row carried a 7 mm inline
+     figure in a block sized as though the row were a line of 7.6 pt type,
+     so lead III was cut through and aVR, aVL and aVF did not print at
+     all — on a limb ECG, where aVR is the lead that catches swapped arm
+     electrodes.
+     It is not repaired here because the measurements page now does the same
+     job better: all six leads, every number, and a bar chart per lead
+     instead of one bar per row. Two tables of the same data, one of them
+     truncated, is worse than one that is complete. The millimetres go to the
+     blocks above that were also clipping.
+     `amplitudeBar` is untouched and still exported — see figures.ts. */
 
   return page(
     {
@@ -791,13 +845,15 @@ export function statisticsPage(
             : labels.medianBeatTitle,
         ),
       ) +
-      block(H_MB, medianBeatPanel(templates, COL_W, H_MB, labels)) +
+      /* COL_W minus the panel's own 2 mm of side padding: the six cells are
+         sized from the width they are HANDED, and handing them the full
+         column made the row 4 mm wider than the panel containing it — aVF,
+         the sixth cell, was sliced by the panel's overflow. */
+      block(H_MB, medianBeatPanel(templates, COL_W - 4, H_MB, labels)) +
       block(H_INT_TITLE, sectionTitle(`${labels.statsIntervals} · ${labels.refRange}`)) +
-      block(H_INTERVALS, intervals5) +
+      block(H_INTERVALS, intervals5, 'stack') +
       block(H_FIG_TITLE, sectionTitle(labels.statsVariability)) +
-      block(H_FIGS, figs) +
-      block(H_AMP_TITLE, sectionTitle(labels.statsAmplitudes)) +
-      block(H_AMPS, amps),
+      block(H_FIGS, figs),
   );
 }
 
@@ -825,9 +881,19 @@ export function referencePage(
   const H_MAP_TITLE = 7;
   const H_MAP = 62;
   const H_QUAL_TITLE = 7;
-  const H_QUAL = 34;
-  const H_BLIND_TITLE = 7;
-  const H_BLIND = 34;
+  /* 44, not 34: six ruled rows are ~39.6 mm (see the statistics page's
+     H_TILES), so the last one — RR range — printed cut in half. */
+  const H_QUAL = 44;
+  /* ★ The blind-spots list comes from the SCREENING ENGINE, which this build
+     does not run (INTERPRETATION_ENABLED). It was rendering as a heading
+     over 34 mm of white space — a section that promises "what this test
+     cannot see" and then says nothing is worse than no section, because a
+     reader concludes there are no blind spots. There always are: this is six
+     limb leads, and it never sees the front wall. When the flag comes back
+     on, so does the list. */
+  const withBlind = screening !== null;
+  const H_BLIND_TITLE = withBlind ? 7 : 0;
+  const H_BLIND = withBlind ? 34 : 0;
   const H_NOTE = note ? 26 : 0;
   const H_DISC = 22;
   assertFits('reference', [
@@ -861,8 +927,8 @@ export function referencePage(
     </div>
   </div>`;
 
-  const blind = screening
-    ? `<ul class="blind">${screening.blindSpots
+  const blind = withBlind
+    ? `<ul class="blind">${(screening as EcgScreening).blindSpots
         .map((b) => `<li>${esc(labels.blindSpot(b))}</li>`)
         .join('')}</ul>`
     : '';
@@ -903,8 +969,9 @@ export function referencePage(
       block(H_MAP, map) +
       block(H_QUAL_TITLE, sectionTitle(labels.statsQuality)) +
       block(H_QUAL, qualityTable) +
-      block(H_BLIND_TITLE, sectionTitle(labels.blindTitle)) +
-      block(H_BLIND, blind) +
+      (withBlind
+        ? block(H_BLIND_TITLE, sectionTitle(labels.blindTitle)) + block(H_BLIND, blind)
+        : '') +
       (note
         ? block(H_NOTE, `<div class="note"><b>${esc(labels.noteTitle)}</b><br/>${esc(note)}</div>`)
         : '') +
@@ -919,7 +986,7 @@ export const REPORT_CSS = `
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: ${PAPER}; }
 body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Arial, sans-serif;
-       color: ${INK}; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+       color: ${R_INK}; -webkit-print-color-adjust: exact; print-color-adjust: exact;
        -webkit-font-smoothing: antialiased;
        font-variant-numeric: tabular-nums; }
 
@@ -933,8 +1000,16 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
    padding hands the space back, so the band's height IN FLOW is exactly the
    16 mm HEADER_H has always reserved. The blue keyline under it is the
    report's accent running the full width of every sheet. */
+/* ★ v0.60.0 — the band is the HERO's gradient, not flat navy. The
+   measurements page opens with a deep plum-to-navy card, and a report whose
+   letterhead is a different dark to the block directly under it reads as two
+   documents stapled together. The gradient is the handoff's, converted to
+   hex in reportPalette.ts; BRAND_DEEP remains the first stop, so the
+   brand still speaks first. */
 .lh { height: 26mm; display: flex; align-items: flex-start; justify-content: space-between;
-      background: ${BRAND_DEEP}; margin: -10mm -12mm 0; padding: 11mm 12mm 2mm;
+      background: ${BRAND_DEEP};
+      background-image: linear-gradient(115deg, ${R_HERO_A} 0%, ${R_HERO_B} 55%, ${R_HERO_C} 100%);
+      margin: -10mm -12mm 0; padding: 11mm 12mm 2mm;
       border-bottom: 0.8mm solid ${BLUE}; }
 .mark { line-height: 0; }
 .mark svg { display: block; }
@@ -945,17 +1020,203 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 
 .body { height: ${BODY_H}mm; }
 .blk { overflow: hidden; }
+/* ★ A BLOCK OF FIGURES HAS NO TEXT IN IT, SO IT MUST NOT HAVE A TEXT BASELINE.
+   An <svg> is an inline element: the line box it sits on reserves room for
+   descenders under it, ~1.2 mm per row at this size. Five 13 mm interval
+   bars declared as 65 mm therefore laid out at ~71 mm, and the fifth one —
+   QTc (Fridericia), a real measurement — was clipped off the page by
+   the .blk overflow:hidden rule. Silently: assertFits validates the heights
+   the BUILDER declares, and it cannot see what a browser did inside one.
+   Every stack of figures gets this class. */
+.stack { line-height: 0; font-size: 0; }
+.stack > svg { display: block; }
 .ft { position: absolute; left: 12mm; right: 12mm; bottom: 8mm; height: 7mm;
       display: flex; align-items: flex-end; justify-content: space-between;
-      font-size: 6.6pt; color: ${MUTED}; border-top: 0.5mm solid ${BLUE};
+      font-size: 6.6pt; color: ${R_MUTE2}; border-top: 0.35mm solid ${R_RULE};
       letter-spacing: 0.3px; }
-.ft-page { color: ${BRAND}; font-weight: 800; }
+.ft-page { color: ${R_KICKER}; font-weight: 800; }
 
 /* ★ THE SECTION RULE. Uppercase, letterspaced, on a rule that runs the full
    column — in the report's blue (v0.56.0), so every section opens with the
    same accent the letterhead closes with. */
+/* ★ v0.60.0 — the section rule becomes the redesign's KICKER: the same
+   letterspaced violet-grey label the measurements page opens each section
+   with, over a hairline instead of the old 0.45 mm blue rule. A heavy
+   accent rule under every heading was the loudest thing on the statistics
+   page, competing with the figures it was introducing. */
 .sec { font-size: 7pt; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase;
-       color: ${BRAND}; border-bottom: 0.45mm solid ${BLUE}; padding-bottom: 1.2mm; }
+       color: ${R_KICKER}; border-bottom: 0.25mm solid ${R_RULE}; padding-bottom: 1.2mm; }
+
+/* ══════════════════════════════════════════════════════════════════
+   THE MEASUREMENTS PAGE (v0.60.0) — the design handoff's A4.
+
+   ★ SYSTEM FONTS, NOT THE HANDOFF'S THREE GOOGLE FAMILIES.
+   The handoff sets Space Grotesk / IBM Plex Mono / Source Sans 3 from
+   fonts.googleapis.com. This document is built ON THE PHONE, at the moment
+   someone taps Export — so a <link> to Google is a network request in the
+   middle of an export that must work on a plane, and it hands a third party
+   the user's IP and the referring page every time a medical report is
+   printed. Offline it silently falls back and the report prints in a
+   different typeface than the one that was approved.
+   So the hierarchy is rebuilt out of the system stack: weight, letter-
+   spacing and case do the work the three families were doing. Tabular
+   figures are already on the body rule, which is most of what the mono was for.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* -- The band -- */
+.hero { height: 100%; border-radius: 3mm; padding: 4mm 5mm 3mm; color: ${R_HERO_TXT};
+        background: ${R_HERO_A};
+        background-image: linear-gradient(135deg, ${R_HERO_A} 0%, ${R_HERO_B} 55%, ${R_HERO_C} 100%); }
+.hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.hero-k { font-size: 6pt; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;
+          color: ${R_HERO_KICK}; margin-bottom: 1.4mm; white-space: nowrap; }
+.hero-rate { display: flex; align-items: baseline; gap: 2mm; }
+/* The rate is gradient-filled where the engine supports it and a solid
+   light rose where it does not. The @supports guard is load-bearing: the
+   naive version sets color:transparent unconditionally, and on an engine
+   without background-clip:text the headline number is INVISIBLE — the one
+   number the page exists for, blank, on the oldest devices. */
+.hero-n { font-size: 30pt; font-weight: 800; line-height: 0.85; letter-spacing: -1px;
+          color: ${R_HERO_N1}; }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-n { background-image: linear-gradient(100deg, ${R_HERO_N1}, ${R_HERO_N2});
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; }
+}
+.hero-u { font-size: 9pt; font-weight: 600; color: ${R_HERO_UNIT}; letter-spacing: 0.4px; }
+.hero-chips { display: flex; gap: 1.4mm; align-items: center; }
+.mchip { font-size: 6.2pt; font-weight: 700; padding: 1mm 2.4mm; border-radius: 4mm;
+         white-space: nowrap; }
+/* Amber because the RHYTHM family is amber on every surface of this product
+   — not because a rhythm is worth flagging. It is amber for "Regular" too. */
+.mchip-amber { background: ${R_CHIP_AMBER_BG}; color: ${R_CHIP_AMBER_FG}; }
+.mchip-dim { background: ${R_CHIP_BG}; color: ${R_CHIP_FG}; font-weight: 600; }
+/* The one chip on this page that IS allowed to shout, because it is not
+   about the measurement — it is about whether the signal came from a heart. */
+.mchip-sim { background: ${RED}; color: #FFFFFF; letter-spacing: 0.6px; }
+.hero-tr { margin-top: 2mm; line-height: 0; }
+.hero-tr svg { display: block; }
+
+/* -- The tile row -- */
+.mtiles { display: flex; flex-wrap: wrap; gap: 2mm; height: 100%; }
+.mtile { width: calc(25% - 1.5mm); height: 15mm; border-radius: 2.6mm; padding: 2.2mm 2.8mm;
+         overflow: hidden; }
+.mtile-k { font-size: 5.6pt; letter-spacing: 1.1px; text-transform: uppercase; font-weight: 700;
+           margin-bottom: 1mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+           color: ${R_MUTE2}; }
+.mtile-v { font-size: 14pt; font-weight: 800; line-height: 1; letter-spacing: -0.3px;
+           color: ${R_INK}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mtile-v-s { font-size: 10.5pt; }
+.mtile-u { font-size: 7pt; font-weight: 600; margin-left: 0.8mm; color: ${R_MUTE2}; }
+.mtile-red { background: ${R_T_RED_BG}; }
+.mtile-red .mtile-k { color: ${R_T_RED_LB}; }
+.mtile-red .mtile-v { color: ${R_T_RED_VA}; }
+.mtile-blue { background: ${R_T_BLUE_BG}; }
+.mtile-blue .mtile-k { color: ${R_T_BLUE_LB}; }
+.mtile-blue .mtile-v { color: ${R_T_BLUE_VA}; }
+.mtile-violet { background: ${R_T_VIO_BG}; }
+.mtile-violet .mtile-k { color: ${R_T_VIO_LB}; }
+.mtile-violet .mtile-v { color: ${R_T_VIO_VA}; }
+.mtile-amber { background: ${R_T_AMB_BG}; }
+.mtile-amber .mtile-k { color: ${R_T_AMB_LB}; }
+.mtile-amber .mtile-v { color: ${R_T_AMB_VA}; }
+.mtile-plain { border: 0.25mm solid ${R_OUTLINE}; }
+
+/* -- The kicker this page uses instead of .sec -- */
+.mkick { font-size: 6.4pt; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
+         color: ${R_KICKER}; margin-bottom: 2.4mm; }
+.mkick-2 { margin-top: 3mm; }
+.mkick-flat { margin: 0; }
+
+/* -- Intervals | axis + quality -- */
+.mmain { display: flex; gap: 5mm; height: 100%; }
+.mcol-l { width: 100mm; flex: none; }
+.mcol-r { flex: 1; min-width: 0; }
+.irows { display: flex; flex-direction: column; gap: 2.6mm; }
+.irow-top { display: flex; justify-content: space-between; align-items: baseline; }
+.irow-l { font-size: 8pt; font-weight: 700; }
+.irow-v { font-size: 10pt; font-weight: 800; color: ${R_T_BLUE_VA}; }
+.irow-u { font-size: 6.4pt; font-weight: 600; margin-left: 0.6mm; color: ${R_MUTE2}; }
+/* An unmeasurable interval is an em dash in the QUIET ink, and with no unit
+   after it: "— ms" reads as a measurement of nothing, and a dash in the same
+   confident blue as the numbers above it reads as a value. */
+.irow-v-na { color: ${R_MUTE2}; font-weight: 600; }
+.itrack { position: relative; height: 1.8mm; background: ${R_TRACK}; border-radius: 1mm;
+          margin-top: 1mm; }
+/* ONE flat tint at any value — see reportPalette.ts. The band never changes
+   colour with the measurement, and there is no chip beside it saying
+   whether the marker is inside or out. */
+.iband { position: absolute; top: 0; bottom: 0; border-radius: 1mm;
+         background: linear-gradient(90deg, ${R_BAND_A}, ${R_BAND_B}); }
+.idot { position: absolute; top: -0.9mm; width: 3.6mm; height: 3.6mm; margin-left: -1.8mm;
+        border-radius: 50%; background: ${R_T_BLUE_VA}; border: 0.6mm solid #FFFFFF; }
+.irow-ref { font-size: 5.8pt; color: ${R_MUTE2}; margin-top: 1mm; }
+.inote { font-size: 5.8pt; color: ${R_FAINT}; margin-top: 2.6mm; line-height: 1.4; }
+
+.axcard { display: flex; gap: 3mm; align-items: center; border-radius: 3mm; padding: 2.4mm 3mm;
+          height: 36mm; background: ${R_AX_BG_A};
+          background-image: linear-gradient(135deg, ${R_AX_BG_A}, ${R_AX_BG_B}); }
+.axdial { flex: none; line-height: 0; }
+.axdial svg { display: block; }
+.axread { min-width: 0; }
+.axdeg { font-size: 19pt; font-weight: 800; line-height: 1; color: ${R_AX_NUM}; }
+/* The handoff paints this pill GREEN when the axis is normal. It is violet
+   here, at every classification: a chip whose colour changes with the
+   reading is a verdict wearing a label's clothes, and this report stopped
+   giving verdicts in v0.59.0. */
+.axchip { display: inline-block; font-size: 6.4pt; font-weight: 700; margin-top: 1.6mm;
+          padding: 0.8mm 2.2mm; border-radius: 4mm; background: ${R_AX_SECTOR};
+          color: ${R_AX_INK}; }
+.axcap { font-size: 5.8pt; color: ${R_MUTE}; margin-top: 1.4mm; }
+.axnets { display: flex; gap: 2mm; margin-top: 2.4mm; }
+.axnets .mtile { width: calc(50% - 1mm); height: 12mm; }
+
+.qcard { display: flex; gap: 3mm; align-items: center; border-radius: 3mm; padding: 2.4mm 3mm;
+         height: 24mm; background: ${R_Q_BG_A};
+         background-image: linear-gradient(135deg, ${R_Q_BG_A}, ${R_Q_BG_B}); }
+.qring { flex: none; line-height: 0; }
+.qring svg { display: block; }
+.qbody { min-width: 0; }
+.qtitle { font-size: 6pt; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase;
+          color: ${R_Q_NUM}; }
+.qtext { font-size: 6.4pt; color: ${R_BODY}; line-height: 1.4; margin-top: 0.8mm; }
+.qchips { display: flex; gap: 1.4mm; margin-top: 1.4mm; }
+.qchip { font-size: 5.8pt; background: #FFFFFF; border-radius: 4mm; padding: 0.6mm 2mm;
+         color: ${R_MUTE}; white-space: nowrap; }
+
+/* -- Wave amplitudes -- */
+.ampbar { display: flex; justify-content: space-between; align-items: baseline; }
+.amplegend { display: flex; gap: 2.6mm; align-items: center; font-size: 5.8pt; color: ${R_MUTE}; }
+.lg { display: flex; align-items: center; gap: 0.8mm; }
+.lg i { width: 1.6mm; height: 1.6mm; border-radius: 0.4mm; display: inline-block; }
+.lg-scale { color: ${R_FAINT}; }
+.amppanel { height: 100%; border: 0.25mm solid ${R_OUTLINE}; border-radius: 3mm;
+            overflow: hidden; }
+.amphead { display: flex; background: ${R_AMP_HEAD}; }
+.amphead > div { flex: 1; text-align: center; font-size: 7.5pt; font-weight: 800;
+                 padding: 1mm 0; }
+.ampgrid { display: flex; border-top: 0.25mm solid ${R_AMP_LINE}; }
+.ampcol { flex: 1; min-width: 0; padding: 1.6mm 1.6mm 1.2mm;
+          border-right: 0.2mm solid ${R_AMP_LINE}; }
+.ampcol:last-child { border-right: 0; }
+.ampfig { line-height: 0; }
+.ampfig svg { display: block; margin: 0 auto; }
+.ampnums { display: flex; margin-top: 0.8mm; font-size: 5pt; color: ${R_MUTE}; }
+.ampnums span { flex: 1; text-align: center; }
+.ampn-strong { font-weight: 700; color: ${R_NUM}; }
+.amppp { display: flex; justify-content: space-between; align-items: baseline; margin-top: 1.4mm;
+         font-size: 5.6pt; color: ${R_MUTE2}; letter-spacing: 0.6px; text-transform: uppercase; }
+.amppp b { font-size: 8pt; font-weight: 800; color: ${R_PP_INK}; letter-spacing: 0; }
+.amppptrack { height: 1.2mm; border-radius: 1mm; background: ${R_TRACK}; overflow: hidden;
+              margin-top: 0.8mm; }
+.amppptrack i { display: block; height: 100%; border-radius: 1mm;
+                background: linear-gradient(90deg, ${R_PP_A}, ${R_PP_B}); }
+
+/* -- The statement the page closes on -- */
+.mfoot { display: flex; justify-content: space-between; align-items: flex-end; gap: 6mm;
+         border-top: 0.25mm solid ${R_RULE}; padding-top: 2mm; height: 100%; }
+.mfoot p { margin: 0; font-size: 5.8pt; line-height: 1.45; color: ${R_MUTE}; max-width: 130mm; }
+.mfoot-r { font-size: 5.8pt; color: ${R_FAINT}; white-space: nowrap; }
 
 /* -- ECG -- */
 .sheet { border: 0.25mm solid ${HAIRLINE}; overflow: hidden;
@@ -967,12 +1228,13 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 /* -- Identification grid: a tinted band with the brand's heavy left edge,
       so "whose / when / on what" is the first colour block after the
       letterhead (v0.56.0) -- */
-.idgrid { display: flex; flex-wrap: wrap; background: ${BRAND_SOFT};
-          border-left: 1.4mm solid ${BRAND}; padding: 0 0 0 2.6mm; }
+.idgrid { display: flex; flex-wrap: wrap; background: ${R_AX_BG_A};
+          border-left: 1.4mm solid ${R_AX_INK}; border-radius: 0 2mm 2mm 0;
+          padding: 0 0 0 2.6mm; overflow: hidden; }
 .idcell { width: 25%; border-bottom: 0.2mm solid ${HAIRLINE}; padding: 1.6mm 2mm 1.6mm 0;
           overflow: hidden; }
 .idcell span { display: block; font-size: 6.2pt; letter-spacing: 0.8px; text-transform: uppercase;
-               color: ${MUTED}; }
+               color: ${R_MUTE2}; }
 .idcell b { display: block; font-size: 8.5pt; font-weight: 700; margin-top: 0.4mm;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -1017,37 +1279,47 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 .twocol { display: flex; gap: 6mm; height: 100%; }
 .twocol > table { flex: 1; }
 table.mt { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
+/* A solid navy header bar on two tables plus a navy letterhead plus a
+   navy footer rule was three shouts on one page. The header is the
+   redesign's soft wash with the kicker's ink; the zebra follows it. */
 table.mt thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
-                    text-transform: uppercase; color: ${PAPER}; text-align: left;
-                    background: ${BRAND}; padding: 1mm 1.2mm; }
-table.mt tbody tr:nth-child(even) th, table.mt tbody tr:nth-child(even) td { background: #F2F6FD; }
-table.mt tbody th { text-align: left; font-weight: 600; color: ${SLATE};
+                    text-transform: uppercase; color: ${R_KICKER}; text-align: left;
+                    background: ${R_AMP_HEAD}; padding: 1mm 1.2mm; }
+table.mt tbody tr:nth-child(even) th, table.mt tbody tr:nth-child(even) td { background: #FAFAFD; }
+table.mt tbody th { text-align: left; font-weight: 600; color: ${R_MUTE};
                     padding: 1.3mm 1.2mm 1.3mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE};
                     white-space: nowrap; overflow: hidden; }
-table.mt td { padding: 1.3mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
+table.mt td { padding: 1.3mm 1.2mm; border-bottom: 0.2mm solid ${R_AMP_LINE}; }
 table.mt .num { text-align: right; font-weight: 800; font-size: 8.6pt; width: 16mm; }
 table.mt .unit { color: ${MUTED}; font-size: 6.8pt; width: 9mm; }
-table.mt .ref { text-align: right; color: ${MUTED}; font-size: 6.8pt; width: 16mm; }
+table.mt .ref { text-align: right; color: ${R_MUTE2}; font-size: 6.8pt; width: 16mm; }
 table.mt .flag { text-align: center; width: 6mm; font-weight: 800; font-size: 8pt; }
-table.mt tr.hi .num, table.mt tr.hi .flag { color: ${GOLD}; }
-table.mt tr.lo .num, table.mt tr.lo .flag { color: ${BLUE}; }
+/* ⚠️ The H / L flag is the ONE place on this page that says something
+   about a measurement rather than reporting it, and it survives on purpose:
+   it is the lab-report convention, the reference range it refers to is
+   printed in the very next cell, and the user chose to keep this page's
+   clinical tables when asked. It is not the screening engine — it is a
+   comparison against a number the reader can see. The measurements page has
+   no equivalent, deliberately. */
+table.mt tr.hi .num, table.mt tr.hi .flag { color: ${R_T_AMB_VA}; }
+table.mt tr.lo .num, table.mt tr.lo .flag { color: ${R_T_BLUE_VA}; }
 
 /* -- Figures. Every data visualisation sits on a soft blue panel with a
       blue keyline (v0.56.0) — the figures ARE the added value, and a panel
       says so before the caption is read. -- */
 .figrow { display: flex; gap: 4mm; height: 100%; }
-.fig { text-align: center; background: ${BLUE_SOFT}; border-top: 0.5mm solid ${BLUE};
-       padding-top: 1.5mm; }
-.fig-cap { font-size: 6.2pt; color: ${MUTED}; line-height: 1.3; margin-top: 1mm; }
+.fig { text-align: center; background: ${R_AX_BG_B}; border-radius: 2.6mm;
+       padding-top: 1.5mm; overflow: hidden; }
+.fig-cap { font-size: 6.2pt; color: ${R_MUTE2}; line-height: 1.3; margin-top: 1mm; }
 /* The quality table shares .mt but takes only the width it needs. */
 .qualwrap { width: 120mm; }
 
 table.amp { width: 100%; border-collapse: collapse; font-size: 7.6pt; }
 table.amp thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
-                     text-transform: uppercase; color: ${PAPER}; text-align: right;
-                     background: ${BRAND}; padding: 1mm 1.4mm; }
+                     text-transform: uppercase; color: ${R_KICKER}; text-align: right;
+                     background: ${R_AMP_HEAD}; padding: 1mm 1.4mm; }
 table.amp thead th:first-child { text-align: left; }
-table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: #F2F6FD; }
+table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: #FAFAFD; }
 table.amp tbody th { text-align: left; font-weight: 800; font-size: 8pt;
                      padding: 1mm 1.4mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
 table.amp td { text-align: right; padding: 1mm 1.4mm;
@@ -1069,10 +1341,10 @@ td.ampcell { width: 44mm; padding-right: 0; }
 .auditnote { font-size: 6.2pt; color: ${MUTED}; margin-top: 1.6mm; line-height: 1.4; }
 
 /* -- Median beats: the same blue panel as the other figures (v0.56.0) -- */
-.mbrow { display: flex; gap: 2mm; height: 100%; background: ${BLUE_SOFT};
-         border-top: 0.5mm solid ${BLUE}; padding: 1mm 2mm 0; }
+.mbrow { display: flex; gap: 2mm; height: 100%; background: ${R_AX_BG_B};
+         border-radius: 2.6mm; padding: 1mm 2mm 0; overflow: hidden; }
 .mbcell { flex: none; }
-.mblead { font-size: 6.6pt; font-weight: 800; color: ${INK}; margin-bottom: 0.6mm;
+.mblead { font-size: 6.6pt; font-weight: 800; color: ${R_INK}; margin-bottom: 0.6mm;
           letter-spacing: 0.5px; }
 
 /* -- Reference page -- */
@@ -1086,11 +1358,24 @@ td.ampcell { width: 44mm; padding-right: 0; }
 .wall span { color: ${SLATE}; }
 .wall-off b, .wall-off span { color: ${MUTED}; }
 ul.blind { margin: 0; padding-left: 4mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.5; }
-.note { font-size: 7.6pt; line-height: 1.45; background: ${BRAND_SOFT};
-        border-left: 1mm solid ${BRAND}; padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
-.disc { font-size: 6.4pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
+.note { font-size: 7.6pt; line-height: 1.45; background: ${R_AX_BG_A};
+        border-left: 1mm solid ${R_AX_INK}; border-radius: 0 2mm 2mm 0;
+        padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
+.disc { font-size: 6.4pt; line-height: 1.45; color: ${R_MUTE2}; margin: 0; }
 `;
 
+// v3.0.0 — The design-handoff pass. The letterhead is the measurements page's
+//          plum-to-navy gradient rather than flat navy; section headings became
+//          the redesign's letterspaced kicker over a hairline (a 0.45 mm blue
+//          rule under every heading was louder than the figures it introduced);
+//          ruled-table headers went from a solid navy bar to a soft wash with
+//          the kicker's ink; figure panels are rounded washes, not square blue
+//          slabs. Paddings are untouched everywhere on purpose — those blocks
+//          are fixed-height with overflow hidden, so a millimetre of cell
+//          padding does not resize a block, it clips the last row, and
+//          assertFits cannot see that. Plus the whole measurements-page
+//          stylesheet, in system fonts (see the block above it for why not the
+//          handoff's three Google families).
 // v2.0.0 — The colour pass (v0.56.0), reported as "not colourful enough, no
 //          added value": a full-bleed navy letterhead band with the white
 //          wordmark on every page (flow height unchanged — assertFits

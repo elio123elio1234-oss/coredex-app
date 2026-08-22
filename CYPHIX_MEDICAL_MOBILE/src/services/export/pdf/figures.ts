@@ -164,8 +164,22 @@ export function rangeBar(opts: {
  * angle happen to agree here, and no sign flip is needed. Writing that down
  * because it looks like a bug every time someone reads it.
  */
-export function hexaxial(opts: { size: number; degrees: number | null; ink: string }): string {
-  const { size, degrees, ink } = opts;
+export function hexaxial(opts: {
+  size: number;
+  degrees: number | null;
+  ink: string;
+  /**
+   * Print the angle under the dial.
+   *
+   * ★ Off on the measurements page, and it was a real collision, not a
+   * preference: the label is baselined at `size - 0.6`, which is inside the
+   * ring once the dial is small, and at 30 mm it printed straight through
+   * the aVF spoke label. That page sets the angle at 19 pt beside the dial
+   * anyway, so the figure was saying it twice AND illegibly.
+   */
+  showDegrees?: boolean;
+}): string {
+  const { size, degrees, ink, showDegrees = true } = opts;
   const cx = size / 2;
   const cy = size / 2;
   const r = size / 2 - 6;
@@ -214,9 +228,19 @@ export function hexaxial(opts: { size: number; degrees: number | null; ink: stri
     ${spokes}
     ${needle}
     <circle cx="${cx}" cy="${cy}" r="1.1" fill="${INK}"/>
-    <text x="${cx}" y="${size - 0.6}" text-anchor="middle" font-size="3.2" font-weight="800" fill="${ink}">${
-      degrees === null ? '—' : `${Math.round(degrees)}°`
-    }</text>`,
+    ${
+      showDegrees
+        ? /* INSIDE the ring, at the top. It used to be baselined at
+             `size - 0.6`, which is where the aVF spoke label already is:
+             the angle printed straight through the word on every render.
+             The top of the dial is the one region with no spoke label
+             (-90° is between aVR and aVL) and no wedge — the normal sector
+             runs -30° to +90°, i.e. right and down. */
+          `<text x="${cx}" y="${n2(cy - r * 0.44)}" text-anchor="middle" font-size="3.4" font-weight="800" fill="${ink}">${
+            degrees === null ? '—' : `${Math.round(degrees)}°`
+          }</text>`
+        : ''
+    }`,
   );
 }
 
@@ -474,7 +498,127 @@ export function beatFigure(opts: {
   );
 }
 
-/* ══════════════════ 9. ECG paper, for the strips ══════════════════ */
+/* ══════════════════ 9. The hero trace ══════════════════ */
+
+/**
+ * A long strip of the recording as one thin line, for the top of the
+ * measurements page.
+ *
+ * ★ IT IS THE REAL RECORDING. The handoff draws a repeating hand-written
+ * ECG path — right for a mock-up, and the one thing that must not be copied
+ * onto paper: a decorative waveform printed under this patient's measured
+ * rate, on a document that gets filed, is a picture of somebody else's
+ * heart in their record.
+ *
+ * ★ AND IT IS EXPLICITLY NOT MEASURABLE. Every other trace in this report
+ * is on ECG paper at 25 mm/s and 10 mm/mV so a ruler laid on it gives a
+ * real interval (`ecgPath.ts` forbids rescaling the time axis). This one is
+ * scaled to fit a band — so it carries NO grid, no calibration pulse and no
+ * axis, because those are the things that invite a ruler. It is a shape:
+ * how the ten seconds went. The sheets that can be measured are pages 1-2.
+ *
+ * Reduced by keeping each column's most EXTREME sample rather than its
+ * mean: averaging flattens the R wave, which is the one feature that makes
+ * a 12 mm band legible at all.
+ */
+export function sparkTrace(opts: {
+  w: number;
+  h: number;
+  samples: Float32Array | null;
+  ink: string;
+  /** Columns to reduce to. ~4 per mm reads as a continuous line in print. */
+  columns?: number;
+}): string {
+  const { w, h, samples, ink } = opts;
+  const columns = opts.columns ?? Math.max(120, Math.round(w * 4));
+  if (!samples || samples.length < 2) return svg(w, h, '');
+
+  const step = samples.length / columns;
+  const picked = new Float64Array(columns);
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let c = 0; c < columns; c++) {
+    const from = Math.floor(c * step);
+    const to = Math.min(samples.length, Math.max(from + 1, Math.floor((c + 1) * step)));
+    let best = samples[from] ?? 0;
+    for (let i = from; i < to; i++) {
+      const v = samples[i];
+      if (v !== undefined && Math.abs(v) > Math.abs(best)) best = v;
+    }
+    picked[c] = best;
+    if (best < lo) lo = best;
+    if (best > hi) hi = best;
+  }
+
+  /* A flat lead divides by zero and draws a line through the middle, which
+     is the honest picture of a flat lead. */
+  const span = hi - lo || 1;
+  const pad = h * 0.1;
+  const usable = h - pad * 2;
+
+  let d = '';
+  for (let c = 0; c < columns; c++) {
+    const x = (c / (columns - 1)) * w;
+    const y = pad + (1 - ((picked[c] as number) - lo) / span) * usable;
+    d += (c === 0 ? 'M' : 'L') + n2(x) + ',' + n2(y);
+  }
+  return svg(
+    w,
+    h,
+    `<path d="${d}" fill="none" stroke="${ink}" stroke-width="0.42" stroke-linejoin="round" stroke-linecap="round"/>`,
+  );
+}
+
+/* ══════════════════ 10. One lead's waves, as standing bars ══════════════════ */
+
+/**
+ * P, Q, R, S and T for a single lead, drawn as signed bars on a zero line.
+ *
+ * ══ WHY THIS AND NOT ANOTHER TABLE COLUMN ══
+ * The numbers are printed under it and are the record. The bars are for the
+ * question the numbers answer badly: what SHAPE does this lead have, and
+ * how does that shape change across the six? Six of these side by side make
+ * the R-wave progression and the aVR inversion visible in one look — and
+ * lead inversion in aVR is the sanity check that catches swapped arm
+ * electrodes, which is the single commonest technical fault in a limb
+ * recording.
+ *
+ * A wave that could not be measured draws NOTHING — not a zero-height bar.
+ * A bar of no height and a bar sitting on the zero line are the same
+ * picture, and "unmeasurable" and "zero millivolts" are not the same fact.
+ */
+export function waveColumn(opts: {
+  w: number;
+  h: number;
+  values: readonly (number | null)[];
+  inks: readonly string[];
+  /** Shared across all six leads, so the columns are comparable. */
+  peak: number;
+}): string {
+  const { w, h, values, inks, peak } = opts;
+  const zero = h / 2;
+  const slot = w / values.length;
+  const barW = Math.min(slot * 0.42, 2.2);
+  const half = h / 2 - 0.6;
+
+  const bars = values
+    .map((v, i) => {
+      if (v === null) return '';
+      const len = Math.max(0.35, (Math.abs(v) / peak) * half);
+      const y = v >= 0 ? zero - len : zero;
+      const x = i * slot + (slot - barW) / 2;
+      return `<rect x="${n2(x)}" y="${n2(y)}" width="${n2(barW)}" height="${n2(len)}" rx="0.35" fill="${inks[i] ?? INK}"/>`;
+    })
+    .join('');
+
+  return svg(
+    w,
+    h,
+    `<line x1="0" y1="${n2(zero)}" x2="${n2(w)}" y2="${n2(zero)}" stroke="${HAIRLINE}" stroke-width="0.22"/>${bars}`,
+  );
+}
+
+/* ══════════════════ 11. ECG paper, for the strips ══════════════════ */
 
 /** The grid alone, as a reusable `<defs>` pattern reference is NOT used:
     each strip draws its own grid path because the shared `buildEcgGrid`
@@ -482,6 +626,11 @@ export function beatFigure(opts: {
     CSS pattern would be a second, drifting definition of the same paper. */
 export const GRID_STROKES = { minor: GRID_MINOR, major: GRID_MAJOR };
 
+// v1.1.0 — Adds `sparkTrace` (the measurements page's hero line — the real
+//          recording, deliberately un-measurable: no grid, no calibration, no
+//          axis, because those are what invite a ruler) and `waveColumn` (one
+//          lead's P/Q/R/S/T as signed bars, six of which make R-wave
+//          progression and aVR inversion visible in one look).
 // v1.0.0 — Every figure in the report: verdict donut, reference-band bars, the
 //          hexaxial dial, a Poincaré plot, the RR tachogram, signed amplitude
 //          bars, Einthoven's triangle and a marked beat. All pure, all sized in

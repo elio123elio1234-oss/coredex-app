@@ -394,11 +394,33 @@ turns four surfaces off together, and turning it back on restores all four.
 | ↳ Values — "Export Report" CTA | ✅ web has a print button | 🔬 | 🔬 | Named at the user's request (the handoff said "View Report"). It makes the **same** choice the ⋯ menu makes: preview when this binary carries the WebView, direct share when it does not, because a button must never dead-end on a build that received this over the air. Hidden entirely when the reader lacks `exportPdf` |
 | ↳ Values — the trace is the real lead II | — handoff draws a decorative path | 🔬 | 🔬 | The handoff repeats a hand-written ECG path. That is right for a mock-up and the one thing that must not be copied: a decorative waveform on the same card as this patient's measured rate is a picture of somebody else's heart under their number. Reduced by **peak-preserving decimation**, not averaging — averaging flattens the R wave, which is the one feature that makes a 56 pt trace legible |
 
+## v0.60.0 — the printed report takes the design language
+
+| Feature | Web | iOS | Android | Notes |
+|---|---|---|---|---|
+| **PDF measurements page** | ✅ web prints the browser's own page | 🔬 | 🔬 | From the *Clinical data export to PDF* handoff. Opens the report; the ECG sheets moved to page 2, because every clinical document opens with a summary and this one opened with two pages of trace. The band's trace is the study's own lead II and carries **no grid, no calibration, no axis** — it is scaled to fit, and those are what invite a ruler. Pages 2's sheets are unchanged at 25 mm/s · 10 mm/mV |
+| ↳ **"within range" call-outs NOT built** | — | ✅ decided | ✅ decided | **Deliberate divergence from the handoff, at the user's instruction.** The design puts *"within range"* / *"2 ms below range"* beside each interval and a green *"Normal axis"* pill on the dial. Both are statements ABOUT a measurement — the thing v0.59.0 took out of this document. The shaded band and the marker stay; the axis pill is the section's violet at every classification |
+| ↳ **System fonts, not Google Fonts** | — | ✅ | ✅ | The handoff sets Space Grotesk / IBM Plex Mono / Source Sans 3 from fonts.googleapis.com. This PDF is built ON THE PHONE at export time: a `<link>` there is a network request inside an export that must work offline, and it hands a third party the user's IP every time a medical report is printed. Offline it falls back silently to a different typeface than the one approved |
+| ↳ **oklch converted to hex offline** | — | ✅ | ✅ | The handoff is written entirely in `oklch()`, which landed in Safari 15.4 / Chrome 111. `expo-print` hands the HTML to whatever WebView the phone has, and a colour function an engine cannot parse does not degrade — it drops the declaration. The letterhead would have printed white on exactly the oldest devices. The oklch original is kept beside each hex in `reportPalette.ts` |
+| **★ Four clipping bugs fixed (pre-existing)** | — | 🔬 | 🔬 | Found by RENDERING the report for the first time. The amplitude table was printing **three of six leads** — aVR, the lead that catches swapped arm electrodes, did not print at all. Also cut: the last row of both measurement tables, the fifth interval bar, the identification grid's second row, the sixth median beat, and the signal-quality table's last row. One cause: an `<svg>` is inline and reserves descender space, and a ruled row's height is a line box (font-size × 1.2) — both make a block taller than its arithmetic, and `assertFits` validates what the BUILDER declares, not what the browser did inside it |
+| ↳ Statistics-page amplitude table removed | ✅ web keeps it | 🔬 | 🔬 | Not repaired — replaced. The measurements page does the same job properly (six leads, every number, a chart each), and two tables of one dataset with one truncated is worse than one that is complete |
+| ↳ `verify-pdf.ts` writes its HTML out | — | ✅ | ✅ | `PDF_OUT=<dir> npx tsx scripts/verify-pdf.ts`. The structural assertions passed for months on a report losing three leads, because they check declared heights. The only thing that catches that is looking |
+| **Report no longer claims to screen** | — | 🔬 | 🔬 | Two v0.59.0 leftovers: the disclaimer opened *"This is a screening result…"* on a report with no screening result, and the reference page printed "WHAT THIS TEST CANNOT SEE" over 34 mm of white space (the blind-spot list comes from the engine that is switched off). A section promising blind spots and listing none is worse than no section |
+
 ## Open verification debt
 
 - Everything marked 🔬 was built on Windows and has **never run on an
   iPhone**. Per root `CLAUDE.md` §5, do not claim iOS works until it has run
   via Expo Go (UI only) or an EAS dev build (native BLE included).
+- ★ **v0.60.0's report was RENDERED, which is more than usual, and is still
+  not verified.** Four A4 pages were printed to PDF and read — that is how the
+  four clipping bugs above surfaced — but by desktop Chrome, from the harness's
+  synthetic recordings. Not checked: the sheet on a real **printer**; the page
+  as rendered by **WKWebView / Android WebView**, which is what `expo-print`
+  actually uses and is where the `@supports` guard on the gradient headline and
+  the hex-not-oklch decision either pay off or do not; and the report in
+  **Hebrew**, which it has never been checked in — the document sets no `dir`,
+  so RTL copy in the letterhead, the tiles and the captions is unproven.
 - ★ **v0.59.0's Values screen is unrun.** It typechecks and bundles, which per
   root §6.4 means it is well-formed and nothing more. The five things only a
   phone can answer: (1) do the eight tiles' tap targets all fire, and does each

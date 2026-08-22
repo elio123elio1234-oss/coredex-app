@@ -18,10 +18,18 @@
      · the patient name appears when passed and never when not,
      · no unsized SVGs, no percentage dimensions, no NaN/undefined.
 
+   Set PDF_OUT to a directory and it also WRITES each case's HTML there:
+
+       PDF_OUT=./out npx tsx scripts/verify-pdf.ts
+
+   which is how the sheet gets looked at without exporting one from a
+   phone and hoping.
+
    ★ This proves the ARITHMETIC, not that the sheet is beautiful — that
    still needs a human and a printer (CLAUDE.md §6.4).
    ================================================================== */
 
+import { writeFileSync } from 'node:fs';
 import { encodeChannel, type StoredRecording } from '@cyphix/shared';
 import { buildRecordingHtml } from '../src/services/export/pdf/document';
 import type { PdfLabels } from '../src/services/export/pdf/labels';
@@ -136,6 +144,33 @@ const labels: PdfLabels = {
   mSqi: 'Signal quality',
   mAnalysed: 'Analysed window',
   mEctopy: 'Ectopy burden',
+  pageMeasurements: 'Measurements',
+  heroKicker: 'Electrocardiogram report',
+  bpmUnit: 'BPM',
+  beatsUnit: 'beats',
+  mRegularity: 'Rhythm',
+  mPBefore: 'P before QRS',
+  iPr: 'PR interval',
+  iQrs: 'QRS duration',
+  iQt: 'QT interval',
+  iQtcB: 'QTc (Bazett)',
+  iQtcF: 'QTc (Fridericia)',
+  intervalsNote:
+    'Shaded bands are typical adult reference ranges shown for context. They are not a finding.',
+  axisSector: 'Shaded sector: -30 deg to +90 deg',
+  axisNetI: 'Net QRS, lead I',
+  axisNetAvf: 'Net QRS, lead aVF',
+  ampP: 'P',
+  ampQ: 'Q',
+  ampR: 'R',
+  ampS: 'S',
+  ampT: 'T',
+  ampPp: 'P-P',
+  ampScale: 'mV, scale +/-{max}',
+  qualityBody:
+    'Rhythm steadiness across the recording, measured from {beats} analysed beats.',
+  regularityName: (r) => r,
+  axisClassName: (c) => c,
   poincareCaption: 'Poincare plot',
   tachogramCaption: 'RR tachogram',
   axisCaption: 'Frontal axis',
@@ -228,6 +263,17 @@ for (const c of cases) {
   if (/NaN|undefined/.test(html)) fail(c.name, 'NaN/undefined leaked into the document');
   if (/\{n\}|\{total\}|\{from\}|\{to\}/.test(html)) fail(c.name, 'unresolved placeholder');
 
+  /* ★ The assertions above prove the arithmetic. They cannot prove the
+     sheet is right — CLAUDE.md §6.4 — and the only thing that can is a
+     human looking at it. `PDF_OUT=<dir> npx tsx scripts/verify-pdf.ts`
+     writes each case's HTML there, ready to open in a browser or print to
+     paper, so "look at it" does not mean "export one from the phone and
+     hope". Off unless asked for: the harness runs in CI. */
+  if (process.env.PDF_OUT) {
+    const file = `${process.env.PDF_OUT}/${c.name.replace(/[^a-z0-9]+/gi, '-')}.html`;
+    writeFileSync(file, html, 'utf8');
+  }
+
   console.log(`  ok   [${c.name}] ${pages} pages, ${(html.length / 1024).toFixed(0)} kB`);
 }
 
@@ -237,5 +283,12 @@ if (failures > 0) {
 }
 console.log('\nAll cases passed. This proves the arithmetic, not the beauty (CLAUDE.md §6.4).');
 
+// v1.1.0 — PDF_OUT=<dir> writes each case's HTML out. The structural
+//          assertions here passed on a report that was printing THREE OF SIX
+//          LEADS in its amplitude table and cutting the last row off two
+//          others — because they check the heights the builder DECLARES, and
+//          a block that overflows is clipped by CSS, silently, inside a page
+//          that still sums correctly. The only thing that catches that is a
+//          human looking at the sheet, and this flag is how they get one.
 // v1.0.0 — Repeatable Node harness for the report: nine awkward recordings,
 //          structural assertions instead of eyeballs.

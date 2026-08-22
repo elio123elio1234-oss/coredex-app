@@ -178,6 +178,14 @@ export const he: Record<TranslationKey, string> = {
   valExportReport: 'ייצוא דוח',
   valInfoDone: 'סיום',
   valSecUnit: 'שנ׳',
+
+  /* ── עמוד המדדים בדוח המודפס ── */
+  pdfPageMeasurements: 'מדדים',
+  pdfHeroKicker: 'דוח אלקטרוקרדיוגרם',
+  pdfBeatsUnit: 'פעימות',
+  pdfAmpPp: 'שיא-לשיא',
+  pdfAmpScale: 'mV, סקאלה ±{max}',
+  pdfQualityBody: 'יציבות הקצב לאורך ההקלטה, נמדדה מתוך {beats} פעימות שנותחו.',
   valInfoTapHint: 'הקישו על כל ערך כדי לראות מה הוא מודד',
   valInfoHr: 'מחושב מממוצע המרווחים בין גלי R של הפעימות שנותחו.',
   valInfoRr: 'הזמן הממוצע בין שני גלי R עוקבים — אותו נתון כמו הדופק, במונחי משך זמן.',
@@ -1261,6 +1269,7 @@ export const he: Record<TranslationKey, string> = {
 // v1.3.0 — The SCREENING block, matching en.ts key for key. The measurement
 //          symbols (PR, QTc, mV) stay untranslated on purpose - translating them
 //          would cut the report loose from a hospital's.
+// v1.4.0 — Adds the printed measurements page's copy (`pdf*`).
 // v1.3.0 — Adds the Values screen's copy (`val*`) and `dockInsights`.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s

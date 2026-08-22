@@ -1,8 +1,74 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.59.0';
-export const APP_BUILD_LABEL = 'this build measures, it does not decode - and VALUES looks like it';
+export const APP_VERSION = '0.60.0';
+export const APP_BUILD_LABEL = 'the report opens with the page you can actually read';
 
+// v0.60.0 - THE PDF TAKES THE DESIGN LANGUAGE, and four clipping bugs fall out
+//           of finally looking at it.
+//
+//           1. A NEW MEASUREMENTS PAGE, and it opens the report. From the
+//              "Clinical data export to PDF" handoff: a plum-to-navy band with
+//              the rate and the study's own lead II across it, one hue per
+//              family of measurement, every interval drawn against its band,
+//              and all six leads' waves as bar charts. The ECG sheets move to
+//              page 2 — every clinical document opens with a summary, and this
+//              one opened with two full pages of trace, so a patient scrolled
+//              past twenty seconds of waveform before reaching a number they
+//              could read. The trace is untouched and is still the only part of
+//              this document a ruler may be laid on.
+//              Two things the handoff asked for were deliberately NOT built,
+//              both at the user's instruction and both for the same reason:
+//              the per-interval "within range" / "2 ms below range" call-outs,
+//              and the green "Normal axis" pill. Those are statements ABOUT a
+//              measurement, and this report stopped making those in v0.59.0.
+//              The band and the marker stay: a reader can see where the marker
+//              sits without being told what it means.
+//              System fonts, not the handoff's three Google families. This
+//              document is built ON THE PHONE at the moment somebody taps
+//              Export, so a <link> to fonts.googleapis.com is a network request
+//              inside an export that has to work on a plane — and it hands a
+//              third party the user's IP every time a medical report is
+//              printed. Offline it silently falls back to a different typeface
+//              than the one that was approved.
+//              Every oklch() in the handoff was converted to hex offline:
+//              oklch() landed in Safari 15.4 / Chrome 111, and a colour an
+//              engine cannot parse does not degrade, it drops the declaration.
+//              The letterhead would have printed white on exactly the older
+//              devices least likely to be tested on.
+//
+//           2. ★ FOUR CLIPPING BUGS, ALL PRE-EXISTING, ALL FOUND BY RENDERING
+//              THE THING. `verify-pdf.ts` had been passing for months on a
+//              report that was printing THREE OF SIX LEADS in its amplitude
+//              table; aVR — the lead that catches swapped arm electrodes — did
+//              not print at all. Also cut: the last row of both measurement
+//              tables, the fifth interval bar (QTc Fridericia), the second row
+//              of the identification grid, the sixth median beat, and the last
+//              row of the signal-quality table.
+//              One cause, four faces: assertFits validates the heights the
+//              BUILDER DECLARES and cannot see what a browser did inside one.
+//              An <svg> is inline, so it sits on a text baseline and reserves
+//              descender space under itself; a ruled row's height is a LINE BOX
+//              (font-size x 1.2), not the font size. Both make a block taller
+//              than its arithmetic, and `.blk { overflow: hidden }` then throws
+//              the excess away in silence.
+//              The harness now writes its HTML out (PDF_OUT=<dir>), because
+//              the only thing that catches this class of bug is looking.
+//
+//           3. The rest of the report follows the same language: the letterhead
+//              is the hero's gradient rather than flat navy, section headings
+//              became the redesign's letterspaced kicker over a hairline, and
+//              ruled-table headers went from a solid navy bar to a soft wash.
+//              Paddings were left alone everywhere on purpose — see above for
+//              what a millimetre of cell padding does to a fixed-height block.
+//
+//           4. Two v0.59.0 leftovers, fixed: the disclaimer opened with "This
+//              is a screening result, not a diagnosis" on a report that no
+//              longer screens, and the reference page still printed "WHAT THIS
+//              TEST CANNOT SEE" over 34 mm of white space. A section that
+//              promises blind spots and then lists none is worse than no
+//              section — there always are blind spots; this is six limb leads
+//              and it never sees the front wall.
+//
 // v0.59.0 - Three changes the user asked for, and one they did not have to.
 //
 //           1. FINDINGS IS OFF. "The app does not decode anything, it only

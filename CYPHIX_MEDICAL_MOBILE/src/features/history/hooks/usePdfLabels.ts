@@ -27,6 +27,8 @@ import type {
 } from '@cyphix/shared';
 import type { TranslationKey } from '@/i18n/config';
 import { useTranslation } from '@/i18n/useTranslation';
+import { AXIS_KEY, REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
+import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import type { PdfLabels } from '@/services/export/pdf/labels';
 
 const CATEGORY_KEY: Record<FindingCategory, TranslationKey> = {
@@ -80,6 +82,7 @@ export function usePdfLabels(): PdfLabels {
 
       pageEcg: tr('pdfPageEcg'),
       pageInterpretation: tr('pdfPageInterpretation'),
+      pageMeasurements: tr('pdfPageMeasurements'),
       pageStatistics: tr('pdfPageStatistics'),
       pageReference: tr('pdfPageReference'),
       sheetWindow: tr('pdfSheetWindow'),
@@ -125,14 +128,52 @@ export function usePdfLabels(): PdfLabels {
       ampLead: tr('ampLead'),
       ampUnit: tr('ampUnit'),
 
+      /* ── The measurements page ── */
+      heroKicker: tr('pdfHeroKicker'),
+      bpmUnit: tr('bpm'),
+      beatsUnit: tr('pdfBeatsUnit'),
+      mRegularity: tr('mRegularity'),
+      mPBefore: tr('mPBefore'),
+      iPr: tr('iPR'),
+      iQrs: tr('iQRS'),
+      iQt: tr('iQT'),
+      iQtcB: tr('iQTcB'),
+      iQtcF: tr('iQTcF'),
+      intervalsNote: tr('intervalsNote'),
+      axisSector: tr('axisNormalRange'),
+      axisNetI: tr('axisNetI'),
+      axisNetAvf: tr('axisNetAvf'),
+      ampP: tr('ampP'),
+      ampQ: tr('ampQ'),
+      ampR: tr('ampR'),
+      ampS: tr('ampS'),
+      ampT: tr('ampT'),
+      ampPp: tr('pdfAmpPp'),
+      ampScale: tr('pdfAmpScale'),
+      qualityBody: tr('pdfQualityBody'),
+
       leadMapTitle: tr('pdfLeadMapTitle'),
       leadMapCaption: tr('pdfLeadMapCap'),
       wallInferior: tr('pdfWallInferior'),
       wallLateral: tr('pdfWallLateral'),
       wallNotSeen: tr('pdfWallNotSeen'),
       blindTitle: tr('scrBlindTitle'),
-      disclaimer: `${tr('scrDisclaimer')} ${tr('analysisDisclaimer')}`,
+      /* ★ v0.60.0 — the first half of this sentence was "This is a screening
+         result, not a diagnosis", and since v0.59.0 the report contains no
+         screening result to disclaim. A legal statement that describes a
+         section the document does not have is worse than none: it tells the
+         reader to look for a verdict, and the honest statement — measurements
+         only, not a diagnosis — is the second half, which was always there. */
+      disclaimer: INTERPRETATION_ENABLED
+        ? `${tr('scrDisclaimer')} ${tr('analysisDisclaimer')}`
+        : tr('analysisDisclaimer'),
       noteTitle: tr('noteTitle'),
+
+      /* The measurement layer's own two classifications. Same tables the
+         app's Values screen reads, so the paper and the screen can never
+         call one recording "slightly variable" and the other "regular". */
+      regularityName: (r) => tr(REGULARITY_KEY[r]),
+      axisClassName: (c) => tr(AXIS_KEY[c]),
 
       /* ★ ANNOTATED, NOT CAST. The template-literal type is checked against
          the locale key union, so adding a rule to the engine is a COMPILE
@@ -157,6 +198,14 @@ export function usePdfLabels(): PdfLabels {
   );
 }
 
+// v1.2.0 — The disclaimer no longer opens with "This is a screening result":
+//          since v0.59.0 the document contains no screening result to
+//          disclaim, and a legal sentence describing a section that is not
+//          there tells the reader to go looking for a verdict.
+// v1.1.0 — Adds the measurements page's copy, plus the two measurement-layer
+//          classifications (rhythm, axis) resolved from the SAME tables the
+//          app's Values screen reads — so the paper and the screen cannot call
+//          one recording "slightly variable" and the other "regular".
 // v1.0.0 — Resolves the printed report's copy. Chrome as fields, the engine's
 //          enumerated vocabulary as resolvers, so adding a rule never means
 //          remembering to edit this file.

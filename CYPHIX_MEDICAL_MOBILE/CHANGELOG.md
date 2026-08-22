@@ -1,5 +1,121 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.60.0 - 2026-08-22 - the report opens with the page you can actually read
+
+The design language from v0.59.0's Values screen now runs through the printed
+report, from the *Clinical data export to PDF* handoff. And rendering the
+document — for the first time, rather than asserting on it — found four
+clipping bugs that had been shipping for months.
+
+### 1. A measurements page, and it opens the report
+
+A plum-to-navy band carrying the rate and the study's own lead II across it,
+one hue per family of measurement, every interval drawn against its reference
+band, an axis card, a steadiness ring, and all six leads' P/Q/R/S/T as bar
+charts.
+
+**The ECG sheets moved to page 2.** Every clinical document opens with a
+summary; this one opened with two full pages of trace, so a patient scrolled
+past twenty seconds of waveform before reaching a single number they could
+read. The trace is not diminished by being on page 2 — it is still the full
+recording at 25 mm/s · 10 mm/mV with the calibration pulse, and it is still the
+only part of this document a ruler may be laid on. The new page carries **no
+grid, no calibration and no axis**, deliberately: it is scaled to fit a band,
+and those are the things that invite a ruler.
+
+**Two things the handoff asked for were not built**, both at the user's
+instruction and both for the same reason:
+
+- the per-interval call-outs — *"within range"* in green, *"2 ms below range"*
+  in amber;
+- the green **"Normal axis"** pill (it is the section's violet at every
+  classification).
+
+Those are statements *about* a measurement, and this report stopped making
+those in v0.59.0. The shaded band and the marker stay: a reader can see where
+the marker sits without being told what it means.
+
+**System fonts, not the handoff's three Google families.** This document is
+built *on the phone*, at the moment somebody taps Export — so a `<link>` to
+fonts.googleapis.com is a network request inside an export that has to work on
+a plane, and it hands a third party the user's IP every time a medical report
+is printed. Offline it silently falls back to a different typeface than the one
+that was approved. Weight, letterspacing and case rebuild the hierarchy
+instead.
+
+**Every `oklch()` was converted to hex offline.** `oklch()` landed in Safari
+15.4 and Chrome 111; `expo-print` hands this HTML to whatever WebView the phone
+has. A colour function an engine cannot parse does not degrade — it drops the
+declaration, so the letterhead would have printed white and the tiles
+transparent, on exactly the older devices least likely to be tested on. The
+oklch original is kept in a comment beside each hex so the conversion can be
+re-derived rather than trusted.
+
+### 2. ★ Four clipping bugs, all pre-existing, all found by looking
+
+`verify-pdf.ts` has been passing for months on a report that was **printing
+three of six leads** in its amplitude table. aVR — the lead that catches
+swapped arm electrodes, the commonest technical fault in a limb recording — did
+not print at all. Also being cut off, silently, on every report anyone has ever
+exported:
+
+| what | how much was lost |
+|---|---|
+| Amplitude table (statistics page) | leads III (half), aVR, aVL, aVF |
+| Both measurement tables | the last row of each — QTc (Fridericia), signal quality |
+| Interval reference bars | the fifth bar, QTc (Fridericia) |
+| Identification grid | its second row — leads, device, beats, quality |
+| Median beat panel | the sixth beat, aVF |
+| Signal-quality table (reference page) | its last row, RR range |
+
+**One cause wearing four faces.** `assertFits` validates the heights the
+*builder declares* and cannot see what a browser did inside one:
+
+- an `<svg>` is an **inline** element, so it sits on a text baseline and
+  reserves descender space beneath itself — about 1.2 mm per row here. Five
+  13 mm bars declared as 65 mm laid out at ~71 mm.
+- a ruled table row's height is a **line box** (font-size × 1.2), not the font
+  size. And the tallest type in those rows is the 8.6 pt result cell, not the
+  7.8 pt rule.
+
+Both make a block taller than its arithmetic, and `.blk { overflow: hidden }`
+throws the excess away without a word. The verifier now writes its HTML out —
+`PDF_OUT=./out npx tsx scripts/verify-pdf.ts` — because the only thing that
+catches this class of bug is a human looking at the sheet.
+
+The statistics page's amplitude table is **removed** rather than repaired: the
+new measurements page does the same job properly (all six leads, every number,
+a chart each), and two tables of one dataset with one of them truncated is
+worse than one that is complete. Its millimetres went to the blocks above it
+that were also clipping.
+
+### 3. The rest of the report follows
+
+The letterhead is the hero's gradient rather than flat navy; section headings
+became the redesign's letterspaced kicker over a hairline (a 0.45 mm blue rule
+under every heading was louder than the figures it introduced); ruled-table
+headers went from a solid navy bar to a soft wash. **Paddings were left alone
+everywhere on purpose** — see above for what a millimetre of cell padding does
+to a fixed-height block.
+
+### 4. Two v0.59.0 leftovers
+
+- The disclaimer opened with *"This is a screening result, not a diagnosis"* on
+  a report that no longer screens. A legal sentence describing a section the
+  document does not have is worse than none: it tells the reader to go looking
+  for a verdict.
+- The reference page still printed **"WHAT THIS TEST CANNOT SEE"** over 34 mm of
+  white space, because the blind-spot list comes from the screening engine. A
+  section that promises blind spots and lists none is worse than no section —
+  there always are: this is six limb leads and it never sees the front wall.
+
+### What this release does prove, unusually
+
+Four A4 pages were rendered and read, not just built. That is more than any
+previous report change can claim, and it is exactly how the four bugs above
+surfaced. It is still not a printer, and it is still not Hebrew — the report has
+never been checked RTL, and that stays open.
+
 ## v0.59.0 - 2026-08-22 - this build measures, it does not decode - and VALUES looks like it
 
 Three changes the user asked for, and a fourth that fell out of the first one.

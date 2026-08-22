@@ -65,6 +65,7 @@
    ================================================================== */
 
 import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
+import { measurementsPage } from './measurements';
 import {
   analyseLimbEcg,
   decodeChannel,
@@ -174,7 +175,8 @@ export function buildRecordingHtml(input: ReportInput): string {
 
   const ecgSheets = countEcgSheets();
   const interpPages = screening ? countInterpretationPages(screening.findings) : 0;
-  const totalPages = ecgSheets + interpPages + 2;
+  /* Measurements + statistics + reference, on top of the sheets. */
+  const totalPages = ecgSheets + interpPages + 3;
 
   const when = new Date(recording.recordedAt).toLocaleString();
   const chrome = {
@@ -190,6 +192,26 @@ export function buildRecordingHtml(input: ReportInput): string {
   };
 
   let pageNo = 1;
+
+  /* ★ v0.60.0 — THE MEASUREMENTS PAGE OPENS THE REPORT, AND THE SHEETS
+     MOVED BACK ONE.
+     Every clinical document opens with a summary, and until now this one
+     opened with two full pages of trace: a patient had to scroll past
+     twenty seconds of waveform before reaching a single number they could
+     read. The trace is not diminished by being on page 2 — it is still the
+     full recording at 25 mm/s, and it is still the only part of this
+     document a ruler may be laid on. */
+  const measurements = measurementsPage(
+    analysis,
+    leads.II ?? null,
+    recording.durationSec,
+    recording.isSimulated,
+    chrome,
+    labels,
+    totalPages,
+    pageNo,
+  );
+  pageNo += 1;
 
   const ecg = ecgPages(leads, analysis, n, chrome, labels, totalPages, pageNo);
   pageNo += ecg.pages;
@@ -255,6 +277,7 @@ export function buildRecordingHtml(input: ReportInput): string {
             font-size: 8pt; font-weight: 800; color: #D32B21;
             background: #FBE6E4; padding: 1mm 2.4mm; border-radius: 1mm; }
 </style></head><body>
+${measurements}
 ${ecg.html.replace('<div class="body">', `${simBanner}<div class="body">`)}
 ${interp.html}
 ${stats}
@@ -263,6 +286,12 @@ ${reference}
 }
 
 
+// v0.60.0 - The report opens with the MEASUREMENTS page (the design handoff's
+//           A4) and the ECG sheets move to page 2. A clinical document opens
+//           with a summary; this one opened with two pages of trace, so a
+//           patient scrolled past twenty seconds of waveform before reaching a
+//           number they could read. The trace is unchanged and is still the
+//           only part of this document a ruler may be laid on.
 // v0.59.0 - No interpretation pages: the app stopped offering a verdict, and a
 //           PDF outlives the screen that made it. `INTERPRETATION_ENABLED` is
 //           the switch; the screening code is untouched behind it.
