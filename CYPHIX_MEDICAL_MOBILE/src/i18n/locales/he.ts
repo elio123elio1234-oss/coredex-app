@@ -18,6 +18,7 @@ export const he: Record<TranslationKey, string> = {
   /* ── מזח תחתון ── */
   dockHistory: 'היסטוריה',
   dockTests: 'הבדיקות שלי',
+  dockInsights: 'תובנות',
   dockHome: 'בית',
   dockChat: 'צ׳אט',
   dockProfile: 'פרופיל',
@@ -164,11 +165,37 @@ export const he: Record<TranslationKey, string> = {
   ampUnit: 'כל הערכים במילי-וולט (mV), חציון על פני הפעימות שנותחו.',
 
   qSqi: 'יציבות הקצב',
+  qSqiHint: 'עד כמה המרווח בין הפעימות אחיד',
   qAnalysed: 'אות שנותח',
   qSampleRate: 'קצב דגימה',
 
   analysisDisclaimer:
     'מדידות אוטומטיות שהופקו על ידי CYPHIX מהקלטת 6 לידי גפיים. הדוח אינו אבחנה ואינו מחליף הערכה קלינית. כל הערכים טעונים בדיקה של רופא מוסמך.',
+
+  /* ── מסך המדדים המעוצב מחדש ── */
+  valRrMeanHint: 'מרווח בין פעימה לפעימה',
+  valBeatsHint: 'פעימות שעברו את בדיקות האיכות',
+  valExportReport: 'ייצוא דוח',
+  valInfoDone: 'סיום',
+  valSecUnit: 'שנ׳',
+  valInfoTapHint: 'הקישו על כל ערך כדי לראות מה הוא מודד',
+  valInfoHr: 'מחושב מממוצע המרווחים בין גלי R של הפעימות שנותחו.',
+  valInfoRr: 'הזמן הממוצע בין שני גלי R עוקבים — אותו נתון כמו הדופק, במונחי משך זמן.',
+  valInfoRange: 'המרווח הקצר ביותר והארוך ביותר בין פעימות בהקלטה הזו.',
+  valInfoRhythm: 'עד כמה המרווח בין הפעימות נשאר אחיד לאורך ההקלטה.',
+  valInfoSdnn: 'סטיית התקן של כל המרווחים בין הפעימות — הפיזור הכולל של הקצב.',
+  valInfoRmssd: 'שורש ממוצע ריבועי ההפרשים בין מרווחים עוקבים: השתנות קצרת-טווח מפעימה לפעימה.',
+  valInfoPqrs: 'אחוז הפעימות שנותחו שבהן זוהה גל P לפני קומפלקס ה-QRS.',
+  valInfoBeats: 'מספר הפעימות שעברו את בדיקות האיכות והזינו כל ערך בעמוד הזה.',
+  valInfoPr: 'הזמן מהפעלת העליות ועד הפעלת החדרים.',
+  valInfoQrs: 'משך הדפולריזציה של החדרים.',
+  valInfoQt: 'משך הדפולריזציה וההתאוששות של החדרים יחד.',
+  valInfoQtcB: 'מרווח QT מתוקן לקצב לפי נוסחת Bazett.',
+  valInfoQtcF: 'מרווח QT מתוקן לקצב לפי נוסחת Fridericia, רגישה פחות לקצב מ-Bazett.',
+  valInfoSqi: 'עד כמה העיתוי בין הפעימות נשאר אחיד לאורך האות שנותח.',
+  valInfoAxis: 'הכיוון שבו נע הדחף החשמלי הממוצע דרך הלב, במישור החזיתי.',
+  valInfoNetI: 'הרכיב האופקי של וקטור ה-QRS הממוצע, נמדד בליד I.',
+  valInfoNetAvf: 'הרכיב האנכי של וקטור ה-QRS הממוצע, נמדד ב-aVF.',
 
   /* ── הכרטיס הרפואי ── */
   profileDetails: 'פרטים',
@@ -1234,6 +1261,7 @@ export const he: Record<TranslationKey, string> = {
 // v1.3.0 — The SCREENING block, matching en.ts key for key. The measurement
 //          symbols (PR, QTc, mV) stay untranslated on purpose - translating them
 //          would cut the report loose from a hospital's.
+// v1.3.0 — Adds the Values screen's copy (`val*`) and `dockInsights`.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.

@@ -24,6 +24,29 @@ import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
 
+/**
+ * What the dial is drawn IN.
+ *
+ * Added in v0.59.0 for the redesigned Values screen, which sits on a
+ * coloured glass field where the report's greys disappear. The dial is
+ * the same drawing either way — the same geometry, the same convention,
+ * the same reference sector — so it is skinned rather than forked. A
+ * second copy of this file with different colours is how the axis
+ * convention eventually gets flipped in one of them and not the other.
+ */
+export interface AxisDialPalette {
+  /** The −30°…+90° reference wedge. */
+  sector: string;
+  /** Face circles and the six lead axes. */
+  grid: string;
+  /** The measured vector and its tip. */
+  needle: string;
+  /** The pin at the centre. */
+  hub: string;
+  /** The six lead names around the rim. */
+  leadLabel: string;
+}
+
 interface Props {
   /** Measured axis in degrees (−180…+180), or null when indeterminate. */
   degrees: number | null;
@@ -39,6 +62,16 @@ interface Props {
    * too small to judge the vector against.
    */
   maxSize?: number;
+  /** Defaults to the app's own tokens — what the report has always used. */
+  palette?: AxisDialPalette;
+  /**
+   * Draw the number, the class name and the sector caption under the dial.
+   *
+   * Off when the caller draws its own readout: the Values screen prints the
+   * angle at 54 pt in its section's violet, and two readouts of one
+   * measurement stacked on each other is not a layout anyone chose.
+   */
+  readout?: boolean;
 }
 
 /** Every stroke, label and radius is scaled by √(size / this). */
@@ -63,9 +96,20 @@ export default function AxisDial({
   classLabel,
   normalRangeLabel,
   maxSize = 340,
+  palette,
+  readout = true,
 }: Props) {
   const t = useTheme();
   const [avail, setAvail] = useState(0);
+
+  /* The report's colours, unchanged, when no palette is given. */
+  const c0: AxisDialPalette = palette ?? {
+    sector: t.accentSoft,
+    grid: t.border,
+    needle: t.accentLive,
+    hub: t.textSecondary,
+    leadLabel: t.textTertiary,
+  };
 
   const size = Math.min(maxSize, avail || BASE_SIZE);
   /* Square root, not linear: at 1.8× the diameter, 1.8× stroke weights would
@@ -92,11 +136,11 @@ export default function AxisDial({
     <View style={styles.wrap} onLayout={(e) => setAvail(e.nativeEvent.layout.width)}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} accessibilityLabel={classLabel}>
         {/* Reference sector */}
-        <Path d={sector} fill={t.accentSoft} />
+        <Path d={sector} fill={c0.sector} />
 
         {/* Dial face */}
-        <Circle cx={c} cy={c} r={r} fill="none" stroke={t.border} strokeWidth={1.5 * k} />
-        <Circle cx={c} cy={c} r={r * 0.5} fill="none" stroke={t.border} strokeWidth={1 * k} />
+        <Circle cx={c} cy={c} r={r} fill="none" stroke={c0.grid} strokeWidth={1.5 * k} />
+        <Circle cx={c} cy={c} r={r * 0.5} fill="none" stroke={c0.grid} strokeWidth={1 * k} />
 
         {/* Lead axes — each drawn as a full diameter, since a lead axis runs
             both ways (its positive pole is the labelled end). */}
@@ -106,11 +150,11 @@ export default function AxisDial({
           const l = point(deg, r + 13 * k);
           return (
             <G key={name}>
-              <Line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={t.border} strokeWidth={1 * k} />
+              <Line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={c0.grid} strokeWidth={1 * k} />
               <SvgText
                 x={l.x}
                 y={l.y}
-                fill={t.textTertiary}
+                fill={c0.leadLabel}
                 fontSize={10 * k}
                 fontWeight="700"
                 textAnchor="middle"
@@ -130,16 +174,17 @@ export default function AxisDial({
               y1={c}
               x2={tip.x}
               y2={tip.y}
-              stroke={t.accentLive}
+              stroke={c0.needle}
               strokeWidth={3.5 * k}
               strokeLinecap="round"
             />
-            <Circle cx={tip.x} cy={tip.y} r={5 * k} fill={t.accentLive} />
+            <Circle cx={tip.x} cy={tip.y} r={5 * k} fill={c0.needle} />
           </G>
         )}
-        <Circle cx={c} cy={c} r={3.5 * k} fill={t.textSecondary} />
+        <Circle cx={c} cy={c} r={3.5 * k} fill={c0.hub} />
       </Svg>
 
+      {readout && (
       <View style={styles.readout}>
         <Text
           style={[
@@ -153,6 +198,7 @@ export default function AxisDial({
         <Text style={[styles.class, { color: t.textSecondary }]}>{classLabel}</Text>
         <Text style={[styles.hint, { color: t.textTertiary }]}>{normalRangeLabel}</Text>
       </View>
+      )}
     </View>
   );
 }
@@ -166,5 +212,8 @@ const styles = StyleSheet.create({
   hint: { fontSize: 11 },
 });
 
+// v0.59.0 — Skinnable (`palette`) and its readout is optional, so the
+//           redesigned Values screen can draw the same dial on a coloured
+//           glass field without a second copy of the axis convention.
 // v1.1.0 — Self-sizing: fills the width it is given (capped), with every
 //          stroke, label and radius scaled by √ so it reads the same at any size.

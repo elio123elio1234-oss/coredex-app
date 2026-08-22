@@ -74,6 +74,8 @@ import {
   type RecordingAnnotation,
 } from '@cyphix/shared';
 import GlassSurface from '@/components/atoms/GlassSurface';
+import ValuesBackdrop from '@/components/atoms/ValuesBackdrop';
+import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import { OptionalWebView } from '@/components/atoms/OptionalWebView';
 import ToolToggle from '@/components/atoms/ToolToggle';
 import ActionSheet, { type ActionSheetItem } from '@/components/molecules/ActionSheet';
@@ -85,7 +87,8 @@ import ExportOverlay from '@/components/molecules/ExportOverlay';
 import { CAL_WIDTH_MM, GHOST_NUDGE_LIMIT_MM } from '@/components/molecules/EcgReviewStrip';
 import { ECG_PAPER_DARK, ECG_PAPER_LIGHT } from '@/components/molecules/EcgStripSvg';
 import SegmentedTabs from '@/components/molecules/SegmentedTabs';
-import EcgAnalysisSheet, { REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
+import { REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
+import EcgValuesSheet from '@/components/organisms/EcgValuesSheet';
 import EcgScreeningSheet from '@/components/organisms/EcgScreeningSheet';
 import EcgReviewSheet, { type ViewerMode } from '@/components/organisms/EcgReviewSheet';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
@@ -124,6 +127,7 @@ import {
   useListRecordingsQuery,
 } from '@/services/api/endpoints/recordingApi';
 import { RADIUS } from '@/theme/tokens';
+import { useValuesPalette } from '@/theme/valuesPalette';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
 /* Three views of one study. The segmented control now leads with FINDINGS
@@ -135,6 +139,19 @@ import { useIsDark, useTheme } from '@/theme/useTheme';
    everyone — a control whose segments move between roles cannot be
    learned. */
 type Tab = 'waveform' | 'measurements' | 'screening';
+
+/**
+ * ★ FINDINGS IS OFF — v0.59.0, at the user's instruction. The switch itself
+ * lives in `config/featureFlags.ts`, where the reason is written out and
+ * where the History list, the digest backfill and the PDF read the same
+ * value; this alias is only so the JSX below reads in this screen's own
+ * words. What it controls here:
+ *   • the third segment of the control (and therefore the pane),
+ *   • whether `useScreening` runs at all — 43 rules over six leads is real
+ *     work on the JS thread, and a tab nobody can reach must not pay for it,
+ *   • the patient's landing tab, which was Findings and is now Values.
+ */
+const FINDINGS_ENABLED = INTERPRETATION_ENABLED;
 type ViewerRoute = RouteProp<{ StudyViewer: { id: string } }, 'StudyViewer'>;
 type Nav = {
   goBack: () => void;
@@ -161,6 +178,8 @@ const HEADER_H_GUESS = 150;
 export default function StudyViewerScreen() {
   const t = useTheme();
   const dark = useIsDark();
+  /* The Values tab's own colour field — see valuesPalette.ts. */
+  const valuesPalette = useValuesPalette();
   const { t: tr, lang, rtl } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
@@ -170,7 +189,13 @@ export default function StudyViewerScreen() {
   const features = useViewerFeatures();
 
   const [selectedId, setSelectedId] = useState(route.params.id);
-  const [tab, setTab] = useState<Tab>(user?.role === 'patient' ? 'screening' : 'waveform');
+  /* A patient lands on the answer they can actually read. That used to be
+     Findings; with Findings off it is VALUES, which is the screen that was
+     redesigned for exactly this reader. A clinician still lands on the
+     trace — they came to look at the waveform. */
+  const [tab, setTab] = useState<Tab>(
+    user?.role === 'patient' ? (FINDINGS_ENABLED ? 'screening' : 'measurements') : 'waveform',
+  );
   const [settings, setSettings] = useState<ViewerSettings>(DEFAULT_VIEWER_SETTINGS);
   const [mode, setMode] = useState<ViewerMode>('read');
   const [fullscreen, setFullscreen] = useState(false);
@@ -245,7 +270,10 @@ export default function StudyViewerScreen() {
   /* Reads the same filtered waveforms the measurements were taken from, so
      the verdict and the numbers under it can never describe different
      signals. Returns null for a simulated study — see the hook. */
-  const screening = useScreening(recording, view);
+  /* Handed `undefined` when the tab is off: the hook's own early return
+     then skips `screenLimbEcg` entirely rather than computing a verdict for
+     a pane that cannot be opened. */
+  const screening = useScreening(FINDINGS_ENABLED ? recording : undefined, view);
   const pdfLabels = usePdfLabels();
   /* Who the printed report is about — same guard as `useScreening`. */
   const reportCtx = useReportContext(recording);
@@ -483,6 +511,22 @@ export default function StudyViewerScreen() {
       setExporting(false);
     }
   };
+
+  /**
+   * The Values screen's "Export Report" button.
+   *
+   * It makes the SAME choice the ⋯ menu makes, for the same reason: preview
+   * when this binary carries the WebView, a direct share when it does not,
+   * because a button must never dead-end on a build that received this over
+   * the air (see OptionalWebView). Null — and the button is not drawn at
+   * all — when the reader may not export.
+   */
+  const exportReport = features.has('exportPdf')
+    ? () => {
+        if (OptionalWebView) navigation.navigate('ReportPreview', { id: selectedId });
+        else void runExport('pdf');
+      }
+    : null;
 
   /* ── Sheets ── */
   const actionItems: ActionSheetItem[] = [
@@ -1165,9 +1209,16 @@ export default function StudyViewerScreen() {
       )}
 
       {view && recording && tab === 'measurements' && (
-        /* Full-height scroll with the header's height as top padding: the
-           measurements pass UNDER the glass rather than starting below it,
-           which is the whole point of the material. */
+        <>
+        {/* ★ The Values field is FIXED, and it is a sibling of the scroller
+            rather than a child of its content. Inside the content it would
+            be as tall as the page and would sweep three coloured blooms up
+            the screen on every flick; behind it, the cards travel over a
+            still field, which is what makes them read as glass. */}
+        <ValuesBackdrop palette={valuesPalette} />
+        {/* Full-height scroll with the header's height as top padding: the
+            measurements pass UNDER the glass rather than starting below it,
+            which is the whole point of the material. */}
         <ScrollView
           style={styles.flex}
           contentContainerStyle={[
@@ -1178,7 +1229,19 @@ export default function StudyViewerScreen() {
           onScroll={onAnalysisScroll}
           showsVerticalScrollIndicator={false}
         >
-          <EcgAnalysisSheet analysis={view.analysis} showTitle={false} />
+          {/* ★ v0.59.0 — the REDESIGNED Values screen. `EcgAnalysisSheet`
+              (the flat, ported-from-web table) is still in the tree and is
+              still what the printed report lays its measurements out from;
+              this is the phone's version of the same numbers, and nothing
+              but the presentation differs — same fields, same nulls, same
+              "—". */}
+          <EcgValuesSheet
+            analysis={view.analysis}
+            durationSec={durationSec}
+            isSimulated={recording.isSimulated}
+            signal={view.leads.II ?? null}
+            onExportReport={exportReport}
+          />
           <ClinicalNote
             value={recording.note ?? ''}
             resetKey={recording.id}
@@ -1226,8 +1289,11 @@ export default function StudyViewerScreen() {
             </View>
           )}
         </ScrollView>
+        </>
       )}
 
+      {/* Unreachable while FINDINGS_ENABLED is false — kept whole, not
+          deleted, so turning the flag back on restores the tab intact. */}
       {view && recording && tab === 'screening' && (
         /* Same full-height scroll and the same header inset as the
            measurements tab: three views of one study that scrolled to
@@ -1359,10 +1425,14 @@ export default function StudyViewerScreen() {
                     own two-tab version keeps the long names — it has the
                     room, and nothing there was cramped. */}
                 <SegmentedTabs
-                  /* Findings leads (v0.53.0): the answer first, the evidence
-                     after — the same order the screening sheet itself uses. */
+                  /* Findings led here (v0.53.0) — the answer first, the
+                     evidence after. With it off the control is the two halves
+                     of one study: what was recorded, and what was measured
+                     from it. */
                   options={[
-                    { value: 'screening' as const, label: tr('vtTabFindings') },
+                    ...(FINDINGS_ENABLED
+                      ? [{ value: 'screening' as const, label: tr('vtTabFindings') }]
+                      : []),
                     { value: 'waveform' as const, label: tr('vtTabTrace') },
                     { value: 'measurements' as const, label: tr('vtTabValues') },
                   ]}
@@ -1595,3 +1665,9 @@ const styles = StyleSheet.create({
 //          overlay's scrim covers the whole display rather than stopping at the
 //          inset — and every sheet raised from here is now in tree, which is
 //          what stops landscape from killing the app.
+//
+// v6.0.0 - Two tabs, not three: Findings is off (INTERPRETATION_ENABLED) and
+//          the pane is kept whole behind the flag rather than deleted. VALUES
+//          is the redesigned EcgValuesSheet over a fixed glow field, and it is
+//          where a patient now lands. Its "Export Report" button makes the same
+//          preview-or-share choice the ⋯ menu does.

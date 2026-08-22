@@ -32,4 +32,39 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS;
  */
 export const SHOW_SHELL_WORDMARK = false;
 
+/**
+ * ★ WHETHER THIS BUILD INTERPRETS AT ALL.
+ *
+ * Off at the user's instruction (v0.59.0): *"the app does not decode
+ * anything, it only shows measurements."* That is a claim about the whole
+ * product, not about one screen, so it is one constant read by every
+ * surface that would otherwise make it:
+ *
+ *   • `StudyViewerScreen`   — the Findings tab, its pane, and whether
+ *                             `useScreening` runs at all.
+ *   • `HistoryScreen`       — the verdict pill on every row of the list.
+ *   • `digestFromRecording` — whether the background backfill screens each
+ *                             study at all (43 rules over six leads, per
+ *                             study — not something to compute for a label
+ *                             nobody is shown).
+ *   • `pdf/document.ts`     — the interpretation pages of the report. This
+ *                             one matters most: a PDF leaves the phone and
+ *                             is read later by someone who cannot ask what
+ *                             the app was claiming that day.
+ *
+ * It is a SWITCH AND NOT A DELETION, deliberately. `screenLimbEcg`, the 43
+ * rules, `EcgScreeningSheet`, the "why" sheets and `interpretationPages`
+ * are all untouched and all still correct. Flip this to `true` and the
+ * tab, the pill and the printed pages come back together — which is the
+ * only way to make "for now" mean what it says.
+ *
+ * Every null path it opens is one the app already had: a SIMULATED
+ * recording has never been screened, so "no verdict" is a shape every
+ * consumer has handled since v1.0.0 rather than a new one introduced here.
+ */
+export const INTERPRETATION_ENABLED = false;
+
+// v0.59.0 — Adds INTERPRETATION_ENABLED (off): this build measures, it does
+//           not decode. One flag for the tab, the list pill, the digest
+//           backfill and the PDF.
 // v0.2.0 — Adds the mobile-only shell-wordmark switch (currently hidden).

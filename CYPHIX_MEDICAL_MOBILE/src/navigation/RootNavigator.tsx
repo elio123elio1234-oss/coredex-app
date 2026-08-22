@@ -53,6 +53,7 @@ import BottomDock from '@/components/organisms/BottomDock';
 import ChatScreen from '@/screens/ChatScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
 import HomeScreen from '@/screens/HomeScreen';
+import InsightsScreen from '@/screens/InsightsScreen';
 import LimbMeasureScreen from '@/screens/LimbMeasureScreen';
 import PersonalDetailsScreen from '@/screens/PersonalDetailsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
@@ -60,7 +61,9 @@ import RemindersScreen from '@/screens/RemindersScreen';
 import ReportPreviewScreen from '@/screens/ReportPreviewScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import StudyViewerScreen from '@/screens/StudyViewerScreen';
-import TestsScreen from '@/screens/TestsScreen';
+/* TestsScreen (the test-choice carousel) is intentionally NOT imported:
+   v0.59.0 gave its dock slot to Insights. The screen is kept in the tree so
+   the choice UI is not lost, and a patient starts a test from HOME. */
 import { DARK, LIGHT } from '@/theme/tokens';
 import { useIsDark } from '@/theme/useTheme';
 
@@ -69,7 +72,7 @@ const Stack = createNativeStackNavigator();
 
 const TABS = {
   History: HistoryScreen,
-  Tests: TestsScreen,
+  Insights: InsightsScreen,
   Home: HomeScreen,
   Chat: ChatScreen,
   Profile: ProfileScreen,
@@ -177,6 +180,8 @@ export default function RootNavigator() {
 }
 
 // v3.4.0 — Adds the ReportPreview route, pushed from the study viewer.
+// v3.4.0 — Dock slot 2 routes to Insights (the ECG ID). TestsScreen is still
+//          in the tree and deliberately unrouted — a test starts from HOME.
 // v3.3.0 — Adds the PersonalDetails route, pushed from Profile.
 // v3.2.0 — Adds the Reminders route, pushed from Settings.
 // v3.1.0 — Adds the StudyViewer route (Scan History's reading screen) above the

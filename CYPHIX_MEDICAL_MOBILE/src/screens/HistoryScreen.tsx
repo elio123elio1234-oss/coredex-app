@@ -72,9 +72,7 @@ import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import GlassSurface, { IS_LIQUID_GLASS } from '@/components/atoms/GlassSurface';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
-import SegmentedTabs from '@/components/molecules/SegmentedTabs';
 import StudyCard from '@/components/molecules/StudyCard';
-import EcgIdentityPanel from '@/components/organisms/EcgIdentityPanel';
 import PatientShell, { shellPaddingH } from '@/components/templates/PatientShell';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
 import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
@@ -88,6 +86,7 @@ import {
   useCreateRecordingMutation,
   useListRecordingsQuery,
 } from '@/services/api/endpoints/recordingApi';
+import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import { dockFootprint } from '@/navigation/dockMetrics';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
@@ -109,19 +108,17 @@ const CONTENT_TOP_GAP = 14;
 
 /* ── The header's height BEFORE it has been measured ──
    It is measured (`onLayout`) because it grows a count line, a progress
-   clause, a tab row and an error banner — but the first frame paints
-   before any measurement exists, and a flat constant there was wrong by
-   ~35 pt on a notched phone, which is a visible jolt as the list drops
-   into place. These are the same blocks the bar is built from, so the
-   estimate lands within a point or two and the correction is invisible. */
+   clause and an error banner — but the first frame paints before any
+   measurement exists, and a flat constant there was wrong by ~35 pt on a
+   notched phone, which is a visible jolt as the list drops into place.
+   These are the same blocks the bar is built from, so the estimate lands
+   within a point or two and the correction is invisible.
+   ★ v0.59.0 dropped the `withTabs` term along with the sub-tab itself. */
 const EST_TITLE = 36;
 const EST_COUNT = 20;
-const EST_TABS = 56;
 
-function estimateHeaderH(safeTop: number, withCount: boolean, withTabs: boolean): number {
-  return (
-    safeTop + 6 + EST_TITLE + (withCount ? EST_COUNT : 0) + (withTabs ? EST_TABS : 0) + HEADER_PAD_BOTTOM
-  );
+function estimateHeaderH(safeTop: number, withCount: boolean): number {
+  return safeTop + 6 + EST_TITLE + (withCount ? EST_COUNT : 0) + HEADER_PAD_BOTTOM;
 }
 
 export default function HistoryScreen() {
@@ -137,15 +134,6 @@ export default function HistoryScreen() {
   const sync = useSync();
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [tab, setTab] = useState<'studies' | 'insights'>('studies');
-  /** Insights is mounted on its first visit and never unmounted after — the
-      panel is kept alive so returning to Studies is not a rebuild. */
-  const [insightsSeen, setInsightsSeen] = useState(false);
-  const selectTab = useCallback((next: 'studies' | 'insights') => {
-    if (next === 'insights') setInsightsSeen(true);
-    setTab(next);
-  }, []);
-
   /* A patient sees only their own studies — as the QUERY ARGUMENT, never as
      client-side filtering, so the server can enforce it unchanged. */
   const selfOnly = !can('history:read') && can('history:read:self');
@@ -308,14 +296,9 @@ export default function HistoryScreen() {
       : 'rgba(255, 255, 255, 0.64)';
 
   const empty = !list.data || list.data.length === 0;
-  const showTabs = !list.isLoading && !list.isError && !empty;
-  /* Which pane is on show. Not simply `tab`: the switch itself disappears
-     while the list is loading, erroring or empty, and a stale `insights`
-     would then hide BOTH panes and leave an empty screen. */
-  const activeTab = showTabs ? tab : 'studies';
   /* The measurement once it exists, an estimate built from the same blocks
      until then — see `estimateHeaderH`. */
-  const headerH = measuredHeaderH || estimateHeaderH(insets.top, !empty, showTabs);
+  const headerH = measuredHeaderH || estimateHeaderH(insets.top, !empty);
   /** Where content actually starts: under the glass, plus air. */
   const contentTop = headerH + CONTENT_TOP_GAP;
   /* One expression for the state, read by the RefreshControl (which owns
@@ -374,7 +357,13 @@ export default function HistoryScreen() {
             insufficient={item.summary.insufficient}
             annotationCount={item.annotations.length}
             hasNote={Boolean(item.note && item.note.trim() !== '')}
-            verdict={digest ? digest.screeningLevel : undefined}
+            /* ★ v0.59.0 — no verdict on a row. It was the same screening
+               engine the Findings tab used, so a build that "only shows
+               measurements" cannot go on printing "Clear" beside every
+               study. `undefined` is the shape the card already had for a
+               study whose digest has not been computed yet, so nothing
+               downstream changes. */
+            verdict={INTERPRETATION_ENABLED && digest ? digest.screeningLevel : undefined}
             /* The digest's own array, never a wrapper object — see StudyCard. */
             previewSamples={digest?.previewSamples ?? null}
             previewSampleRate={digest?.previewSampleRate ?? 0}
@@ -406,31 +395,11 @@ export default function HistoryScreen() {
        measured height on their content inset. */
     <PatientShell scrollsUnderDock bleedHorizontal bleedTop>
       <View style={styles.root}>
-        {/* ── ★ THE TABS HIDE EACH OTHER, THEY DO NOT REPLACE EACH OTHER ──
-            Rendering one OR the other unmounts the list every time the
-            reader looks at Insights, and a remount replays everything that
-            makes a first paint expensive: every row's entrance animation,
-            every visible trace's sweep, the scroll position. Reported as
-            "a little flicker until it all comes up, every time I go back
-            to Studies" — and it was, literally, the screen being built
-            again. `display: none` keeps both alive; Yoga drops a hidden
-            pane from layout, so nothing is measured or drawn for it.
-
-            ⚠️ WHAT KEEPING A PANE ALIVE COSTS, AND WHAT IT DOES NOT.
-            It does NOT leak touches: RN sets `hidden` on the native view
-            for `display: none` (`UIView+ComponentViewProtocol.mm`), and a
-            hidden view cannot be hit-tested. It DOES mean every control
-            in the hidden pane still exists, still holds state, and can
-            still be reached by work that was already in flight — so the
-            pane is handed `active`, and anything that vibrates has to
-            honour it (`EcgIdentityPanel.active`). It also means Yoga lays
-            the pane out at ZERO, so any `onLayout` measurement inside one
-            must reject a zero (`BeatBuilder`).
-
-            Insights is still MOUNTED LAZILY. It runs the identity backfill,
-            which is real DSP over the whole history; paying for that on a
-            tab the reader has not opened would be the opposite trade. */}
-        <View style={[styles.pane, activeTab !== 'studies' && styles.paneHidden]}>
+        {/* ★ v0.59.0 — ONE pane. The Insights half of this screen became a
+            dock tab of its own (InsightsScreen), so the hide-don't-unmount
+            machinery that kept both alive went with it. This wrapper stays
+            because the header is absolutely positioned over it. */}
+        <View style={styles.pane}>
           {list.isLoading ? (
           <View style={{ paddingHorizontal: padH, paddingTop: contentTop }}>
             <HistorySkeleton />
@@ -543,28 +512,11 @@ export default function HistoryScreen() {
         )}
         </View>
 
-        {/* Mounted on first visit and kept alive from then on. */}
-        {insightsSeen && (
-          <View style={[styles.pane, activeTab !== 'insights' && styles.paneHidden]}>
-            <EcgIdentityPanel
-              patientId={subject}
-              paddingHorizontal={padH}
-              paddingTop={contentTop}
-              onScroll={onContentScroll}
-              /* ★ This pane is HIDDEN, not unmounted — so its controls
-                 outlive the tab. `active` is what stops the builder and
-                 the caliper vibrating into the Studies list. */
-              active={activeTab === 'insights'}
-              onOpenStudy={(id) => navigation.navigate('StudyViewer', { id })}
-            />
-          </View>
-        )}
-
         {/* ── The refresh indicator this screen draws itself ──
             Placed by us, at a position we own, so no floating header can
             hide it and no platform's idea of "the top of the scroll view"
             is involved. Non-interactive: it reports, it is not a button. */}
-        {refreshing && activeTab === 'studies' && (
+        {refreshing && (
           <View
             pointerEvents="none"
             style={[styles.refreshBadgeRow, { top: headerH + 10 }]}
@@ -631,8 +583,8 @@ export default function HistoryScreen() {
 
               {/* Import lives on the LIST, not inside a study: it CREATES a
                   study, and an action that adds a row belongs where the rows
-                  are. Hidden on Insights — nothing there is a row. */}
-              {features.has('exportRaw') && activeTab === 'studies' && (
+                  are. */}
+              {features.has('exportRaw') && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={tr('histImport')}
@@ -651,23 +603,6 @@ export default function HistoryScreen() {
                 </Pressable>
               )}
             </View>
-
-            {/* The switch appears only once there is a second view worth
-                switching to. Offering "Insights" over an empty history would
-                promise a baseline that cannot exist yet. */}
-            {showTabs && (
-              <View style={{ paddingHorizontal: padH, paddingTop: 10 }}>
-                <SegmentedTabs
-                  options={[
-                    { value: 'studies', label: tr('insTabStudies') },
-                    { value: 'insights', label: tr('insTabInsights') },
-                  ]}
-                  value={tab}
-                  onChange={selectTab}
-                  accessibilityLabel={tr('histTitle')}
-                />
-              </View>
-            )}
 
             {/* ★ INSIDE the glass, not below it. As a sibling of the list it
                 would be pushed down by the header's clearance and then the
@@ -713,10 +648,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* Yoga drops a `display: none` subtree from layout entirely — it is not
-     measured and not drawn — so the inactive tab costs nothing while
-     keeping its state, its scroll position and its animations. */
-  paneHidden: { display: 'none' },
   header: {
     position: 'absolute',
     top: 0,
@@ -782,6 +713,11 @@ const styles = StyleSheet.create({
 // v1.2.0 — Two tabs: the list, and INSIGHTS (the ECG ID). The switch appears
 //          only once there are studies, and Import hides on the tab where
 //          nothing is a row.
+// v2.0.0 — ONE list again. Insights left for a dock tab of its own, so the
+//          sub-tab, the hide-don't-unmount pane machinery and the header's
+//          tab-row height term all went with it. The verdict pill is off with
+//          the rest of the interpretation (INTERPRETATION_ENABLED): the row
+//          shows what was measured, not what was concluded.
 // v1.1.0 — Pull-to-refresh runs the SYNC rather than refetching this one query,
 //          so it also picks up studies deleted and notes written elsewhere.
 // v1.0.0 — The History list: cached summaries as cards, pull to refresh, CSV

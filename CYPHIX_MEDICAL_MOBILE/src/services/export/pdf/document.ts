@@ -45,8 +45,26 @@
    screen affordance; on a printer it is a solid navy rectangle nobody can
    write on. This document is always white paper with the brand's blue grid
    and navy trace.
+
+   ══ ★ v0.59.0 — THIS REPORT NO LONGER INTERPRETS ══
+   The app's Findings tab was switched off at the user's instruction ("the
+   app does not decode anything, it only shows measurements"), and the
+   paper had to follow — it is the same claim, made in the more durable
+   medium. A PDF leaves the phone, gets emailed, gets filed, and is read by
+   someone with no way to ask what the app was showing that day; a document
+   that carried a verdict the app itself no longer offers would be the one
+   copy of the claim still in circulation.
+
+   So `INTERPRETATION_ENABLED` is false and `screening` is never computed.
+   Everything downstream already had a null path — a SIMULATED recording is
+   not screened either, and has not been since v1.0.0 — so the report falls
+   into that same well-worn shape: no interpretation page, and the
+   identification grid printed on the statistics page instead. Nothing was
+   deleted. `screenLimbEcg`, `interpretationPages` and every rule behind
+   them are untouched, and flipping the constant restores the pages.
    ================================================================== */
 
+import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import {
   analyseLimbEcg,
   decodeChannel,
@@ -131,9 +149,10 @@ export function buildRecordingHtml(input: ReportInput): string {
      and is read by someone with no way to know the trace came from a bench
      generator rather than a heart. The interpretation page is omitted
      entirely and the letterhead carries the SIMULATED banner. */
-  const screening: EcgScreening | null = recording.isSimulated
-    ? null
-    : screenLimbEcg(leads, analysis, patient);
+  const screening: EcgScreening | null =
+    !INTERPRETATION_ENABLED || recording.isSimulated
+      ? null
+      : screenLimbEcg(leads, analysis, patient);
 
   /* ── Page numbering, counted before anything is built ── */
   /* ★ The representative beat, from the SAME function the ECG ID tab uses.
@@ -244,6 +263,9 @@ ${reference}
 }
 
 
+// v0.59.0 - No interpretation pages: the app stopped offering a verdict, and a
+//           PDF outlives the screen that made it. `INTERPRETATION_ENABLED` is
+//           the switch; the screening code is untouched behind it.
 // v1.1.0 - A simulated report carries the identification grid on its statistics
 //          page (it used to have none anywhere — the grid lived only on the
 //          interpretation page, which simulated studies rightly do not get).

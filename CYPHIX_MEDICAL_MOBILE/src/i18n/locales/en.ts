@@ -17,6 +17,9 @@ export const en = {
   /* ── Bottom dock (mobile's answer to the web sidebar) ── */
   dockHistory: 'History',
   dockTests: 'My Tests',
+  /* The dock slot that used to be "My Tests": same icon, and now the ECG
+     ID panel that History used to hold behind a sub-tab. */
+  dockInsights: 'Insights',
   dockHome: 'Home',
   dockChat: 'Chat',
   dockProfile: 'Profile',
@@ -164,11 +167,43 @@ export const en = {
   ampUnit: 'All values in millivolts (mV), median across analysed beats.',
 
   qSqi: 'Rhythm steadiness',
+  qSqiHint: 'How consistent the beat spacing was',
   qAnalysed: 'Signal analysed',
   qSampleRate: 'Sample rate',
 
   analysisDisclaimer:
     'Automated measurements produced by CYPHIX from a 6-lead limb recording. This report is not a diagnosis and does not replace clinical assessment. All values require review by a qualified clinician.',
+
+  /* ── Values tab — the redesigned measurements screen ──
+     Every tile on that screen is tappable, and what opens is one of these
+     sentences. They explain what a measurement IS; not one of them says
+     whether it is good, and that line is the whole reason the copy lives
+     here rather than being written per tile. */
+  valRrMeanHint: 'Beat-to-beat spacing',
+  valBeatsHint: 'Beats that passed quality checks',
+  valExportReport: 'Export Report',
+  valInfoDone: 'Done',
+  /* The seconds suffix on a chip — 's' in English, and NOT the same glyph
+     in Hebrew, which is why it is a key and not a literal. */
+  valSecUnit: 's',
+  valInfoTapHint: 'Tap any value to see what it measures',
+  valInfoHr: 'Derived from the mean R-to-R interval across the analysed beats.',
+  valInfoRr: 'Average time between consecutive R peaks — the same quantity as the heart rate, expressed as a duration.',
+  valInfoRange: 'The shortest and the longest beat interval in this recording.',
+  valInfoRhythm: 'How steady the spacing between beats is across the recording.',
+  valInfoSdnn: 'Standard deviation of all beat intervals — the overall spread of the rhythm.',
+  valInfoRmssd: 'Root mean square of successive differences: short-term beat-to-beat variation.',
+  valInfoPqrs: 'Share of analysed beats with a detectable P wave ahead of the QRS complex.',
+  valInfoBeats: 'Number of beats that passed quality checks and fed into every value on this page.',
+  valInfoPr: 'Time from atrial to ventricular activation.',
+  valInfoQrs: 'Ventricular depolarisation time.',
+  valInfoQt: 'Total ventricular depolarisation and recovery.',
+  valInfoQtcB: "QT corrected for rate using Bazett's formula.",
+  valInfoQtcF: "QT corrected using Fridericia's formula, less rate-sensitive than Bazett.",
+  valInfoSqi: 'How consistent the beat-to-beat timing was across the analysed signal.',
+  valInfoAxis: 'The direction the mean electrical impulse travels through the heart, in the frontal plane.',
+  valInfoNetI: 'The horizontal component of the mean QRS vector, measured in lead I.',
+  valInfoNetAvf: 'The vertical component of the mean QRS vector, measured in aVF.',
 
   /* ── Patient card (Profile tab) ── */
   profileDetails: 'Details',
@@ -1360,6 +1395,9 @@ export type TranslationKey = keyof typeof en;
 //          names, the blind spots and the disclaimer. Its copy rule is stricter
 //          than the rest of the file and is written at the top of the block:
 //          this is the screen someone reads while frightened.
+// v1.3.0 — Adds the Values screen's copy (`val*`): a sentence per measurement
+//          saying what it IS, and never whether it is good. Plus `dockInsights`
+//          for the dock slot that used to say "My Tests".
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.

@@ -1,8 +1,64 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.58.7';
-export const APP_BUILD_LABEL = 'the builder has no touch handler at all while you are on Studies';
+export const APP_VERSION = '0.59.0';
+export const APP_BUILD_LABEL = 'this build measures, it does not decode - and VALUES looks like it';
 
+// v0.59.0 - Three changes the user asked for, and one they did not have to.
+//
+//           1. FINDINGS IS OFF. "The app does not decode anything, it only
+//              shows measurements." That is a claim about the product, not
+//              about one screen, so it is ONE flag - INTERPRETATION_ENABLED in
+//              config/featureFlags.ts - read by every surface that would
+//              otherwise make the claim: the viewer's third tab, the verdict
+//              pill on every History row, the digest backfill that computed
+//              that pill, and the PDF's interpretation pages.
+//              ★ Nothing was deleted. screenLimbEcg, all 43 rules,
+//              EcgScreeningSheet, the "why" sheets and interpretationPages are
+//              untouched and still correct. Flip the flag and all four come
+//              back together, which is the only way "for now" means what it
+//              says.
+//              The PDF mattered most: it leaves the phone, gets emailed, gets
+//              filed, and is read later by someone with no way to ask what the
+//              app was showing that day. A document carrying a verdict the app
+//              no longer offers would be the last copy of that claim still in
+//              circulation.
+//              The verdict pill was NOT in the request - it was found while
+//              doing the rest, raised, and removed on the user's answer. A
+//              coloured verdict on every row is decoding; it was simply not in
+//              the tab that had been named.
+//
+//           2. THE DOCK'S SECOND SLOT SWAPPED. "My Tests" -> "Insights", same
+//              glyph. It opens the ECG ID, which used to live behind a sub-tab
+//              inside History; History is one list again, and the
+//              hide-don't-unmount machinery that kept both panes alive - and
+//              cost five rounds of touch bugs, v0.58.2 through v0.58.7 - went
+//              with the sub-tab. TestsScreen is kept in the tree and
+//              deliberately unrouted: a test starts from the HOME button,
+//              which is the control that has always started one.
+//
+//           3. VALUES WAS REDESIGNED, from the handoff. It was the web's
+//              printed measurement form, ported line for line, being read on a
+//              phone by a patient - reported as "very old-fashioned", which it
+//              was. Now the rate is a hero card with the study's own lead II
+//              under it, the sections are told apart by colour on translucent
+//              cards over a fixed glow field, and every value is tappable for
+//              one sentence saying what the quantity IS.
+//              ★ Never whether it is good. Colour on that screen sections, it
+//              never grades: the rhythm tile is amber when the rhythm is
+//              regular, the steadiness ring is mint at 12 % and at 98 %, the
+//              reference band is one tint at any value. Those are three places
+//              the measurements-only rule could have been broken as styling,
+//              and each is argued in the file that would have to change.
+//              Two departures from the handoff, both recorded in PARITY.md:
+//              the cards are translucent GRADIENTS rather than eight blur
+//              views (a 26 px blur of a smooth glow field is barely a blur,
+//              and eight of them in a moving scroller is not free), and the
+//              hero number is flat crimson rather than gradient-filled text -
+//              RN has no background-clip:text, and the only ways to fake it
+//              are a native dependency (which would make this a 40-minute
+//              rebuild instead of a 1-minute OTA) or SVG text (which gives up
+//              tabular figures).
+//
 // v0.58.7 - "the touch stops working on this bar when you go to STUDIES and then
 //           come back to INSIGHTS - it is like the bar stops existing."
 //           ★ THE FIFTH ROUND, AND THE FIRST ONE THAT IS NOT A NEW CANDIDATE.

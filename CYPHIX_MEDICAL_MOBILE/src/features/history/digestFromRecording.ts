@@ -40,6 +40,7 @@ import {
   type ScreeningContext,
   type StoredRecording,
 } from '@cyphix/shared';
+import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import { DIGEST_FILTERS, type StudyDigest } from '@/services/db/studyDigestCache';
 
 /** Window the preview shows. Four seconds at a fixed time scale is the
@@ -121,9 +122,15 @@ export function digestFromRecording(
 
   const analysis = analyseLimbEcg(filtered, recording.sampleRate);
 
-  const screeningLevel = recording.isSimulated
-    ? null
-    : screenLimbEcg(filtered, analysis, context).level;
+  /* ★ v0.59.0 — skipped entirely while this build does not interpret.
+     Not merely hidden: this runs 43 rules over six leads for EVERY study in
+     the history, on the JS thread, the first time the list is opened, and
+     the result would go straight into a cache nothing reads. The null it
+     writes is the same null a simulated recording has always produced. */
+  const screeningLevel =
+    !INTERPRETATION_ENABLED || recording.isSimulated
+      ? null
+      : screenLimbEcg(filtered, analysis, context).level;
 
   /* The preview window: [0.5 s, 4.5 s) when the recording affords it,
      from 0 when it is short. Lead II — the rhythm lead, the one the rate
@@ -151,6 +158,9 @@ export function digestFromRecording(
   };
 }
 
+// v1.1.0 — The screening pass is skipped entirely while INTERPRETATION_ENABLED
+//          is false: 43 rules over six leads per study, for a label nothing
+//          renders, is work nobody asked for. Same null a simulation produces.
 // v1.0.0 — Stored recording → History digest (verdict + 4 s lead II preview +
 //          bpm), through the PINNED digest filter chain, as a plain function so
 //          a backfill can loop over dozens of them.

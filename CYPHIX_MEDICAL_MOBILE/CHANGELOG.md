@@ -1,5 +1,126 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.59.0 - 2026-08-22 - this build measures, it does not decode - and VALUES looks like it
+
+Three changes the user asked for, and a fourth that fell out of the first one.
+
+### 1. Findings is off, everywhere it was
+
+*"I don't want the FINDINGS tab right now - my app doesn't decode anything, it
+only shows measurements."*
+
+That sentence is about the **product**, not about one tab, and the tab was not
+the only place the product was decoding. So it is one constant -
+`INTERPRETATION_ENABLED` in `config/featureFlags.ts`, currently `false` - read
+by all four surfaces that made the claim:
+
+| where | what stopped |
+|---|---|
+| `StudyViewerScreen` | the third segment and its pane; `useScreening` no longer runs at all |
+| `HistoryScreen` | the *Clear / Attention / Urgent* pill on every row |
+| `digestFromRecording` | the background pass that computed that pill for every study |
+| `pdf/document.ts` | the report's interpretation pages |
+
+**Nothing was deleted.** `screenLimbEcg`, all 43 rules, `EcgScreeningSheet`, the
+"why" sheets and `interpretationPages` are untouched and still correct. Flip the
+constant and all four come back together - which is the only way "right now"
+means what it says.
+
+Two of those four are worth their own paragraph.
+
+**The PDF mattered most, and it is why the flag is not just a UI switch.** A
+document leaves the phone, gets emailed, gets filed, and is read months later by
+someone who cannot ask what the app was showing that day. A report carrying a
+verdict the app itself no longer offers would be the last copy of that claim
+still in circulation. The report now falls into the path a **simulated**
+recording has always taken - never screened, since v1.0.0 - so this is a
+well-worn shape rather than a new one: no interpretation page, and the
+identification grid printed on the statistics page instead. The page arithmetic
+did not change, because `interpPages` was already `0` on that path.
+
+**The History pill was not in the request.** It was found while doing the rest,
+raised, and removed on the user's answer. It came from the same screening
+engine, so a build that "only shows measurements" could not go on printing a
+coloured verdict beside every study - it simply was not in the tab that had been
+named. Skipping it in the digest is also a real saving: 43 rules over six leads,
+per study, for every study in the history, on the JS thread, the first time the
+list is opened.
+
+**A patient now lands on Values.** They used to land on Findings - the answer
+first. With no answer to give, the landing tab is the screen that was redesigned
+for exactly that reader. A clinician still lands on the trace.
+
+### 2. The dock's second slot: "My Tests" -> "Insights"
+
+Same glyph, new word, new destination. It opens the **ECG ID**, which used to
+live behind a `Studies | Insights` sub-tab inside History. History is one list
+again.
+
+That deletion is quietly the best part of this release. The hide-don't-unmount
+machinery that kept both History panes alive - `display: none`, a lazily mounted
+pane whose controls outlived their own tab, an `active` prop that existed only to
+stop a hidden pane's haptics firing into the visible one - is **gone with the
+sub-tab**. It cost five consecutive releases of touch bugs (v0.58.2 through
+v0.58.7) and every one of them was a symptom of a pane that was hidden rather
+than unmounted. A tab screen is unmounted by the navigator when you leave it, so
+there is nothing left to defend against.
+
+`TestsScreen` (the test-choice carousel) is **kept in the tree and deliberately
+unrouted**. A test is started from the HOME button, which is the control that has
+always started one.
+
+### 3. The VALUES tab, redesigned
+
+Reported as *"very old-fashioned"*, and it was: it was `EcgAnalysisSheet` - the
+web report's printed measurement form, ported to the phone almost line for line
+- being read on a phone by a patient rather than on paper by a cardiologist.
+Five bordered boxes of grey label/value pairs, a table you had to drag sideways
+to finish reading, and nothing on it saying which numbers mattered.
+
+Rebuilt from the design handoff: the rate as a hero card with the study's own
+lead II under it, sections told apart by colour on translucent cards over a
+fixed glow field, and **every value tappable** for one sentence saying what the
+quantity is.
+
+`EcgAnalysisSheet` is not deleted either - it is still what the report preview
+and the PDF lay their measurements out from, where a printed form is exactly the
+right answer.
+
+**★ The rule that survived the repaint.** Colour on that screen SECTIONS, it
+never GRADES. The rhythm tile is amber when the rhythm is regular; the
+steadiness ring is mint at 12 % and at 98 %; the reference band is one flat tint
+at any value. Nothing takes its colour from whether a measurement is inside or
+outside a range - that would be an interpretation, drawn as styling, in the one
+direction this app may not go. It is the easiest rule here to break by accident,
+so the reason is written in each of the three files that would have to change.
+
+Two deliberate departures from the handoff, both in `PARITY.md`:
+
+- **The cards are translucent gradients, not blur views.** Eight `BlurView`s in
+  one scroller is the most expensive thing a phone can composite while a list
+  moves. What the blur is *for* is that a card takes a hint of the colour behind
+  it - and behind it is a smooth radial field, which a 26 px blur barely changes.
+  `GlassSurface` stays where it earns itself: the header, sheets, the dock.
+- **The hero number is flat crimson, not gradient-filled text.** RN has no
+  `background-clip: text`. The alternatives are a masked view - a native
+  dependency, which would turn this from a 1-minute OTA into a 40-minute rebuild
+  - or SVG text, which gives up tabular figures and the metrics that keep "82"
+  and "BPM" on one baseline. The handoff's gradient ends ~90 % crimson anyway.
+
+The CTA is named **Export Report** (the handoff said "View Report") and makes the
+same preview-or-share choice the ⋯ menu does, so it cannot dead-end on a build
+that received this over the air.
+
+### What this release does NOT prove
+
+Per root `CLAUDE.md` §6.4: it typechecks, both platforms bundle, and
+`expo-doctor` passes. That means the code is well-formed. It does not mean the
+Values screen works - tap targets, the glow field staying still under a moving
+scroll, the hero trace's `onLayout` width, and whether seven amplitude columns
+fit 390 pt **in Hebrew** are all things only a phone can answer. The five checks
+are listed in `PARITY.md` under Open verification debt, and every new row there
+is `🔬` until someone has touched it.
+
 ## v0.58.7 - 2026-08-15 - the builder has no touch handler at all while you are on Studies
 
 *"The touch stops working on this bar when you go to STUDIES and then come back
