@@ -53,6 +53,7 @@ import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
+import { useOtaUpdate } from '@/features/updates/useOtaUpdate';
 import { useAuth } from '@/features/auth/useAuth';
 import { useBle } from '@/features/ble/useBle';
 import { usePreferences } from '@/features/preferences/usePreferences';
@@ -117,6 +118,7 @@ export default function SettingsScreen() {
   const { prefs, setTheme, setBackground, setNotification, setCareMode } = usePreferences();
   const { t: tr, lang, setLang, rtl } = useTranslation();
   const ble = useBle();
+  const ota = useOtaUpdate();
   const { user, logout } = useAuth();
   const dispatch = useAppDispatch();
   const debugRole = useAppSelector((st) => st.auth.debugRole);
@@ -536,6 +538,49 @@ export default function SettingsScreen() {
           description={tr('setSecAboutDesc')}
         >
           <SettingsRow first label={tr('setAboutVersion')} value={APP_VERSION} />
+          {/* ★ v0.63.0 — THE UPDATE ROW.
+              expo-updates was installed, configured and delivering, and
+              nothing in the app ever called it — so its defaults ran the
+              show: check on a cold launch, apply on the NEXT one. Every
+              published update therefore needed two cold launches, and
+              "downloading", "downloaded and waiting for a relaunch" and
+              "never published at all" looked identical from the phone.
+              Reported as "I opened and closed twice and it is still stuck
+              on 61, why?" — and the answer was the third state, which no
+              screen could show.
+              The row names the state and, when an update is already on the
+              device, becomes the relaunch. It is a TAP and never automatic:
+              reloadAsync() tears down the JS context, and this app can be
+              holding a recording. Settings is the one screen where nothing
+              is being recorded. */}
+          <SettingsRow
+            label={tr('setAboutUpdate')}
+            value={
+              ota.status === 'unsupported'
+                ? tr('setUpdDev')
+                : ota.status === 'ready'
+                  ? tr('setUpdReady')
+                  : ota.status === 'downloading'
+                    ? tr('setUpdDownloading')
+                    : ota.status === 'checking'
+                      ? tr('setUpdChecking')
+                      : ota.status === 'error'
+                        ? tr('setUpdError')
+                        : ota.status === 'current'
+                          ? tr('setUpdCurrent')
+                          : tr('setUpdCheck')
+            }
+            description={ota.status === 'ready' ? tr('setUpdReadyDesc') : undefined}
+            onPress={
+              ota.status === 'unsupported'
+                ? undefined
+                : ota.canApply
+                  ? ota.apply
+                  : ota.check
+            }
+            disabled={ota.status === 'checking' || ota.status === 'downloading'}
+            layout="stack"
+          />
           {/* The build label is a developer identifier, not patient copy —
               it stays in English on purpose so a bug report quotes the same
               string the changelog does. `stack`: it is a sentence, and a
@@ -601,6 +646,13 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.1.0 — About carries an APP UPDATE row. expo-updates was installed,
+//          configured and delivering, and nothing in this app ever called
+//          it, so its defaults ran the show: check on a cold launch, apply
+//          on the NEXT one. Every update needed two cold launches, and from
+//          the phone "downloading", "downloaded and waiting" and "never
+//          published" were indistinguishable. The row names the state and,
+//          when the update is already on the device, becomes the relaunch.
 // v3.0.0 — The page stops fighting its own width: wide controls (Theme, Care
 //          connection, role chips, the long About values) use the new
 //          SettingsRow `stack` layout instead of painting over their labels;

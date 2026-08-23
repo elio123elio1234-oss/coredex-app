@@ -394,6 +394,16 @@ turns four surfaces off together, and turning it back on restores all four.
 | ↳ Values — "Export Report" CTA | ✅ web has a print button | 🔬 | 🔬 | Named at the user's request (the handoff said "View Report"). It makes the **same** choice the ⋯ menu makes: preview when this binary carries the WebView, direct share when it does not, because a button must never dead-end on a build that received this over the air. Hidden entirely when the reader lacks `exportPdf` |
 | ↳ Values — the trace is the real lead II | — handoff draws a decorative path | 🔬 | 🔬 | The handoff repeats a hand-written ECG path. That is right for a mock-up and the one thing that must not be copied: a decorative waveform on the same card as this patient's measured rate is a picture of somebody else's heart under their number. Reduced by **peak-preserving decimation**, not averaging — averaging flattens the R wave, which is the one feature that makes a 56 pt trace legible |
 
+## v0.63.0 — the app can say an update is waiting
+
+| Feature | Web | iOS | Android | Notes |
+|---|---|---|---|---|
+| **App-update row (Settings → About)** | ➖ n/a | 🔬 | 🔬 | **Deliberate divergence: web has no equivalent and needs none.** A web app reloads into the newest build on the next navigation; there is no downloaded-and-waiting state to report because there is no install. This row exists only because `expo-updates` applies on the NEXT cold launch |
+| ↳ Root cause | — | — | — | `expo-updates` was installed, configured and delivering, and **nothing in the app ever called it** — so its defaults ran unassisted (`ON_LOAD` check, `fallbackToCacheTimeout: 0`, apply on the next cold launch). Two cold launches per update, and from the phone "downloading", "downloaded and waiting" and "never published" are indistinguishable. That last part is the defect |
+| ↳ Checks on RESUME, not only cold launch | — | 🔬 | 🔬 | `expo-updates` checks on a cold launch only, so a phone that is never fully killed can sit for days on a stale bundle |
+| ↳ **Never auto-reloads** | — | ✅ decided | ✅ decided | ★ `reloadAsync()` tears down the JS context. On a device that may be holding — or streaming — a recording, an automatic reload is data loss with a friendly name, fired whenever the CDN answers. The reload is a TAP, on the one screen where nothing is being recorded. The library's passive apply-on-next-launch is unchanged |
+| ↳ The states that matter are unreachable here | — | 🔬 | 🔬 | ⚠️ "ready" and the resume check cannot be produced on this machine: they need a real installed build with an update behind it. Typecheck and bundle prove neither |
+
 ## v0.62.0 — Insights says what it is showing
 
 | Feature | Web | iOS | Android | Notes |

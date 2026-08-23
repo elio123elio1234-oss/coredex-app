@@ -693,6 +693,19 @@ export const en = {
      about a clean ECG trace says it is an AVERAGE of many recordings, and
      every number below it means something different depending on whether
      the reader thinks they are looking at that or at their last study. */
+  /* ★ v0.63.0 — the update row. English like the build label and the
+     material beside it: a bug report should quote a string that can be
+     grepped for. */
+  setAboutUpdate: 'App update',
+  setUpdCheck: 'Check for an update',
+  setUpdChecking: 'Checking…',
+  setUpdDownloading: 'Downloading…',
+  setUpdCurrent: 'You have the newest version',
+  setUpdReady: 'Ready — tap to restart now',
+  setUpdReadyDesc:
+    'A new version is already on this phone. It would arrive on its own the next time you open the app.',
+  setUpdError: 'Could not check just now — tap to try again',
+  setUpdDev: 'Not applicable in a development build',
   insSignatureTitle: 'Your heart’s fingerprint',
   insSignatureBody:
     'One beat, averaged from all your recordings — every new study is compared against it.',
@@ -1385,6 +1398,9 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.23.0 — Copy for the About page's app-update row: check, checking,
+//           downloading, up to date, ready-tap-to-restart, and the honest
+//           dev-build case.
 // v1.22.0 — INSIGHTS: the signature curve finally has a NAME ("your heart's
 //           fingerprint") plus one line saying what it is made of, and the
 //           lead row has a caption. Nothing about a clean ECG trace says it

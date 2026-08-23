@@ -1,8 +1,42 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.62.0';
-export const APP_BUILD_LABEL = 'the fingerprint has a name, and the six leads this device will never record are gone';
+export const APP_VERSION = '0.63.0';
+export const APP_BUILD_LABEL = 'the app can tell you an update is waiting, instead of making you guess';
 
+// v0.63.0 - ★ THE APP HAD expo-updates INSTALLED, CONFIGURED, DELIVERING -
+//           AND NEVER CALLED IT ONCE.
+//
+//           Reported: "I opened and closed twice and it is still stuck on 61.
+//           Why?" The publish was correct - the newest group was on branch
+//           production at the same runtime that had just delivered 0.61.0 -
+//           and the phone was right too. The gap between them is the
+//           library's defaults, which nothing here had ever overridden or
+//           supplemented:
+//
+//             checkAutomatically      ON_LOAD  - check on every cold launch
+//             fallbackToCacheTimeout  0        - never make the user wait
+//
+//           So the app launches instantly on the bundle it already has,
+//           downloads the new one in the BACKGROUND, and applies it on the
+//           NEXT cold launch. Every published update costs two cold launches,
+//           and the second only helps if the first stayed open long enough to
+//           finish downloading. Worse: from the phone, THREE different
+//           situations look identical - downloading, downloaded-and-waiting,
+//           and never-published. The reported bug was the middle one, and no
+//           screen in the app could show it.
+//
+//           `useOtaUpdate` + a row in About now name the state, check on
+//           resume as well as on cold launch (expo-updates only does the
+//           latter, which is how a resumed app sits for days on a stale
+//           bundle), and turn the waiting update into a tap.
+//
+//           ★ IT NEVER RELOADS BY ITSELF. reloadAsync() tears down the JS
+//           context; on a device that may be holding - or streaming - a
+//           recording, an automatic reload is data loss with a friendly name,
+//           fired at whatever moment the CDN happens to answer. The reload is
+//           a tap, on the one screen where nothing is being recorded, and the
+//           library's passive apply-on-next-launch is left exactly as it was.
+//
 // v0.62.0 - INSIGHTS SAYS WHAT IT IS SHOWING.
 //
 //           1. V1-V6 ARE HIDDEN, behind PRECORDIAL_LEADS_ENABLED. The

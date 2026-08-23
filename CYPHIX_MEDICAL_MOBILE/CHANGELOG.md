@@ -1,5 +1,64 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.63.0 - 2026-08-23 - the app can tell you an update is waiting, instead of making you guess
+
+> *"I opened and closed twice and it is still stuck on 61. Why?"*
+
+Because the app has had `expo-updates` installed, configured and delivering
+since day one — and **nothing in it has ever called the library.** That leaves
+its defaults in charge, and they are:
+
+| default | meaning |
+|---|---|
+| `checkAutomatically: ON_LOAD` | check the server on every **cold** launch |
+| `fallbackToCacheTimeout: 0` | never make the user wait for that check |
+
+Together: the app launches instantly on the bundle it already has, downloads
+the new one **in the background**, and applies it on the **next** cold launch.
+So every published update costs **two** cold launches — and the second one
+only helps if the first stayed open long enough for the download to finish.
+
+The publish was fine (`eas channel:view production` named the new group, at
+the same runtime that had delivered v0.61.0 an hour earlier) and the phone was
+fine. What was missing is that **three completely different situations look
+identical from the phone**:
+
+1. still downloading,
+2. downloaded and waiting for a relaunch,
+3. never published at all.
+
+The reported bug was **(2)**, and no screen in this app could show it. That is
+the actual defect — not the two-launch cycle, which is a reasonable default,
+but that the app had nothing to say about it.
+
+### What changed
+
+`useOtaUpdate` + one row in **Settings → About**:
+
+- names the state — checking · downloading · **ready** · up to date · couldn't
+  check · not applicable in a dev build;
+- checks **on resume** as well as on cold launch. `expo-updates` only checks on
+  a cold launch, which is how a phone that never gets fully killed can sit for
+  days on a stale bundle;
+- when the update is already on the device, the row **becomes the relaunch** —
+  one tap instead of a second launch nobody knew to make.
+
+### ★ It never reloads by itself
+
+`reloadAsync()` tears down the JS context. On a device that may be holding an
+unsaved recording — or streaming one right now — an automatic reload is data
+loss with a friendly name, and it would fire at whatever moment Expo's CDN
+happened to answer. So the reload is always a **tap**, on the one screen where
+nothing is being recorded, and the library's passive apply-on-next-launch is
+left exactly as it was.
+
+### Still not verified
+
+Typechecks and bundles. The interesting states (**ready**, and the resume
+check) cannot be produced on this machine at all — they need a real installed
+build with an update behind it, which is precisely the situation that has to
+be trusted least. `🔬` in PARITY.
+
 ## v0.62.0 - 2026-08-23 - the fingerprint has a name, and the six leads this device will never record are gone
 
 > *"In the INSIGHTS tab you can hide V1–V6 completely (because there won't be
