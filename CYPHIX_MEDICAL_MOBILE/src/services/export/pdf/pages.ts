@@ -26,6 +26,7 @@ import {
   buildEcgGrid,
   buildEcgPath,
   LIMB_LEAD_ORDER,
+  NOTCH_HZ,
   STANDARD_MM_PER_MV,
   STANDARD_MM_PER_SEC,
   type EcgAnalysis,
@@ -56,21 +57,8 @@ import {
   R_BAND_A,
   R_BAND_B,
   R_BODY,
-  R_CHIP_AMBER_BG,
-  R_CHIP_AMBER_FG,
-  R_CHIP_BG,
-  R_CHIP_FG,
   R_FAINT,
-  R_HERO_A,
-  R_HERO_B,
-  R_HERO_C,
-  R_HERO_KICK,
-  R_HERO_N1,
-  R_HERO_N2,
-  R_HERO_TXT,
-  R_HERO_UNIT,
   R_INK,
-  R_KICKER,
   R_MUTE,
   R_MUTE2,
   R_NUM,
@@ -118,6 +106,7 @@ import {
   MUTED,
   PAPER,
   RED,
+  RED_SOFT,
   SHEET_CAPTION_H,
   SLATE,
   SURFACE,
@@ -879,11 +868,16 @@ export function referencePage(
      showed, and which is the first thing a clinician uses to decide how
      much to trust every number before it. */
   const H_MAP_TITLE = 7;
-  const H_MAP = 62;
+  /* Breathes into whatever the study note leaves behind. The lead map is a
+     FIGURE, and a figure is the one thing on a page that absorbs spare
+     millimetres by getting better rather than by getting emptier. */
+  const H_MAP = note ? 84 : 96;
+  const H_PROC_TITLE = 7;
+  const H_PROC = 34;
   const H_QUAL_TITLE = 7;
   /* 44, not 34: six ruled rows are ~39.6 mm (see the statistics page's
      H_TILES), so the last one — RR range — printed cut in half. */
-  const H_QUAL = 44;
+  const H_QUAL = 48;
   /* ★ The blind-spots list comes from the SCREENING ENGINE, which this build
      does not run (INTERPRETATION_ENABLED). It was rendering as a heading
      over 34 mm of white space — a section that promises "what this test
@@ -899,6 +893,8 @@ export function referencePage(
   assertFits('reference', [
     H_MAP_TITLE,
     H_MAP,
+    H_PROC_TITLE,
+    H_PROC,
     H_QUAL_TITLE,
     H_QUAL,
     H_BLIND_TITLE,
@@ -916,16 +912,24 @@ export function referencePage(
 
   const map = `<div class="maprow">
     <div class="mapfig">
-      ${einthoven({ w: 76, h: 58, highlight: ['I', 'II', 'III'] })}
+      ${einthoven({ w: 96, h: note ? 74 : 88, highlight: ['I', 'II', 'III'] })}
     </div>
     <div class="mapcopy">
       <p>${esc(labels.leadMapCaption)}</p>
       <div class="wall"><b>II · III · aVF</b><span>${esc(labels.wallInferior)}</span></div>
       <div class="wall"><b>I · aVL</b><span>${esc(labels.wallLateral)}</span></div>
       <div class="wall wall-off"><b>V1–V6</b><span>${esc(labels.wallNotSeen)}</span></div>
-      ${leadII ? beatFigure({ w: 82, h: 20, signal: leadII, from, to, band: null, ink: BRAND }) : ''}
+      ${leadII ? beatFigure({ w: 84, h: note ? 26 : 38, signal: leadII, from, to, band: null, ink: BRAND }) : ''}
     </div>
   </div>`;
+
+  /* ★ The signal chain, stated on the paper for the first time. NOTCH_HZ is
+     interpolated rather than typed: it is a shared constant the firmware and
+     three apps agree on, and a printed document that hard-codes it is a copy
+     that will one day disagree with the filter that actually ran. */
+  const processing = `<div class="proc">${esc(
+    labels.procBody.replace('{notch}', String(NOTCH_HZ)),
+  )}</div>`;
 
   const blind = withBlind
     ? `<ul class="blind">${(screening as EcgScreening).blindSpots
@@ -967,6 +971,8 @@ export function referencePage(
     },
     block(H_MAP_TITLE, sectionTitle(labels.leadMapTitle)) +
       block(H_MAP, map) +
+      block(H_PROC_TITLE, sectionTitle(labels.procTitle)) +
+      block(H_PROC, processing) +
       block(H_QUAL_TITLE, sectionTitle(labels.statsQuality)) +
       block(H_QUAL, qualityTable) +
       (withBlind
@@ -986,7 +992,7 @@ export const REPORT_CSS = `
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: ${PAPER}; }
 body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Arial, sans-serif;
-       color: ${R_INK}; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+       color: ${INK}; -webkit-print-color-adjust: exact; print-color-adjust: exact;
        -webkit-font-smoothing: antialiased;
        font-variant-numeric: tabular-nums; }
 
@@ -1000,23 +1006,28 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
    padding hands the space back, so the band's height IN FLOW is exactly the
    16 mm HEADER_H has always reserved. The blue keyline under it is the
    report's accent running the full width of every sheet. */
-/* ★ v0.60.0 — the band is the HERO's gradient, not flat navy. The
-   measurements page opens with a deep plum-to-navy card, and a report whose
-   letterhead is a different dark to the block directly under it reads as two
-   documents stapled together. The gradient is the handoff's, converted to
-   hex in reportPalette.ts; BRAND_DEEP remains the first stop, so the
-   brand still speaks first. */
+/* ★ v0.61.0 — FLAT BRAND NAVY AGAIN. v0.60.0 painted this the handoff's
+   plum-to-navy gradient so it would match the measurements page's dark
+   hero. The hero is gone (see the masthead rule below), and the reasoning
+   was backwards regardless: the letterhead is where a document says whose
+   it is, so it is the last element that should borrow another product's
+   colour. This is the one dark band a CYPHIX sheet gets, and the blue
+   keyline under it is the report's accent running the width of every page. */
 .lh { height: 26mm; display: flex; align-items: flex-start; justify-content: space-between;
-      background: ${BRAND_DEEP};
-      background-image: linear-gradient(115deg, ${R_HERO_A} 0%, ${R_HERO_B} 55%, ${R_HERO_C} 100%);
+      background: ${BRAND_DEEP}; overflow: hidden;
       margin: -10mm -12mm 0; padding: 11mm 12mm 2mm;
       border-bottom: 0.8mm solid ${BLUE}; }
 .mark { line-height: 0; }
 .mark svg { display: block; }
 .ttl { font-size: 11pt; font-weight: 800; letter-spacing: 0.4px; margin-top: 1.8mm;
        color: ${PAPER}; text-transform: uppercase; }
-.lh-r { font-size: 7pt; color: #C3CDE2; text-align: right; line-height: 1.55;
-        max-width: 82mm; overflow: hidden; white-space: pre-line; }
+/* 1.3, not 1.55: four lines of subtitle at 1.55 are 17 mm in a 13 mm
+   space. Tightening the leading is what makes the longest real subtitle
+   (patient + recorded + duration/rate + a long device label) FIT rather
+   than merely get cut, which is the difference between a report that reads
+   and one that loses its device name. */
+.lh-r { font-size: 7pt; color: #C3CDE2; text-align: right; line-height: 1.3;
+        max-width: 82mm; max-height: 13mm; overflow: hidden; white-space: pre-line; }
 
 .body { height: ${BODY_H}mm; }
 .blk { overflow: hidden; }
@@ -1032,20 +1043,21 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 .stack > svg { display: block; }
 .ft { position: absolute; left: 12mm; right: 12mm; bottom: 8mm; height: 7mm;
       display: flex; align-items: flex-end; justify-content: space-between;
-      font-size: 6.6pt; color: ${R_MUTE2}; border-top: 0.35mm solid ${R_RULE};
+      font-size: 6.6pt; color: ${MUTED}; border-top: 0.35mm solid ${HAIRLINE};
       letter-spacing: 0.3px; }
-.ft-page { color: ${R_KICKER}; font-weight: 800; }
+.ft-page { color: ${BRAND}; font-weight: 800; }
 
 /* ★ THE SECTION RULE. Uppercase, letterspaced, on a rule that runs the full
    column — in the report's blue (v0.56.0), so every section opens with the
    same accent the letterhead closes with. */
-/* ★ v0.60.0 — the section rule becomes the redesign's KICKER: the same
-   letterspaced violet-grey label the measurements page opens each section
-   with, over a hairline instead of the old 0.45 mm blue rule. A heavy
-   accent rule under every heading was the loudest thing on the statistics
-   page, competing with the figures it was introducing. */
+/* ★ v0.60.0 dropped the 0.45 mm blue rule under every heading to a
+   hairline, and that part was right — a heavy accent rule was the loudest
+   thing on the statistics page, competing with the figures it introduced.
+   v0.61.0 keeps the lighter weight and takes the colour back: the label is
+   the wordmark's navy, not the handoff's violet-grey. One kicker language
+   across all four pages, in this product's ink. */
 .sec { font-size: 7pt; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase;
-       color: ${R_KICKER}; border-bottom: 0.25mm solid ${R_RULE}; padding-bottom: 1.2mm; }
+       color: ${BRAND}; border-bottom: 0.25mm solid ${HAIRLINE}; padding-bottom: 1.2mm; }
 
 /* ══════════════════════════════════════════════════════════════════
    THE MEASUREMENTS PAGE (v0.60.0) — the design handoff's A4.
@@ -1063,38 +1075,51 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
    figures are already on the body rule, which is most of what the mono was for.
    ══════════════════════════════════════════════════════════════════ */
 
-/* -- The band -- */
-.hero { height: 100%; border-radius: 3mm; padding: 4mm 5mm 3mm; color: ${R_HERO_TXT};
-        background: ${R_HERO_A};
-        background-image: linear-gradient(135deg, ${R_HERO_A} 0%, ${R_HERO_B} 55%, ${R_HERO_C} 100%); }
-.hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
+/* -- The masthead --
+
+   ★ v0.61.0 — NO SLAB. NO GRADIENT. NO DARK FILL BEHIND THE RATE OR THE
+   TRACE. Reported as ugly, and it was: v0.60.0 took the handoff literally
+   and printed a 44 mm plum-to-navy card, 3 mm below a 26 mm navy
+   letterhead. Two dark bands stacked at the top of a sheet is a poster, not
+   a clinical page, and the second one was carrying the number the page
+   exists for.
+
+   So the rate is set straight on the paper in the wordmark's navy, over a
+   hairline, with the trace beneath it in the SAME navy the six-lead sheets
+   use — it is the same signal, and giving it a second colour on a second
+   page implied it was a second thing.
+
+   The gradient-clipped headline went with the band. background-clip:text
+   only ever existed to make light rose type legible on plum; it is the most
+   fragile declaration in this stylesheet (an engine without it renders the
+   number INVISIBLE, which is why it needed an @supports guard at all), and
+   on white paper navy type needs none of that machinery. Deleting a
+   load-bearing guard is only safe because the thing it was guarding is gone
+   too. */
+.hero { height: 100%; color: ${INK}; }
+.hero-top { display: flex; justify-content: space-between; align-items: flex-end; }
 .hero-k { font-size: 6pt; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;
-          color: ${R_HERO_KICK}; margin-bottom: 1.4mm; white-space: nowrap; }
+          color: ${MUTED}; margin-bottom: 1.6mm; white-space: nowrap; }
 .hero-rate { display: flex; align-items: baseline; gap: 2mm; }
-/* The rate is gradient-filled where the engine supports it and a solid
-   light rose where it does not. The @supports guard is load-bearing: the
-   naive version sets color:transparent unconditionally, and on an engine
-   without background-clip:text the headline number is INVISIBLE — the one
-   number the page exists for, blank, on the oldest devices. */
-.hero-n { font-size: 30pt; font-weight: 800; line-height: 0.85; letter-spacing: -1px;
-          color: ${R_HERO_N1}; }
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .hero-n { background-image: linear-gradient(100deg, ${R_HERO_N1}, ${R_HERO_N2});
-            -webkit-background-clip: text; background-clip: text;
-            -webkit-text-fill-color: transparent; }
-}
-.hero-u { font-size: 9pt; font-weight: 600; color: ${R_HERO_UNIT}; letter-spacing: 0.4px; }
+.hero-n { font-size: 32pt; font-weight: 800; line-height: 0.85; letter-spacing: -1px;
+          color: ${BRAND_DEEP}; }
+.hero-u { font-size: 9.5pt; font-weight: 700; color: ${SLATE}; letter-spacing: 0.4px; }
 .hero-chips { display: flex; gap: 1.4mm; align-items: center; }
-.mchip { font-size: 6.2pt; font-weight: 700; padding: 1mm 2.4mm; border-radius: 4mm;
-         white-space: nowrap; }
+/* Outlined pills on white, not solid chips on dark. */
+.mchip { font-size: 6.2pt; font-weight: 700; padding: 0.9mm 2.4mm; border-radius: 4mm;
+         white-space: nowrap; background: ${PAPER}; color: ${SLATE};
+         border: 0.2mm solid ${HAIRLINE}; }
 /* Amber because the RHYTHM family is amber on every surface of this product
    — not because a rhythm is worth flagging. It is amber for "Regular" too. */
-.mchip-amber { background: ${R_CHIP_AMBER_BG}; color: ${R_CHIP_AMBER_FG}; }
-.mchip-dim { background: ${R_CHIP_BG}; color: ${R_CHIP_FG}; font-weight: 600; }
+.mchip-amber { background: ${R_T_AMB_BG}; border-color: ${R_T_AMB_BG}; color: ${R_T_AMB_LB}; }
+.mchip-dim { color: ${MUTED}; font-weight: 600; }
 /* The one chip on this page that IS allowed to shout, because it is not
-   about the measurement — it is about whether the signal came from a heart. */
-.mchip-sim { background: ${RED}; color: #FFFFFF; letter-spacing: 0.6px; }
-.hero-tr { margin-top: 2mm; line-height: 0; }
+   about the measurement — it is about whether the signal came from a heart.
+   The same red on the same rose as the SIMULATED banner on the sheets. */
+.mchip-sim { background: ${RED_SOFT}; border-color: ${RED}; color: ${RED};
+             letter-spacing: 0.6px; }
+.hero-tr { margin-top: 2.4mm; padding-top: 2mm; border-top: 0.25mm solid ${HAIRLINE};
+           line-height: 0; }
 .hero-tr svg { display: block; }
 
 /* -- The tile row -- */
@@ -1124,7 +1149,7 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 
 /* -- The kicker this page uses instead of .sec -- */
 .mkick { font-size: 6.4pt; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
-         color: ${R_KICKER}; margin-bottom: 2.4mm; }
+         color: ${BRAND}; margin-bottom: 2.4mm; }
 .mkick-2 { margin-top: 3mm; }
 .mkick-flat { margin: 0; }
 
@@ -1228,13 +1253,16 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 /* -- Identification grid: a tinted band with the brand's heavy left edge,
       so "whose / when / on what" is the first colour block after the
       letterhead (v0.56.0) -- */
-.idgrid { display: flex; flex-wrap: wrap; background: ${R_AX_BG_A};
-          border-left: 1.4mm solid ${R_AX_INK}; border-radius: 0 2mm 2mm 0;
+/* The rounded corner from v0.60.0 stays; the violet does not. Violet on
+   this report MEANS the axis section — spending it on chrome that has
+   nothing to do with the axis spends the only thing the hue was for. */
+.idgrid { display: flex; flex-wrap: wrap; background: ${BRAND_SOFT};
+          border-left: 1.4mm solid ${BRAND}; border-radius: 0 2mm 2mm 0;
           padding: 0 0 0 2.6mm; overflow: hidden; }
 .idcell { width: 25%; border-bottom: 0.2mm solid ${HAIRLINE}; padding: 1.6mm 2mm 1.6mm 0;
           overflow: hidden; }
 .idcell span { display: block; font-size: 6.2pt; letter-spacing: 0.8px; text-transform: uppercase;
-               color: ${R_MUTE2}; }
+               color: ${MUTED}; }
 .idcell b { display: block; font-size: 8.5pt; font-weight: 700; margin-top: 0.4mm;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -1280,19 +1308,20 @@ body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Roboto, Aria
 .twocol > table { flex: 1; }
 table.mt { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
 /* A solid navy header bar on two tables plus a navy letterhead plus a
-   navy footer rule was three shouts on one page. The header is the
-   redesign's soft wash with the kicker's ink; the zebra follows it. */
+   navy footer rule was three shouts on one page, so the bar became a soft
+   wash in v0.60.0 — that part stays. Only the hue comes home: the brand's
+   own pale navy and the brand's own ink, not the handoff's violet-grey. */
 table.mt thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
-                    text-transform: uppercase; color: ${R_KICKER}; text-align: left;
-                    background: ${R_AMP_HEAD}; padding: 1mm 1.2mm; }
-table.mt tbody tr:nth-child(even) th, table.mt tbody tr:nth-child(even) td { background: #FAFAFD; }
-table.mt tbody th { text-align: left; font-weight: 600; color: ${R_MUTE};
+                    text-transform: uppercase; color: ${BRAND}; text-align: left;
+                    background: ${BRAND_SOFT}; padding: 1mm 1.2mm; }
+table.mt tbody tr:nth-child(even) th, table.mt tbody tr:nth-child(even) td { background: #F7F9FD; }
+table.mt tbody th { text-align: left; font-weight: 600; color: ${SLATE};
                     padding: 1.3mm 1.2mm 1.3mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE};
                     white-space: nowrap; overflow: hidden; }
-table.mt td { padding: 1.3mm 1.2mm; border-bottom: 0.2mm solid ${R_AMP_LINE}; }
+table.mt td { padding: 1.3mm 1.2mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
 table.mt .num { text-align: right; font-weight: 800; font-size: 8.6pt; width: 16mm; }
 table.mt .unit { color: ${MUTED}; font-size: 6.8pt; width: 9mm; }
-table.mt .ref { text-align: right; color: ${R_MUTE2}; font-size: 6.8pt; width: 16mm; }
+table.mt .ref { text-align: right; color: ${MUTED}; font-size: 6.8pt; width: 16mm; }
 table.mt .flag { text-align: center; width: 6mm; font-weight: 800; font-size: 8pt; }
 /* ⚠️ The H / L flag is the ONE place on this page that says something
    about a measurement rather than reporting it, and it survives on purpose:
@@ -1301,25 +1330,25 @@ table.mt .flag { text-align: center; width: 6mm; font-weight: 800; font-size: 8p
    clinical tables when asked. It is not the screening engine — it is a
    comparison against a number the reader can see. The measurements page has
    no equivalent, deliberately. */
-table.mt tr.hi .num, table.mt tr.hi .flag { color: ${R_T_AMB_VA}; }
-table.mt tr.lo .num, table.mt tr.lo .flag { color: ${R_T_BLUE_VA}; }
+table.mt tr.hi .num, table.mt tr.hi .flag { color: ${GOLD}; }
+table.mt tr.lo .num, table.mt tr.lo .flag { color: ${BLUE}; }
 
 /* -- Figures. Every data visualisation sits on a soft blue panel with a
       blue keyline (v0.56.0) — the figures ARE the added value, and a panel
       says so before the caption is read. -- */
 .figrow { display: flex; gap: 4mm; height: 100%; }
-.fig { text-align: center; background: ${R_AX_BG_B}; border-radius: 2.6mm;
+.fig { text-align: center; background: ${BLUE_SOFT}; border-radius: 2.6mm;
        padding-top: 1.5mm; overflow: hidden; }
-.fig-cap { font-size: 6.2pt; color: ${R_MUTE2}; line-height: 1.3; margin-top: 1mm; }
+.fig-cap { font-size: 6.2pt; color: ${MUTED}; line-height: 1.3; margin-top: 1mm; }
 /* The quality table shares .mt but takes only the width it needs. */
 .qualwrap { width: 120mm; }
 
 table.amp { width: 100%; border-collapse: collapse; font-size: 7.6pt; }
 table.amp thead th { font-size: 6.2pt; font-weight: 800; letter-spacing: 0.9px;
-                     text-transform: uppercase; color: ${R_KICKER}; text-align: right;
-                     background: ${R_AMP_HEAD}; padding: 1mm 1.4mm; }
+                     text-transform: uppercase; color: ${BRAND}; text-align: right;
+                     background: ${BRAND_SOFT}; padding: 1mm 1.4mm; }
 table.amp thead th:first-child { text-align: left; }
-table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: #FAFAFD; }
+table.amp tbody tr:nth-child(even) th, table.amp tbody tr:nth-child(even) td { background: #F7F9FD; }
 table.amp tbody th { text-align: left; font-weight: 800; font-size: 8pt;
                      padding: 1mm 1.4mm; border-bottom: 0.2mm solid ${HAIRLINE}; }
 table.amp td { text-align: right; padding: 1mm 1.4mm;
@@ -1341,10 +1370,10 @@ td.ampcell { width: 44mm; padding-right: 0; }
 .auditnote { font-size: 6.2pt; color: ${MUTED}; margin-top: 1.6mm; line-height: 1.4; }
 
 /* -- Median beats: the same blue panel as the other figures (v0.56.0) -- */
-.mbrow { display: flex; gap: 2mm; height: 100%; background: ${R_AX_BG_B};
+.mbrow { display: flex; gap: 2mm; height: 100%; background: ${BLUE_SOFT};
          border-radius: 2.6mm; padding: 1mm 2mm 0; overflow: hidden; }
 .mbcell { flex: none; }
-.mblead { font-size: 6.6pt; font-weight: 800; color: ${R_INK}; margin-bottom: 0.6mm;
+.mblead { font-size: 6.6pt; font-weight: 800; color: ${INK}; margin-bottom: 0.6mm;
           letter-spacing: 0.5px; }
 
 /* -- Reference page -- */
@@ -1358,12 +1387,32 @@ td.ampcell { width: 44mm; padding-right: 0; }
 .wall span { color: ${SLATE}; }
 .wall-off b, .wall-off span { color: ${MUTED}; }
 ul.blind { margin: 0; padding-left: 4mm; font-size: 7.6pt; color: ${SLATE}; line-height: 1.5; }
-.note { font-size: 7.6pt; line-height: 1.45; background: ${R_AX_BG_A};
-        border-left: 1mm solid ${R_AX_INK}; border-radius: 0 2mm 2mm 0;
+/* Provenance reads as body copy, not as a warning: it is a description of
+   the software, and styling it like a caution would make a reader look for
+   a problem in a paragraph that is only saying how the sausage was made. */
+.proc { font-size: 7.4pt; line-height: 1.5; color: ${SLATE}; height: 100%;
+        overflow: hidden; padding-right: 4mm; }
+.note { font-size: 7.6pt; line-height: 1.45; background: ${BRAND_SOFT};
+        border-left: 1mm solid ${BRAND}; border-radius: 0 2mm 2mm 0;
         padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
-.disc { font-size: 6.4pt; line-height: 1.45; color: ${R_MUTE2}; margin: 0; }
+.disc { font-size: 6.4pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
 `;
 
+// v4.0.0 — "Take INSPIRATION from it, do not do it 1:1." The handoff's plum
+//          is out of the report's CHROME — letterhead, section rules, table
+//          headers, figure panels, footers are CYPHIX navy and blue again.
+//          Those elements are the document's identity, and it already had
+//          one; two identities on a sheet read as two documents stapled
+//          together. What survives is the part that was doing work: the
+//          measurements page's SECTIONING (a hue per family of measurement,
+//          the tiles, the bands, the axis and quality cards), because that
+//          helps a reader find the rate versus the intervals versus the
+//          axis, and no amount of navy does that.
+//          The measurements page's dark hero slab is deleted outright — see
+//          the masthead rule. The lighter weights v0.60.0 introduced (a
+//          hairline under section headings instead of a 0.45 mm blue rule, a
+//          washed table header instead of a solid navy bar) were right and
+//          are kept; only the hues came home.
 // v3.0.0 — The design-handoff pass. The letterhead is the measurements page's
 //          plum-to-navy gradient rather than flat navy; section headings became
 //          the redesign's letterspaced kicker over a hairline (a 0.45 mm blue

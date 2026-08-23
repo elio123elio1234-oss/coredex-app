@@ -137,6 +137,10 @@ export interface PdfLabels {
      the signal-quality table renders in its place. */
   leadMapTitle: string;
   leadMapCaption: string;
+  /** "How this recording was processed" — provenance, never a finding.
+      `{notch}` is filled from the shared NOTCH_HZ constant. */
+  procTitle: string;
+  procBody: string;
   wallInferior: string;
   wallLateral: string;
   wallNotSeen: string;
@@ -162,6 +166,10 @@ export interface PdfLabels {
   blindSpot: (b: BlindSpotId) => string;
 }
 
+// v1.3.0 — Adds `procTitle` / `procBody`: the signal chain, stated on the
+//          paper for the first time. Provenance, not interpretation — it
+//          describes what the software did, never what the heart did, so it
+//          is allowed on a report that stopped giving verdicts in v0.59.0.
 // v1.2.0 — Adds the measurements page's vocabulary, and the two measurement-
 //          layer classifications (rhythm regularity, axis class) as resolvers.
 //          There is deliberately no "within/outside range" string: the handoff

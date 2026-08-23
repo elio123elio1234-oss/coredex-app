@@ -213,10 +213,16 @@ export function hexaxial(opts: {
     degrees === null
       ? ''
       : (() => {
-          const tip = point(degrees, r - 1.5);
+          const tip = point(degrees, r - 1.2);
+          /* ★ 0.45 mm, not 1.1. The viewBox is 1 unit = 1 mm, so the needle
+             was a 1.1 mm bar with a 3 mm dot on the end of it — on a 33 mm
+             dial that is thicker than the wedge boundary it is supposed to
+             be read against, and an axis is an ANGLE: a fat needle covers
+             several degrees of the thing it is reporting. A hairline vector
+             with a small head points; a bar just fills. */
           return `<line x1="${n2(cx)}" y1="${n2(cy)}" x2="${n2(tip.x)}" y2="${n2(tip.y)}"
-                    stroke="${ink}" stroke-width="1.1" stroke-linecap="round"/>
-                  <circle cx="${n2(tip.x)}" cy="${n2(tip.y)}" r="1.5" fill="${ink}"/>`;
+                    stroke="${ink}" stroke-width="0.45" stroke-linecap="round"/>
+                  <circle cx="${n2(tip.x)}" cy="${n2(tip.y)}" r="0.85" fill="${ink}"/>`;
         })();
 
   return svg(
@@ -227,7 +233,7 @@ export function hexaxial(opts: {
     <circle cx="${cx}" cy="${cy}" r="${n2(r)}" fill="none" stroke="${HAIRLINE}" stroke-width="0.3"/>
     ${spokes}
     ${needle}
-    <circle cx="${cx}" cy="${cy}" r="1.1" fill="${INK}"/>
+    <circle cx="${cx}" cy="${cy}" r="0.7" fill="${INK}"/>
     ${
       showDegrees
         ? /* INSIDE the ring, at the top. It used to be baselined at
@@ -626,6 +632,11 @@ export function waveColumn(opts: {
     CSS pattern would be a second, drifting definition of the same paper. */
 export const GRID_STROKES = { minor: GRID_MINOR, major: GRID_MAJOR };
 
+// v1.2.0 — The hexaxial needle drops from 1.1 mm to 0.45 mm with a 0.85 mm
+//          head. Reported as too thick, and it was measurably wrong rather
+//          than merely heavy: 1 viewBox unit is 1 mm here, so the needle
+//          covered more of the dial than the sector boundary it is read
+//          against, on a figure whose entire job is to report an angle.
 // v1.1.0 — Adds `sparkTrace` (the measurements page's hero line — the real
 //          recording, deliberately un-measurable: no grid, no calibration, no
 //          axis, because those are what invite a ruler) and `waveColumn` (one

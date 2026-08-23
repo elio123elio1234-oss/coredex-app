@@ -152,6 +152,8 @@ export function usePdfLabels(): PdfLabels {
       ampScale: tr('pdfAmpScale'),
       qualityBody: tr('pdfQualityBody'),
 
+      procTitle: tr('pdfProcTitle'),
+      procBody: tr('pdfProcBody'),
       leadMapTitle: tr('pdfLeadMapTitle'),
       leadMapCaption: tr('pdfLeadMapCap'),
       wallInferior: tr('pdfWallInferior'),
@@ -198,6 +200,7 @@ export function usePdfLabels(): PdfLabels {
   );
 }
 
+// v1.3.0 — Resolves the processing-provenance copy (`procTitle`/`procBody`).
 // v1.2.0 — The disclaimer no longer opens with "This is a screening result":
 //          since v0.59.0 the document contains no screening result to
 //          disclaim, and a legal sentence describing a section that is not

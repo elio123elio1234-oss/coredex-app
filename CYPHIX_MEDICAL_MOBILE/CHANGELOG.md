@@ -1,5 +1,125 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.61.0 - 2026-08-23 - the six-lead trace opens the report, and the report looks like CYPHIX again
+
+Four corrections to v0.60.0 — three of them the user's, one of them mine —
+plus a fifth clipping bug found the same way as the previous four: by
+rendering the awkward case and looking at it.
+
+> *"I wanted you to take INSPIRATION from there, not do it 1:1. First of all
+> the six-lead report is the most important thing, that is page 1. Second,
+> that thick band at the top is ugly — do it without the background, where
+> the rate and the heart line are. The heart axis line is too thick. Think
+> about how you integrate this into MY design language."*
+
+### 1. The six-lead sheet is page 1 again
+
+v0.60.0 moved it to page 2 on the reasoning that every clinical document
+opens with a summary. The user's answer is the stronger argument on this
+product, and not only because it is theirs: **every number on the
+measurements page is a claim ABOUT the signal**, produced by this app's own
+delineator, and the trace is the only page in the document a second reader
+can check independently. A report that opens with its derived summary asks to
+be believed; one that opens with the trace asks to be read. The measurements
+page follows at 3, where a reader arrives having already seen what was
+measured.
+
+### 2. The masthead loses its slab
+
+Reported as ugly, and it was: a 44 mm plum-to-navy card carrying the rate and
+the trace, 3 mm below a 26 mm navy letterhead. Two dark bands stacked at the
+top of a sheet is a poster, not a clinical page — and the second one was
+carrying the number the page exists for.
+
+The rate is now set straight on the paper in the wordmark's navy, over a
+hairline, with the trace beneath it **in the same navy as the six-lead
+sheets** — it is the same signal, and giving it a second colour on a second
+page implied it was a second thing. The chips became outlined pills on white.
+
+The gradient-clipped headline went with the band. `background-clip: text`
+existed only to make light rose type legible on plum; it is the most fragile
+declaration in this stylesheet — an engine without it renders the number
+**invisible**, which is why it needed an `@supports` guard at all. Deleting a
+load-bearing guard is only safe because the thing it was guarding is gone.
+
+### 3. The axis needle: 1.1 mm → 0.45 mm
+
+Not merely heavy — measurably wrong. One viewBox unit is one millimetre in
+that figure, so the needle was drawn **thicker than the sector boundary it is
+meant to be read against**, with a 3 mm dot on the end, on a figure whose
+entire job is to report an ANGLE. A fat needle covers several degrees of the
+thing it is reporting. It is now a hairline vector with a small head, and the
+hub dropped from 1.1 mm to 0.7 mm.
+
+### 4. The chrome goes back to CYPHIX
+
+The rule, in one sentence:
+
+> **The measurements page keeps the redesign's SECTIONING** — a hue per family
+> of measurement, the tinted tiles, the reference bands, the axis and quality
+> cards. **Everything that is CHROME goes back to CYPHIX** — letterhead,
+> section rules, table headers, figure panels, footers: white stock, the
+> wordmark's navy, the report's blue.
+
+Chrome is where a document says whose it is, so it is the last thing that
+should borrow another product's colour — and this report already had an
+identity. The sectioning survives because it is the part that was doing work:
+it lets a reader find the rate versus the intervals versus the axis at a
+glance, and no amount of navy does that job. The **lighter weights** v0.60.0
+introduced were right and are kept (a hairline under section headings instead
+of a 0.45 mm blue rule; a washed table header instead of a solid navy bar).
+Only the hues came home. Violet now appears in exactly one place — the axis
+card — where it *means* something.
+
+The statistics page was also renamed from *"Measurements & Statistics"* to
+*"Clinical tables & variability"*: it sat one page after a page titled
+*"Measurements"*, and two adjacent letterheads differing by two words is not
+a title, it is a typo the reader has to rule out.
+
+### 5. ★ My own regression: page 4 ended two-fifths of the way down
+
+v0.60.0 removed the empty blind-spots section — correctly, it was a heading
+over 34 mm of white — and gave its 41 mm to nothing. Rendering showed the
+result: a last page that stops early reads as a document that was cut off.
+
+What fills it is the one thing this report has never said and should have:
+**how the signal was processed.** Every trace on these pages is
+baseline-corrected with a double median filter, notch-filtered at 50 Hz with
+a zero-phase filter, and smoothed before it is drawn *or measured* — and four
+of the six leads are **derived from two recorded channels** by the Einthoven
+and Goldberger equations, not picked up by six electrodes. A reader measuring
+an interval off page 1 is entitled to know both.
+
+It is provenance, never a finding — it describes what the software did, never
+what the heart did — so it belongs on a report that stopped interpreting in
+v0.59.0. The copy deliberately does **not** restate the filter's window
+lengths: those are local constants in `reportFilter.ts`, not exports, and a
+printed medical document is the worst possible place for a number that can go
+stale in silence. The notch frequency is interpolated from the shared
+`NOTCH_HZ`.
+
+### 6. A fifth clipping bug, same family, found the same way
+
+A four-line device subtitle printed **outside** the letterhead — grey type on
+white paper, straight across the blue keyline and into the first section
+heading. `.lh-r` is 7 pt at line-height 1.55, so four lines want 17 mm in a
+13 mm space, and `.lh` was the one block in this report with no
+`overflow: hidden`: the one that is full-bleed and negative-margined never
+got it. Leading tightened to 1.3 so the longest real subtitle now *fits*
+rather than merely gets cut.
+
+The harness's `procBody` stub is deliberately the same **length** as the copy
+that ships. A stub three lines shorter renders a block that looks comfortable
+here and overflows on the phone — which is the exact class of bug this
+harness exists to catch, and the exact way it missed four of them.
+
+### Still not verified
+
+Four A4 pages were rendered and read again, in two of the nine cases. Still
+not checked: a real **printer**; **WKWebView / Android WebView**, which is
+what `expo-print` actually uses; and **Hebrew**, which the report has never
+been checked in — it sets no `dir` at all.
+
 ## v0.60.0 - 2026-08-22 - the report opens with the page you can actually read
 
 The design language from v0.59.0's Values screen now runs through the printed

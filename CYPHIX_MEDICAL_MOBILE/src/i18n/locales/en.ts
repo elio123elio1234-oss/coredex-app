@@ -1316,7 +1316,12 @@ export const en = {
 
   pdfPageEcg: '6-Lead Limb ECG',
   pdfPageInterpretation: 'Automated Interpretation',
-  pdfPageStatistics: 'Measurements & Statistics',
+  /* v0.61.0: was 'Measurements & Statistics', which sat one page after a
+     page titled 'Measurements'. Two adjacent letterheads differing by two
+     words is not a title, it is a typo a reader has to rule out. This page
+     is the clinician's tables and the variability figures; the page before
+     it is the summary. */
+  pdfPageStatistics: 'Clinical tables & variability',
   pdfPageReference: 'How to Read This Report',
   pdfPageOf: 'Page {n} of {total}',
   pdfContinued: 'continued',
@@ -1336,6 +1341,13 @@ export const en = {
   pdfWallInferior: 'the bottom (inferior) wall',
   pdfWallLateral: 'the side (high lateral) wall',
   pdfWallNotSeen: 'the front and back walls — chest electrodes, NOT recorded here',
+  /* v0.61.0: the report never stated its own signal chain. Every trace on
+     it is filtered before it is drawn OR measured, and four of the six
+     leads are computed rather than recorded — both facts change how much
+     weight a reader should put on an interval measured off the paper. */
+  pdfProcTitle: 'How this recording was processed',
+  pdfProcBody:
+    'Each channel is baseline-corrected with a double median filter, notch-filtered at {notch} Hz with a zero-phase filter (so no interval is shifted in time), and lightly smoothed before it is drawn or measured. This device records TWO channels: leads I and II are measured, and III, aVR, aVL and aVF are computed from them by Einthoven’s and Goldberger’s equations — they are exact arithmetic, not extra electrodes. Every strip is printed at 25 mm/s and 10 mm/mV with a 1 mV calibration pulse, so the gain can be checked by eye rather than trusted.',
   /* v0.56.0: the four-sentence "how to read" tutorial was removed from the
      report — addressed to the wrong reader, and its last sentence had been
      false since v0.49 (there are no continuation sheets). */
@@ -1358,6 +1370,11 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.21.0 — The printed report's processing provenance (pdfProcTitle /
+//           pdfProcBody), and the statistics page renamed from "Measurements &
+//           Statistics" — it sat one page after a page titled "Measurements",
+//           and two adjacent letterheads differing by two words is not a title,
+//           it is a typo the reader has to rule out.
 // v1.20.0 — Copy for the study readout ("usually 128") and the weekly goal.
 //           The three-line explainer's strings and the facts captions are gone
 //           with the blocks they served.

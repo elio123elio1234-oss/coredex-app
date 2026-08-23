@@ -394,6 +394,18 @@ turns four surfaces off together, and turning it back on restores all four.
 | ↳ Values — "Export Report" CTA | ✅ web has a print button | 🔬 | 🔬 | Named at the user's request (the handoff said "View Report"). It makes the **same** choice the ⋯ menu makes: preview when this binary carries the WebView, direct share when it does not, because a button must never dead-end on a build that received this over the air. Hidden entirely when the reader lacks `exportPdf` |
 | ↳ Values — the trace is the real lead II | — handoff draws a decorative path | 🔬 | 🔬 | The handoff repeats a hand-written ECG path. That is right for a mock-up and the one thing that must not be copied: a decorative waveform on the same card as this patient's measured rate is a picture of somebody else's heart under their number. Reduced by **peak-preserving decimation**, not averaging — averaging flattens the R wave, which is the one feature that makes a 56 pt trace legible |
 
+## v0.61.0 — inspiration, not a copy
+
+| Feature | Web | iOS | Android | Notes |
+|---|---|---|---|---|
+| **Six-lead sheet is page 1 again** | ✅ web prints the browser's page | 🔬 | 🔬 | Reverses v0.60.0 at the user's instruction. Every number on the measurements page is a claim ABOUT the signal made by this app's own delineator; the trace is the only page a second reader can check independently. Measurements now at page 3, statistics 3→"Clinical tables & variability", reference 4 |
+| **Masthead has no band** | — | 🔬 | 🔬 | The 44 mm plum-to-navy card is deleted. The rate is set on the paper in the wordmark's navy over a hairline; the trace under it is drawn in the SAME navy as the six-lead sheets. `background-clip: text` and its `@supports` guard are gone with it — that guard existed only because light rose type on plum needed it, and it is the one declaration in this stylesheet that renders a number INVISIBLE when unsupported |
+| **Axis needle 1.1 mm → 0.45 mm** | — | 🔬 | 🔬 | Measurably wrong, not merely heavy: 1 viewBox unit is 1 mm in that figure, so the needle was thicker than the sector boundary it is read against, on a figure whose job is to report an angle. Head 1.5 → 0.85 mm, hub 1.1 → 0.7 mm. Applies to BOTH dials (measurements page and statistics page) |
+| **Chrome returns to CYPHIX** | ✅ unchanged | 🔬 | 🔬 | ★ THE RULE: the measurements page keeps the redesign's SECTIONING (a hue per family, tinted tiles, reference bands, axis and quality cards); everything that is CHROME — letterhead, section rules, table headers, figure panels, footers — goes back to white stock, the wordmark's navy and the report's blue. v0.60.0's lighter WEIGHTS are kept; only the hues came home. Violet now appears in one place only, the axis card, where it means something |
+| **Processing provenance on page 4** | ⏳ pending | 🔬 | 🔬 | NEW SECTION, and it fixes my own v0.60.0 regression (removing the empty blind-spots list freed 41 mm and gave it to nothing, so the last page ended two-fifths down). States the filter chain and that four of six leads are DERIVED from two recorded channels. Provenance, never a finding. Deliberately does NOT restate the filter's window lengths — they are local constants in `reportFilter.ts`, and a printed document is the worst place for a number that can go stale silently. **Web has no equivalent section: pending** |
+| **★ Fifth clipping bug (pre-existing)** | — | 🔬 | 🔬 | A four-line device subtitle printed OUTSIDE the letterhead, grey on white, across the blue keyline and into the first section heading. `.lh` was the one block in the report without `overflow: hidden` — the full-bleed, negative-margined one. Leading 1.55 → 1.3 so the longest real subtitle fits rather than merely gets cut |
+| ↳ Harness stub matches shipped copy length | — | ✅ | ✅ | `procBody` in `verify-pdf.ts` is deliberately as long as the string in `en.ts`. A short stub renders a comfortable block here and an overflowing one on the phone |
+
 ## v0.60.0 — the printed report takes the design language
 
 | Feature | Web | iOS | Android | Notes |
@@ -412,6 +424,18 @@ turns four surfaces off together, and turning it back on restores all four.
 - Everything marked 🔬 was built on Windows and has **never run on an
   iPhone**. Per root `CLAUDE.md` §5, do not claim iOS works until it has run
   via Expo Go (UI only) or an EAS dev build (native BLE included).
+- ★ **v0.61.0 was rendered in two of the nine harness cases** (normal, and
+  the long-device-label-plus-note case that exposed the letterhead bug). The
+  same limits below still apply in full.
+- ⚠️ **`reportFilterLeads` auto-rescales amplitude and nothing says so.**
+  Noticed while writing the provenance copy, NOT acted on — it is
+  `CYPHIX_SHARED` and therefore three apps. When lead II's 99th-percentile
+  amplitude is above 2.0 mV or below 0.2 mV, every lead is divided by
+  `maxAmp / 1.2` before `analyseLimbEcg` measures it. The printed strip stays
+  self-consistent (its calibration pulse scales too), but the **millivolt
+  amplitudes on the measurements page would be the rescaled ones**, which is a
+  measurement that silently means something other than what it says. Affects
+  low-voltage and saturated recordings only. Needs a decision, not a patch.
 - ★ **v0.60.0's report was RENDERED, which is more than usual, and is still
   not verified.** Four A4 pages were printed to PDF and read — that is how the
   four clipping bugs above surfaced — but by desktop Chrome, from the harness's

@@ -193,14 +193,20 @@ export function buildRecordingHtml(input: ReportInput): string {
 
   let pageNo = 1;
 
-  /* ★ v0.60.0 — THE MEASUREMENTS PAGE OPENS THE REPORT, AND THE SHEETS
-     MOVED BACK ONE.
-     Every clinical document opens with a summary, and until now this one
-     opened with two full pages of trace: a patient had to scroll past
-     twenty seconds of waveform before reaching a single number they could
-     read. The trace is not diminished by being on page 2 — it is still the
-     full recording at 25 mm/s, and it is still the only part of this
-     document a ruler may be laid on. */
+  /* ★ v0.61.0 — THE SIX-LEAD SHEETS OPEN THE REPORT AGAIN.
+     v0.60.0 moved them to page 2 on the reasoning that a clinical document
+     opens with a summary. The user's answer — "the six-lead report is the
+     most important thing, that is page 1" — is the stronger argument on
+     THIS product, and not merely because it is theirs: every number on the
+     measurements page is a claim ABOUT the signal, derived by this app's
+     own delineator, and the signal itself is the only thing on these four
+     pages that a second reader can check independently. A document that
+     opens with the derived summary asks to be believed; one that opens with
+     the trace asks to be read. The summary follows at page 3, where a
+     reader arrives having already seen what was measured. */
+  const ecg = ecgPages(leads, analysis, n, chrome, labels, totalPages, pageNo);
+  pageNo += ecg.pages;
+
   const measurements = measurementsPage(
     analysis,
     leads.II ?? null,
@@ -212,9 +218,6 @@ export function buildRecordingHtml(input: ReportInput): string {
     pageNo,
   );
   pageNo += 1;
-
-  const ecg = ecgPages(leads, analysis, n, chrome, labels, totalPages, pageNo);
-  pageNo += ecg.pages;
 
   /* The identification grid every clinical report opens with. Only facts the
      record actually carries — a blank cell is honest, an invented one is not. */
@@ -277,8 +280,8 @@ export function buildRecordingHtml(input: ReportInput): string {
             font-size: 8pt; font-weight: 800; color: #D32B21;
             background: #FBE6E4; padding: 1mm 2.4mm; border-radius: 1mm; }
 </style></head><body>
-${measurements}
 ${ecg.html.replace('<div class="body">', `${simBanner}<div class="body">`)}
+${measurements}
 ${interp.html}
 ${stats}
 ${reference}
@@ -286,12 +289,16 @@ ${reference}
 }
 
 
+// v0.61.0 - The SIX-LEAD SHEETS open the report again, and the measurements
+//           page follows at 3. Reverses v0.60.0 at the user's instruction, and
+//           they are right: every number on the measurements page is a claim
+//           about the signal made by this app's own delineator, and the trace
+//           is the only page here a second reader can check independently.
 // v0.60.0 - The report opens with the MEASUREMENTS page (the design handoff's
 //           A4) and the ECG sheets move to page 2. A clinical document opens
 //           with a summary; this one opened with two pages of trace, so a
 //           patient scrolled past twenty seconds of waveform before reaching a
-//           number they could read. The trace is unchanged and is still the
-//           only part of this document a ruler may be laid on.
+//           number they could read. REVERSED in v0.61.0 — see above.
 // v0.59.0 - No interpretation pages: the app stopped offering a verdict, and a
 //           PDF outlives the screen that made it. `INTERPRETATION_ENABLED` is
 //           the switch; the screening code is untouched behind it.

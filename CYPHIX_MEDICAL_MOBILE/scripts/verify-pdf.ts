@@ -110,7 +110,7 @@ const labels: PdfLabels = {
   simulated: 'SIMULATION',
   pageEcg: 'Six-lead ECG',
   pageInterpretation: 'Interpretation',
-  pageStatistics: 'Measurements & statistics',
+  pageStatistics: 'Clinical tables & variability',
   pageReference: 'Reference',
   sheetWindow: '{from}-{to} s of {total} s recorded',
   pageOf: 'Page {n} of {total}',
@@ -176,6 +176,13 @@ const labels: PdfLabels = {
   axisCaption: 'Frontal axis',
   ampLead: 'Lead',
   ampUnit: 'millivolts',
+  procTitle: 'How this recording was processed',
+  /* ★ Deliberately the SAME LENGTH as the copy that ships in en.ts. A stub
+     three lines shorter renders a block that looks comfortable here and
+     overflows on the phone — which is precisely the class of bug this
+     harness exists to catch, and precisely how it missed four of them. */
+  procBody:
+    'Each channel is baseline-corrected with a double median filter, notch-filtered at {notch} Hz with a zero-phase filter (so no interval is shifted in time), and lightly smoothed before it is drawn or measured. This device records TWO channels: leads I and II are measured, and III, aVR, aVL and aVF are computed from them by the Einthoven and Goldberger equations — they are exact arithmetic, not extra electrodes. Every strip is printed at 25 mm/s and 10 mm/mV with a 1 mV calibration pulse, so the gain can be checked by eye rather than trusted.',
   leadMapTitle: 'What the leads see',
   leadMapCaption: 'The six limb leads view the heart in the frontal plane.',
   wallInferior: 'inferior wall',
@@ -283,6 +290,11 @@ if (failures > 0) {
 }
 console.log('\nAll cases passed. This proves the arithmetic, not the beauty (CLAUDE.md §6.4).');
 
+// v1.2.0 — The `procBody` stub is deliberately the SAME LENGTH as the copy
+//          that ships. A short stub renders a block that looks comfortable
+//          in the harness and overflows on the phone, which is the exact
+//          class of bug the harness exists to catch and the exact way it
+//          missed four of them.
 // v1.1.0 — PDF_OUT=<dir> writes each case's HTML out. The structural
 //          assertions here passed on a report that was printing THREE OF SIX
 //          LEADS in its amplitude table and cutting the last row off two

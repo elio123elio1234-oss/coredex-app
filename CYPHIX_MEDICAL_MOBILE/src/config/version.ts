@@ -1,8 +1,72 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.60.0';
-export const APP_BUILD_LABEL = 'the report opens with the page you can actually read';
+export const APP_VERSION = '0.61.0';
+export const APP_BUILD_LABEL = 'the six-lead trace opens the report, and the report looks like CYPHIX again';
 
+// v0.61.0 - "TAKE INSPIRATION FROM IT, DO NOT DO IT 1:1." Four corrections to
+//           v0.60.0, three of them the user's and one of them mine.
+//
+//           1. THE SIX-LEAD SHEET IS PAGE 1 AGAIN. v0.60.0 moved it to page 2
+//              on the reasoning that a clinical document opens with a summary.
+//              The user's answer - "the six-lead report is the most important
+//              thing, that is page 1" - is the stronger argument here, and not
+//              only because it is theirs: every number on the measurements
+//              page is a claim ABOUT the signal made by this app's own
+//              delineator, and the trace is the only page in the document a
+//              second reader can check independently. A report that opens with
+//              its derived summary asks to be believed; one that opens with
+//              the trace asks to be read.
+//
+//           2. THE MASTHEAD LOSES ITS SLAB. Reported as ugly, and it was: a
+//              44 mm plum-to-navy card carrying the rate and the trace, sitting
+//              3 mm under a 26 mm navy letterhead. Two dark bands stacked at
+//              the top of a sheet is a poster, not a clinical page. The rate is
+//              now set straight on the paper in the wordmark's navy over a
+//              hairline, and the trace under it is drawn in the SAME navy as
+//              the six-lead sheets - it is the same signal, and a second colour
+//              on a second page implied it was a second thing.
+//              The gradient-clipped headline went with the band.
+//              background-clip:text existed only to make light rose type
+//              legible on plum, and it is the most fragile declaration in the
+//              stylesheet (without it the headline number renders INVISIBLE,
+//              which is why it needed an @supports guard at all). Deleting a
+//              load-bearing guard is safe here only because the thing it was
+//              guarding is gone too.
+//
+//           3. THE AXIS NEEDLE: 1.1 mm to 0.45 mm, with a 0.85 mm head. Not
+//              merely heavy - measurably wrong. One viewBox unit is one
+//              millimetre in that figure, so the needle was drawn thicker than
+//              the sector boundary it is meant to be read against, on a figure
+//              whose entire job is to report an ANGLE. A fat needle covers
+//              several degrees of the thing it is reporting.
+//
+//           4. THE CHROME GOES BACK TO CYPHIX. The rule, in one sentence: the
+//              measurements page keeps the redesign's SECTIONING - a hue per
+//              family of measurement, the tinted tiles, the reference bands,
+//              the axis and quality cards - and everything that is CHROME
+//              (letterhead, section rules, table headers, figure panels,
+//              footers) returns to white stock, the wordmark's navy and the
+//              report's blue. Those elements are the document's identity, and
+//              it already had one. The lighter weights v0.60.0 introduced were
+//              right and are kept; only the hues came home.
+//
+//           MY OWN REGRESSION, FIXED: page 4 ended two-fifths of the way down.
+//           v0.60.0 removed the empty blind-spots section (correctly) and gave
+//           its 41 mm to nothing. What fills it is the one thing this report
+//           has never said and should have - HOW THE SIGNAL WAS PROCESSED.
+//           Every trace here is baseline-corrected, notch-filtered and
+//           smoothed before it is drawn OR measured, and four of the six leads
+//           are DERIVED rather than recorded. A reader measuring an interval
+//           off page 1 is entitled to know that. It is provenance, never a
+//           finding, so it is allowed on a report that no longer interprets.
+//
+//           AND A FIFTH CLIPPING BUG, same family as v0.60.0's four and found
+//           the same way: a four-line device subtitle printed OUTSIDE the
+//           letterhead, in grey on white paper, across the blue keyline and
+//           into the first section heading. Every block in this report is
+//           overflow:hidden except the one that is full-bleed and
+//           negative-margined.
+//
 // v0.60.0 - THE PDF TAKES THE DESIGN LANGUAGE, and four clipping bugs fall out
 //           of finally looking at it.
 //

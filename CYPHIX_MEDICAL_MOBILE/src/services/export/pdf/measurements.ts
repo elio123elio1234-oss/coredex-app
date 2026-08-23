@@ -39,8 +39,8 @@ import { LIMB_LEAD_ORDER, type EcgAnalysis } from '@cyphix/shared';
 import { hexaxial, sparkTrace, waveColumn } from './figures';
 import type { PdfLabels } from './labels';
 import { pageShell } from './pages';
-import { R_AX_INK, R_Q_RING, R_Q_TRACK, R_TRACE, R_WAVE_INKS } from './reportPalette';
-import { BODY_H, COL_W, assertFits, esc, mm } from './theme';
+import { R_AX_INK, R_Q_RING, R_Q_TRACK, R_WAVE_INKS } from './reportPalette';
+import { BODY_H, COL_W, TRACE, assertFits, esc, mm } from './theme';
 
 /** What the page shell needs, minus the fields this page fills itself. */
 export interface PageChrome {
@@ -49,15 +49,19 @@ export interface PageChrome {
 }
 
 /* ── Block heights, in millimetres, declared before anything is drawn ── */
-const H_HERO = 44;
+/* 34, not v0.60.0's 44: the masthead is no longer a padded card, so it needs
+   the height of its own type and nothing else. The 10 mm went to the wave
+   panel below, where taller bars are directly easier to compare across the
+   six leads — the whole reason that panel exists. */
+const H_HERO = 34;
 const H_GAP = 2.5;
 const H_TILES = 32;
 const H_MAIN = 92;
 const H_AMP_TITLE = 7;
-/* 44, not the 52 the first render used: the panel is `height:100%` of its
-   block, so an over-tall block is not slack at the bottom of the page — it is
-   a band of empty white INSIDE a bordered card. Measured off the render. */
-const H_AMPS = 48;
+/* The panel is `height:100%` of its block, so an over-tall block is not slack
+   at the bottom of the page — it is a band of empty white INSIDE a bordered
+   card. Measured off the render, not calculated. */
+const H_AMPS = 58;
 const H_NOTE = 16;
 
 /** The reference bands. The SAME numbers the statistics page and the app's
@@ -148,12 +152,12 @@ export function measurementsPage(
   /**
    * ★ A simulated study says so ON THIS PAGE, not only on the ECG sheet.
    *
-   * The floating SIMULATED banner lives on the first ECG sheet, which used
-   * to be page 1. This page is page 1 now — it carries the headline rate
-   * and it is the page somebody photographs and sends — so the claim has to
-   * be on it too. Mobile CLAUDE.md §4: synthetic data must never be
-   * presentable as a measurement, and "presentable" means the page a reader
-   * actually looks at.
+   * The floating SIMULATED banner is on the first ECG sheet, which is page 1
+   * again as of v0.61.0 — but a banner on page 1 does not travel: this is
+   * the page carrying the headline rate, and it is the page somebody
+   * photographs and sends on its own. Mobile CLAUDE.md §4: synthetic data
+   * must never be presentable as a measurement, and "presentable" means
+   * whichever single page a reader ends up looking at.
    */
   isSimulated: boolean,
   chrome: PageChrome,
@@ -185,8 +189,11 @@ export function measurementsPage(
       ? `${rate.rrMinMs}–${rate.rrMaxMs}`
       : '—';
 
-  /* ── 1. The band ── */
-  const traceW = COL_W - 12;
+  /* ── 1. The masthead ──
+     ★ v0.61.0 — no card, so the trace gets the full column, and it is drawn
+     in the SAME navy as the six-lead sheets. It is the same signal; giving
+     it a second colour on a second page implied it was a second thing. */
+  const traceW = COL_W;
   const hero = `<div class="hero">
     <div class="hero-top">
       <div>
@@ -200,7 +207,7 @@ export function measurementsPage(
         ${isSimulated ? chip(labels.simulated, 'mchip-sim') : ''}${chip(rhythmWord, 'mchip-amber')}${chip(secs, 'mchip-dim')}${chip(hz, 'mchip-dim')}${chip(beats, 'mchip-dim')}
       </div>
     </div>
-    <div class="hero-tr">${sparkTrace({ w: traceW, h: 15, samples: leadII, ink: R_TRACE })}</div>
+    <div class="hero-tr">${sparkTrace({ w: traceW, h: 13, samples: leadII, ink: TRACE })}</div>
   </div>`;
 
   /* ── 2. The tiles ── */
@@ -308,7 +315,7 @@ export function measurementsPage(
       )
       .join('');
     return `<div class="ampcol">
-      <div class="ampfig">${waveColumn({ w: cellW - 4, h: 30, values, inks: R_WAVE_INKS, peak })}</div>
+      <div class="ampfig">${waveColumn({ w: cellW - 4, h: 40, values, inks: R_WAVE_INKS, peak })}</div>
       <div class="ampnums">${nums}</div>
       <div class="amppp"><span>${esc(labels.ampPp)}</span><b>${num(pp, 2)}</b></div>
       <div class="amppptrack">${
@@ -368,6 +375,13 @@ export function measurementsPage(
   );
 }
 
+// v1.1.0 — INSPIRED BY the handoff, not a copy of it. The masthead's dark
+//          plum slab is gone: the rate is set straight on the paper in the
+//          wordmark's navy and the trace under it is the sheets' own navy.
+//          The page keeps the redesign's SECTIONING — a hue per family of
+//          measurement, the tinted tiles, the reference bands, the axis and
+//          quality cards — because that is the part that helps a reader.
+//          Everything that is chrome went back to CYPHIX's white-and-navy.
 // v1.0.0 — The measurements page: the design handoff's A4, with its
 //          per-interval "within range" call-outs deliberately dropped and its
 //          green "normal axis" pill repainted the section's violet. Colour
