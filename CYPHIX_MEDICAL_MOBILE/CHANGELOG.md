@@ -1,5 +1,61 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.64.0 - 2026-08-23 - the fingerprint keeps its name and loses the lecture
+
+> *"The whole 'one beat average' thing, three unnecessary lines!! Why the
+> rambling — the first line, 'your heart's fingerprint', is enough, that's it.
+> If you tap on it, an explanation opens from the bottom like the other
+> things."*
+
+Both halves are right, and v0.62.0 had got one of them.
+
+Its argument was that the figure needed a **title**, because nothing about one
+clean ECG trace says it is an average of many recordings rather than your last
+one. That still holds — **the title stays.** What it then did was answer the
+question the title raises **in place**, permanently, for every reader on every
+visit.
+
+That is the v0.44.0 mistake in a smaller font. A **title** is navigation: read
+every visit, costs one glance. An **explanation** is read once, ever — and
+putting it under the title charges every future visit for a question that was
+answered on the first one. At 13.5 pt on a phone it also was not "a line": it
+wrapped to three.
+
+### The heading is a control now
+
+Tap it and a `BottomSheet` comes up — the pattern this app already uses in
+three places (every Values tile, every interval row, every finding).
+
+And because a sheet is opened **deliberately**, nobody is charged for reading
+it and nobody is charged for skipping it — so the explanation is finally
+allowed to be **complete** instead of compressed into one clause:
+
+- **what it is** — one heartbeat, averaged from every recording you have made,
+  not your last one;
+- **why averaging is the whole point** — what repeats in every recording is
+  your heart; what does not (a shaky hand, a loose electrode, the room's
+  electricity) cancels itself out, so the shape gets cleaner and more truly
+  yours with every study;
+- **what it is for** — every new study is compared against it, and the
+  *"usually"* figures below are what **your** baseline says is normal for you,
+  not what is normal for people in general.
+
+That third point was never on the screen in any form, and it is the one that
+makes the whole panel underneath legible.
+
+### One layout note
+
+The tap target is the **width of the words**, not the column. A full-width
+invisible button sitting directly above the ECG would swallow the start of a
+horizontal drag on the sheet below it — and that drag is the gesture the
+caliper lives on.
+
+### Not verified
+
+Typechecks and bundles. The tap target, the sheet's height and whether the
+first screenful still fits after a two-line heading became one all need a
+phone. `🔬` in PARITY.
+
 ## v0.63.0 - 2026-08-23 - the app can tell you an update is waiting, instead of making you guess
 
 > *"I opened and closed twice and it is still stuck on 61. Why?"*

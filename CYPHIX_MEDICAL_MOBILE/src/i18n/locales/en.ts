@@ -707,8 +707,20 @@ export const en = {
   setUpdError: 'Could not check just now — tap to try again',
   setUpdDev: 'Not applicable in a development build',
   insSignatureTitle: 'Your heart’s fingerprint',
+  /* ★ v0.64.0 — these three moved OFF the screen and into the sheet the
+     title opens. On the screen the first of them wrapped to three lines at
+     13.5 pt, and it was answering — permanently, on every visit — a
+     question that is asked once. In a sheet nobody is charged for reading
+     it and nobody is charged for skipping it, so it can also be COMPLETE:
+     what it is, why averaging is the whole point, and what the numbers
+     underneath are measured against. */
   insSignatureBody:
-    'One beat, averaged from all your recordings — every new study is compared against it.',
+    'It is one heartbeat, averaged from every recording you have made — not your last one.',
+  insSignatureWhy:
+    'Averaging is the point. What repeats in every recording is your heart; what does not — a shaky hand, a loose electrode, the room’s electricity — cancels itself out. The more studies you add, the cleaner and more truly yours this shape becomes.',
+  insSignatureUse:
+    'It is what everything below is measured against. Each new study is compared to this shape, and the “usually” figures are what this one says is normal for you — not for people in general.',
+  insSignatureA11y: 'Opens an explanation of what this curve is',
   /* Names the control AND the number: six cells reading "I 12 · II 12" are
      a picker and a per-lead evidence count, and a bare figure under a lead
      name could just as easily be a measurement. */
@@ -1398,6 +1410,12 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.24.0 — The signature's explanation moves off the screen and into the
+//           sheet its title opens, and gets to be COMPLETE there: what it
+//           is, why averaging is the whole point, and what the numbers
+//           underneath are measured against. On the screen the first of
+//           those wrapped to three lines and answered, on every visit, a
+//           question that is asked once.
 // v1.23.0 — Copy for the About page's app-update row: check, checking,
 //           downloading, up to date, ready-tap-to-restart, and the honest
 //           dev-build case.

@@ -394,6 +394,15 @@ turns four surfaces off together, and turning it back on restores all four.
 | ↳ Values — "Export Report" CTA | ✅ web has a print button | 🔬 | 🔬 | Named at the user's request (the handoff said "View Report"). It makes the **same** choice the ⋯ menu makes: preview when this binary carries the WebView, direct share when it does not, because a button must never dead-end on a build that received this over the air. Hidden entirely when the reader lacks `exportPdf` |
 | ↳ Values — the trace is the real lead II | — handoff draws a decorative path | 🔬 | 🔬 | The handoff repeats a hand-written ECG path. That is right for a mock-up and the one thing that must not be copied: a decorative waveform on the same card as this patient's measured rate is a picture of somebody else's heart under their number. Reduced by **peak-preserving decimation**, not averaging — averaging flattens the R wave, which is the one feature that makes a 56 pt trace legible |
 
+## v0.64.0 — the fingerprint keeps its name and loses the lecture
+
+| Feature | Web | iOS | Android | Notes |
+|---|---|---|---|---|
+| **Signature title opens an info sheet** | ⏳ pending | 🔬 | 🔬 | The title stays (v0.62.0's argument holds: nothing about one clean ECG trace says it is an AVERAGE of many recordings). The sentence under it does not. A TITLE is navigation — read every visit, one glance; an EXPLANATION is read once, ever, and putting it under the title charges every future visit for a question answered on the first one. Same `BottomSheet` pattern as every Values tile, interval row and finding |
+| ↳ The explanation got LONGER, not shorter | — | 🔬 | 🔬 | A sheet is opened deliberately, so it can be complete: what it is · why averaging is the point (what repeats is the heart; a shaky hand and a loose electrode cancel out) · that the "usually" figures are what YOUR baseline calls normal, not what is normal for people in general. That last point was never on the screen in any form and it is what makes the panel below legible |
+| ↳ Tap target is the width of the words | — | 🔬 | 🔬 | ⚠️ Not the column. A full-width invisible button directly above the ECG would swallow the start of a horizontal drag on the sheet below it — the gesture the caliper lives on. `alignSelf: flex-start`, mirrored under RTL |
+| ↳ First-screen budget improves | — | 🔬 | 🔬 | The heading drops from ~3 wrapped lines + title to one row, which gives back more than v0.62.0 borrowed. Still arithmetic, not a measurement — the row asking for a look on a small handset stays open |
+
 ## v0.63.0 — the app can say an update is waiting
 
 | Feature | Web | iOS | Android | Notes |

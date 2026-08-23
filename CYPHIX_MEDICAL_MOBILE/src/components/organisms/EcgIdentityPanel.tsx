@@ -127,6 +127,7 @@ import {
   type MeasurementStats,
 } from '@cyphix/shared';
 import BeatSignature, { pickGain, SHEET_MARGIN } from '@/components/molecules/BeatSignature';
+import BottomSheet from '@/components/molecules/BottomSheet';
 import BeatBuilder from '@/components/molecules/BeatBuilder';
 import CadenceStrip from '@/components/molecules/CadenceStrip';
 import GoalWeek from '@/components/molecules/GoalWeek';
@@ -234,6 +235,7 @@ export default function EcgIdentityPanel({
   const view = useEcgIdentity(patientId);
   const reminders = useReminders();
 
+  const [infoOpen, setInfoOpen] = useState(false);
   const [lead, setLead] = useState<EcgLeadName>('II');
   /** How many studies the builder is averaging. null = all of them. */
   const [built, setBuilt] = useState<number | null>(null);
@@ -569,17 +571,53 @@ export default function EcgIdentityPanel({
           possible grounds: without it, the reader misreads everything
           below it.
 
-          Two lines, and they stop there. "Fingerprint" is the metaphor
-          the whole feature already runs on — this panel is the ECG ID —
-          and it does the work a paragraph was doing in v0.42.0. */}
-      <View style={styles.signatureHead}>
+          ★ v0.64.0 — THE TITLE STAYS, THE SENTENCE UNDER IT DOES NOT.
+          Reported: *"the whole 'one beat average' thing, three unnecessary
+          lines!! the first line is enough. If you tap on it, an explanation
+          opens from the bottom like the other things."*
+
+          Right, and the distinction is the same one v0.44.0 was drawing —
+          v0.62.0 just landed on the wrong side of it by one line. A TITLE
+          is navigation: it is read every visit and it costs one glance. An
+          EXPLANATION is read once, ever, and putting it permanently under
+          the title charges every future visit for a question that was
+          answered on the first one. At 13.5 pt on a phone it also was not
+          "a line" — it wrapped to three.
+
+          So the heading became a control, using the pattern this app
+          already has in three places (every Values tile, every interval
+          row, every finding): tap, and the answer comes up in a
+          `BottomSheet`. The sheet can hold MORE than the screen line ever
+          could, so the explanation is now complete — what it is, why
+          averaging is the point, and what the numbers below it are
+          measured against — rather than compressed into one clause.
+
+          "Fingerprint" is the metaphor the whole feature already runs on
+          (this panel IS the ECG ID) and it carries the two facts a bare
+          trace cannot: unique to this person, and BUILT UP rather than
+          captured. Which is exactly why the title alone is enough. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={tr('insSignatureTitle')}
+        accessibilityHint={tr('insSignatureA11y')}
+        onPress={() => {
+          void Haptics.selectionAsync();
+          setInfoOpen(true);
+        }}
+        style={({ pressed }) => [
+          styles.signatureHead,
+          rtl && styles.signatureHeadRtl,
+          { opacity: pressed ? 0.6 : 1 },
+        ]}
+      >
         <Text style={[styles.sectionTitle, { color: t.textPrimary, textAlign: align }]}>
           {tr('insSignatureTitle')}
         </Text>
-        <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
-          {tr('insSignatureBody')}
-        </Text>
-      </View>
+        {/* The only affordance, and it needs to be one: a heading that does
+            something has to say so, and a chevron would promise navigation
+            to another screen rather than an answer in place. */}
+        <Ionicons name="information-circle-outline" size={17} color={t.textTertiary} />
+      </Pressable>
       {shown && (
         <View style={bleedStyle}>
           <BeatSignature
@@ -836,6 +874,30 @@ export default function EcgIdentityPanel({
 
       <Rule bleed={paddingHorizontal} />
       <Text style={[styles.disclaimer, { color: t.textTertiary }]}>{tr('insDisclaimer')}</Text>
+
+      {/* Three short paragraphs, and they are allowed to exist HERE because
+          a sheet is opened deliberately: nobody is charged for reading it,
+          and nobody is charged for not. Kept in the locale files rather
+          than assembled from fragments so the whole explanation can be
+          read as a set and translated as a set. */}
+      <BottomSheet
+        visible={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        title={tr('insSignatureTitle')}
+        closeLabel={tr('close')}
+      >
+        <View style={styles.infoBody}>
+          <Text style={[styles.infoText, { color: t.textSecondary, textAlign: align }]}>
+            {tr('insSignatureBody')}
+          </Text>
+          <Text style={[styles.infoText, { color: t.textSecondary, textAlign: align }]}>
+            {tr('insSignatureWhy')}
+          </Text>
+          <Text style={[styles.infoText, { color: t.textSecondary, textAlign: align }]}>
+            {tr('insSignatureUse')}
+          </Text>
+        </View>
+      </BottomSheet>
     </ScrollView>
   );
 }
@@ -1078,10 +1140,22 @@ const styles = StyleSheet.create({
      that needs good eyes is a header that does not organise the page for
      the person it was organised for. */
   sectionTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.1 },
-  /* The name of the curve, and the one line that says what it is made of.
-     Tighter than `block` (8) because the two lines are one unit: a title
-     that drifts from its own subtitle reads as two separate remarks. */
-  signatureHead: { gap: 3 },
+  /* The name of the curve and its info affordance, on one line.
+     `alignSelf: flex-start` so the tap target is the WIDTH OF THE WORDS
+     rather than the whole column: a full-width invisible button above the
+     ECG would swallow the start of a horizontal drag on the sheet below
+     it, which is the gesture the caliper lives on. */
+  signatureHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
+  signatureHeadRtl: { flexDirection: 'row-reverse', alignSelf: 'flex-end' },
+  infoBody: { gap: 12, paddingBottom: 4 },
+  /* 15.5, not the screen's 13.5 hint: this is the one place the reader
+     came to READ, and the app's brief is explicit about small type. */
+  infoText: { fontSize: 15.5, lineHeight: 21.5 },
   /* No bottom gap of its own — `firstScreen` already puts 12 between
      every child, and a second gap here would push the grid off the fold
      that this whole block is sized to. */
@@ -1158,6 +1232,15 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 12.5, lineHeight: 17, paddingTop: 2, textAlign: 'center' },
 });
 
+// v6.5.0 — The title stays; the sentence under it moves into a BottomSheet
+//          on tap. v6.4.0 was right that the figure needed a name and wrong
+//          to answer the question the name raises in place, forever: a
+//          TITLE is navigation, read every visit for one glance; an
+//          EXPLANATION is read once, ever. Charging every future visit for
+//          it is the v0.44.0 mistake in a smaller font — and at 13.5 pt it
+//          was not one line, it was three. The sheet can hold more than the
+//          screen line could, so the explanation is now complete instead of
+//          compressed into a clause.
 // v6.4.0 — The signature gets a NAME ("your heart's fingerprint") and one
 //          line saying what it is made of, and the lead row gets a label.
 //          Not a reversal of v0.44.0: what that removed was a tutorial

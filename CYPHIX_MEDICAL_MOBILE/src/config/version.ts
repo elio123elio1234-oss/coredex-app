@@ -1,8 +1,44 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.63.0';
-export const APP_BUILD_LABEL = 'the app can tell you an update is waiting, instead of making you guess';
+export const APP_VERSION = '0.64.0';
+export const APP_BUILD_LABEL = 'the fingerprint keeps its name and loses the lecture - tap it for the explanation';
 
+// v0.64.0 - THE TITLE STAYS, THE SENTENCE UNDER IT DOES NOT.
+//
+//           Reported one release after it was added: "the whole 'one beat
+//           average' thing, three unnecessary lines!! why the rambling - the
+//           first line, 'your heart's fingerprint', is enough, that's it. If
+//           you tap on it, an explanation opens from the bottom like the
+//           other things."
+//
+//           Both halves are right, and v0.62.0 had got one of them. Its
+//           argument was that the figure needed a TITLE, because nothing
+//           about one clean ECG trace says it is an average of many
+//           recordings rather than the last one. That still holds and the
+//           title stays. What it then did was answer the question the title
+//           raises IN PLACE, permanently, for every reader on every visit -
+//           which is the v0.44.0 mistake in a smaller font. A TITLE is
+//           navigation: read every visit, costs one glance. An EXPLANATION is
+//           read once, ever. Charging every future visit for a question that
+//           was answered on the first one is exactly what this screen was
+//           stripped of. And at 13.5 pt on a phone it was not "a line", it
+//           wrapped to three.
+//
+//           So the heading is a control now, on the pattern this app already
+//           has in three places (every Values tile, every interval row, every
+//           finding): tap, and a BottomSheet comes up. The sheet can hold far
+//           MORE than the screen line could, so the explanation is finally
+//           complete rather than compressed into a clause - what it is, why
+//           averaging is the whole point (what repeats is the heart; a shaky
+//           hand and a loose electrode cancel themselves out), and that the
+//           "usually" figures below are what YOUR baseline says is normal,
+//           not what is normal for people in general.
+//
+//           The tap target is the width of the words, not the column: a
+//           full-width invisible button directly above the ECG would swallow
+//           the start of a horizontal drag on the sheet below it, and that
+//           drag is the gesture the caliper lives on.
+//
 // v0.63.0 - ★ THE APP HAD expo-updates INSTALLED, CONFIGURED, DELIVERING -
 //           AND NEVER CALLED IT ONCE.
 //
