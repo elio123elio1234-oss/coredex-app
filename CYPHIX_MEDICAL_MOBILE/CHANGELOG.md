@@ -1,5 +1,85 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.62.0 - 2026-08-23 - the fingerprint has a name, and the six leads this device will never record are gone
+
+> *"In the INSIGHTS tab you can hide V1–V6 completely (because there won't be
+> any) — right now it's grey, it can go entirely. But it needs some
+> explanation or a title with a cool name about what I'm looking at — nobody
+> will understand that this is a BASELINE or an average beat over time if it
+> isn't written above it, right?"*
+
+Right, on both counts.
+
+### 1. V1–V6 are hidden — behind a flag, not deleted
+
+`LeadCoverageGrid` was built to print all **twelve** leads with the six
+un-measured ones drawn empty, and the reasoning was deliberate: a table
+listing only what exists shows six confident leads and says nothing about the
+**shape** of the record — a reader would have to already know that a limb-lead
+device cannot produce V1. Printing the empty cells says *"this is a six-lead
+identity, and the other six are not missing data, they are un-measured
+territory."*
+
+That is a good argument addressed to a clinician and the wrong one for the
+person whose heart it is. On a patient's screen six permanently grey cells are
+not territory — they are **six things that look broken**, on a device that is
+never going to fill them.
+
+`PRECORDIAL_LEADS_ENABLED` is a **flag and not a deletion** because the seam
+is real: nothing in the grid knows how many leads the hardware has, it renders
+the coverage rows the identity produced. When a 12-lead device ships, flip the
+constant and the six cells return — empty at first, then filling in on their
+own as studies arrive. The filter is on *"has no studies"* rather than *"is
+precordial"*, deliberately: a limb lead that somehow produced nothing is
+exactly as unhelpful to show as V1, and hard-coding the six names would put
+the lead set in two places.
+
+### 2. The curve finally has a name
+
+**"Your heart's fingerprint"**, and one line under it: *"One beat, averaged
+from all your recordings — every new study is compared against it."*
+
+**This is not a reversal of v0.44.0.** That release stripped a confidence
+ring, three figures, a three-line explainer, a legend row and every
+explanatory paragraph off this screen, after *"look how much this rambles, and
+it is stressful to look at"*. Those were a **tutorial** — they described things
+the reader could already see, at greater length than the things themselves.
+What was missing after them is the line that was never there: **the figure's
+title.**
+
+A chart with no title is not minimal, it is anonymous. And this chart is not
+self-evident in the one way that matters most: **nothing about a single clean
+ECG trace says it is the average of many recordings rather than the last one.**
+Every number under it — the match percentage, *"usually 128"*, the whole
+timeline — means something different depending on which of those two the
+reader believes they are looking at. So the title passes this screen's own
+rule (*"if a line does not change what the reader does next, it is not on the
+screen"*) on the strongest grounds available: without it, the reader misreads
+everything below it.
+
+"Fingerprint" is the metaphor the feature already runs on — this panel **is**
+the ECG ID — and it carries both facts a bare trace cannot: unique to this
+person, and **built up** rather than captured.
+
+### 3. The lead row is labelled too
+
+*"Leads · how many recordings back each one."* Six cells reading "I 12 · II 12
+· III 12" are a picker **and** a per-lead evidence count, and neither is
+legible from the cells: a bare figure under a lead name could just as easily
+be a measurement.
+
+The two new lines are roughly paid for by the row of cells that left — which
+matters, because everything from the trace down to the plain reading is sized
+to exactly **one viewport**, and a heading that pushes the reading below the
+fold would cost more than it explains.
+
+### Not verified
+
+Typechecks. Nobody has looked at it on a phone: the first-screen arithmetic
+(two lines added, one grid row removed) is the kind of thing that passes every
+check and still lands wrong on a small handset. `🔬` in PARITY until someone
+opens the tab.
+
 ## v0.61.0 - 2026-08-23 - the six-lead trace opens the report, and the report looks like CYPHIX again
 
 Four corrections to v0.60.0 — three of them the user's, one of them mine —

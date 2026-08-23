@@ -685,6 +685,21 @@ export const en = {
   insGoalSat: 'S',
   insGoalSun: 'S',
 
+  /* ★ v0.62.0 — the name of the curve, and the one line that says what it
+     is made of. "Fingerprint" is the metaphor the whole feature already
+     runs on (this panel IS the ECG ID), and it carries the two facts a
+     bare trace cannot: that it is unique to this person, and that it is
+     built up rather than captured. The second line does the work: nothing
+     about a clean ECG trace says it is an AVERAGE of many recordings, and
+     every number below it means something different depending on whether
+     the reader thinks they are looking at that or at their last study. */
+  insSignatureTitle: 'Your heart’s fingerprint',
+  insSignatureBody:
+    'One beat, averaged from all your recordings — every new study is compared against it.',
+  /* Names the control AND the number: six cells reading "I 12 · II 12" are
+     a picker and a per-lead evidence count, and a bare figure under a lead
+     name could just as easily be a measurement. */
+  insLeadsCaption: 'Leads · how many recordings back each one',
   insTimelineTitle: 'Match over time',
   insBaselineTitle: 'Your baseline',
   insDriftTitle: 'Change since you started',
@@ -1370,6 +1385,10 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.22.0 — INSIGHTS: the signature curve finally has a NAME ("your heart's
+//           fingerprint") plus one line saying what it is made of, and the
+//           lead row has a caption. Nothing about a clean ECG trace says it
+//           is an AVERAGE of many recordings rather than the last one.
 // v1.21.0 — The printed report's processing provenance (pdfProcTitle /
 //           pdfProcBody), and the statistics page renamed from "Measurements &
 //           Statistics" — it sat one page after a page titled "Measurements",

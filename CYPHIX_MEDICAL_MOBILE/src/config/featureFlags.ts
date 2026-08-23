@@ -64,6 +64,31 @@ export const SHOW_SHELL_WORDMARK = false;
  */
 export const INTERPRETATION_ENABLED = false;
 
+/**
+ * ★ WHETHER THE PRECORDIAL LEADS (V1–V6) ARE SHOWN AT ALL.
+ *
+ * Off at the user's instruction (v0.62.0): *"you can hide V1–V6 completely,
+ * because there won't be any."*
+ *
+ * `LeadCoverageGrid` was built to print all TWELVE leads with the six
+ * un-measured ones drawn empty, and the reasoning was deliberate: a table
+ * listing only what exists shows six confident leads and says nothing about
+ * the shape of the record, so a reader has to already know that a limb-lead
+ * device cannot produce V1. That argument is sound for a clinician and wrong
+ * for the person whose heart it is — on a patient's screen six permanently
+ * grey cells are not "un-measured territory", they are six things that look
+ * broken, on a device that is never going to fill them.
+ *
+ * It is a FLAG and not a deletion because the seam is real: nothing in the
+ * grid knows how many leads the hardware has. When a 12-lead device ships,
+ * flip this to `true` and the six cells reappear — empty at first, then
+ * filling in on their own as studies arrive.
+ */
+export const PRECORDIAL_LEADS_ENABLED = false;
+
+// v0.62.0 — Adds PRECORDIAL_LEADS_ENABLED (off): V1–V6 are hidden rather
+//           than drawn empty. Six permanently grey cells on a patient's
+//           screen read as six broken things, not as un-measured territory.
 // v0.59.0 — Adds INTERPRETATION_ENABLED (off): this build measures, it does
 //           not decode. One flag for the tab, the list pill, the digest
 //           backfill and the PDF.

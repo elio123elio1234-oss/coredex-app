@@ -1,8 +1,59 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.61.0';
-export const APP_BUILD_LABEL = 'the six-lead trace opens the report, and the report looks like CYPHIX again';
+export const APP_VERSION = '0.62.0';
+export const APP_BUILD_LABEL = 'the fingerprint has a name, and the six leads this device will never record are gone';
 
+// v0.62.0 - INSIGHTS SAYS WHAT IT IS SHOWING.
+//
+//           1. V1-V6 ARE HIDDEN, behind PRECORDIAL_LEADS_ENABLED. The
+//              coverage grid was built to print all TWELVE leads with the six
+//              un-measured ones drawn empty, and the argument was deliberate:
+//              a table listing only what exists shows six confident leads and
+//              says nothing about the SHAPE of the record - a reader would
+//              have to already know that a limb-lead device cannot produce
+//              V1. That argument is addressed to a clinician and is the wrong
+//              one for the person whose heart it is. On a patient's screen
+//              six permanently grey cells are not "un-measured territory",
+//              they are six things that look broken, on a device that is
+//              never going to fill them.
+//              A FLAG and not a deletion, because the seam is real: nothing
+//              in the grid knows how many leads the hardware has. When a
+//              12-lead device ships, flip the constant and the cells return -
+//              empty at first, then filling in on their own.
+//
+//           2. THE CURVE GETS A NAME. Reported: "nobody will understand that
+//              this is a BASELINE or an average beat over time if it isn't
+//              written above it."
+//              This is NOT a reversal of v0.44.0, which stripped a confidence
+//              ring, three figures, a three-line explainer, a legend row and
+//              every explanatory paragraph off this screen. Those were a
+//              TUTORIAL: they described things the reader could already see,
+//              at greater length than the things themselves. What was missing
+//              after them is the line that was never there - the figure's
+//              TITLE. A chart with no title is not minimal, it is anonymous.
+//              And this chart is not self-evident in the way that matters
+//              most: nothing about one clean ECG trace says it is the AVERAGE
+//              OF MANY recordings rather than the last one, and every number
+//              under it - the match percentage, "usually 128", the whole
+//              timeline - means something different depending on which of
+//              those the reader believes they are looking at.
+//              So it passes this screen's own rule ("if a line does not
+//              change what the reader does next, it is not on the screen") on
+//              the strongest grounds available: without it, the reader
+//              misreads everything below it.
+//              "Fingerprint" is the metaphor the feature already runs on -
+//              this panel IS the ECG ID - and it carries both facts a bare
+//              trace cannot: unique to this person, and BUILT UP rather than
+//              captured.
+//
+//           3. The lead row is labelled too, for the same reason: six cells
+//              reading "I 12 - II 12" are a picker and a per-lead evidence
+//              count, and a bare figure under a lead name could just as
+//              easily be a measurement.
+//              The two new lines are roughly paid for by the row of cells
+//              that left, which matters: everything from the trace down to
+//              the plain reading is sized to exactly ONE viewport.
+//
 // v0.61.0 - "TAKE INSPIRATION FROM IT, DO NOT DO IT 1:1." Four corrections to
 //           v0.60.0, three of them the user's and one of them mine.
 //

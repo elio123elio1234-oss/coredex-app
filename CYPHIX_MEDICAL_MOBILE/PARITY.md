@@ -394,6 +394,15 @@ turns four surfaces off together, and turning it back on restores all four.
 | ↳ Values — "Export Report" CTA | ✅ web has a print button | 🔬 | 🔬 | Named at the user's request (the handoff said "View Report"). It makes the **same** choice the ⋯ menu makes: preview when this binary carries the WebView, direct share when it does not, because a button must never dead-end on a build that received this over the air. Hidden entirely when the reader lacks `exportPdf` |
 | ↳ Values — the trace is the real lead II | — handoff draws a decorative path | 🔬 | 🔬 | The handoff repeats a hand-written ECG path. That is right for a mock-up and the one thing that must not be copied: a decorative waveform on the same card as this patient's measured rate is a picture of somebody else's heart under their number. Reduced by **peak-preserving decimation**, not averaging — averaging flattens the R wave, which is the one feature that makes a 56 pt trace legible |
 
+## v0.62.0 — Insights says what it is showing
+
+| Feature | Web | iOS | Android | Notes |
+|---|---|---|---|---|
+| **V1–V6 hidden in the coverage grid** | ⏳ pending | 🔬 | 🔬 | Behind `PRECORDIAL_LEADS_ENABLED` (off). The grid was built to print all twelve leads with the six un-measured ones drawn empty — a clinician's argument about the SHAPE of the record. On a patient's screen six permanently grey cells read as six broken things, on a device that will never fill them. A FLAG and not a deletion: the 12-lead seam is real, and `hideEmpty` filters on "has no studies" rather than on "is precordial" so the lead set is not defined in two places |
+| **The signature curve has a title** | ⏳ pending | 🔬 | 🔬 | "Your heart's fingerprint" + one line: *"One beat, averaged from all your recordings — every new study is compared against it."* **Not a reversal of v0.44.0** — that removed a TUTORIAL (a ring, three figures, a three-line explainer, a legend, every paragraph); what was missing was the figure's NAME. Nothing about one clean ECG trace says it is the AVERAGE of many recordings rather than the last one, and every number below it means something different depending on which the reader believes |
+| **The lead row has a caption** | ⏳ pending | 🔬 | 🔬 | "Leads · how many recordings back each one". Six cells reading "I 12 · II 12" are a picker AND a per-lead evidence count, and a bare figure under a lead name could just as easily be a measurement |
+| ↳ First-screen budget | — | 🔬 | 🔬 | ⚠️ Everything from the trace to the plain reading is sized to exactly ONE viewport (`firstScreen`). Two lines were added and one row of cells removed, which should net out — but that is arithmetic, not a measurement. **Needs a look on a small handset**: if the plain reading falls below the fold the trade is a bad one |
+
 ## v0.61.0 — inspiration, not a copy
 
 | Feature | Web | iOS | Android | Notes |

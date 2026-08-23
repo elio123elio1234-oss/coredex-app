@@ -5,18 +5,26 @@
         I ·12   II ·12   III ·12   aVR ·12  aVL ·12  aVF ·12
         V1  —   V2  —    V3  —     V4  —    V5  —    V6  —
 
-   ══ THE EMPTY CELLS ARE THE FEATURE ══
-   A coverage table that listed only what exists would show six confident
-   leads and say nothing at all — the reader would have to already know
-   that a limb-lead device cannot produce V1. Printing all twelve, with the
-   precordial ones explicitly empty, states the shape of the record: this
-   is a six-lead identity, and the other six are not missing data, they
-   are un-measured territory.
+   ══ THE EMPTY CELLS WERE THE FEATURE, AND ARE NOW OPT-IN (v0.62.0) ══
+   The original argument: a table listing only what exists shows six
+   confident leads and says nothing about the SHAPE of the record — the
+   reader would have to already know that a limb-lead device cannot produce
+   V1. Printing all twelve with the precordial ones explicitly empty says
+   "this is a six-lead identity, and the other six are not missing data,
+   they are un-measured territory".
 
-   It is also the seam the 12-lead hardware arrives through. Nothing in
-   this component knows how many leads the device has — it renders the
-   coverage rows the identity produced. When a study starts carrying
-   V1–V6 those six cells fill in on their own.
+   That is a good argument addressed to a clinician, and the wrong one for
+   the person whose heart it is. Reported: *"you can hide V1–V6 completely,
+   because there won't be any."* On a patient's screen six permanently grey
+   cells are not territory, they are six things that look broken, on a
+   device that is never going to fill them. `hideEmpty` drops any lead with
+   no studies behind it.
+
+   The 12-lead seam is untouched and is the reason this is a PROP rather
+   than a filter at the call site: nothing in this component knows how many
+   leads the hardware has, it renders the coverage rows the identity
+   produced. Flip `PRECORDIAL_LEADS_ENABLED` and the six cells reappear —
+   empty at first, then filling in on their own as studies arrive.
 
    ══ THE COUNT IS SHOWN PER LEAD, NOT ONCE ══
    Because they genuinely differ. A patient with thirty limb studies and
@@ -40,6 +48,15 @@ interface Props {
   onSelect?: (lead: string) => void;
   /** Shown in a cell with no studies. */
   emptyMark?: string;
+  /**
+   * Drop every lead with no studies behind it instead of drawing it empty.
+   *
+   * ⚠️ Deliberately "has no studies" and not "is precordial": a limb lead
+   * that somehow produced nothing is exactly as unhelpful to show as V1,
+   * and hard-coding the six names here would put the lead set in two
+   * places — this file and the hardware — which is the shape drift takes.
+   */
+  hideEmpty?: boolean;
   rtl?: boolean;
 }
 
@@ -48,13 +65,15 @@ export default function LeadCoverageGrid({
   selected,
   onSelect,
   emptyMark = '—',
+  hideEmpty = false,
   rtl,
 }: Props) {
   const t = useTheme();
+  const rows = hideEmpty ? coverage.filter((c) => c.studies > 0) : coverage;
 
   return (
     <View style={[styles.grid, rtl && styles.gridRtl]}>
-      {coverage.map((row) => {
+      {rows.map((row) => {
         const has = row.studies > 0;
         const active = has && row.lead === selected;
         const tappable = has && Boolean(onSelect);
@@ -127,6 +146,10 @@ const styles = StyleSheet.create({
   count: { fontSize: 10.5, fontVariant: ['tabular-nums'] },
 });
 
+// v1.2.0 — `hideEmpty` drops the never-measured leads instead of drawing
+//          them. The empty cells were a clinician's argument about the shape
+//          of the record; on a patient's screen six permanently grey cells
+//          read as six broken things. The 12-lead seam survives as a prop.
 // v1.1.0 — Only the selected cell is drawn as a control. Twelve bordered boxes
 //          read as a form; one lit cell among quiet labels reads as a picker.
 // v1.0.0 — Per-lead evidence for the ECG ID across all twelve leads, with the

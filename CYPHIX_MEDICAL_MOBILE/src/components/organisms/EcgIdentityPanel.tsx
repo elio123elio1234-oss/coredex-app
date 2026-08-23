@@ -135,6 +135,7 @@ import PlainVerdict from '@/components/molecules/PlainVerdict';
 import RejectedBeats from '@/components/molecules/RejectedBeats';
 import StudyReadout, { type ReadoutRow } from '@/components/molecules/StudyReadout';
 import SimilarityTimeline from '@/components/molecules/SimilarityTimeline';
+import { PRECORDIAL_LEADS_ENABLED } from '@/config/featureFlags';
 import { useEcgIdentity } from '@/features/insights/useEcgIdentity';
 import { useReminders } from '@/features/reminders/useReminders';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -545,6 +546,40 @@ export default function EcgIdentityPanel({
           out what it said. Measured from the window and the dock rather
           than guessed — see `firstScreen`. */}
       <View style={[styles.firstScreen, { minHeight: firstScreenHeight }]}>
+      {/* ══ ★ THE CURVE GETS A NAME — v0.62.0 ═══════════════════════
+          Reported: *"nobody will understand that this is a BASELINE or an
+          average beat over time if it isn't written above it."*
+
+          This is NOT a reversal of v0.44.0, which stripped a confidence
+          ring, three figures, a three-line explainer, a legend row and
+          every explanatory paragraph off this screen. Those were a
+          TUTORIAL — they described things the reader could already see,
+          at greater length than the things themselves. What was missing
+          after them is the line that was never there: the figure's NAME.
+
+          A chart with no title is not minimal, it is anonymous. And this
+          particular chart is not self-evident in the one way that matters
+          most: nothing about a single clean ECG trace says it is the
+          AVERAGE OF MANY recordings rather than the last one. Every
+          number under it — the match percentage, "usually 128", the whole
+          timeline — means something different depending on which of those
+          two the reader believes they are looking at. So the name passes
+          the screen's own test ("if a line does not change what the
+          reader does next, it is not on the screen") on the strongest
+          possible grounds: without it, the reader misreads everything
+          below it.
+
+          Two lines, and they stop there. "Fingerprint" is the metaphor
+          the whole feature already runs on — this panel is the ECG ID —
+          and it does the work a paragraph was doing in v0.42.0. */}
+      <View style={styles.signatureHead}>
+        <Text style={[styles.sectionTitle, { color: t.textPrimary, textAlign: align }]}>
+          {tr('insSignatureTitle')}
+        </Text>
+        <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+          {tr('insSignatureBody')}
+        </Text>
+      </View>
       {shown && (
         <View style={bleedStyle}>
           <BeatSignature
@@ -619,11 +654,34 @@ export default function EcgIdentityPanel({
       )}
 
       {/* The legend row stays gone. It named two things the reader can
-          see, on the screen that was asked to stop naming things. */}
+          see, on the screen that was asked to stop naming things.
+
+          ★ v0.62.0 — this row, however, is now LABELLED, for the same
+          reason the trace above it is. Six cells reading "I 12 · II 12 ·
+          III 12" are a picker and a per-lead evidence count, and neither
+          of those is legible from the cells themselves: a bare number
+          under a lead name could be a measurement. One line, and it names
+          both the control and the number.
+
+          ⚠️ The label was affordable only because V1–V6 left. It is one
+          line of type replacing a whole row of cells, so the first
+          screenful is very slightly SHORTER than it was — which matters,
+          because everything down to the plain reading is sized to exactly
+          one viewport (`firstScreen`). */}
+      <View style={styles.leadHead}>
+        <Text style={[styles.hint, { color: t.textTertiary, textAlign: align }]}>
+          {tr('insLeadsCaption')}
+        </Text>
+      </View>
+      {/* ★ V1–V6 are hidden, not deleted — see PRECORDIAL_LEADS_ENABLED.
+          Six permanently grey cells on a patient's screen read as six
+          broken things, not as the "un-measured territory" the grid was
+          designed to state. */}
       <LeadCoverageGrid
         coverage={identity.coverage}
         selected={lead}
         onSelect={(l) => setLead(l as EcgLeadName)}
+        hideEmpty={!PRECORDIAL_LEADS_ENABLED}
         rtl={rtl}
       />
 
@@ -1020,6 +1078,14 @@ const styles = StyleSheet.create({
      that needs good eyes is a header that does not organise the page for
      the person it was organised for. */
   sectionTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.1 },
+  /* The name of the curve, and the one line that says what it is made of.
+     Tighter than `block` (8) because the two lines are one unit: a title
+     that drifts from its own subtitle reads as two separate remarks. */
+  signatureHead: { gap: 3 },
+  /* No bottom gap of its own — `firstScreen` already puts 12 between
+     every child, and a second gap here would push the grid off the fold
+     that this whole block is sized to. */
+  leadHead: { marginBottom: -6 },
   body: { fontSize: 16, lineHeight: 22 },
   meta: { fontSize: 12.5, flexShrink: 1 },
   hint: { fontSize: 13.5, lineHeight: 19 },
@@ -1092,6 +1158,15 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: 12.5, lineHeight: 17, paddingTop: 2, textAlign: 'center' },
 });
 
+// v6.4.0 — The signature gets a NAME ("your heart's fingerprint") and one
+//          line saying what it is made of, and the lead row gets a label.
+//          Not a reversal of v0.44.0: what that removed was a tutorial
+//          describing things the reader could see; what was missing was the
+//          figure's title. Nothing about a clean ECG trace says it is the
+//          AVERAGE of many recordings rather than the last one, and every
+//          number below it means something different depending on which the
+//          reader believes. V1–V6 are hidden behind PRECORDIAL_LEADS_ENABLED,
+//          which is roughly what pays for the two new lines.
 // v6.3.0 — An `active` prop, because this panel outlives its own tab: History
 //          mounts it once and hides it rather than unmounting it, so both
 //          controls that vibrate — the builder and the caliper — could fire
