@@ -53,7 +53,7 @@
 </style>
 </head>
 <body>
-<h1>⚡ CYPHIX HW Playground <span class="badge">3× Lead II · ADS1293 · v0.1.1</span>
+<h1>⚡ CYPHIX HW Playground <span class="badge">3× Lead II · ADS1293 · v0.1.2</span>
     <span id="connDot" class="dot"></span><span id="connTxt" style="font-size:12px;color:var(--dim)">מנותק</span></h1>
 
 <div class="row" style="margin-bottom:10px">
@@ -94,9 +94,9 @@
 
 <div class="row">
   <div style="flex:2.2;min-width:520px">
-    <div class="strip"><canvas id="c0"></canvas><span class="lbl" style="color:var(--ch1)">CH1 · Lead II #1</span><span class="val" id="v0"></span></div>
-    <div class="strip"><canvas id="c1"></canvas><span class="lbl" style="color:var(--ch2)">CH2 · Lead II #2</span><span class="val" id="v1"></span></div>
-    <div class="strip"><canvas id="c2"></canvas><span class="lbl" style="color:var(--ch3)">CH3 · Lead II #3</span><span class="val" id="v2"></span></div>
+    <div class="strip"><canvas id="c0"></canvas><span class="lbl" id="l0" style="color:var(--ch1)">CH1</span><span class="val" id="v0"></span></div>
+    <div class="strip"><canvas id="c1"></canvas><span class="lbl" id="l1" style="color:var(--ch2)">CH2</span><span class="val" id="v1"></span></div>
+    <div class="strip"><canvas id="c2"></canvas><span class="lbl" id="l2" style="color:var(--ch3)">CH3</span><span class="val" id="v2"></span></div>
     <div class="strip"><canvas id="cc"></canvas><span class="lbl" style="color:var(--comb)" id="combLbl">COMBINED</span><span class="val" id="vc"></span></div>
     <div id="diffStrips" style="display:none">
       <div class="strip small"><canvas id="d01"></canvas><span class="lbl" style="color:var(--diff)">CH1 − CH2 (רעש בלבד בפריסט A)</span></div>
@@ -403,7 +403,23 @@ setInterval(() => {
 }, 1000);
 
 // ===== UI wiring =====
-function markPreset() { for (let i = 0; i < 3; i++) $('p' + i).classList.toggle('presetActive', preset === i); $('combLbl').textContent = 'COMBINED · ' + (PRESET_NAMES[preset] || ''); }
+// What each hardware channel actually measures, per preset — keeps the strip
+// labels honest (in preset C, CH1 is Lead I and CH3 is powered off!)
+const CH_LABELS = [
+  ['CH1 · Lead II #1 (IN3−IN1)', 'CH2 · Lead II #2 (IN4−IN1)', 'CH3 · Lead II #3 (IN5−IN1)'],
+  ['CH1 · Lead II #1 (IN3−IN1)', 'CH2 · Lead II #2 (IN5−IN2)', 'CH3 · Lead II #3 (IN6−IN4)'],
+  ['CH1 · Lead I (IN2−IN1)', 'CH2 · Lead II (IN3−IN1)', 'CH3 · ⛔ כבוי בפריסט C'],
+];
+const COMB_LABELS = [
+  'COMBINED · מיזוג תוכנה של 3 עותקי Lead II (פריסט A)',
+  'COMBINED · מיזוג תוכנה של 3 עותקי Lead II (פריסט B)',
+  'COMBINED · עותק של Lead II — אין מה למזג בפריסט C',
+];
+function markPreset() {
+  for (let i = 0; i < 3; i++) $('p' + i).classList.toggle('presetActive', preset === i);
+  for (let i = 0; i < 3; i++) $('l' + i).textContent = (CH_LABELS[preset] || CH_LABELS[0])[i];
+  $('combLbl').textContent = COMB_LABELS[preset] || 'COMBINED';
+}
 $('btnConnect').onclick = connect;
 $('btnDisconnect').onclick = () => device && device.gatt.disconnect();
 $('btnStream').onclick = () => ctrlWrite([0x04, streaming ? 0 : 1]);
@@ -433,4 +449,4 @@ if (!navigator.bluetooth) {
 </script>
 </body>
 </html>
-<!-- v0.1.1 — per-connection seq/loss counters; v0.1.0 — Web Bluetooth GUI: 3-ch live view, combine mean/median/weighted, noise σ + correlation, register console, CSV recorder -->
+<!-- v0.1.2 — preset-aware channel labels (CH1=Lead I and CH3=off in preset C); v0.1.1 — per-connection seq/loss counters; v0.1.0 — Web Bluetooth GUI: 3-ch live view, combine mean/median/weighted, noise σ + correlation, register console, CSV recorder -->
