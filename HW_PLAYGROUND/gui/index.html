@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>CYPHIX HW Playground — 3× Lead II</title>
+<style>
+  :root {
+    --bg: #0d1420; --panel: #131e30; --panel2: #0f1828; --border: #24344e;
+    --text: #dce6f5; --dim: #7d8fa8; --accent: #38bdf8; --good: #34d399;
+    --warn: #fbbf24; --bad: #f87171;
+    --ch1: #38bdf8; --ch2: #a78bfa; --ch3: #fb923c; --comb: #34d399; --diff: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; padding: 12px; }
+  h1 { font-size: 17px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  h1 .badge { font-size: 11px; color: var(--dim); border: 1px solid var(--border); border-radius: 99px; padding: 2px 10px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+  .panel h2 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  button { background: #1c2b44; color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+           padding: 7px 14px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #06202f; font-weight: 600; border-color: transparent; }
+  button.danger { background: #46212a; border-color: #7b3242; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  select, input { background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+                  border-radius: 7px; padding: 6px 8px; font: inherit; }
+  input.hex { width: 70px; direction: ltr; text-align: center; font-family: Consolas, monospace; }
+  .strip { position: relative; margin-bottom: 6px; }
+  .strip canvas { width: 100%; height: 110px; display: block; background: var(--panel2);
+                  border: 1px solid var(--border); border-radius: 8px; }
+  .strip.small canvas { height: 70px; }
+  .strip .lbl { position: absolute; top: 5px; right: 10px; font-size: 11px; font-weight: 600; }
+  .strip .val { position: absolute; top: 5px; left: 10px; font-size: 11px; color: var(--dim); direction: ltr; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .stat { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; }
+  .stat .k { font-size: 10px; color: var(--dim); }
+  .stat .v { font-size: 16px; font-weight: 600; direction: ltr; text-align: right; }
+  table { border-collapse: collapse; width: 100%; font-family: Consolas, monospace; font-size: 12px; direction: ltr; }
+  td, th { border: 1px solid var(--border); padding: 3px 6px; text-align: center; }
+  th { color: var(--dim); font-weight: 400; }
+  #log { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; height: 130px;
+         overflow-y: auto; padding: 6px 8px; font-family: Consolas, monospace; font-size: 11px; direction: ltr; }
+  #log .e { color: var(--bad); } #log .o { color: var(--good); }
+  .lods { display: flex; gap: 6px; }
+  .lod { width: 34px; text-align: center; border-radius: 6px; padding: 3px 0; font-size: 10px;
+         background: var(--panel2); border: 1px solid var(--border); color: var(--dim); }
+  .lod.on { background: #472730; border-color: var(--bad); color: var(--bad); font-weight: 700; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); display: inline-block; }
+  .dot.ok { background: var(--good); }
+  label.chk { color: var(--dim); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+  .presetActive { outline: 2px solid var(--accent); }
+</style>
+</head>
+<body>
+<h1>⚡ CYPHIX HW Playground <span class="badge">3× Lead II · ADS1293 · v0.1.0</span>
+    <span id="connDot" class="dot"></span><span id="connTxt" style="font-size:12px;color:var(--dim)">מנותק</span></h1>
+
+<div class="row" style="margin-bottom:10px">
+  <div class="panel" style="flex:1;min-width:330px">
+    <h2>חיבור ושליטה</h2>
+    <div class="row">
+      <button id="btnConnect" class="primary">🔗 התחבר ל-ESP</button>
+      <button id="btnDisconnect" disabled>נתק</button>
+      <button id="btnStream" disabled>⏸ השהה זרם</button>
+      <button id="btnRecord" disabled>⏺ הקלט</button>
+      <button id="btnCsv" disabled>⬇ הורד CSV</button>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <span style="color:var(--dim);font-size:12px">פריסט:</span>
+      <button id="p0" class="preset" disabled>A · RA משותפת + RLD</button>
+      <button id="p1" class="preset" disabled>B · 3 זוגות עצמאיים</button>
+      <button id="p2" class="preset" disabled>C · ייצור (I+II)</button>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <span style="color:var(--dim);font-size:12px">שילוב:</span>
+      <select id="combineMode">
+        <option value="mean">ממוצע</option>
+        <option value="median">חציון</option>
+        <option value="weighted">משוקלל 1/σ²</option>
+      </select>
+      <span style="color:var(--dim);font-size:12px">חלון:</span>
+      <select id="winSec"><option>5</option><option selected>10</option></select>
+      <label class="chk"><input type="checkbox" id="detrend" checked> ניקוי baseline לתצוגה</label>
+      <label class="chk"><input type="checkbox" id="showDiffs"> הפרשי ערוצים</label>
+    </div>
+  </div>
+  <div class="panel" style="min-width:260px">
+    <h2>Lead-off (ERROR_LOD גולמי)</h2>
+    <div class="lods" id="lods"></div>
+    <div style="margin-top:8px;font-size:11px;color:var(--dim)" id="lodHint">—</div>
+  </div>
+</div>
+
+<div class="row">
+  <div style="flex:2.2;min-width:520px">
+    <div class="strip"><canvas id="c0"></canvas><span class="lbl" style="color:var(--ch1)">CH1 · Lead II #1</span><span class="val" id="v0"></span></div>
+    <div class="strip"><canvas id="c1"></canvas><span class="lbl" style="color:var(--ch2)">CH2 · Lead II #2</span><span class="val" id="v1"></span></div>
+    <div class="strip"><canvas id="c2"></canvas><span class="lbl" style="color:var(--ch3)">CH3 · Lead II #3</span><span class="val" id="v2"></span></div>
+    <div class="strip"><canvas id="cc"></canvas><span class="lbl" style="color:var(--comb)" id="combLbl">COMBINED</span><span class="val" id="vc"></span></div>
+    <div id="diffStrips" style="display:none">
+      <div class="strip small"><canvas id="d01"></canvas><span class="lbl" style="color:var(--diff)">CH1 − CH2 (רעש בלבד בפריסט A)</span></div>
+      <div class="strip small"><canvas id="d02"></canvas><span class="lbl" style="color:var(--diff)">CH1 − CH3</span></div>
+      <div class="strip small"><canvas id="d12"></canvas><span class="lbl" style="color:var(--diff)">CH2 − CH3</span></div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:330px;display:flex;flex-direction:column;gap:10px">
+    <div class="panel">
+      <h2>סטטיסטיקה (3 שניות אחרונות)</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">דופק (משולב)</div><div class="v" id="sHr">—</div></div>
+        <div class="stat"><div class="k">קצב דגימה נמדד</div><div class="v" id="sRate">—</div></div>
+        <div class="stat"><div class="k">σ רעש CH1 (µV)</div><div class="v" id="sN0">—</div></div>
+        <div class="stat"><div class="k">σ רעש CH2 (µV)</div><div class="v" id="sN1">—</div></div>
+        <div class="stat"><div class="k">σ רעש CH3 (µV)</div><div class="v" id="sN2">—</div></div>
+        <div class="stat"><div class="k">σ רעש משולב (µV)</div><div class="v" id="sNc">—</div></div>
+        <div class="stat"><div class="k">שיפור מול ערוץ בודד</div><div class="v" id="sGain">—</div></div>
+        <div class="stat"><div class="k">חבילות שאבדו</div><div class="v" id="sLost">0</div></div>
+      </div>
+      <div style="margin-top:8px">
+        <table id="corr"><tr><th></th><th>CH1</th><th>CH2</th><th>CH3</th></tr>
+          <tr><th>CH1</th><td>1</td><td id="r01">—</td><td id="r02">—</td></tr>
+          <tr><th>CH2</th><td></td><td>1</td><td id="r12">—</td></tr></table>
+        <div style="font-size:10px;color:var(--dim);margin-top:3px">קורלציית פירסון בין ערוצים (אחרי ניקוי baseline)</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>קונסולת רגיסטרים (ADS1293)</h2>
+      <div class="row" style="align-items:center">
+        <input class="hex" id="regAddr" placeholder="addr 0x">
+        <input class="hex" id="regVal" placeholder="val 0x">
+        <button id="btnWreg" disabled>כתוב</button>
+        <button id="btnRreg" disabled>קרא</button>
+        <button id="btnDump" disabled>Dump הכל</button>
+      </div>
+      <div id="dumpWrap" style="max-height:190px;overflow-y:auto;margin-top:8px"></div>
+    </div>
+
+    <div class="panel"><h2>לוג</h2><div id="log"></div></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ===== BLE protocol (must mirror firmware_playground/include/config.h) =====
+const SVC  = 'cf9a1293-0001-4b1c-9e0a-c0dec0dec0de';
+const DATA = 'cf9a1293-0002-4b1c-9e0a-c0dec0dec0de';
+const CTRL = 'cf9a1293-0003-4b1c-9e0a-c0dec0dec0de';
+const STAT = 'cf9a1293-0004-4b1c-9e0a-c0dec0dec0de';
+const RATE = 320, SAMPLE_BYTES = 13, HEADER_BYTES = 4;
+const PRESET_NAMES = ['A · RA משותפת + RLD→IN6', 'B · 3 זוגות עצמאיים', 'C · ייצור Lead I+II'];
+const REG_NAMES = {0x00:'CONFIG',0x01:'FLEX_CH1',0x02:'FLEX_CH2',0x03:'FLEX_CH3',0x04:'FLEX_PACE',0x05:'FLEX_VBAT',
+  0x06:'LOD_CN',0x07:'LOD_EN',0x08:'LOD_CUR',0x09:'LOD_AC',0x0a:'CMDET_EN',0x0b:'CMDET_CN',0x0c:'RLD_CN',
+  0x0d:'WILSON1',0x0e:'WILSON2',0x0f:'WILSON3',0x10:'WILSON_CN',0x11:'REF_CN',0x12:'OSC_CN',0x13:'AFE_RES',
+  0x14:'AFE_SHDN',0x15:'AFE_FAULT',0x17:'AFE_PACE',0x18:'ERR_LOD',0x19:'ERR_STAT',0x21:'R2_RATE',
+  0x22:'R3_CH1',0x23:'R3_CH2',0x24:'R3_CH3',0x25:'R1_RATE',0x27:'DRDYB_SRC',0x2f:'CH_CNFG'};
+
+// ===== state =====
+const N = RATE * 12;                       // ring capacity: 12 s
+const ch = [new Float32Array(N), new Float32Array(N), new Float32Array(N)];
+const comb = new Float32Array(N), lodBuf = new Uint8Array(N);
+let widx = 0, total = 0, preset = 0, lastSeq = -1, lost = 0;
+let device = null, ctrlChar = null, streaming = true;
+let recording = false, recRows = [], recT0 = 0;
+let rateWin = [];                          // [t_ms, totalSamples] for measured rate
+
+const $ = id => document.getElementById(id);
+const log = (msg, cls = '') => {
+  const d = $('log'); const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `${new Date().toLocaleTimeString('en-GB')} ${msg}`;
+  d.appendChild(line); d.scrollTop = d.scrollHeight;
+  while (d.childNodes.length > 300) d.removeChild(d.firstChild);
+};
+
+// LOD indicators IN1..IN6
+for (let i = 1; i <= 6; i++) { const s = document.createElement('div'); s.className = 'lod'; s.id = 'lod' + i; s.textContent = 'IN' + i; $('lods').appendChild(s); }
+
+// ===== statistics helpers =====
+function movDetrend(arr) {               // subtract 0.6 s moving mean
+  const w = Math.round(RATE * 0.6), out = new Float32Array(arr.length);
+  let s = 0;
+  for (let i = 0; i < arr.length; i++) {
+    s += arr[i]; if (i >= w) s -= arr[i - w];
+    out[i] = arr[i] - s / Math.min(i + 1, w);
+  }
+  return out;
+}
+function robustSigma(arr) {              // 1.4826 × MAD — QRS-resistant noise proxy
+  const a = Array.from(arr).sort((x, y) => x - y);
+  const med = a[a.length >> 1];
+  const dev = arr.map(v => Math.abs(v - med)).sort((x, y) => x - y);
+  return 1.4826 * dev[dev.length >> 1];
+}
+function pearson(a, b) {
+  let sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0; const n = a.length;
+  for (let i = 0; i < n; i++) { sa += a[i]; sb += b[i]; saa += a[i]*a[i]; sbb += b[i]*b[i]; sab += a[i]*b[i]; }
+  const cov = sab - sa*sb/n, va = saa - sa*sa/n, vb = sbb - sb*sb/n;
+  return (va > 0 && vb > 0) ? cov / Math.sqrt(va*vb) : 0;
+}
+function tail(buf, n) {                  // last n samples of ring, in order
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = buf[(widx - n + i + N) % N];
+  return out;
+}
+
+// per-channel σ estimates (for weighted combine), refreshed by the stats loop
+let sigma = [1, 1, 1];
+
+function combineSample(a, b, c) {
+  const m = $('combineMode').value;
+  if (preset === 2) return b;            // preset C: CH2 is the only Lead II
+  if (m === 'median') return Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));
+  if (m === 'weighted') {
+    const w = sigma.map(s => 1 / Math.max(s * s, 1e-6));
+    return (a*w[0] + b*w[1] + c*w[2]) / (w[0] + w[1] + w[2]);
+  }
+  return (a + b + c) / 3;
+}
+
+// ===== BLE =====
+async function connect() {
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'CYPHIX-PLAYGROUND' }, { services: [SVC] }],
+      optionalServices: [SVC],
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    const server = await device.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    const dataChar = await svc.getCharacteristic(DATA);
+    ctrlChar = await svc.getCharacteristic(CTRL);
+    const statChar = await svc.getCharacteristic(STAT);
+    await dataChar.startNotifications();
+    dataChar.addEventListener('characteristicvaluechanged', e => onData(e.target.value));
+    await statChar.startNotifications();
+    statChar.addEventListener('characteristicvaluechanged', e => onStat(e.target.value));
+    setConnected(true);
+    log(`connected to ${device.name}`, 'o');
+  } catch (err) { log('connect failed: ' + err.message, 'e'); }
+}
+function onDisconnected() { setConnected(false); log('disconnected', 'e'); }
+function setConnected(on) {
+  $('connDot').classList.toggle('ok', on);
+  $('connTxt').textContent = on ? 'מחובר · ' + (device ? device.name : '') : 'מנותק';
+  ['btnDisconnect','btnStream','btnRecord','btnWreg','btnRreg','btnDump','p0','p1','p2'].forEach(id => $(id).disabled = !on);
+  $('btnConnect').disabled = on;
+}
+async function ctrlWrite(bytes) {
+  if (!ctrlChar) return;
+  try { await ctrlChar.writeValue(new Uint8Array(bytes)); }
+  catch (err) { log('ctrl write failed: ' + err.message, 'e'); }
+}
+
+function onData(dv) {
+  const seq = dv.getUint8(0), count = dv.getUint8(1);
+  preset = dv.getUint8(2);
+  if (lastSeq >= 0) { const gap = (seq - lastSeq - 1 + 256) % 256; if (gap) { lost += gap; $('sLost').textContent = lost; } }
+  lastSeq = seq;
+  markPreset();
+  for (let s = 0; s < count; s++) {
+    const off = HEADER_BYTES + s * SAMPLE_BYTES;
+    const a = dv.getInt32(off, true), b = dv.getInt32(off + 4, true), c = dv.getInt32(off + 8, true);
+    const lod = dv.getUint8(off + 12);
+    ch[0][widx] = a; ch[1][widx] = b; ch[2][widx] = c;
+    comb[widx] = combineSample(a, b, c); lodBuf[widx] = lod;
+    if (recording) recRows.push([(total * 1000 / RATE).toFixed(1), a, b, c, Math.round(comb[widx]), lod, seq]);
+    widx = (widx + 1) % N; total++;
+  }
+  updateLod(dv.getUint8(HEADER_BYTES + (count - 1) * SAMPLE_BYTES + 12));
+  rateWin.push([performance.now(), total]);
+  while (rateWin.length && rateWin[0][0] < performance.now() - 3000) rateWin.shift();
+}
+
+function onStat(dv) {
+  const op = dv.getUint8(0);
+  if (op === 0x02 || op === 0x01) {
+    const addr = dv.getUint8(1), val = dv.getUint8(2);
+    log(`reg 0x${addr.toString(16).padStart(2,'0')} ${op === 1 ? '<=' : '=>'} 0x${val.toString(16).padStart(2,'0')} (${REG_NAMES[addr] || '?'})`, 'o');
+  } else if (op === 0x03) {
+    log(`preset ${dv.getUint8(1)} → ${dv.getUint8(2) ? 'OK' : 'FAIL'}`, dv.getUint8(2) ? 'o' : 'e');
+  } else if (op === 0x04) {
+    streaming = !!dv.getUint8(1);
+    $('btnStream').textContent = streaming ? '⏸ השהה זרם' : '▶ חדש זרם';
+  } else if (op === 0x05) {
+    const start = dv.getUint8(1), n = dv.getUint8(2);
+    for (let i = 0; i < n; i++) dumpCache[start + i] = dv.getUint8(3 + i);
+    renderDump();
+  }
+}
+
+// ===== LOD =====
+function updateLod(raw) {
+  for (let i = 0; i < 6; i++) $('lod' + (i + 1)).classList.toggle('on', !!(raw & (1 << i)));
+  const hints = ['A: ‏IN1=RA · IN3/4/5=LL · IN6=RLD', 'B: ‏IN1/2/4=RA · IN3/5/6=LL', 'C: ‏IN1=RA · IN2=LA · IN3=LL+RLD'];
+  $('lodHint').textContent = hints[preset] || '';
+}
+
+// ===== register console =====
+const dumpCache = {};
+function renderDump() {
+  let html = '<table><tr><th>addr</th><th>name</th><th>val</th></tr>';
+  Object.keys(dumpCache).map(Number).sort((a, b) => a - b).forEach(a => {
+    html += `<tr><td>0x${a.toString(16).padStart(2,'0')}</td><td>${REG_NAMES[a] || ''}</td><td>0x${dumpCache[a].toString(16).padStart(2,'0')}</td></tr>`;
+  });
+  $('dumpWrap').innerHTML = html + '</table>';
+}
+
+// ===== rendering =====
+const strips = [
+  { cv: 'c0', get: () => ch[0], color: () => getCss('--ch1'), vid: 'v0' },
+  { cv: 'c1', get: () => ch[1], color: () => getCss('--ch2'), vid: 'v1' },
+  { cv: 'c2', get: () => ch[2], color: () => getCss('--ch3'), vid: 'v2' },
+  { cv: 'cc', get: () => comb,  color: () => getCss('--comb'), vid: 'vc' },
+];
+const getCss = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function drawStrip(canvas, data, color, valEl) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.clientWidth * devicePixelRatio;
+  const H = canvas.height = canvas.clientHeight * devicePixelRatio;
+  ctx.clearRect(0, 0, W, H);
+  const n = Math.min(data.length, total);
+  if (n < 10) return;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i++) { if (data[i] < lo) lo = data[i]; if (data[i] > hi) hi = data[i]; }
+  const pad = Math.max((hi - lo) * 0.12, 20); lo -= pad; hi += pad;
+  // gridlines every 0.5 mV when sensible
+  ctx.strokeStyle = 'rgba(120,140,170,0.12)'; ctx.lineWidth = 1;
+  const stepUv = (hi - lo) > 4000 ? 1000 : 500;
+  for (let g = Math.ceil(lo / stepUv) * stepUv; g < hi; g += stepUv) {
+    const y = H - (g - lo) / (hi - lo) * H;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6 * devicePixelRatio; ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const x = i / (n - 1) * W, y = H - (data[i] - lo) / (hi - lo) * H;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.stroke();
+  if (valEl) valEl.textContent = `${(data[n-1] / 1000).toFixed(2)} mV  [${(lo/1000).toFixed(1)}…${(hi/1000).toFixed(1)}]`;
+}
+
+function render() {
+  const winN = Math.min(Number($('winSec').value) * RATE, total, N);
+  if (winN > 10) {
+    const doDetrend = $('detrend').checked;
+    const views = strips.map(s => {
+      const t = tail(s.get(), winN);
+      return doDetrend ? movDetrend(t) : t;
+    });
+    strips.forEach((s, i) => drawStrip($(s.cv), views[i], s.color(), $(s.vid)));
+    if ($('showDiffs').checked) {
+      $('diffStrips').style.display = '';
+      const t0 = tail(ch[0], winN), t1 = tail(ch[1], winN), t2 = tail(ch[2], winN);
+      const sub = (a, b) => a.map((v, i) => v - b[i]);
+      drawStrip($('d01'), sub(t0, t1), getCss('--diff'));
+      drawStrip($('d02'), sub(t0, t2), getCss('--diff'));
+      drawStrip($('d12'), sub(t1, t2), getCss('--diff'));
+    } else $('diffStrips').style.display = 'none';
+  }
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+// ===== stats loop (1 Hz) =====
+setInterval(() => {
+  const n = Math.min(3 * RATE, total, N);
+  if (n < RATE) return;
+  const d = [0, 1, 2].map(i => movDetrend(tail(ch[i], n)));
+  const dc = movDetrend(tail(comb, n));
+  const sig = d.map(robustSigma), sc = robustSigma(dc);
+  sigma = sig.map(s => Math.max(s, 1e-3));
+  ['sN0','sN1','sN2'].forEach((id, i) => $(id).textContent = sig[i].toFixed(1));
+  $('sNc').textContent = sc.toFixed(1);
+  const best = Math.min(...sig.filter(s => s > 0));
+  $('sGain').textContent = (best > 0 && sc > 0) ? '×' + (best / sc).toFixed(2) : '—';
+  $('r01').textContent = pearson(d[0], d[1]).toFixed(3);
+  $('r02').textContent = pearson(d[0], d[2]).toFixed(3);
+  $('r12').textContent = pearson(d[1], d[2]).toFixed(3);
+  // measured sample rate
+  if (rateWin.length > 1) {
+    const [t0, s0] = rateWin[0], [t1, s1] = rateWin[rateWin.length - 1];
+    if (t1 > t0) $('sRate').textContent = ((s1 - s0) / (t1 - t0) * 1000).toFixed(0) + ' Hz';
+  }
+  // HR: simple adaptive peak detect on combined detrended
+  const thr = Math.max(...dc) * 0.55; const rr = [];
+  let lastPk = -1;
+  for (let i = 2; i < dc.length - 2; i++) {
+    if (dc[i] > thr && dc[i] >= dc[i-1] && dc[i] >= dc[i+1] && (lastPk < 0 || i - lastPk > RATE * 0.28)) {
+      if (lastPk >= 0) rr.push((i - lastPk) / RATE);
+      lastPk = i;
+    }
+  }
+  if (rr.length >= 2) {
+    rr.sort((a, b) => a - b);
+    $('sHr').textContent = Math.round(60 / rr[rr.length >> 1]) + ' bpm';
+  }
+}, 1000);
+
+// ===== UI wiring =====
+function markPreset() { for (let i = 0; i < 3; i++) $('p' + i).classList.toggle('presetActive', preset === i); $('combLbl').textContent = 'COMBINED · ' + (PRESET_NAMES[preset] || ''); }
+$('btnConnect').onclick = connect;
+$('btnDisconnect').onclick = () => device && device.gatt.disconnect();
+$('btnStream').onclick = () => ctrlWrite([0x04, streaming ? 0 : 1]);
+['p0','p1','p2'].forEach((id, i) => $(id).onclick = () => { ctrlWrite([0x03, i]); log('applying preset ' + 'ABC'[i]); });
+$('btnWreg').onclick = () => { const a = parseInt($('regAddr').value, 16), v = parseInt($('regVal').value, 16);
+  if (isNaN(a) || isNaN(v)) return log('addr/val לא תקינים', 'e'); ctrlWrite([0x01, a, v]); };
+$('btnRreg').onclick = () => { const a = parseInt($('regAddr').value, 16);
+  if (isNaN(a)) return log('addr לא תקין', 'e'); ctrlWrite([0x02, a]); };
+$('btnDump').onclick = () => ctrlWrite([0x05]);
+$('btnRecord').onclick = () => {
+  recording = !recording;
+  if (recording) { recRows = [['t_ms','ch1_uV','ch2_uV','ch3_uV','combined_uV','lod_raw','seq']]; recT0 = total; log('recording started', 'o'); }
+  else { log(`recording stopped — ${recRows.length - 1} samples`, 'o'); $('btnCsv').disabled = recRows.length < 2; }
+  $('btnRecord').textContent = recording ? '⏹ עצור הקלטה' : '⏺ הקלט';
+};
+$('btnCsv').onclick = () => {
+  const blob = new Blob([recRows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `playground_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+if (!navigator.bluetooth) {
+  log('Web Bluetooth לא זמין בדפדפן הזה — פתח ב-Chrome/Edge. אם נפתח מ-file:// ולא עובד: python -m http.server ואז localhost', 'e');
+} else log('מוכן. לחץ "התחבר ל-ESP" (המכשיר: CYPHIX-PLAYGROUND)');
+</script>
+</body>
+</html>
+<!-- v0.1.0 — Web Bluetooth GUI: 3-ch live view, combine mean/median/weighted, noise σ + correlation, register console, CSV recorder -->
