@@ -7,6 +7,62 @@ history stays exactly where it was.
 
 ---
 
+## v0.1.1 — 2026-09-09 — it ran on real hardware, and the hardware found a bug
+
+v0.1.0 shipped with an explicit "no hardware has been touched" caveat. That is
+now obsolete: the board was flashed and the whole chain verified end to end.
+
+### What the hardware actually says
+
+- `REVID = 0x01`, **read back from the live ADS1293 over BLE.** Every preset-0
+  register verified against intent on the running chip: `FLEX_CH1_CN = 0x19`
+  (Lead II #1), `FLEX_CH2_CN = 0x21` (Lead II #2), `FLEX_CH3_CN = 0x11`
+  (Lead I), `RLD_CN = 0x06` (RLD → IN6), `LOD_EN = 0x0F`, `CH_CNFG = 0x70`.
+- **Output rate 320.1 Hz** measured over 5 s against a 320 Hz target — the
+  1280 Hz → median-5 → ÷4 pipeline is intact on nRF52.
+- **BLE: 26.6 packets/s, 160 B each, 12 samples each, zero sequence gaps** over
+  repeated 6 s runs. `CYPHIX-XIAO` advertises at RSSI −17 with service UUID
+  `cf9a1293-0101-…`, so the little-endian UUID byte order was right.
+- `lod_raw = 0b001111` — lead-off on IN1..IN4 exactly, which is the four
+  electrodes preset 0 enables, all correctly reported as detached.
+
+So the wiring table in [WIRING.md](WIRING.md) is now confirmed by a working
+device, not just by reading the variant files. In particular **pad 3 carries
+DRDB fine** — DRDY interrupts arrive 1280 times a second through it.
+
+### The bug the bench found
+
+Every connection's first packet arrived with the backpressure flag (bit2) set,
+and burnt a sequence number the receiver never saw. Cause: a central is
+connected for a moment *before* it writes the CCCD, and `notify()` fails for the
+whole of that window — so the firmware incremented `ble_seq`, failed to send,
+and flagged congestion that did not exist. A GUI would have reported phantom
+packet loss on every single connect.
+
+Fixed by gating the notify on `pgData.notifyEnabled(conn)`, so a sequence number
+is only ever consumed by a packet that is actually transmitted. Re-verified on
+hardware across three connect/stream cycles: `first seq = 0` and no spurious
+flag on any of them.
+
+### One honest measurement, left as-is
+
+Roughly 1–5 packets per 160 still carry bit1 ("samples missed since the last
+packet") during plain streaming — on the order of 0.05 % of the 1280 Hz input.
+This is almost certainly the SoftDevice preempting `loop()` during radio events;
+at 1280 Hz there are only 780 µs between samples, and a BLE connection event can
+exceed that. It is not being hidden: this is visible precisely because the port
+was built to count and report it rather than emit a gap-free-looking trace. Left
+alone for now — worth revisiting only if the noise measurements turn out to care.
+
+### Also
+
+`board` switched to `xiaoblesense_adafruit`. The unit reported USB PID `0x8045`
+under its factory firmware, which is the Sense; the plain XIAO is `0x8044`. The
+two variants' `D0..D10` and SPI pin maps were diffed and are identical, so this
+changes no wiring — it just makes the board definition match the real hardware.
+
+---
+
 ## v0.1.0 — 2026-09-09 — the playground runs on an nRF52840, and Lead I stops polluting Lead II
 
 Replaces the ESP32 with a Seeed XIAO nRF52840 as the playground MCU, in a new
@@ -99,4 +155,4 @@ Not verified — **no hardware has been touched.** No electrode attached, no
 Seeed's published documentation, which is why WIRING.md §3 opens with a
 multimeter check instead of an assertion.
 
-<!-- v0.1.0 — first XIAO nRF52840 build of the ADS1293 playground -->
+<!-- v0.1.1 — first hardware run: REVID 0x01, 320.1 Hz, notify gated on a real CCCD subscription; v0.1.0 — first XIAO nRF52840 build of the ADS1293 playground -->

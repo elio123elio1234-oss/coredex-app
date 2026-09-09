@@ -53,6 +53,7 @@ static volatile uint8_t g_preset    = PRESET_DEFAULT;
 static volatile bool    g_streaming = true;
 static uint8_t  g_nch = 3;                // channels in the data loop for g_preset
 static volatile bool ble_connected = false;
+static volatile uint16_t ble_conn = BLE_CONN_HANDLE_INVALID;
 
 #define PG_PACKET_BYTES (PG_HEADER_BYTES + PG_SAMPLES_PER_PACKET * PG_SAMPLE_BYTES)
 static uint8_t ble_buf[PG_PACKET_BYTES];
@@ -105,6 +106,7 @@ static void drdyISR() { drdy_ticks++; }
 // ---------- BLE callbacks ----------
 static void connect_cb(uint16_t conn_handle) {
   BLEConnection* conn = Bluefruit.Connection(conn_handle);
+  ble_conn = conn_handle;
   ble_connected = true;
   ble_idx = 0;
   ble_seq = 0;                            // per-connection seq, matching the GUI's loss counter
@@ -115,6 +117,7 @@ static void connect_cb(uint16_t conn_handle) {
 
 static void disconnect_cb(uint16_t conn_handle, uint8_t reason) {
   (void)conn_handle;
+  ble_conn = BLE_CONN_HANDLE_INVALID;
   ble_connected = false;
   ble_idx = 0;
   logf("[BLE] disconnected (reason 0x%02X)\n", reason);
@@ -364,18 +367,27 @@ void loop() {
     ble_idx++;
 
     if (ble_idx >= PG_SAMPLES_PER_PACKET) {
-      ble_buf[0] = ble_seq++;
-      ble_buf[1] = ble_idx;
-      ble_buf[2] = g_preset;
-      // flags: bit0 = ADS healthy, bit1 = samples missed since the last packet,
-      //        bit2 = the previous notify was rejected (BLE backpressure)
-      ble_buf[3] = (uint8_t)((ads_ok ? 0x01 : 0x00)
-                           | (flag_missed ? 0x02 : 0x00)
-                           | (flag_notifail ? 0x04 : 0x00));
-      bool ok = pgData.notify(ble_buf, PG_HEADER_BYTES + ble_idx * PG_SAMPLE_BYTES);
-      if (!ok) { notify_fails++; flag_notifail = true; }
-      else     { flag_notifail = false; }
-      flag_missed = false;
+      // Only transmit once the central has actually subscribed. A central is
+      // connected for a moment before it writes the CCCD, and notifying into
+      // that window fails every time: it burns sequence numbers the receiver
+      // never sees (which then reads as packet loss) and raises a backpressure
+      // flag that means nothing. Measured on hardware: without this gate the
+      // first packet of every connection carried a false bit2.
+      const uint16_t conn = ble_conn;
+      if (conn != BLE_CONN_HANDLE_INVALID && pgData.notifyEnabled(conn)) {
+        ble_buf[0] = ble_seq++;
+        ble_buf[1] = ble_idx;
+        ble_buf[2] = g_preset;
+        // flags: bit0 = ADS healthy, bit1 = samples missed since the last packet,
+        //        bit2 = the previous notify was rejected (BLE backpressure)
+        ble_buf[3] = (uint8_t)((ads_ok ? 0x01 : 0x00)
+                             | (flag_missed ? 0x02 : 0x00)
+                             | (flag_notifail ? 0x04 : 0x00));
+        bool ok = pgData.notify(ble_buf, PG_HEADER_BYTES + ble_idx * PG_SAMPLE_BYTES);
+        if (!ok) { notify_fails++; flag_notifail = true; }
+        else     { flag_notifail = false; }
+        flag_missed = false;
+      }
       ble_idx = 0;
     }
   } else {
@@ -383,4 +395,4 @@ void loop() {
   }
 }
 
-// v0.1.0 - XIAO main: Bluefruit GATT, SPSC ctrl ring, DRDY counter with honest loss reporting, 320 Hz pipeline
+// v0.1.1 - XIAO main: Bluefruit GATT, SPSC ctrl ring, DRDY loss reporting, 320 Hz pipeline; notify gated on a real CCCD subscription

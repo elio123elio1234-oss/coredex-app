@@ -92,16 +92,30 @@ the last packet, bit2 = the previous notify was rejected (BLE backpressure). The
 GUI surfaces all three. A stalled pipeline or a saturated link should be visible,
 not quietly baked into the trace.
 
-## Status
+## Status — running on hardware
 
-Builds clean (`SUCCESS`, RAM 6.1%, flash 15.3%) against the actual XIAO variant;
-the pin map in [WIRING.md](WIRING.md) is verified against
-`variants/Seeed_XIAO_nRF52840/variant.{h,cpp}` rather than against documentation.
-The GUI's combine/label logic is covered by a headless test.
+Flashed and verified end to end (v0.1.1):
 
-**None of that means it works on hardware.** Per the root CLAUDE.md §6.4: it
-typechecks and builds. Nothing here has been on a bench, no electrode has been
-attached, `REVID` has never been read from a real chip over these wires. Treat
-every claim about signal quality as untested until you have a trace.
+| Check | Result |
+|---|---|
+| `REVID` read from the live chip over BLE | **`0x01`** |
+| Preset-0 registers on the running chip | all match intent (`0x19` / `0x21` / `0x11`, `RLD_CN=0x06`) |
+| Output rate | **320.1 Hz** measured (target 320) |
+| BLE stream | 26.6 packets/s · 160 B · 12 samples · **0 sequence gaps** |
+| Advertising | `CYPHIX-XIAO`, RSSI −17, service UUID matches |
+| Lead-off | `0b001111` = IN1..IN4, exactly the electrodes preset 0 enables |
 
-<!-- v0.1.0 — XIAO nRF52840 port: isolated project, preset 0 = 2×Lead II + Lead I + RLD, own BLE identity and GUI -->
+The wiring in [WIRING.md](WIRING.md) is therefore confirmed by a working device.
+Pad `3` carries DRDB correctly — interrupts arrive 1280×/s through it.
+
+**Still untested: anything to do with signal quality.** No electrode has been on
+a body, no ECG has been recorded, no noise floor measured, and the `VUSB` supply
+question in WIRING.md §3 is still open. Every number above is about plumbing,
+not about the ECG. Treat morphology, noise and the 2×Lead II averaging claim as
+unverified until there is a real trace.
+
+~1–5 packets in 160 report bit1 (a missed input sample), ≈0.05 % of the 1280 Hz
+stream — almost certainly SoftDevice radio events preempting `loop()`. Visible
+only because the firmware counts it; see the changelog.
+
+<!-- v0.1.1 — hardware-verified status table (REVID 0x01, 320.1 Hz, 0 seq gaps); v0.1.0 — XIAO nRF52840 port: isolated project, preset 0 = 2×Lead II + Lead I + RLD, own BLE identity and GUI -->
