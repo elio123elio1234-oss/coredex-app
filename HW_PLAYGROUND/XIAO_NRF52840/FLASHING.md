@@ -40,10 +40,12 @@ C:\Users\elio1\.platformio\penv\Scripts\pio.exe run
 The first build downloads the `nordicnrf52` platform and the Adafruit nRF52
 core (Bluefruit ships inside it — there are no `lib_deps`). Later builds are fast.
 
-If your board is the **Sense** variant, change `board = xiaoble_adafruit` to
-`board = xiaoblesense_adafruit` in [platformio.ini](platformio.ini). Nothing
-else moves — the two differ only in the IMU/microphone, which this firmware
-never touches.
+`platformio.ini` is set to `board = xiaoblesense_adafruit`, because this unit
+reported USB PID `0x8045` under its factory firmware — that is the Sense; the
+plain XIAO is `0x8044`. If yours is the plain one, switch to
+`board = xiaoble_adafruit`. No wiring changes either way: the two variants'
+`D0..D10` and SPI pin maps were diffed and are identical, and this firmware
+never touches the IMU/microphone that separates them.
 
 A clean build ends with roughly:
 
@@ -60,14 +62,22 @@ with **`nrfutil` DFU over the USB serial port**, and PlatformIO drives the whole
 thing for you — including the 1200 bps "touch" that reboots the board into its
 bootloader first:
 
+> ⚠ **`COMx` is not a port.** Substitute the real one from step 1. Pasting the
+> placeholder verbatim fails with `could not open port 'COMx'` — and because
+> nothing then gets flashed, the board never advertises, so the next symptom
+> looks like "Bluetooth cannot find the device". That exact sequence already
+> cost one debugging round here.
+
 ```powershell
-C:\Users\elio1\.platformio\penv\Scripts\pio.exe run -t upload --upload-port COMx
+C:\Users\elio1\.platformio\penv\Scripts\pio.exe run -t upload --upload-port COM7
 ```
 
-If the touch does not take (the port never re-enumerates), **double-tap the
-RESET button** — quickly, twice — to force the bootloader, then run the same
-command again. The COM number usually changes when the bootloader takes over,
-so re-run step 1 to find it.
+(`COM7` was the port on 2026-09-09 — check it against step 1 before every
+upload, it moves.) The bootloader re-enumerates on a *different* port mid-upload;
+PlatformIO follows it by itself, so the number above is only the starting point.
+
+If the 1200 bps touch does not take (the port never re-enumerates), **double-tap
+the RESET button** — quickly, twice — to force the bootloader, then re-run.
 
 > A note on UF2: this build emits `firmware.elf`, `firmware.hex` and
 > `firmware.zip` (the nrfutil DFU package) — **it does not produce a `.uf2`**, so
@@ -78,8 +88,16 @@ so re-run step 1 to find it.
 ## Step 4 — serial check
 
 ```powershell
-C:\Users\elio1\.platformio\penv\Scripts\pio.exe device monitor -p COMx -b 115200
+C:\Users\elio1\.platformio\penv\Scripts\pio.exe device monitor -p COM10 -b 115200
 ```
+
+(again: confirm the port from step 1 — after a flash it is usually **not** the
+one you uploaded to. It was `COM10` after the 2026-09-09 upload.)
+
+The banner only prints if a terminal attaches within ~2 s of boot, so on an
+already-running board you drop straight into the CSV stream instead. That is not
+a fault: if CSV lines are flowing at all then `REVID` already read back `0x01`,
+because the firmware refuses to sample otherwise.
 
 Expected:
 
@@ -99,15 +117,18 @@ so leaving the board unattended costs nothing.
 
 ## Step 5 — GUI
 
-Open [gui/index.html](gui/index.html) in **Chrome or Edge** → "התחבר ל-XIAO" →
-pick `CYPHIX-XIAO`. If Web Bluetooth refuses to run from `file://`:
+**Double-click `OPEN_GUI.bat`** (or the **CYPHIX XIAO GUI** shortcut on the
+Desktop). It starts a local web server, opens Chrome on the page, and reuses the
+server if one is already running. Then press **"התחבר ל-XIAO"** and pick
+`CYPHIX-XIAO` from the Bluetooth dialog.
 
-```powershell
-cd C:\Users\elio1\Desktop\Coredex_App\HW_PLAYGROUND\XIAO_NRF52840\gui
-python -m http.server 8000
-```
+Two small windows appear: a launcher console that closes itself, and a minimised
+**"GUI server"** window that keeps the page alive — close that one when you are
+done.
 
-then `http://localhost:8000`.
+> Why a server rather than just opening `index.html`: Chrome refuses Web
+> Bluetooth on `file://` origins. The page would load and look fine, but Connect
+> could never work. The launcher exists so that trap cannot be stepped in.
 
 This GUI talks **only** to `CYPHIX-XIAO`. The ESP playground GUI talks only to
 `CYPHIX-PLAYGROUND`. They use different service UUIDs on purpose, so the two
@@ -122,4 +143,4 @@ The production prototype is **not** flashed from this project, ever. The gate in
 data, LOD verified, 10 minutes with no BLE loss, merge strategy agreed and
 landed in `CYPHIX_SHARED` first, backup confirmed — and explicit approval.
 
-<!-- v0.1.0 — flashing the XIAO build: VID/PID identification, UF2 path, REVID triage, separate BLE identity rationale -->
+<!-- v0.1.1 — GUI opens from OPEN_GUI.bat / Desktop shortcut instead of typed commands; v0.1.0 — flashing the XIAO build: VID/PID identification, UF2 path, REVID triage, separate BLE identity rationale -->

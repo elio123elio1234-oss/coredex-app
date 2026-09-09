@@ -15,7 +15,8 @@ Seeed XIAO nRF52840, plus its own Web Bluetooth GUI.
 | **Wiring** | [WIRING.md](WIRING.md) — pad names exactly as silkscreened |
 | **Build & flash** | [FLASHING.md](FLASHING.md) |
 | **Firmware** | [platformio.ini](platformio.ini) · [include/](include/) · [src/](src/) |
-| **GUI** | [gui/index.html](gui/index.html) — Chrome/Edge, Web Bluetooth |
+| **Open the GUI** | **double-click [OPEN_GUI.bat](OPEN_GUI.bat)**, or the *CYPHIX XIAO GUI* Desktop shortcut |
+| **GUI source** | [gui/index.html](gui/index.html) — Chrome/Edge, Web Bluetooth |
 | **History** | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
@@ -118,4 +119,4 @@ unverified until there is a real trace.
 stream — almost certainly SoftDevice radio events preempting `loop()`. Visible
 only because the firmware counts it; see the changelog.
 
-<!-- v0.1.1 — hardware-verified status table (REVID 0x01, 320.1 Hz, 0 seq gaps); v0.1.0 — XIAO nRF52840 port: isolated project, preset 0 = 2×Lead II + Lead I + RLD, own BLE identity and GUI -->
+<!-- v0.1.2 — one-click OPEN_GUI.bat launcher + Desktop shortcut; v0.1.1 — hardware-verified status table (REVID 0x01, 320.1 Hz, 0 seq gaps); v0.1.0 — XIAO nRF52840 port: isolated project, preset 0 = 2×Lead II + Lead I + RLD, own BLE identity and GUI -->
