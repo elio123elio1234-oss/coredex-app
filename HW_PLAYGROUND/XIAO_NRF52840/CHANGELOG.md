@@ -7,6 +7,43 @@ history stays exactly where it was.
 
 ---
 
+## v0.1.2 — 2026-09-09 — the GUI opens from an icon, not a command
+
+"How do I open the GUI" was asked twice, which means the answer was wrong both
+times: it was a command block. Now it is `OPEN_GUI.bat` and a Desktop shortcut.
+The launcher starts the local web server, opens Chrome on the page, and reuses
+an already-running server rather than dying on a busy port. Both paths were run,
+not just written.
+
+**Why a server at all**, rather than double-clicking `gui/index.html`: Chrome
+refuses Web Bluetooth on `file://` origins. The page would load and look
+completely normal while Connect could never work — a failure with no error
+message. The launcher exists so that trap cannot be stepped in.
+
+Two launcher bugs that only running it could find:
+
+- `set PY=…` and `%PY%` were inside the same parenthesised `if` block, where cmd
+  expands variables at parse time and the value comes back empty. Moved out.
+- `timeout /t` aborts with *"Input redirection is not supported"* whenever stdin
+  is redirected. Replaced with `ping -n`.
+
+### FLASHING.md corrections
+
+- **The Sense note was backwards.** It told you to switch *to* the board that
+  v0.1.1 had already made the default.
+- **`--upload-port COMx` is now flagged in the open**, with a real port next to
+  it. Pasting that placeholder verbatim is exactly what broke the previous
+  upload — and because nothing got flashed, the board never advertised, so the
+  symptom presented as "Bluetooth cannot find the device" rather than as a
+  failed upload. A placeholder that reads like a value is a defect in a document
+  meant to be followed literally.
+- **The monitor step** now says the port is usually *not* the one you uploaded
+  to, and that a missing startup banner is expected on an already-running board:
+  CSV flowing at all already proves `REVID` read `0x01`, because the firmware
+  refuses to sample otherwise.
+
+---
+
 ## v0.1.1 — 2026-09-09 — it ran on real hardware, and the hardware found a bug
 
 v0.1.0 shipped with an explicit "no hardware has been touched" caveat. That is
@@ -155,4 +192,4 @@ Not verified — **no hardware has been touched.** No electrode attached, no
 Seeed's published documentation, which is why WIRING.md §3 opens with a
 multimeter check instead of an assertion.
 
-<!-- v0.1.1 — first hardware run: REVID 0x01, 320.1 Hz, notify gated on a real CCCD subscription; v0.1.0 — first XIAO nRF52840 build of the ADS1293 playground -->
+<!-- v0.1.2 — OPEN_GUI.bat launcher + FLASHING.md placeholder fixes; v0.1.1 — first hardware run: REVID 0x01, 320.1 Hz, notify gated on a real CCCD subscription; v0.1.0 — first XIAO nRF52840 build of the ADS1293 playground -->
