@@ -1,0 +1,125 @@
+# FLASHING — XIAO nRF52840 playground build
+
+> ⚠ **Do not trust a remembered COM number.** The rule in
+> `../flashing/FLASHING.md` ("COM7 = the prototype, never flash it") was written
+> when the ESP32 held that port. On 2026-09-09 **COM7 enumerated as the XIAO**
+> (`USB\VID_2886&PID_8045`, VID 2886 = Seeed) with the ESP prototype unplugged.
+> Windows reassigns COM numbers per device, per port. **Identify by VID/PID, every
+> time** — step 1 below.
+
+---
+
+## Step 0 — wire it
+
+See [WIRING.md](WIRING.md). Do not skip the `VUSB` multimeter check in §3.
+
+## Step 1 — identify the board (never skip)
+
+```powershell
+Get-CimInstance Win32_PnPEntity |
+  Where-Object { $_.Name -match 'COM\d+' } |
+  Select-Object Name, DeviceID | Format-List
+```
+
+| You are looking at | VID / PID |
+|---|---|
+| **Seeed XIAO nRF52840** (this project) | `VID_2886` · `PID_8045` |
+| Seeed XIAO RP2040 | `VID_2E8A` |
+| ESP32 DevKit, CP2102 bridge | `VID_10C4` |
+| ESP32 DevKit, CH340 bridge | `VID_1A86` |
+
+Only flash a port whose DeviceID starts `USB\VID_2886`.
+
+## Step 2 — build
+
+```powershell
+cd C:\Users\elio1\Desktop\Coredex_App\HW_PLAYGROUND\XIAO_NRF52840
+C:\Users\elio1\.platformio\penv\Scripts\pio.exe run
+```
+
+The first build downloads the `nordicnrf52` platform and the Adafruit nRF52
+core (Bluefruit ships inside it — there are no `lib_deps`). Later builds are fast.
+
+If your board is the **Sense** variant, change `board = xiaoble_adafruit` to
+`board = xiaoblesense_adafruit` in [platformio.ini](platformio.ini). Nothing
+else moves — the two differ only in the IMU/microphone, which this firmware
+never touches.
+
+A clean build ends with roughly:
+
+```
+RAM:   [=         ]   6.1% (used 14524 bytes from 237568 bytes)
+Flash: [==        ]  15.3% (used 124212 bytes from 811008 bytes)
+============================= [SUCCESS] =============================
+```
+
+## Step 3 — upload
+
+The XIAO does not take an ESP-style serial flash. This board definition uploads
+with **`nrfutil` DFU over the USB serial port**, and PlatformIO drives the whole
+thing for you — including the 1200 bps "touch" that reboots the board into its
+bootloader first:
+
+```powershell
+C:\Users\elio1\.platformio\penv\Scripts\pio.exe run -t upload --upload-port COMx
+```
+
+If the touch does not take (the port never re-enumerates), **double-tap the
+RESET button** — quickly, twice — to force the bootloader, then run the same
+command again. The COM number usually changes when the bootloader takes over,
+so re-run step 1 to find it.
+
+> A note on UF2: this build emits `firmware.elf`, `firmware.hex` and
+> `firmware.zip` (the nrfutil DFU package) — **it does not produce a `.uf2`**, so
+> there is no file to drag onto the bootloader drive. Drag-and-drop is only an
+> option if you convert the hex yourself with Microsoft's `uf2conv.py`. The
+> nrfutil path above is the supported one; use it.
+
+## Step 4 — serial check
+
+```powershell
+C:\Users\elio1\.platformio\penv\Scripts\pio.exe device monitor -p COMx -b 115200
+```
+
+Expected:
+
+```
+=== CYPHIX HW_PLAYGROUND - XIAO nRF52840 ===
+[BLE] advertising as CYPHIX-XIAO
+ADS1293 init (preset 0): OK | REVID=0x01
+Serial CSV: ch1_uV,ch2_uV,ch3_uV,combined_uV,lod_raw,count @ 320 Hz
+```
+
+`REVID` must be `0x01`. Anything else is SPI wiring — the firmware prints the
+pads to check. The usual culprit is `SDI`/`SDO` swapped (they are named from the
+ADS module's point of view: `SDI` → pad **10**, `SDO` → pad **9**).
+
+The USB CSV stream is written only while a terminal actually has the port open,
+so leaving the board unattended costs nothing.
+
+## Step 5 — GUI
+
+Open [gui/index.html](gui/index.html) in **Chrome or Edge** → "התחבר ל-XIAO" →
+pick `CYPHIX-XIAO`. If Web Bluetooth refuses to run from `file://`:
+
+```powershell
+cd C:\Users\elio1\Desktop\Coredex_App\HW_PLAYGROUND\XIAO_NRF52840\gui
+python -m http.server 8000
+```
+
+then `http://localhost:8000`.
+
+This GUI talks **only** to `CYPHIX-XIAO`. The ESP playground GUI talks only to
+`CYPHIX-PLAYGROUND`. They use different service UUIDs on purpose, so the two
+research boards can advertise at the same time and cannot be cross-connected —
+which matters because their preset IDs differ and a mismatched pair would
+mislabel every channel without erroring.
+
+## Prototype safety
+
+The production prototype is **not** flashed from this project, ever. The gate in
+`../flashing/FLASHING.md` still stands: winning preset chosen from recorded CSV
+data, LOD verified, 10 minutes with no BLE loss, merge strategy agreed and
+landed in `CYPHIX_SHARED` first, backup confirmed — and explicit approval.
+
+<!-- v0.1.0 — flashing the XIAO build: VID/PID identification, UF2 path, REVID triage, separate BLE identity rationale -->
