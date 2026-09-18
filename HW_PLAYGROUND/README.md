@@ -10,6 +10,7 @@
 |---|---|
 | `docs/` | **ADS1293_RESEARCH.md** — המחקר המלא (ניתוב, WCT, RLD, תוכניות A/B/C) · **CJMCU-1293_BOARD_MAP.md** — מפת המודול והחיווט · **OPEN_QUESTIONS.md** — שאלות פתוחות |
 | `firmware_current/` | עותק עיון של הקושחה שרצה היום על האבטיפוס (מקור: `Desktop\ESP32-ADS1293-master`) |
+| `firmware_production_v3/` | **קושחת הייצור הבאה**: ‏v2 + עותק שני של Lead II (`IN4−IN1`) + RLD על `IN6`, ‏characteristic נוסף ל-3 ערוצים; הישן וה-CSV זהים לביט. תוצר המחקר של המתחם הזה |
 | `firmware_playground/` | קושחת הניסויים: 3 ערוצים, פריסטים A/B/C, שליטת רגיסטרים מלאה דרך BLE |
 | `gui/` | `index.html` — GUI ‏Web Bluetooth (Chrome/Edge): גלים חיים, מיזוג, סטטיסטיקת רעש, קונסולת רגיסטרים, הקלטת CSV |
 | `flashing/` | `FLASHING.md` — הוראות צריבה (על ה-ESP הנוסף בלבד) |
@@ -36,4 +37,4 @@
 > `CYPHIX-PLAYGROUND`) נפרד בכוונה מפרוטוקול הייצור, כדי שאפליקציות CYPHIX
 > לא יתבלבלו. קידום לחוזה ייצור = הוספה ל-`CYPHIX_SHARED` תחילה (כלל §2.1).
 
-<!-- v0.1.0 — HW_PLAYGROUND root: purpose, structure, research TL;DR, workflow -->
+<!-- v0.2.0 — adds firmware_production_v3/; v0.1.0 — HW_PLAYGROUND root: purpose, structure, research TL;DR, workflow -->

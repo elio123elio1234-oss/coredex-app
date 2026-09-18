@@ -1,5 +1,27 @@
 # HW_PLAYGROUND — CHANGELOG
 
+## v0.2.0 — 2026-09-18 — קושחת ייצור v3: ‏Lead II כפול + RLD ייעודי
+
+**למה:** המחקר כאן הראה שאלקטרודת LL שנייה + RLD על אלקטרודה משלו נותנים אות נקי
+יותר. עכשיו זה הופך לקושחת ייצור — אבל בלי לשבור שום דבר שכבר עובד.
+
+- `firmware_production_v3/`: ‏v2 + ערוץ שלישי (`CH3 = IN4−IN1`, עותק שני של Lead II)
+  + `RLD → IN6`. רגיסטרים בלבד; שקע P1 והחיבורים הקיימים לא משתנים. אותם פינים
+  וערכים של preset 0 ב-XIAO (שנקראו חזרה משבב חי), בסדר הערוצים של הייצור.
+- **ה-characteristic הישן וה-CSV הסריאלי זהים לביט ל-v2.** הערוץ השלישי יוצא
+  ב-characteristic **נוסף** (‏12×13B + בייט דגלים). הסיבה: לקוח ה-web של היום בוחר
+  stride ב-`len−2 >= count×9 ? 9 : 5` — דגימת 13B על הערוץ הישן הייתה מפוענחת
+  כ-9B ומצוירת כזבל, בשקט. characteristic חדש אף אחד לא יכול לקרוא לא נכון.
+- תיקון ה-LOD של v2 (דפוס `0x03` → "רק LL") **הוסר**: הוא היה קיים רק כי ה-RLD רכב
+  על אלקטרודת ה-LL. עם RLD עצמאי כל ביט אומר מה שהוא אומר; אלקטרודת RLD מנותקת
+  מדווחת בדגל משלה (`RLDRAIL|CMOR` למשך חצי שנייה — אומת מול ה-datasheet עמ' 55).
+- `platformio.ini` **נועל** את גרסת ה-platform ו**לא** מכיל `upload_port` — שני
+  הלקחים מנקודת השחזור v0.1.3.
+- נתקלנו ותועד ב-`FLASHING.md`: הלוח הופיע כ-`CH340 (COM4)` במצב Error 31 כי COM4
+  תפוס ע"י קישור Bluetooth-Serial ישן; esptool נכשל ב-`Write timeout`.
+
+**מצב אימות:** נבנה נקי (Flash 88.1%). **טרם נצרב, טרם רץ על חומרה.**
+
 ## v0.1.3 — 2026-09-18 — נקודת שחזור לחומרה לפני השדרוג ל-Lead II כפול
 
 **למה:** עומדים לשנות את קושחת האבטיפוס (ערוץ שלישי = עותק שני של Lead II,
@@ -61,4 +83,4 @@ common-mode (‏RLD מנותב ל-IN6 המרחף / כבוי ב-B). ממתין ל
 - `flashing/FLASHING.md`: נוהל צריבה שמגן על האבטיפוס (COM7 מחוץ לתחום)
   ושער אישור לפני צריבה עליו.
 
-<!-- v0.1.3 — hardware restore point 2026-09-18 (flashed int32 binaries backed up); v0.1.0 — initial playground: research, board map, current-fw copy, 3ch firmware, BLE GUI, flashing guide -->
+<!-- v0.2.0 — firmware_production_v3 (dual Lead II + dedicated RLD, second BLE characteristic); v0.1.3 — hardware restore point 2026-09-18 (flashed int32 binaries backed up); v0.1.0 — initial playground: research, board map, current-fw copy, 3ch firmware, BLE GUI, flashing guide -->
