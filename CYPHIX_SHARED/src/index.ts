@@ -47,6 +47,16 @@ export * from './ecg/measurement.constants';
 export * from './ecg/reportFilter';
 export * from './ecg/ecgAnalysis';
 
+/* ── Dual Lead II (firmware v3+) ──────────────────────────────────
+   NOT part of the frozen chain above, and deliberately upstream of it: two
+   raw copies of Lead II go in, one raw Lead II comes out, and `deriveLeads`
+   / `reportFilterLeads` are then handed that exactly as they were always
+   handed the single copy. Recordings without a second copy never reach it.
+   Same mirror caveat as the rest of `ecg/`: the web keeps a verbatim copy
+   under src/services/ecg/leadFusion.ts — edit both. */
+export * from './ecg/leadFusion';
+export * from './ecg/limbLeads';
+
 /* ── Interpretation, and why it is a SEPARATE export ──────────────
    `ecgAnalysis` measures and refuses to interpret; `ecgScreening` reads
    what it measured and names patterns. Two files, two exports, one
@@ -130,6 +140,9 @@ export * from './ecg/measurementStats';
 //           keeps the measurements checkable. `delineateBeat` is now exported
 //           from ecgAnalysis (export only, no maths changed) so screening can
 //           find a J point without forking the delineation.
+// v1.15.0 — Exports `ecg/leadFusion` (dual Lead II, firmware v3+): upstream of the
+//          frozen chain, never inside it. `ble/protocol` gains the 3-channel
+//          characteristic + parser; recordings may carry a third raw channel.
 // v1.14.0 — Adds ecg/identityGhost: the identity as a viewer overlay, stamped
 //           at every R peak of the strip it is laid over. Alignment is exact by
 //           construction and its rhythm is therefore the strip's own — read the

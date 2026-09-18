@@ -89,6 +89,14 @@ export type BleStatus = 'disconnected' | 'connecting' | 'connected' | 'streaming
 export interface EcgBufferView {
   leadI: Float32Array;
   leadII: Float32Array;
+  /**
+   * The redundant Lead II copy (second left-leg electrode), same indexing as
+   * `leadII`. Present ONLY while the device streams the 3-channel
+   * characteristic (firmware v3+); absent on a legacy device and on the
+   * simulator. It is recorded, never drawn: the live screen reads `leadII`
+   * on every device, so the monitor looks the same either way.
+   */
+  leadIIb?: Float32Array;
   /** Monotonic write cursor (NOT wrapped) — use `% length` to index. */
   writeIdx: number;
   totalSamples: number;
@@ -145,6 +153,7 @@ export interface ValidatorResult {
   failReason?: 'timeout' | 'lead_off' | 'no_signal' | 'few_peaks' | 'irregular';
 }
 
+// v1.2.0 — `EcgBufferView.leadIIb`: the optional second Lead II copy (recorded, never drawn).
 // v1.1.0 — Names the precordial leads and the 12-lead order, and introduces
 //          `EcgLeadName` so cross-recording features (ECG ID) can be written
 //          against "whatever leads this study had" instead of against six.

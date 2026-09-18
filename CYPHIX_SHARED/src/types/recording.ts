@@ -9,10 +9,11 @@
    from here.
 
    ══ WHAT IS STORED, AND WHY IT MATTERS ══
-   We persist the **two RAW measured channels only** (Lead I and Lead II,
-   in millivolts, exactly as they came off the hardware). Everything a
-   viewer shows — the other four limb leads, any filtering, every
-   measurement — is DERIVED from those two at view time.
+   We persist the **RAW measured channels only** (Lead I and Lead II — and,
+   from firmware v3, the second measured copy of Lead II — in millivolts,
+   exactly as they came off the hardware). Everything a viewer shows — the
+   other four limb leads, any filtering, every measurement, and the FUSION
+   of the two Lead II copies — is DERIVED from those at view time.
 
    That is a deliberate clinical choice, not a storage optimisation:
 
@@ -87,10 +88,23 @@ export interface StoredRecording {
   type: MeasurementType;
   sampleRate: number;
   durationSec: number;
-  /** RAW measured channels — see the header for why only these two. */
+  /** RAW measured channels — see the header for why raw, and only raw. */
   channels: {
     leadI: EncodedChannel;
+    /** Lead II as every device measures it (LL#1 − RA). On a dual-Lead-II
+        recording this is copy A — the one the live screen drew. */
     leadII: EncodedChannel;
+    /**
+     * The second measured copy of Lead II (LL#2 − RA), firmware v3+ only.
+     * ABSENT — not empty — on every recording made without it, and that is
+     * a permanent, legitimate state: those recordings take the single-copy
+     * path and render exactly as they always have. Stored raw for the same
+     * three reasons as the others: the fused trace is an opinion, and the
+     * viewer must be able to switch it off and show what each electrode saw.
+     * Only meaningful for `type: 'limb'` — in the chest protocol the probe
+     * electrode moves and this copy does not follow it.
+     */
+    leadIIb?: EncodedChannel;
   };
   /** True when the source was the bench simulator. MUST stay visible in every UI. */
   isSimulated: boolean;
@@ -114,6 +128,8 @@ export interface NewRecordingInput {
   sampleRate: number;
   rawLeadI: Float32Array;
   rawLeadII: Float32Array;
+  /** Second copy of Lead II, when the device streamed one. Same length as the others. */
+  rawLeadIIb?: Float32Array;
   isSimulated: boolean;
   deviceLabel?: string;
   summary: RecordingSummary;
@@ -127,4 +143,5 @@ export interface NewRecordingInput {
  */
 export type RecordingListItem = Omit<StoredRecording, 'channels'>;
 
+// v1.1.0 — Optional third raw channel: `channels.leadIIb` / `rawLeadIIb` (dual Lead II).
 // v1.0.0 — Shared stored-recording domain types (mirrors web types/recording.ts).

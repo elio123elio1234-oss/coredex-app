@@ -33,7 +33,10 @@ import type { StoredRecording } from '../types/recording';
 export function buildRecordingCsv(recording: StoredRecording): string {
   const rawI = decodeChannel(recording.channels.leadI);
   const rawII = decodeChannel(recording.channels.leadII);
-  const n = Math.min(rawI.length, rawII.length);
+  // The second measured copy of Lead II (firmware v3+). Exported RAW and as its
+  // own column — never fused in: an export is what the electrodes saw.
+  const rawIIb = recording.channels.leadIIb ? decodeChannel(recording.channels.leadIIb) : null;
+  const n = Math.min(rawI.length, rawII.length, rawIIb ? rawIIb.length : Infinity);
   const fs = recording.sampleRate;
 
   const lines: string[] = [
@@ -46,17 +49,20 @@ export function buildRecordingCsv(recording: StoredRecording): string {
     '# units: millivolts (mV)',
     '# signal: RAW measured channels (Lead I, Lead II); derived leads are exact algebra',
     '# derivation: III=II-I  aVR=-(I+II)/2  aVL=I-II/2  aVF=II-I/2',
+    ...(rawIIb
+      ? ['# II_b: RAW second measured copy of Lead II (second left-leg electrode); II and the derived leads use the first copy only']
+      : []),
     recording.isSimulated
       ? '# ⚠️ SOURCE: SIMULATOR — SYNTHETIC SIGNAL, NOT A PATIENT RECORDING'
       : '# source: device',
-    ['time_s', ...LIMB_LEAD_ORDER].join(','),
+    ['time_s', ...LIMB_LEAD_ORDER, ...(rawIIb ? ['II_b'] : [])].join(','),
   ];
 
   for (let i = 0; i < n; i++) {
     const s = deriveLeads(rawI[i], rawII[i]);
-    lines.push(
-      [(i / fs).toFixed(5), ...LIMB_LEAD_ORDER.map((lead) => s[lead].toFixed(5))].join(','),
-    );
+    const row = [(i / fs).toFixed(5), ...LIMB_LEAD_ORDER.map((lead) => s[lead].toFixed(5))];
+    if (rawIIb) row.push(rawIIb[i].toFixed(5));
+    lines.push(row.join(','));
   }
 
   return lines.join('\n');
@@ -222,5 +228,7 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return out;
 }
 
+// v1.1.0 — CSV carries the raw second Lead II copy as a trailing `II_b` column when
+//          the recording has one (EDF+ unchanged: six signals, first copy).
 // v1.0.0 — Shared CSV + EDF+ builders (the pure half of the web's ecgExport);
 //          delivery stays per-platform. Adds bytesToBase64 for binary IO.

@@ -71,11 +71,12 @@ Lives there (and ONLY there — never fork a copy):
 
 | Concern | Module |
 |---|---|
-| BLE wire protocol: UUIDs, 320 Hz, packet parser (5 B / 9 B strides), rail detection constants | `src/ble/` |
+| BLE wire protocol: UUIDs, 320 Hz, packet parser (5 B / 9 B strides on the legacy characteristic; 13 B on the 3-channel dual-Lead-II characteristic, firmware v3+), rail detection constants | `src/ble/` |
 | ECG domain types (`EcgBufferView`, leads, recordings, validator shapes) | `src/types/ecg.ts` |
 | API contract: endpoint paths, request/response types, the `{ url, method, body }` / `{ status, message }` envelope | `src/api/` |
 | Domain constants (sample rate, buffer sizes, lead order, colours-per-lead) | `src/constants/` |
 | Pure business logic (formatters, mappers, protocol helpers) | `src/logic/` |
+| Dual Lead II fusion (`leadFusion`, `limbLeadsFromRaw`) — UPSTREAM of the frozen DSP chain, never inside it | `src/ecg/` |
 
 **Adding an endpoint or domain type directly inside web or mobile is a
 violation.** Define it in `CYPHIX_SHARED`, then consume it on every platform.
