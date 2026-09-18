@@ -1,5 +1,24 @@
 # HW_PLAYGROUND — CHANGELOG
 
+## v0.1.3 — 2026-09-18 — נקודת שחזור לחומרה לפני השדרוג ל-Lead II כפול
+
+**למה:** עומדים לשנות את קושחת האבטיפוס (ערוץ שלישי = עותק שני של Lead II,
+‏RLD על אלקטרודה ייעודית). לפני כן נבדק מה בדיוק מגובה, ונמצא פער: **קוד**
+הקושחה הצרובה היה מגובה (העותק ב-`firmware_current/` זהה בייט-לבייט למקור
+הקנוני — אומת ב-SHA-256), אבל **הבינאריים המקומפלים** היו קיימים רק בתיקיית
+`.pio` מקומית, וה-`platformio.ini` לא נועל גרסת platform — כלומר בנייה מחדש
+בעתיד לא מובטחת להפיק את אותה קושחה.
+
+- נוסף `firmware_current/flashed_bin_v2_int32/`: ‏`bootloader` / `partitions` /
+  `boot_app0` / `firmware` + ‏SHA-256 + נוהל `verify_flash` ושחזור שמזהה את הלוח
+  לפי VID ולא לפי מספר COM.
+- מה **לא** אומת, ונכתב במפורש ב-RESTORE.md: לא בוצעה קריאה חוזרת מהשבב
+  (האבטיפוס לא היה מחובר). ההתאמה לצרוב בפועל נשענת על חותמות זמן.
+- נמצא בדרך: ב-repo הקנוני `ESP32-ADS1293-master` תיקון ה-int32 עדיין לא
+  מקומט — ה-remote שלו מחזיק את גרסת ה-int16. לא נגעתי בו (הוא מחוץ למאגר הזה
+  ויש בו שינויים לא קשורים); הגיבוי התקף הוא זה שכאן.
+- תג השחזור בכל המאגרים: `restore-point-2026-09-18`.
+
 ## v0.1.2 — 2026-08-24 — תוויות ערוצים לפי פריסט (תיקון בלבול)
 
 המשתמש ראה בפריסט C ‏3 גרפים חיים וציפה ל-Lead I + Lead II + ערוץ מת —
@@ -42,4 +61,4 @@ common-mode (‏RLD מנותב ל-IN6 המרחף / כבוי ב-B). ממתין ל
 - `flashing/FLASHING.md`: נוהל צריבה שמגן על האבטיפוס (COM7 מחוץ לתחום)
   ושער אישור לפני צריבה עליו.
 
-<!-- v0.1.0 — initial playground: research, board map, current-fw copy, 3ch firmware, BLE GUI, flashing guide -->
+<!-- v0.1.3 — hardware restore point 2026-09-18 (flashed int32 binaries backed up); v0.1.0 — initial playground: research, board map, current-fw copy, 3ch firmware, BLE GUI, flashing guide -->

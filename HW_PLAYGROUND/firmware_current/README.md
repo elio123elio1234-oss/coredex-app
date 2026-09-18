@@ -9,5 +9,9 @@
 - מה היא עושה: ADS1293 @1280Hz (CH1=Lead I, CH2=Lead II, RLD→IN3) →
   median5 + מיצוע÷4 → 320Hz → Einthoven → Serial CSV + SPP + BLE notify
   (BeatAlign ECG, ‏16×9B int32 µV).
+- **`flashed_bin_v2_int32/`** — הבינאריים המקומפלים של הקושחה הזו + נוהל שחזור
+  ([RESTORE.md](flashed_bin_v2_int32/RESTORE.md)). זו נקודת השחזור של החומרה
+  מ-2026-09-18, לפני השדרוג ל-Lead II כפול. המקור כאן אומת באותו יום כזהה
+  בייט-לבייט למקור הקנוני.
 
-<!-- v0.1.0 — reference copy of production firmware (with int32 BLE fix), taken 2026-08-24 -->
+<!-- v0.1.3 — added flashed_bin_v2_int32/ (hardware restore point 2026-09-18); v0.1.0 — reference copy of production firmware (with int32 BLE fix), taken 2026-08-24 -->
