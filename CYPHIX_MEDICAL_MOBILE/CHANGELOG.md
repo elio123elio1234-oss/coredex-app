@@ -166,6 +166,16 @@ Windows machine — and none of it has met a v3 device. The Android MTU sequence
 is the riskiest part: it changes how *every* Android connection is opened, on a
 half that has never been run. Everything here is `🔬` in PARITY.
 
+### The Swift half compiles (same release)
+
+EAS iOS build **#9 (0.36.0)** finished — the first time the new CoreBluetooth code
+(second characteristic, strict 13-byte parser, `onDeviceFlags`) has been through a
+compiler, since there is no Mac in this loop. It was built and deliberately **NOT
+submitted**: nothing on the phone changes until `eas submit --platform ios --latest`
+is run on purpose. "Compiles" is all this proves — the BLE rows in `PARITY.md` stay
+🔬 until the build has talked to a v3 device. The Kotlin half has no equivalent
+proof yet: there has never been an Android build on EAS (no keystore).
+
 ### Shipping gate (same release)
 
 `npm run ship:check` stopped at expo-doctor, on something this release did not
