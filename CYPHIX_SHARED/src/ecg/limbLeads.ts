@@ -21,7 +21,21 @@
 
 import { deriveLeads } from './ecgDSP';
 import { fuseLeadII, type LeadFusionInfo, type LeadFusionOptions } from './leadFusion';
-import { LIMB_LEAD_ORDER, type LimbLeadName } from '../types/ecg';
+import { LIMB_LEAD_ORDER, type LimbLeadName, type MeasurementType } from '../types/ecg';
+
+/**
+ * May a stored recording of this type have its two Lead II copies fused?
+ *
+ * Everything except a chest capture. The stored channels of a 'limb' AND of a
+ * '12lead' recording both come from the limb measurement (the 12-lead flow
+ * files its limb capture under '12lead'; chest captures are never persisted),
+ * so in both the two copies are the same lead. Asking "is it 'limb'?" instead
+ * made the end-of-exam report fuse a 12-lead capture while History showed the
+ * same recording unfused.
+ */
+export function recordingAllowsFusion(type: MeasurementType): boolean {
+  return type !== 'chest';
+}
 
 export interface LimbLeadsOptions {
   /** Fuse the two Lead II copies when a second one exists. Default true. */
@@ -71,5 +85,6 @@ export function limbLeadsFromRaw(
   return { leads, samples: n, hasSecondCopy, fusion };
 }
 
+// v1.1.0 — `recordingAllowsFusion`: the recording-type rule, stated once ('chest' is the only no).
 // v1.0.0 — One place that turns raw channels into six leads, so the optional
 //          Lead II fusion is decided once and not per call site.
