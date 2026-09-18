@@ -2,6 +2,19 @@
 
 הדרך הרגילה: לחבר את הלוח ולומר ל-Claude "תצרוב את v3". מה שלמטה הוא מה שהוא מריץ.
 
+## ★ הדרך הקצרה — פקודה אחת
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/flash_and_verify.ps1
+```
+
+עושה לפי הסדר: מזהה את הלוח לפי VID ומסרב לפורט ש-Windows לא הפעיל (כולל התנגשות ה-COM
+עם קישור ה-Bluetooth) → **`verify_flash` מול גיבוי v2, לקריאה בלבד, לפני שמוחקים אותו**
+(נקודת השחזור נלקחה כשהלוח לא היה מחובר; זה מה שהופך אותה ממסקנה למדידה, ואם השבב לא
+תואם — הסקריפט עוצר ולא צורב) → בנייה וצריבה → קריאת הבאנר ובדיקת כל רגיסטר שנקרא
+חזרה מהשבב → `ble_check.py`. ללוח הנוסף (שלא מריץ v2): `-SkipV2Check`. לבדיקה בלי
+צריבה: `-NoFlash`. הסעיפים שלמטה הם אותם צעדים, ידנית.
+
 ## 0. לפני שצורבים על האבטיפוס
 
 נקודת החזרה קיימת ומאומתת: `../firmware_current/flashed_bin_v2_int32/RESTORE.md`
@@ -67,4 +80,4 @@ python tools/ble_check.py        # 6 שניות לכל characteristic
 `BeatAlign ECG`, ‏MTU 185, ‏99 חבילות × 146B ב-5 שניות, ‏317.8Hz, ‏0 אובדן, ה-characteristic
 החדש נעדר — כצפוי. אחרי צריבת v3 שורת ה-legacy חייבת להיראות **זהה**.
 
-<!-- v3.0.1 — adds tools/ble_check.py + the v2 baseline it measured; v3.0.0 — flashing v3: VID-based port discovery, the COM4/Bluetooth-link collision, expected boot banner -->
+<!-- v3.0.2 — adds tools/flash_and_verify.ps1 (one command; verifies the v2 restore image BEFORE overwriting it); v3.0.1 — adds tools/ble_check.py + the v2 baseline it measured; v3.0.0 — flashing v3: VID-based port discovery, the COM4/Bluetooth-link collision, expected boot banner -->
