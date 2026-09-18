@@ -166,6 +166,17 @@ Windows machine — and none of it has met a v3 device. The Android MTU sequence
 is the riskiest part: it changes how *every* Android connection is opened, on a
 half that has never been run. Everything here is `🔬` in PARITY.
 
+### Shipping gate (same release)
+
+`npm run ship:check` stopped at expo-doctor, on something this release did not
+cause: four Expo packages had published SDK-54 patch releases since the last ship
+(`expo` 54.0.37, `expo-file-system` 19.0.24, `expo-local-authentication` 17.0.9,
+`expo-updates` 29.0.20), and bumping `expo` then left two copies of
+`expo-constants` (18.0.13 beside 18.0.14) — which a native build refuses. Aligned
+with `npx expo install --fix` + `npx expo install expo-constants`. Patch versions
+only, same SDK. Afterwards: tsc clean, both bundles export, expo-doctor 18/18,
+and the script reports the path as REBUILD (app.json moved), as intended.
+
 ## v0.64.0 - 2026-08-23 - the fingerprint keeps its name and loses the lecture
 
 > *"The whole 'one beat average' thing, three unnecessary lines!! Why the
