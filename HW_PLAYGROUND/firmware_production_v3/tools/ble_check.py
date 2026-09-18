@@ -120,17 +120,25 @@ async def main(seconds: float) -> int:
             await client.stop_notify(uuid)
             span = (t.t1 - t.t0) if t.t0 and t.t1 and t.t1 > t.t0 else seconds
             print(f"\n[{name}] {t.packets} packets, {t.samples} samples in {span:.1f} s  sizes={sorted(t.sizes)}")
-            rate = t.samples / span
+            # N packets span N-1 intervals: the first packet's samples were produced
+            # BEFORE t0, so they do not belong to the span being timed.
+            per_packet = t.samples / t.packets if t.packets else 0
+            rate = (t.samples - per_packet) / span if t.packets > 1 else 0.0
             ok &= verdict(t.packets > 0, "notifications arrive")
             ok &= verdict(t.bad == 0, f"every packet well-formed ({t.bad} rejected)")
             ok &= verdict(t.gaps == 0, f"no sequence gaps ({t.gaps} lost)")
-            ok &= verdict(300 < rate < 340, f"sample rate {rate:.1f} Hz (target 320)")
+            # 300..340 used to pass here, and v3.0.0 sailed through at 308 Hz - a 4 %
+            # time-base error with a perfect seq. BLE arrival jitter over a few seconds
+            # is about 1 %, so 2 % is the tightest gate this measurement can carry; the
+            # exact number comes from the CSV sample counter on USB serial.
+            ok &= verdict(313.6 < rate < 326.4, f"sample rate {rate:.1f} Hz (320 +/- 2 %)")
             if name == "legacy":
                 ok &= verdict(t.sizes <= {146}, "packet size is v2's 146 B (16 x 9 + 2)")
                 ok &= verdict((t.lod_or & ~0x07) == 0, f"LOD byte stays within v2's three bits (0x{t.lod_or:02X})")
             else:
                 ok &= verdict(t.sizes <= {160}, "packet size is 160 B (12 x 13 + 4)")
                 ok &= verdict(bool(t.flags_or & FLAG_ADS_OK), f"ADS_OK flag set (flags seen 0x{t.flags_or:02X})")
+                ok &= verdict(not (t.flags_or & FLAG_MISSED), "firmware never reported a missed ADC conversion")
                 print(f"  info  samples-missed flag {'SEEN' if t.flags_or & FLAG_MISSED else 'never set'} · "
                       f"RLD fault {'REPORTED' if t.flags_or & FLAG_RLD_FAULT else 'not reported'} · LOD bits seen 0x{t.lod_or:02X}")
                 if t.ii_b:
@@ -146,4 +154,6 @@ async def main(seconds: float) -> int:
 if __name__ == "__main__":
     sys.exit(asyncio.run(main(float(sys.argv[1]) if len(sys.argv) > 1 else 6.0)))
 
+# v3.0.1 — the rate gate is 320 +/- 2 % (was 300..340, which passed a 4 % time-base error) and counts
+#          N-1 intervals; a SAMPLES_MISSED flag is now a FAIL, not an info line
 # v3.0.0 — post-flash check: legacy stream byte-shape unchanged, 3-channel stream well-formed and gap-free

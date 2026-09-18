@@ -26,9 +26,14 @@
 
 - ✔ `firmware.bin` נבנה ב-2026-07-19 10:42, שתי דקות אחרי השמירה האחרונה של
   `main.cpp` (10:40) — כלומר הוא נבנה מהקוד הנוכחי, ושונה מגיבוי ה-int16 הישן.
-- ✘ **לא בוצעה קריאה חוזרת מהשבב.** האבטיפוס לא היה מחובר ב-USB בזמן הגיבוי, ולכן
-  "זה בדיוק מה שצרוב" היא מסקנה מחותמות הזמן ולא מדידה. כשהלוח מחובר אפשר לסגור
-  את זה בפקודת `verify_flash` אחת (למטה) — היא רק קוראת, לא כותבת.
+- ✔ **אומת מול השבב עצמו (2026-09-18, מאוחר יותר באותו יום).** בזמן הגיבוי האבטיפוס
+  לא היה מחובר, ו"זה בדיוק מה שצרוב" הייתה מסקנה מחותמות זמן. לפני ש-v3 דרס את
+  השבב, `tools/flash_and_verify.ps1` הריץ `verify_flash` (קריאה בלבד) על האבטיפוס
+  (ESP32-D0WD-V3, ‏MAC ‏`00:70:07:1c:a1:48`): ‏`bootloader` / `partitions` / `firmware`
+  — שלושתם **digest matched**. נקודת השחזור היא עכשיו מדידה, לא הנחה.
+  (`boot_app0.bin` לא נבדק — הוא קובץ framework קבוע, לא תוצר build.)
+- ⚠ **השבב כבר לא מריץ את הקושחה הזו** — מאז אותו יום צרוב עליו v3
+  (`../../firmware_production_v3/`). התיקיה הזו היא הדרך חזרה.
 - ⚠ ב-repo הקנוני (`ESP32-ADS1293-master`) תיקון ה-int32 ב-`src/main.cpp` עדיין
   **לא מקומט** — ה-remote שלו מחזיק את גרסת ה-int16 הישנה. הגיבוי המלא והדחוף
   של הקושחה הנוכחית הוא כאן, ב-`coredex-app`.
@@ -60,4 +65,5 @@ $tool = "$env:USERPROFILE\.platformio\packages\tool-esptoolpy\esptool.py"
 אחרי שחזור: המכשיר מפרסם שוב כ-`BeatAlign ECG`, חבילות ‎16×9B int32 µV‏, RLD על IN3 —
 וכל גרסת אפליקציה (כולל אלה שמתג השחזור) עובדת מולו.
 
+<!-- v0.2.1 — the backup was verified against the chip (verify_flash, digest matched) before v3 overwrote it; the chip now runs v3 -->
 <!-- v0.1.3 — restore point 2026-09-18: flashed int32 production binaries + hashes + verify/restore procedure -->

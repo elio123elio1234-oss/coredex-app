@@ -1,5 +1,5 @@
 // ============================================================
-// CYPHIX production firmware v3.0.0 — dual Lead II + dedicated RLD
+// CYPHIX production firmware v3 — dual Lead II + dedicated RLD
 //
 // v2 plus ONE measured channel and ONE BLE characteristic. Everything a v2
 // client can see is byte-identical: same device name, same service, same legacy
@@ -27,7 +27,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-#define FW_VERSION "3.0.0"
+#define FW_VERSION "3.0.1"
 
 // ============ Bluetooth Classic (SPP) — kept for Python/PC ============
 BluetoothSerial SerialBT;
@@ -152,6 +152,90 @@ static uint8_t decim_count = 0;
 static const uint8_t DECIM_FACTOR = 4;
 static float acc_ch1 = 0.0f, acc_ch2 = 0.0f, acc_ch3 = 0.0f;  // accumulators
 
+// ============================================================
+// v3.0.1 — SAMPLING IS ITS OWN TASK. Measured on the bench, 2026-09-18:
+//
+//   no BLE client ............ 320.2 Hz
+//   a BLE client subscribed .. 306-309 Hz   <- a 4 % TIME-BASE ERROR
+//
+// Until now ONE task did everything: wait for DRDY, read the ADC, then format
+// the CSV, write Serial + SPP and call setValue()/notify(). The ADS1293 holds
+// only its LATEST conversion, so every time the output half ran longer than
+// one 1280 Hz period (781 us) a conversion was overwritten before anyone read
+// it. Nothing was lost on the radio - `seq` stayed perfect, the trace looked
+// clean - the 320 Hz stream simply ran slow, by about one conversion per
+// notify() call. Every interval an app measured was short by that fraction and
+// every heart rate high by it. v2 has the same flaw at ~1.7 % (one notify per
+// 16 samples); v3.0.0 made it 4 % by adding a second characteristic.
+//
+// Now a high-priority task owns DRDY -> SPI -> median -> decimate and hands
+// finished 320 Hz samples to loop() through a queue. loop() can take as long
+// as BLE likes; the sampler preempts it. The SPI bus has exactly one user
+// after setup() - this task - which is why it is started LAST in setup().
+// ============================================================
+struct EcgSample {
+  float   lead_i, lead_ii, lead_ii_b;  // mV, after median + decimation
+  uint8_t lod_raw;                     // ERROR_LOD & 0x0F
+  uint8_t misc;                        // ERROR_MISC & (CMOR | RLDRAIL)
+  uint8_t missed;                      // a 1280 Hz conversion was lost making this sample
+};
+
+static QueueHandle_t  sample_queue = NULL;
+static TaskHandle_t   sample_task  = NULL;
+static volatile bool  queue_overflowed = false;
+static const uint16_t SAMPLE_QUEUE_DEPTH = 128;  // 0.4 s of output stall before anything is dropped
+
+static void SampleTask(void *pvParameters) {
+  bool missed = false;
+  for (;;) {
+    uint32_t pending = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    if (pending == 0) continue;
+    // More than one pending DRDY: a conversion came and went unread. `seq`
+    // cannot show this, so it travels in the packet flags.
+    if (pending > 1) missed = true;
+
+    // --- Read raw ADC from ADS1293: CH1, CH2, CH3 in one data-loop burst ---
+    byte raw[9];
+    ads1293::Read_Data_Stream(raw, 9);
+
+    uint32_t raw1 = ((uint32_t)raw[0] << 16) | ((uint32_t)raw[1] << 8) | (uint32_t)raw[2];
+    uint32_t raw2 = ((uint32_t)raw[3] << 16) | ((uint32_t)raw[4] << 8) | (uint32_t)raw[5];
+    uint32_t raw3 = ((uint32_t)raw[6] << 16) | ((uint32_t)raw[7] << 8) | (uint32_t)raw[8];
+
+    // --- Convert to mV, median filter (remove single-sample spikes) ---
+    float mv1 = median_process(med_ch1, convert_to_mv(raw1));
+    float mv2 = median_process(med_ch2, convert_to_mv(raw2));
+    float mv3 = median_process(med_ch3, convert_to_mv(raw3));
+
+    // --- Averaging decimation: accumulate, then output mean ---
+    acc_ch1 += mv1;
+    acc_ch2 += mv2;
+    acc_ch3 += mv3;
+    decim_count++;
+    if (decim_count < DECIM_FACTOR) continue;
+
+    EcgSample s;
+    s.lead_i    = acc_ch1 / (float)DECIM_FACTOR;
+    s.lead_ii   = acc_ch2 / (float)DECIM_FACTOR;
+    s.lead_ii_b = acc_ch3 / (float)DECIM_FACTOR;
+    acc_ch1 = 0.0f;
+    acc_ch2 = 0.0f;
+    acc_ch3 = 0.0f;
+    decim_count = 0;
+
+    // The status registers are read HERE, not in loop(): one SPI user, no lock.
+    // ERROR_LOD: bit0 = IN1 (RA), bit1 = IN2 (LA), bit2 = IN3 (LL#1), bit3 = IN4 (LL#2)
+    s.lod_raw = ads1293::Read_LOD_Status() & 0x0F;
+    s.misc    = ads1293::Read_Error_Misc() & (ERROR_MISC_CMOR | ERROR_MISC_RLDRAIL);
+    s.missed  = missed ? 1 : 0;
+    missed = false;
+
+    // Never block the sampler on the consumer. A full queue means loop() has
+    // been stalled for 0.4 s; the sample is dropped and the next packet says so.
+    if (xQueueSend(sample_queue, &s, 0) != pdTRUE) queue_overflowed = true;
+  }
+}
+
 void setup() {
   Serial.begin(256000);
   delay(1000);
@@ -226,6 +310,13 @@ void setup() {
   Serial.println("Output: LeadI,LeadII,LeadIII,aVR,aVL,aVF,LOD (uV)");
   Serial.println("[BLE] legacy char: 16 samples x 9 bytes (int32 uV) @ 20 Hz");
   Serial.println("[BLE] 3-ch char:   12 samples x 13 bytes (int32 uV) @ 26.7 Hz");
+
+  // LAST, on purpose: every Reg_Read above shares the SPI bus, and from here on
+  // the sampler is its only user. Same core as loop() (1) so priority alone
+  // decides who runs; the Bluetooth stack lives on core 0.
+  sample_queue = xQueueCreate(SAMPLE_QUEUE_DEPTH, sizeof(EcgSample));
+  xTaskCreatePinnedToCore(SampleTask, "ECG-sample", 4096, NULL, 20, &sample_task, 1);
+  Serial.println("[FW] sampler task started (prio 20, core 1) - output is decoupled from the ADC");
 }
 
 // ----- once-per-second status line -----
@@ -240,58 +331,32 @@ static uint8_t lod_prev = 0xFF;  // Force first print
 static const uint16_t RLD_FAULT_SAMPLES = 160;  // 0.5 s at 320 Hz
 static uint16_t rld_fault_run = 0;
 
-uint32_t DRDY_notify = 0;
-
+// loop() is the OUTPUT half only: it never touches the ADC. See SampleTask.
 void loop() {
-  DRDY_notify = ulTaskNotifyTake(pdTRUE, 1);
-  if (DRDY_notify > 0) {
-    // More than one pending DRDY means at least one 1280 Hz sample came and went
-    // unread. `seq` cannot show this — nothing was lost on the radio — so it is
-    // reported in the packet flags instead of silently producing a clean-looking trace.
-    if (DRDY_notify > 1) ble3_flags_sticky |= ECG3_FLAG_SAMPLES_MISSED;
+  EcgSample s;
+  if (xQueueReceive(sample_queue, &s, pdMS_TO_TICKS(10)) != pdTRUE) return;
+  {
+    if (s.missed || queue_overflowed) {
+      ble3_flags_sticky |= ECG3_FLAG_SAMPLES_MISSED;
+      queue_overflowed = false;
+    }
 
-    // --- Read raw ADC from ADS1293: CH1, CH2, CH3 in one data-loop burst ---
-    byte raw[9];
-    ads1293::Read_Data_Stream(raw, 9);
-
-    uint32_t raw1 = ((uint32_t)raw[0] << 16) | ((uint32_t)raw[1] << 8) | (uint32_t)raw[2];
-    uint32_t raw2 = ((uint32_t)raw[3] << 16) | ((uint32_t)raw[4] << 8) | (uint32_t)raw[5];
-    uint32_t raw3 = ((uint32_t)raw[6] << 16) | ((uint32_t)raw[7] << 8) | (uint32_t)raw[8];
-
-    // --- Convert to mV, median filter (remove single-sample spikes) ---
-    float mv1 = median_process(med_ch1, convert_to_mv(raw1));
-    float mv2 = median_process(med_ch2, convert_to_mv(raw2));
-    float mv3 = median_process(med_ch3, convert_to_mv(raw3));
-
-    // --- Averaging decimation: accumulate, then output mean ---
-    acc_ch1 += mv1;
-    acc_ch2 += mv2;
-    acc_ch3 += mv3;
-    decim_count++;
-    if (decim_count < DECIM_FACTOR) return;
-
-    float lead_i    = acc_ch1 / (float)DECIM_FACTOR;
-    float lead_ii   = acc_ch2 / (float)DECIM_FACTOR;
-    float lead_ii_b = acc_ch3 / (float)DECIM_FACTOR;
-    acc_ch1 = 0.0f;
-    acc_ch2 = 0.0f;
-    acc_ch3 = 0.0f;
-    decim_count = 0;
+    float lead_i    = s.lead_i;
+    float lead_ii   = s.lead_ii;
+    float lead_ii_b = s.lead_ii_b;
 
     // --- Lead-Off Detection ---
-    // ERROR_LOD: bit0 = IN1 (RA), bit1 = IN2 (LA), bit2 = IN3 (LL#1), bit3 = IN4 (LL#2)
-    //
     // v2 carried a special case here: RLD rode on the LL electrode, so LL coming
     // off broke the RLD loop and made RA and LA report off as well, and the
     // firmware rewrote that pattern to "only LL". With RLD on its own electrode
     // that coupling is gone — each bit now means what it says — so the rewrite is
     // gone too. (When the RLD electrode itself is off the inputs may ALL read
     // off; that case has its own flag below rather than another pattern-guess.)
-    byte lod_raw = ads1293::Read_LOD_Status() & 0x0F;
+    byte lod_raw = s.lod_raw;
     byte lod_legacy = lod_raw & 0x07;  // the legacy stream never knew about LL#2
 
     // --- Right-leg drive health ---
-    byte misc = ads1293::Read_Error_Misc() & (ERROR_MISC_CMOR | ERROR_MISC_RLDRAIL);
+    byte misc = s.misc;
     if (misc) { if (rld_fault_run < 0xFFFF) rld_fault_run++; } else { rld_fault_run = 0; }
     bool rld_fault = rld_fault_run >= RLD_FAULT_SAMPLES;
 
@@ -394,10 +459,10 @@ void loop() {
 
 void IRAM_ATTR DRDYHandler(void)
 {
-  if (!is_ads1293_init) return;
+  // Until the sampler exists (the end of setup) a DRDY has nobody to wake.
+  if (!is_ads1293_init || sample_task == NULL) return;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  configASSERT(loop_task != NULL);
-  vTaskNotifyGiveFromISR(loop_task, &xHigherPriorityTaskWoken);
+  vTaskNotifyGiveFromISR(sample_task, &xHigherPriorityTaskWoken);
   portYIELD_FROM_ISR();
 }
 
@@ -419,4 +484,5 @@ void SerialTask(void *pvParameters) {
   vTaskDelete(NULL);
 }
 
+// v3.0.1 — sampling moved to its own high-priority task + queue: with a BLE client subscribed the single-task loop lost ~1 ADC conversion per notify() and the "320 Hz" stream really ran at 306-309 Hz (measured). Wire formats untouched.
 // v3.0.0 — third measured channel (Lead II-b) through the identical median+decimation, 3-channel BLE characteristic (12 x 13 B + flags), RLD health flag, v2's LL-disconnect LOD rewrite removed (RLD no longer rides on LL). Legacy characteristic and Serial/SPP CSV byte-identical to v2.
