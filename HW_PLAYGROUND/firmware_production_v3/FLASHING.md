@@ -60,7 +60,7 @@ RLD_CN=0x6   CMDET_EN=0xF   LOD_EN=0xF   AFE_SHDN_CN=0x0   CH_CNFG=0x70
 דגל `ADS_OK` דלוק; ומדפיס את שני עותקי Lead II זה לצד זה. דורש `pip install bleak`.
 
 ```powershell
-python toolsle_check.py        # 6 שניות לכל characteristic
+python tools/ble_check.py        # 6 שניות לכל characteristic
 ```
 
 קו בסיס שנמדד ב-2026-09-18 **על v2** (לפני הצריבה), עם הכלי הזה:
