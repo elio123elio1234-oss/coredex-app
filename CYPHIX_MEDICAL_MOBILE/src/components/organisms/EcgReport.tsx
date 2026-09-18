@@ -74,6 +74,14 @@ interface Props {
    * is silent unless something says so.
    */
   save?: { saved: boolean; saving: boolean; error: string | null };
+  /**
+   * Dual-Lead-II captures only (firmware v3+): what was done to Lead II —
+   * fused from its two copies, with the noise figures, or NOT, with the
+   * reason. Already worded by the caller (`fusionCaption`), because deciding
+   * what to say is logic and this file only draws. Null/absent on every
+   * other capture, and then nothing here moves.
+   */
+  fusionNote?: string | null;
   onRecordAgain: () => void;
   onFinish: () => void;
 }
@@ -131,7 +139,13 @@ const PANEL_BORDER = 1;
  */
 const MAX_STRIP_PX = 3600;
 
-export default function EcgReport({ report, save, onRecordAgain, onFinish }: Props) {
+export default function EcgReport({
+  report,
+  save,
+  fusionNote,
+  onRecordAgain,
+  onFinish,
+}: Props) {
   const t = useTheme();
   const { t: tr, lang } = useTranslation();
   const dark = useIsDark();
@@ -240,6 +254,14 @@ export default function EcgReport({ report, save, onRecordAgain, onFinish }: Pro
                 : tr('histSaving')}
           </Text>
         )}
+
+        {/* The other quiet line under the summary, in the same type: the
+            summary's stats say what was recorded, this says what was done to
+            it. It sits above the tabs because it is true of BOTH of them —
+            the fused Lead II is what the strips draw and what was measured. */}
+        {fusionNote ? (
+          <Text style={[styles.saveLine, { color: t.textTertiary }]}>{fusionNote}</Text>
+        ) : null}
 
         <SegmentedTabs
           options={TABS.map((o) => ({ value: o.value, label: tr(o.labelKey) }))}
@@ -427,6 +449,9 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 16, fontWeight: '700' },
 });
 
+// v3.2.0 — Dual Lead II: an optional `fusionNote` line under the summary, in
+//          the save line's own style. Absent on every capture with one Lead II
+//          copy, which therefore renders exactly as before.
 // v3.1.0 — All report copy comes from the locale, and the letterhead's date
 //          is formatted in the CHOSEN language rather than the phone's.
 //          Lead names and the mm/s · mm/mV scale stay as printed — they are

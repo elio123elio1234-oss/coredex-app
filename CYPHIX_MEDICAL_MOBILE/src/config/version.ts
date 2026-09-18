@@ -1,7 +1,103 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.64.0';
-export const APP_BUILD_LABEL = 'the fingerprint keeps its name and loses the lecture - tap it for the explanation';
+export const APP_VERSION = '0.65.0';
+export const APP_BUILD_LABEL = 'dual Lead II: records the second copy (fw v3), fuses it in reports - NATIVE REBUILD, not an OTA';
+
+// v0.65.0 - ★ LEAD II, MEASURED TWICE. ⚠️ NATIVE REBUILD: app.json 0.35.0 →
+//           0.36.0 (`modules/cyphix-ble`, both halves). Ship with `npm run
+//           ship:rebuild`; do NOT `eas update` until the 0.36.0 binary is
+//           installed (mobile CLAUDE.md §5A.2) - it would reach nobody.
+//
+//           Firmware v3 puts a SECOND left-leg electrode on the ADS1293 and
+//           gives the right-leg drive an electrode of its own. The device now
+//           measures Lead II twice - copy A is LL#1-RA, the pair every device
+//           has ever measured; copy B is LL#2-RA. Same heart in both. NOT the
+//           same noise: each leg electrode has its own contact noise, its own
+//           motion artefact, its own patch of muscle under it. That
+//           redundancy is the only source of noise reduction this product is
+//           allowed to use, because the usual one is forbidden - ischaemia
+//           lives anywhere from 0.05 to 150 Hz, muscle noise sits right on top
+//           of it, and a 40 Hz low-pass takes both. `fuseLeadII` (shared)
+//           removes noise WITHOUT a frequency filter: it weights the quieter
+//           copy, and averages what does not repeat from beat to beat, never
+//           inside the QRS.
+//
+//           WHAT THE APP DOES WITH IT, in one sentence: records the second
+//           copy, never draws it, and fuses it at READING time.
+//
+//           1. THE LIVE SCREEN DOES NOT CHANGE, and that is a decision, not an
+//              omission. `leadII` is copy A on every device, so SixLeadMonitor,
+//              EcgWave and the heartbeat gate read exactly what they read
+//              yesterday. Fusion needs the whole recording (it estimates beats,
+//              gain and a noise reference from all of it), so there is nothing
+//              honest to draw live - and a monitor that looked different on a
+//              new device would be one more thing to explain to a patient
+//              holding still.
+//
+//           2. IT IS STORED RAW, LIKE THE OTHER TWO. The fused trace is an
+//              OPINION about two measurements, so it is recomputed by whoever
+//              opens the record and can be switched off in the viewer - the
+//              same argument that has kept the filters out of storage since
+//              v1.0.0. A third channel is kept for a recording only if it was
+//              there from the first captured sample to the last; appear or
+//              vanish part-way and that recording is a normal two-channel one.
+//
+//           3. ONE FUNCTION DECIDES FUSE-OR-NOT, for every reader: the
+//              end-of-exam report, the History viewer, the PDF and the list
+//              digest all go through the shared `limbLeadsFromRaw` (stored
+//              records via `limbLeadsFromRecording`, which adds the one gate
+//              the samples cannot know: LIMB ONLY - in the chest protocol the
+//              probe electrode moves and copy B does not follow it). Five
+//              hand-rolled decode loops were five chances for the list, the
+//              screen and the paper to describe one recording differently.
+//              The PDF and the digest PIN fusion on, as they pin the filters;
+//              the viewer opens with it on, so all three agree by default.
+//
+//           4. ★ THE ONE EXCEPTION, DELIBERATE: THE ECG ID STAYS ON COPY A.
+//              An identity is a baseline across months of recordings, and
+//              every one made before the second electrode existed has only
+//              copy A. Fuse the new ones and they are systematically quieter
+//              than the old ones - which the ECG ID would report as a change
+//              in the patient's HEART on the day they changed DEVICE.
+//
+//           5. IT SAYS WHAT IT DID. One quiet line where the recording's
+//              metadata already lives (viewer header, end-of-exam report) and
+//              a paragraph on the PDF's processing section: "Lead II fused from
+//              two electrodes · noise 26 → 9 µV" - or, when the fusion ran and
+//              DECLINED, that it did and why. A second channel that was
+//              silently ignored looks exactly like one that was used. A
+//              recording with one copy says nothing at all, so every study
+//              made before today keeps the screen it had.
+//
+//           6. THE ONE LIVE CHANGE (asked for): two new contact notes on the
+//              limb exam, in the rail note's own slot and style. Reference
+//              electrode off - nothing on screen can be trusted. Second leg
+//              electrode off - the recording will use a single copy. Both
+//              gated on the 3-channel stream being ACTIVE: LOD bit 3 is
+//              ADS1293 input IN4, which on older hardware is not an electrode.
+//
+//           NATIVE, BOTH HALVES IN LOCKSTEP: a second GATT characteristic
+//           (the legacy one stays byte-identical, so every build ever shipped
+//           still works against v3 firmware), subscribe to ONE of the two, a
+//           STRICT 13-byte parser mirroring `parseEcgPacket3`, `leadIIb` in
+//           every batch (EMPTY on a legacy device - that is how JS tells), and
+//           `onDeviceFlags` on change of the flags byte.
+//
+//           ★ FOUND WHILE THERE: ANDROID NEVER REQUESTED AN MTU. A GATT link
+//           opens at ATT MTU 23 - a 20-byte notification - and only the
+//           client may ask for more; iOS does it unprompted, Android does
+//           not. So by the spec every 146 B legacy packet has been arriving
+//           cut to 20 bytes and dropped by the stride check: "connected, no
+//           signal". PARITY has carried Android BLE as never-run since
+//           v0.23.0, which is how this survived. Kotlin now requests 185
+//           BEFORE service discovery (GATT operations must not overlap).
+//
+//           ⚠️ WHAT "VERIFIED" MEANS HERE (§6.4): tsc is clean, the bundle
+//           builds, and `verify-pdf` builds twelve reports including three
+//           dual-Lead-II ones (fused 30 → 7 µV on synthetic noise; a
+//           disconnected second electrode correctly DECLINED). NOT ONE LINE
+//           of the Swift or the Kotlin has been compiled - this is a Windows
+//           machine - and none of it has met a v3 device.
 
 // v0.64.0 - THE TITLE STAYS, THE SENTENCE UNDER IT DOES NOT.
 //

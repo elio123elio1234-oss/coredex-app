@@ -12,6 +12,17 @@
      2. IT IS NOT A HOOK. Forty studies are processed in a loop, off the
         render path, so this has to be an ordinary function.
 
+   ★ AND A THIRD, SINCE DUAL LEAD II (firmware v3+): THE TEMPLATE STAYS ON
+   COPY A. Every other reader of a stored limb recording fuses the two
+   Lead II copies first (`limbLeadsFromRecording`); this one deliberately
+   does not, and reads `channels.leadII` alone. An identity is a baseline
+   built across MONTHS of recordings, and most of them — every one made
+   before the second electrode existed — have only copy A. Fusing the new
+   ones would make them systematically quieter than the old ones, and the
+   ECG ID would report that as a change in the patient's heart on the day
+   they changed device. Copy A is the one signal every recording has, so
+   it is the only one the baselines can be compared on.
+
         stored raw Lead I + Lead II  (base64 Float32, mV)
                      │
                      ▼  decodeChannel
@@ -105,6 +116,9 @@ export function templateFromRecording(recording: StoredRecording): RecordingTemp
   };
 }
 
+// v1.0.1 — Comment only: states that the ECG-ID template deliberately stays on
+//          Lead II copy A on a dual-Lead-II recording (no fusion), so identity
+//          baselines stay comparable across old and new recordings.
 // v1.0.0 — Stored recording → representative beat, through the PINNED identity
 //          filter chain rather than the viewer's current one, as a plain
 //          function so a backfill can loop over forty of them.

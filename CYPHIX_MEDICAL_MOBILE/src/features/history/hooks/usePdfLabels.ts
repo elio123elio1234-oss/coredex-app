@@ -29,6 +29,7 @@ import type { TranslationKey } from '@/i18n/config';
 import { useTranslation } from '@/i18n/useTranslation';
 import { AXIS_KEY, REGULARITY_KEY } from '@/components/organisms/EcgAnalysisSheet';
 import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
+import { FUSION_FALLBACK_KEY } from '@/features/history/fusionCaption';
 import type { PdfLabels } from '@/services/export/pdf/labels';
 
 const CATEGORY_KEY: Record<FindingCategory, TranslationKey> = {
@@ -154,6 +155,8 @@ export function usePdfLabels(): PdfLabels {
 
       procTitle: tr('pdfProcTitle'),
       procBody: tr('pdfProcBody'),
+      fusionFused: tr('pdfFusionFused'),
+      fusionDeclined: tr('pdfFusionDeclined'),
       leadMapTitle: tr('pdfLeadMapTitle'),
       leadMapCaption: tr('pdfLeadMapCap'),
       wallInferior: tr('pdfWallInferior'),
@@ -176,6 +179,9 @@ export function usePdfLabels(): PdfLabels {
          call one recording "slightly variable" and the other "regular". */
       regularityName: (r) => tr(REGULARITY_KEY[r]),
       axisClassName: (c) => tr(AXIS_KEY[c]),
+      /* The SAME table the viewer's one-line caption reads, so the paper and
+         the screen give one recording one reason. */
+      fusionReason: (f) => tr(FUSION_FALLBACK_KEY[f]),
 
       /* ★ ANNOTATED, NOT CAST. The template-literal type is checked against
          the locale key union, so adding a rule to the engine is a COMPILE
@@ -200,6 +206,8 @@ export function usePdfLabels(): PdfLabels {
   );
 }
 
+// v1.4.0 — Resolves the dual-Lead-II paragraph (`fusionFused`/`fusionDeclined`)
+//          and its reasons, from the table the viewer's caption uses.
 // v1.3.0 — Resolves the processing-provenance copy (`procTitle`/`procBody`).
 // v1.2.0 — The disclaimer no longer opens with "This is a screening result":
 //          since v0.59.0 the document contains no screening result to

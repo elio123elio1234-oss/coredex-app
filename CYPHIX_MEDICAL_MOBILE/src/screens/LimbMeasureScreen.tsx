@@ -74,6 +74,7 @@ import SixLeadMonitor from '@/components/organisms/SixLeadMonitor';
 import EcgReport from '@/components/organisms/EcgReport';
 import { LIMB_MEASURE_GUIDE_IMAGE } from '@/config/measurementGuides';
 import { useBle } from '@/features/ble/useBle';
+import { fusionCaption } from '@/features/history/fusionCaption';
 import { useSaveRecording } from '@/features/history/hooks/useSaveRecording';
 import { useHeartbeatGate } from '@/features/measurement/hooks/useHeartbeatGate';
 import { useLimbRecorder } from '@/features/measurement/hooks/useLimbRecorder';
@@ -163,6 +164,14 @@ export default function LimbMeasureScreen() {
       <EcgReport
         report={recorder.report}
         save={save}
+        /* Dual-Lead-II captures only; null otherwise. Worded here, not in the
+           organism — the same function the History viewer's header uses, so
+           the two screens describe one capture in one sentence. */
+        fusionNote={fusionCaption(
+          recorder.report.rawLeadIIb !== undefined,
+          recorder.report.fusion,
+          tr,
+        )}
         onRecordAgain={recorder.reset}
         onFinish={() => nav.goBack()}
       />
@@ -179,6 +188,15 @@ export default function LimbMeasureScreen() {
   const secondsLeft = Math.ceil(GUIDED_REC_SECS * (1 - recorder.progress / 100));
   const liveBpm = gate.hr > 0 ? gate.hr : ble.heartRate;
   const railedLeads = [...(ble.railed.I ? ['I'] : []), ...(ble.railed.II ? ['II'] : [])];
+  /* Dual-Lead-II devices only (firmware v3+) — `useBle` keeps both false on
+     every other source. The RLD fault goes first: with the reference
+     electrode off NOTHING on screen can be trusted, whereas a lost second leg
+     electrode costs the recording its redundant copy and nothing the patient
+     can see. Neither blocks the capture, for the rail note's own reason. */
+  const electrodeNotes = [
+    ...(ble.rldFault ? [tr('limbRldWarning')] : []),
+    ...(ble.secondLegOff ? [tr('limbSecondLegWarning')] : []),
+  ];
 
   /* Recording hasn't started and no heartbeat is being picked up yet — show
      the "hold it like this" illustration over the (flat) traces so the
@@ -217,7 +235,8 @@ export default function LimbMeasureScreen() {
   const showWaiting = !isRecording && !ble.isStreaming;
   // The circle's caption already promises the recording starts on its own.
   const showAutoHint = showGate && !(compact && showGuide);
-  const hasFoot = showRing || showGate || showWaiting || railedLeads.length > 0;
+  const hasFoot =
+    showRing || showGate || showWaiting || railedLeads.length > 0 || electrodeNotes.length > 0;
 
   /* `.guide-image-circle { width: clamp(190px, 44vw, 300px) }`, but it also
      has to leave room for its caption inside the traces row. */
@@ -394,6 +413,19 @@ export default function LimbMeasureScreen() {
               {tr('limbRailWarning', { leads: railedLeads.join(', ') })}
             </Text>
           )}
+
+          {/* The same note, for the two electrodes only a dual-Lead-II device
+              has. Same style object on purpose: it is the same kind of
+              statement — something about the contact, not about the heart. */}
+          {electrodeNotes.map((note) => (
+            <Text
+              key={note}
+              style={[styles.railNote, { color: t.textSecondary }]}
+              numberOfLines={compact ? 2 : undefined}
+            >
+              {note}
+            </Text>
+          ))}
         </View>
       )}
     </View>
@@ -482,6 +514,11 @@ const styles = StyleSheet.create({
   },
 });
 
+// v3.3.0 — Two more contact notes, through the rail note's own style and slot:
+//          RLD fault (reference electrode off — nothing on screen is reliable)
+//          and second leg electrode off (the recording keeps a single Lead II
+//          copy). Dual-Lead-II devices only; nothing else on this screen moved.
+//          The end-of-exam report is handed its `fusionNote`.
 // v3.2.0 — All exam copy comes from the locale, including the rail warning's
 //          `{leads}` placeholder (now the i18n substitution, not a manual
 //          String.replace).

@@ -16,6 +16,12 @@ export interface BleState {
   /** Leads clamped at the BLE int16 rail — surfaced, never hidden. */
   railed: { I: boolean; II: boolean };
   /**
+   * The two electrodes only a dual-Lead-II device (firmware v3+) has. Same
+   * rule as `railed`: surfaced, never hidden. Always false on a legacy device
+   * and on the simulator — `bleClient` gates both on the 3-channel stream.
+   */
+  electrodes: { rldFault: boolean; secondLegOff: boolean };
+  /**
    * The link is up but no samples are arriving (phone locked, app
    * backgrounded, device dropped). Consumers treat this as NOT streaming:
    * a frozen waveform must never be presented as live (root CLAUDE.md §3.2).
@@ -29,6 +35,7 @@ const initialState: BleState = {
   deviceName: null,
   heartRate: 0,
   railed: { I: false, II: false },
+  electrodes: { rldFault: false, secondLegOff: false },
   stale: false,
   error: null,
 };
@@ -45,6 +52,7 @@ const bleSlice = createSlice({
         state.deviceName = null;
         state.heartRate = 0;
         state.railed = { I: false, II: false };
+        state.electrodes = { rldFault: false, secondLegOff: false };
         state.stale = false;
       }
     },
@@ -57,6 +65,12 @@ const bleSlice = createSlice({
     railed(state, action: PayloadAction<{ I: boolean; II: boolean }>) {
       state.railed = action.payload;
     },
+    electrodesChanged(
+      state,
+      action: PayloadAction<{ rldFault: boolean; secondLegOff: boolean }>,
+    ) {
+      state.electrodes = action.payload;
+    },
     staleChanged(state, action: PayloadAction<boolean>) {
       state.stale = action.payload;
       // A stale stream has no current heart rate. Leaving the last number on
@@ -66,8 +80,16 @@ const bleSlice = createSlice({
   },
 });
 
-export const { statusChanged, deviceNamed, heartRateUpdated, railed, staleChanged } =
-  bleSlice.actions;
+export const {
+  statusChanged,
+  deviceNamed,
+  heartRateUpdated,
+  railed,
+  electrodesChanged,
+  staleChanged,
+} = bleSlice.actions;
 export default bleSlice.reducer;
 
+// v1.2.0 — Adds `electrodes` (RLD fault, second leg electrode off): the two
+//          contact states only a dual-Lead-II device can report.
 // v1.1.0 — Adds `stale`: link up but nothing arriving. Samples stay off Redux.

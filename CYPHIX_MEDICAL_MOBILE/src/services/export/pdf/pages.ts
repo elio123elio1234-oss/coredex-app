@@ -853,6 +853,10 @@ export function referencePage(
   leadII: Float32Array | null,
   analysis: EcgAnalysis,
   note: string | null,
+  /** Dual Lead II only: what the fusion did to Lead II, already worded.
+      null on every recording with a single copy — and then nothing on this
+      page moves by a millimetre. */
+  fusionNote: string | null,
   chrome: Omit<Chrome, 'title' | 'pageLabel' | 'footRight'>,
   labels: PdfLabels,
   totalPages: number,
@@ -874,6 +878,17 @@ export function referencePage(
   const H_MAP = note ? 84 : 96;
   const H_PROC_TITLE = 7;
   const H_PROC = 34;
+  /* ★ THE FUSION NOTE BRINGS ITS OWN MILLIMETRES. The processing paragraph
+     is ~5 lines in a block that holds 8, and the note is up to 4 more:
+     appended into the SAME 34 mm, the pair would overflow a fixed-height
+     `overflow: hidden` block and the LAST line — the noise figures, the only
+     numbers in it — would be the one clipped, silently, which is the v0.60.0
+     bug family exactly. So the block GROWS by 16 mm when there is a note —
+     four more lines of `.proc` type (7.4 pt × 1.5 = 3.92 mm) — and the two
+     paragraphs flow together inside it, with the slack at the bottom where
+     it always was. The page has the room: without the note the blocks sum
+     to 221 mm (235 with a study note) of BODY_H's 256. */
+  const H_FUSION = fusionNote ? 16 : 0;
   const H_QUAL_TITLE = 7;
   /* 44, not 34: six ruled rows are ~39.6 mm (see the statistics page's
      H_TILES), so the last one — RR range — printed cut in half. */
@@ -894,7 +909,7 @@ export function referencePage(
     H_MAP_TITLE,
     H_MAP,
     H_PROC_TITLE,
-    H_PROC,
+    H_PROC + H_FUSION,
     H_QUAL_TITLE,
     H_QUAL,
     H_BLIND_TITLE,
@@ -929,7 +944,7 @@ export function referencePage(
      that will one day disagree with the filter that actually ran. */
   const processing = `<div class="proc">${esc(
     labels.procBody.replace('{notch}', String(NOTCH_HZ)),
-  )}</div>`;
+  )}${fusionNote ? `<div class="proc-more">${esc(fusionNote)}</div>` : ''}</div>`;
 
   const blind = withBlind
     ? `<ul class="blind">${(screening as EcgScreening).blindSpots
@@ -972,7 +987,7 @@ export function referencePage(
     block(H_MAP_TITLE, sectionTitle(labels.leadMapTitle)) +
       block(H_MAP, map) +
       block(H_PROC_TITLE, sectionTitle(labels.procTitle)) +
-      block(H_PROC, processing) +
+      block(H_PROC + H_FUSION, processing) +
       block(H_QUAL_TITLE, sectionTitle(labels.statsQuality)) +
       block(H_QUAL, qualityTable) +
       (withBlind
@@ -1392,12 +1407,21 @@ ul.blind { margin: 0; padding-left: 4mm; font-size: 7.6pt; color: ${SLATE}; line
    a problem in a paragraph that is only saying how the sausage was made. */
 .proc { font-size: 7.4pt; line-height: 1.5; color: ${SLATE}; height: 100%;
         overflow: hidden; padding-right: 4mm; }
+/* A second provenance paragraph (the dual-Lead-II fusion note). The block
+   that holds it is 16 mm taller whenever it exists - see referencePage. */
+.proc-more { margin-top: 2mm; }
 .note { font-size: 7.6pt; line-height: 1.45; background: ${BRAND_SOFT};
         border-left: 1mm solid ${BRAND}; border-radius: 0 2mm 2mm 0;
         padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
 .disc { font-size: 6.4pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
 `;
 
+// v4.1.0 — Dual Lead II: the reference page prints a second provenance
+//          paragraph under the processing one, saying what the Lead II fusion
+//          did (or why it declined). Only on a recording with two Lead II
+//          copies, and the block grows by 16 mm when it does — more text in
+//          the same 34 mm is how the last line (the noise figures) would have
+//          been clipped in silence.
 // v4.0.0 — "Take INSPIRATION from it, do not do it 1:1." The handoff's plum
 //          is out of the report's CHROME — letterhead, section rules, table
 //          headers, figure panels, footers are CYPHIX navy and blue again.

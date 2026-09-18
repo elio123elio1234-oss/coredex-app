@@ -1,5 +1,171 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.65.0 - 2026-09-18 - Lead II, measured twice: recorded live, fused when it is read
+
+⚠️ **NATIVE REBUILD REQUIRED — this is not an OTA.** `modules/cyphix-ble`
+changed in both halves, so `app.json` goes 0.35.0 → **0.36.0** (mobile
+CLAUDE.md §5A.2: `app.json` moves when the *binary* moves). To ship:
+`npm run ship:rebuild` (`eas build --platform ios --profile production` →
+`eas submit --platform ios --latest`). Do **not** `eas update` until the
+0.36.0 binary is installed — an update published now targets a runtime no
+phone is running and reaches nobody, silently. (Anything still unpublished from
+before this bump has to go out as part of the new binary, not as an OTA to
+0.35.0 — `npm run ship:check` says which runtime is actually installed.)
+
+### Why
+
+Firmware v3 puts a **second left-leg electrode** on the ADS1293 and gives the
+right-leg drive an electrode of its own. The device now measures Lead II
+**twice**: copy A is LL#1−RA — the pair every device has ever measured — and
+copy B is LL#2−RA. Same heart in both. **Not the same noise:** each leg
+electrode has its own contact noise, its own motion artefact, its own patch of
+muscle under it.
+
+That redundancy is the only source of noise reduction this product is allowed
+to use, because the usual one is forbidden. Ischaemia lives in the ST level and
+in fine QRS detail — anywhere from 0.05 to 150 Hz — and muscle noise sits right
+on top of it, so the standard cure (a 40 Hz low-pass) removes the thing the
+recording exists to show. `fuseLeadII` in `@cyphix/shared` removes noise
+**without a frequency filter**: it weights whichever copy is quieter at each
+moment, and averages what does not repeat from beat to beat — never inside the
+QRS.
+
+### What the app does with it
+
+**Records the second copy, never draws it, and fuses it at reading time.**
+
+- **The live screen does not change** — a decision, not an omission. `leadII`
+  is copy A on every device, so `SixLeadMonitor`, `EcgWave` and the heartbeat
+  gate read exactly what they read yesterday. Fusion needs the *whole*
+  recording (it estimates the beats, the gain and a noise reference from all of
+  it), so there is nothing honest to draw live — and a monitor that looked
+  different on a new device would be one more thing to explain to a patient who
+  is holding still.
+- **It is stored raw, like the other two channels.** The fused trace is an
+  *opinion* about two measurements, so it is recomputed by whoever opens the
+  record and can be switched off in the viewer — the argument that has kept the
+  filters out of storage since v1.0.0. `useLimbRecorder` keeps a third channel
+  only if the buffer carried it from the **first captured sample to the last**;
+  if it appears or vanishes part-way, that recording is a normal two-channel
+  one. Three channels of one recording are one length, always.
+- **One function decides fuse-or-not, for every reader.** The end-of-exam
+  report, the History viewer, the PDF and the list digest all go through the
+  shared `limbLeadsFromRaw`; stored records reach it via the new
+  `services/ecg/storedLimbLeads.ts`, which adds the one gate the samples cannot
+  know — **limb recordings only** (in the chest protocol the probe electrode
+  moves and copy B does not follow it). There used to be five hand-rolled
+  decode → `deriveLeads` loops, i.e. five chances for the list, the screen and
+  the paper to describe one recording three ways.
+- **The PDF and the digest pin fusion ON**, exactly as they pin the filters and
+  for the same reason; the viewer opens with it on. So the row, the screen on
+  default settings and the paper are still one computation.
+- **★ The one deliberate exception: the ECG ID stays on copy A.** An identity
+  is a baseline built across months, and every recording made before the second
+  electrode existed has only copy A. Fuse the new ones and they are
+  systematically quieter than the old ones — which the ECG ID would report as a
+  change in the patient's **heart** on the day they changed **device**.
+  `recordingTemplate.ts` says so at the site.
+
+### It says what it did
+
+A processing step a reader cannot see is a processing step they cannot weigh.
+Three outcomes, which must not look alike:
+
+| outcome | what is shown |
+|---|---|
+| fused | `Lead II fused from two electrodes · noise 26 → 9 µV` |
+| attempted and **declined** | that it fell back to the first electrode, **and why** — a second channel that was silently ignored looks exactly like one that was used |
+| switched off (viewer only) | that it is off |
+
+…and one non-outcome: **a recording with one copy says nothing at all**, so
+every study made before today keeps the screen it had. The line sits where the
+recording's metadata already lives — the viewer's header (under the rate, so it
+holds for both tabs) and under the end-of-exam summary — and the PDF prints a
+second provenance paragraph in *How this recording was processed*.
+
+Two PDF strings claimed the device measures "two channels" (`pdfLeadMapCap`,
+`pdfProcBody`). Both were reworded so they stay true of a three-channel
+recording, in both locales.
+
+On the PDF the note **brings its own 16 mm** instead of going into the existing
+34 mm block: the paragraph there is ~5 lines of a block that holds 8, the note
+is up to 4 more, and the line that would have been clipped — silently, by
+`overflow: hidden`, exactly the v0.60.0 bug family — is the last one, the only
+one with numbers in it. Looked at in a real browser print, not just asserted.
+
+### The one live change
+
+Asked for: two new contact notes on the limb exam, in the rail note's own slot
+and style.
+
+- **Reference electrode off** (`ECG3_FLAG_RLD_FAULT`) — every channel is
+  unreferenced; nothing on screen can be trusted.
+- **Second leg electrode off** (`LOD_LL2`) — the patient loses nothing they can
+  see; the recording will use a single copy. The copy says what it *costs*
+  rather than sounding an alarm.
+
+Both are gated on the 3-channel stream being **active**, not merely on the bit
+being set: LOD bit 3 is ADS1293 input IN4, which on older hardware is not an
+electrode at all. Neither blocks the capture, for the rail note's own reason.
+The path is the rail's path: native event → `bleClient` → `bleSlice.electrodes`
+→ `useBle().rldFault / .secondLegOff`. (`onLeadOff` had been emitted by both
+native halves since v0.1.0 and **nothing had ever listened to it**.)
+
+### Native — both halves, in lockstep
+
+- A **second GATT characteristic** (`beb5483f-…`). The legacy one stays
+  byte-identical on v3 firmware, so every build ever shipped keeps working
+  against it; this build subscribes to **one** of the two — the 3-channel one
+  when the device has it, the legacy one otherwise.
+- A **strict** parser mirroring `parseEcgPacket3` 1:1: 4-byte header, 13-byte
+  stride, and the length must match *exactly* or the packet is dropped. A
+  parser that guesses a stride is how a format change becomes a
+  plausible-looking wrong trace. The legacy parser is untouched.
+- `onEcgBatch` gains `leadIIb` — **always present, empty on a legacy device**,
+  which is how JS tells the two apart. New event `onDeviceFlags`, on change of
+  the flags byte.
+- Stream state is reset per subscription (batches cleared, LOD re-announced,
+  flags back to "unknown"): the three batch arrays must stay one length, and JS
+  mirrors LOD/flags from *change* events, so every subscription has to state
+  its own.
+
+### ★ Found while there: Android never requested an MTU
+
+A GATT link opens at ATT MTU 23 — a **20-byte** notification — and only the
+*client* may ask for more. iOS does so unprompted; Android does not. The
+firmware's `BLEDevice::setMTU(185)` is the ceiling it will *agree* to, not a
+request. So, by the ATT rules, every 146 B legacy packet has been arriving on
+Android cut to 20 bytes and dropped by the stride check: *connected, no
+signal.* PARITY has carried Android BLE as never-run since v0.23.0, which is
+how this survived.
+
+Kotlin now requests **185** and starts service discovery from `onMtuChanged`
+(GATT operations must not overlap), with a 2 s fallback in case the stack never
+answers. **Reasoned from the spec, not observed** — see below.
+
+### Storage
+
+A three-channel 10 s capture is ~51 kB of base64 (3 200 samples × 4 B × 3 ×
+4/3) against ~34 kB for two, so a full local history costs ~2.1 MB instead of
+~1.4 MB of AsyncStorage's ~6 MB. `MAX_STORED_RECORDINGS` **stays 40**, in
+parity with the web: this store is the only heavy thing in AsyncStorage
+(`deviceCache` keeps its large payloads in files), and each payload is its own
+row, nowhere near Android's ~2 MB per-row ceiling. The arithmetic is written
+out at the constant.
+
+### Not verified
+
+`tsc --noEmit` is clean, the Android bundle builds, and `verify-pdf` builds
+twelve reports — three of them dual-Lead-II (fused: 30 → 7 µV on synthetic
+noise; a disconnected second electrode correctly **declined** as
+`not-same-lead`; and the tallest reference page there is, fusion note + study
+note).
+
+**Not one line of the Swift or the Kotlin has been compiled** — this is a
+Windows machine — and none of it has met a v3 device. The Android MTU sequence
+is the riskiest part: it changes how *every* Android connection is opened, on a
+half that has never been run. Everything here is `🔬` in PARITY.
+
 ## v0.64.0 - 2026-08-23 - the fingerprint keeps its name and loses the lecture
 
 > *"The whole 'one beat average' thing, three unnecessary lines!! Why the

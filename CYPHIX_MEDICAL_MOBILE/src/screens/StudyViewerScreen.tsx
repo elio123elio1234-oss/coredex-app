@@ -104,6 +104,7 @@ import { usePdfLabels } from '@/features/history/hooks/usePdfLabels';
 import { useReportContext } from '@/features/history/hooks/useReportContext';
 import { useRecordingView } from '@/features/history/hooks/useRecordingView';
 import { useScreening } from '@/features/history/hooks/useScreening';
+import { fusionCaption } from '@/features/history/fusionCaption';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
 import {
   DEFAULT_VIEWER_SETTINGS,
@@ -621,9 +622,31 @@ export default function StudyViewerScreen() {
             onSelect: () =>
               patch({ filters: { ...settings.filters, smoothing: !settings.filters.smoothing } }),
           },
+          /* ★ Only for a recording that HAS a second Lead II copy (firmware
+             v3+). On every other study there is nothing to fuse, and a switch
+             that does nothing teaches the reader that the switches here do
+             nothing. Same row component as the three stages above — it is
+             the same kind of decision: what is done to the raw channels
+             before they are drawn and measured. */
+          ...(view?.hasSecondCopy
+            ? [
+                {
+                  id: 'f-fusion',
+                  label: tr('vtFusion'),
+                  hint: tr('vtFusionHint'),
+                  checked: settings.fusion,
+                  onSelect: () => patch({ fusion: !settings.fusion }),
+                },
+              ]
+            : []),
         ]
       : []),
   ];
+
+  /* What was done to this study's Lead II, for the header. Null — and no
+     line at all — on a recording with a single copy, so every study made
+     before the second electrode existed keeps the header it always had. */
+  const fusionNote = view ? fusionCaption(view.hasSecondCopy, view.fusion, tr) : null;
 
   /* The studies this one can be compared against — never itself. */
   const compareStudies = (list.data ?? [])
@@ -716,7 +739,9 @@ export default function StudyViewerScreen() {
           dense={dense}
           label={tr('vtMoreTools')}
           icon="options-outline"
-          active={hasFiltersOff(settings)}
+          /* Lit whenever something in its sheet is off its default — which
+             includes the fusion switch, but only on a study that shows one. */
+          active={hasFiltersOff(settings) || (view?.hasSecondCopy === true && !settings.fusion)}
           onToggle={() => setSheet('tools')}
         />
       )}
@@ -1410,6 +1435,21 @@ export default function StudyViewerScreen() {
                 )}
               </View>
 
+              {/* Dual-Lead-II studies only. Here, under the rate and the
+                  duration, because it is the same kind of fact — provenance
+                  of what is on BOTH tabs below: the fused Lead II is what the
+                  trace draws and what the values were measured from. The
+                  header's height is measured, so the extra line is paid for
+                  by the content inset, not by overlapping it. */}
+              {fusionNote && (
+                <Text
+                  style={[styles.fusionNote, { color: t.textTertiary, textAlign: align }]}
+                  numberOfLines={1}
+                >
+                  {fusionNote}
+                </Text>
+              )}
+
               <View style={styles.tabs}>
                 {/* ★ SHORT LABELS, and it is not a cosmetic preference.
                     A segmented control divides its width EVENLY, so three
@@ -1496,6 +1536,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     overflow: 'hidden',
   },
+  fusionNote: { paddingHorizontal: 14, paddingTop: 3, fontSize: 11, fontWeight: '600' },
   tabs: { paddingHorizontal: 14, paddingTop: 8 },
   banner: {
     marginHorizontal: 14,
@@ -1671,3 +1712,8 @@ const styles = StyleSheet.create({
 //          is the redesigned EcgValuesSheet over a fixed glow field, and it is
 //          where a patient now lands. Its "Export Report" button makes the same
 //          preview-or-share choice the ⋯ menu does.
+// v6.1.0 - Dual Lead II: a "Lead II fusion" row in the Filters sheet, drawn
+//          only for a study that has a second Lead II copy, and one quiet
+//          line in the header saying what the fusion did (fused with the
+//          noise figures / declined with the reason / switched off). A study
+//          with a single copy shows neither and renders exactly as before.

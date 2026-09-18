@@ -24,9 +24,14 @@ import {
 } from '@cyphix/shared';
 
 /** Waveforms cross the boundary as typed arrays; Float32Array is not JSON. */
-export interface CreateRecordingArgs extends Omit<NewRecordingInput, 'rawLeadI' | 'rawLeadII'> {
+export interface CreateRecordingArgs
+  extends Omit<NewRecordingInput, 'rawLeadI' | 'rawLeadII' | 'rawLeadIIb'> {
   rawLeadI: Float32Array;
   rawLeadII: Float32Array;
+  /** The second measured copy of Lead II (firmware v3+). Omitted — not sent
+      empty — when the capture has none; the server treats absence as "a
+      two-channel recording", which is what every older client sends. */
+  rawLeadIIb?: Float32Array;
 }
 
 /**
@@ -48,10 +53,19 @@ export const HISTORY_PAGE_SIZE = 50;
 /** Over real HTTP a Float32Array would JSON-serialize into a useless object,
     so the channels are base64-encoded here (the server decodes and stores
     them as int16 µV). The local path keeps the raw arrays. */
-const toWireBody = (args: CreateRecordingArgs): unknown =>
-  ENV.hasBackend
-    ? { ...args, rawLeadI: encodeChannel(args.rawLeadI), rawLeadII: encodeChannel(args.rawLeadII) }
-    : args;
+const toWireBody = (args: CreateRecordingArgs): unknown => {
+  if (!ENV.hasBackend) return args;
+  const { rawLeadIIb, ...rest } = args;
+  return {
+    ...rest,
+    rawLeadI: encodeChannel(args.rawLeadI),
+    rawLeadII: encodeChannel(args.rawLeadII),
+    // The key exists only when the channel does. `rawLeadIIb: undefined` would
+    // be dropped by JSON anyway; spelling it out keeps an EMPTY array from ever
+    // being encoded into a zero-length third channel.
+    ...(rawLeadIIb && rawLeadIIb.length > 0 ? { rawLeadIIb: encodeChannel(rawLeadIIb) } : {}),
+  };
+};
 
 export const recordingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -170,5 +184,7 @@ export const {
   useSetRecordingNoteMutation,
 } = recordingApi;
 
+// v1.1.0 — `createRecording` carries the optional third raw channel
+//          (`rawLeadIIb`), base64-encoded like the others and only when present.
 // v1.0.0 — Recording endpoints, mirroring the web app's 1:1 (paths, tags,
 //          page size and the optimistic annotation move included).

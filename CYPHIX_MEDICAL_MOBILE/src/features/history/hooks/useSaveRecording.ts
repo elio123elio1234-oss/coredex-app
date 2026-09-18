@@ -91,6 +91,10 @@ export function useSaveRecording(
       sampleRate: report.sampleRate,
       rawLeadI: report.rawLeadI,
       rawLeadII: report.rawLeadII,
+      // Stored RAW, like the other two — the fused Lead II is recomputed by
+      // whoever opens the record, and can be switched off there. Undefined on
+      // a device that measures Lead II once, and then the key is never sent.
+      rawLeadIIb: report.rawLeadIIb,
       isSimulated: report.isSimulated,
       deviceLabel,
       summary: summarise(report),
@@ -125,5 +129,7 @@ export function useSaveRecording(
   return state;
 }
 
+// v1.1.0 — Passes the second measured Lead II copy (`rawLeadIIb`) when the
+//          capture has one.
 // v1.0.0 — Auto-persists a finished capture into Scan History, once, with audit
 //          and a surfaced failure.

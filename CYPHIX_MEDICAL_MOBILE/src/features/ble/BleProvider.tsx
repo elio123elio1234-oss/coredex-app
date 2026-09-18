@@ -8,7 +8,14 @@
 import { createContext, useEffect, useRef, type ReactNode } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { BleClient } from '@/services/ble/bleClient';
-import { deviceNamed, heartRateUpdated, railed, staleChanged, statusChanged } from './bleSlice';
+import {
+  deviceNamed,
+  electrodesChanged,
+  heartRateUpdated,
+  railed,
+  staleChanged,
+  statusChanged,
+} from './bleSlice';
 
 export const BleContext = createContext<BleClient | null>(null);
 
@@ -22,6 +29,7 @@ export function BleProvider({ children }: { children: ReactNode }) {
       onDeviceNameChange: (name) => dispatch(deviceNamed(name)),
       onHeartRate: (bpm) => dispatch(heartRateUpdated(bpm)),
       onSignalRail: (r) => dispatch(railed(r)),
+      onElectrodeFaults: (f) => dispatch(electrodesChanged(f)),
       onStaleChange: (s) => dispatch(staleChanged(s)),
     });
   }
@@ -36,4 +44,5 @@ export function BleProvider({ children }: { children: ReactNode }) {
   return <BleContext.Provider value={ref.current}>{children}</BleContext.Provider>;
 }
 
+// v1.2.0 — Also carries the dual-Lead-II electrode faults (RLD, LL#2).
 // v1.1.0 — Also carries the client's staleness signal into Redux.

@@ -18,6 +18,7 @@ export function useBle() {
   const deviceName = useAppSelector((s) => s.ble.deviceName);
   const heartRate = useAppSelector((s) => s.ble.heartRate);
   const railed = useAppSelector((s) => s.ble.railed);
+  const electrodes = useAppSelector((s) => s.ble.electrodes);
   const stale = useAppSelector((s) => s.ble.stale);
   const error = useAppSelector((s) => s.ble.error);
 
@@ -46,6 +47,14 @@ export function useBle() {
       deviceName,
       heartRate,
       railed,
+      /**
+       * Dual-Lead-II devices only (firmware v3+); both are always false
+       * otherwise. `rldFault`: the reference electrode is off, so EVERY
+       * channel is unreferenced. `secondLegOff`: only the redundant Lead II
+       * copy is lost — what is on screen is unaffected.
+       */
+      rldFault: electrodes.rldFault,
+      secondLegOff: electrodes.secondLegOff,
       error,
       /**
        * The link is up but nothing is coming through it — phone locked, app
@@ -73,9 +82,10 @@ export function useBle() {
       getBuffer,
       SAMPLE_RATE,
     }),
-    [status, deviceName, heartRate, railed, stale, error, client, connect, connectSimulator, disconnect, subscribe, getBuffer],
+    [status, deviceName, heartRate, railed, electrodes, stale, error, client, connect, connectSimulator, disconnect, subscribe, getBuffer],
   );
 }
 
+// v1.2.0 — Exposes `rldFault` / `secondLegOff` (dual-Lead-II devices).
 // v1.1.0 — `isStreaming` now means samples are really arriving, not just that
 //          the link is up; adds `isStale` for screens that must say so.

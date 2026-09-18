@@ -12,15 +12,26 @@
      2. IT IS NOT A HOOK. Dozens of studies are processed in a loop, off
         the render path, so this has to be an ordinary function.
 
-        stored raw Lead I + Lead II  (base64 Float32, mV)
+        stored raw Lead I + Lead II (+ Lead II-b)  (base64 Float32, mV)
                      │
-                     ▼  decodeChannel
-                deriveLeads()        → I, II, III, aVR, aVL, aVF
+                     ▼  limbLeadsFromRecording — decode, fuse the two
+                     │  Lead II copies when there are two (PINNED ON),
+                     │  then deriveLeads()
+                I, II, III, aVR, aVL, aVF
                      │
                      ▼  reportFilterLeads(DIGEST_FILTERS)
                      ▼  analyseLimbEcg()
                      ├─ screenLimbEcg(ctx)   → the verdict (unless simulated)
                      └─ lead II window       → the 4 s preview, downsampled
+
+   ══ FUSION IS PINNED ON, LIKE THE FILTERS ══
+   For the same reason: the row must not change when someone flips the
+   viewer's fusion switch, and ON is what the PDF prints and what the
+   viewer opens at — so the list, the screen on default settings and the
+   paper are still one computation. A recording with one Lead II copy
+   never reaches the fusion and digests exactly as before, which is why
+   this did NOT bump `DIGEST_VERSION`: no digest computed before this
+   change belongs to a recording it could have altered.
 
    ══ THE HONESTY RULES BIND HERE TOO ══
    A SIMULATED recording is never screened — `screeningLevel` is null and
@@ -31,9 +42,6 @@
 
 import {
   analyseLimbEcg,
-  decodeChannel,
-  deriveLeads,
-  LIMB_LEAD_ORDER,
   reportFilterLeads,
   screenLimbEcg,
   type LimbLeadName,
@@ -42,6 +50,7 @@ import {
 } from '@cyphix/shared';
 import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import { DIGEST_FILTERS, type StudyDigest } from '@/services/db/studyDigestCache';
+import { limbLeadsFromRecording } from '@/services/ecg/storedLimbLeads';
 
 /** Window the preview shows. Four seconds at a fixed time scale is the
     Kardia-proven size: legible rhythm, not ten seconds squeezed to noise. */
@@ -95,23 +104,8 @@ export function digestFromRecording(
   context: ScreeningContext,
   ctxKey: string,
 ): StudyDigest | null {
-  const rawI = decodeChannel(recording.channels.leadI);
-  const rawII = decodeChannel(recording.channels.leadII);
-  const n = Math.min(rawI.length, rawII.length);
+  const { leads: derived, samples: n } = limbLeadsFromRecording(recording, { fusion: true });
   if (n === 0) return null;
-
-  const derived: Record<LimbLeadName, Float32Array> = {
-    I: new Float32Array(n),
-    II: new Float32Array(n),
-    III: new Float32Array(n),
-    aVR: new Float32Array(n),
-    aVL: new Float32Array(n),
-    aVF: new Float32Array(n),
-  };
-  for (let i = 0; i < n; i++) {
-    const s = deriveLeads(rawI[i], rawII[i]);
-    for (const lead of LIMB_LEAD_ORDER) derived[lead][i] = s[lead];
-  }
 
   const filtered = reportFilterLeads(
     derived,
@@ -158,6 +152,9 @@ export function digestFromRecording(
   };
 }
 
+// v1.2.0 — Dual Lead II: decodes through `limbLeadsFromRecording` with fusion
+//          PINNED ON, so the row, the viewer's default and the PDF describe
+//          the same Lead II. One-copy recordings digest exactly as before.
 // v1.1.0 — The screening pass is skipped entirely while INTERPRETATION_ENABLED
 //          is false: 43 rules over six leads per study, for a label nothing
 //          renders, is work nobody asked for. Same null a simulation produces.

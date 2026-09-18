@@ -9,13 +9,16 @@
        npx tsx scripts/verify-pdf.ts
 
    It exercises `buildRecordingHtml` (pure by design — no expo imports)
-   across nine cases and asserts:
+   across twelve cases — nine two-channel, three dual-Lead-II — and asserts:
      · building never throws (assertFits holds on every page),
      · the printed "Page n of N" agrees with the actual page count,
      · every page carries the letterhead band,
      · the identification grid exists in EVERY case, simulated included,
      · the signal-quality table exists,
      · the patient name appears when passed and never when not,
+     · the Lead II fusion note prints on a dual-Lead-II recording — with its
+       noise figures when fused, with a reason when declined — and NEVER on
+       a two-channel one,
      · no unsized SVGs, no percentage dimensions, no NaN/undefined.
 
    Set PDF_OUT to a directory and it also WRITES each case's HTML there:
@@ -62,15 +65,49 @@ function synth(seconds: number, bpm: number, amp = 1, jitterPct = 0): Float32Arr
   return out;
 }
 
+/** Deterministic pseudo-noise (an LCG) — the harness must not flake. */
+function noise(n: number, seed: number, sigmaMv: number): Float32Array {
+  const out = new Float32Array(n);
+  let s = seed >>> 0;
+  const next = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+  // Sum of four uniforms: near enough Gaussian for an electrode's hiss.
+  for (let i = 0; i < n; i++) out[i] = (next() + next() + next() + next() - 2) * 1.73 * sigmaMv;
+  return out;
+}
+
+/**
+ * `second` adds the dual-Lead-II third channel (firmware v3+):
+ *   'copy' — a genuine second copy of Lead II: the same heart at a slightly
+ *            different gain, with its OWN electrode noise. The fusion runs.
+ *   'off'  — an electrode that was not on the skin: noise, no heart. The
+ *            fusion must DECLINE, and the paper must say why.
+ */
 function rec(
   id: string,
   seconds: number,
   bpm: number,
-  opts: Partial<StoredRecording> & { amp?: number; jitterPct?: number } = {},
+  opts: Partial<StoredRecording> & {
+    amp?: number;
+    jitterPct?: number;
+    second?: 'copy' | 'off';
+  } = {},
 ): StoredRecording {
-  const { amp = 1, jitterPct = 0, ...rest } = opts;
+  const { amp = 1, jitterPct = 0, second, ...rest } = opts;
   const leadI = synth(seconds, bpm, amp * 0.8, jitterPct);
   const leadII = synth(seconds, bpm, amp, jitterPct);
+  let leadIIb: Float32Array | null = null;
+  if (second) {
+    const a = noise(leadII.length, 11, 0.025);
+    const b = noise(leadII.length, 29, 0.025);
+    leadIIb = new Float32Array(leadII.length);
+    for (let i = 0; i < leadII.length; i++) {
+      leadIIb[i] = second === 'copy' ? 0.96 * leadII[i] + b[i] : b[i];
+      leadII[i] += a[i];
+    }
+  }
   return {
     id,
     kind: 'EcgRecording',
@@ -79,7 +116,11 @@ function rec(
     type: 'limb',
     sampleRate: 320,
     durationSec: seconds,
-    channels: { leadI: encodeChannel(leadI), leadII: encodeChannel(leadII) },
+    channels: {
+      leadI: encodeChannel(leadI),
+      leadII: encodeChannel(leadII),
+      ...(leadIIb ? { leadIIb: encodeChannel(leadIIb) } : {}),
+    },
     isSimulated: false,
     summary: {
       bpm,
@@ -182,7 +223,14 @@ const labels: PdfLabels = {
      overflows on the phone — which is precisely the class of bug this
      harness exists to catch, and precisely how it missed four of them. */
   procBody:
-    'Each channel is baseline-corrected with a double median filter, notch-filtered at {notch} Hz with a zero-phase filter (so no interval is shifted in time), and lightly smoothed before it is drawn or measured. This device records TWO channels: leads I and II are measured, and III, aVR, aVL and aVF are computed from them by the Einthoven and Goldberger equations — they are exact arithmetic, not extra electrodes. Every strip is printed at 25 mm/s and 10 mm/mV with a 1 mV calibration pulse, so the gain can be checked by eye rather than trusted.',
+    'Each channel is baseline-corrected with a double median filter, notch-filtered at {notch} Hz with a zero-phase filter (so no interval is shifted in time), and lightly smoothed before it is drawn or measured. Leads I and II are measured, and III, aVR, aVL and aVF are computed from them by the Einthoven and Goldberger equations — they are exact arithmetic, not extra electrodes. Every strip is printed at 25 mm/s and 10 mm/mV with a 1 mV calibration pulse, so the gain can be checked by eye rather than trusted.',
+  /* The same rule, for the same reason: VERBATIM the copy that ships in
+     en.ts, because this note lives in a fixed 16 mm block. */
+  fusionFused:
+    'Lead II was measured twice, through two separate left-leg electrodes, and the two copies were combined into one trace before III, aVR, aVL and aVF were computed: the quieter copy is weighted more heavily, and what does not repeat from beat to beat is averaged out, never inside the QRS. This step applies no frequency filter. Non-repeating noise in lead II: {from} → {to} µV.',
+  fusionDeclined:
+    'Lead II was measured twice, through two separate left-leg electrodes, but the second copy was not used: {reason}. Every lead in this report comes from the first copy alone.',
+  fusionReason: (f) => `reason ${f}`,
   leadMapTitle: 'What the leads see',
   leadMapCaption: 'The six limb leads view the heart in the frontal plane.',
   wallInferior: 'inferior wall',
@@ -207,7 +255,12 @@ interface Case {
   name: string;
   recording: StoredRecording;
   patientName?: string;
+  /** What the dual-Lead-II note must say. Absent ⇒ there must be NO note. */
+  fusion?: 'fused' | 'declined';
 }
+
+/** The words both fusion notes open with, and nothing else on the sheet has. */
+const FUSION_MARK = 'Lead II was measured twice';
 
 const cases: Case[] = [
   { name: 'normal 10 s', recording: rec('r1', 10, 75), patientName: 'Noa Example-Levi' },
@@ -226,6 +279,28 @@ const cases: Case[] = [
       note: 'A clinical note long enough to fill its block on the reference page and then some, twice over, to stress the clamp.',
     }),
     patientName: 'Noa Example-Levi',
+  },
+  /* ── Dual Lead II (firmware v3+) ── */
+  {
+    name: 'dual lead II - fused',
+    recording: rec('r10', 10, 75, { second: 'copy' }),
+    patientName: 'Noa Example-Levi',
+    fusion: 'fused',
+  },
+  {
+    name: 'dual lead II - second electrode off',
+    recording: rec('r11', 10, 75, { second: 'off' }),
+    fusion: 'declined',
+  },
+  {
+    /* The tallest reference page there is: the fusion block AND a study
+       note. If assertFits is going to refuse the new block, it is here. */
+    name: 'dual lead II + note',
+    recording: rec('r12', 10, 75, {
+      second: 'copy',
+      note: 'A clinical note long enough to fill its block on the reference page and then some, twice over, to stress the clamp.',
+    }),
+    fusion: 'fused',
   },
 ];
 
@@ -268,7 +343,18 @@ for (const c of cases) {
     fail(c.name, 'simulated report appears to carry an interpretation page');
   if (/width="100%"/.test(html)) fail(c.name, 'unsized (percentage-width) SVG found');
   if (/NaN|undefined/.test(html)) fail(c.name, 'NaN/undefined leaked into the document');
-  if (/\{n\}|\{total\}|\{from\}|\{to\}/.test(html)) fail(c.name, 'unresolved placeholder');
+  if (/\{n\}|\{total\}|\{from\}|\{to\}|\{reason\}/.test(html))
+    fail(c.name, 'unresolved placeholder');
+
+  /* The fusion note: present and SPECIFIC on a dual-Lead-II recording, and
+     absent from every other one — a two-channel report must not have moved. */
+  const noted = html.includes(FUSION_MARK);
+  if (!c.fusion && noted) fail(c.name, 'a two-channel report carries the Lead II fusion note');
+  if (c.fusion && !noted) fail(c.name, 'dual-Lead-II report does not say Lead II was fused');
+  if (c.fusion === 'fused' && !/Non-repeating noise in lead II: \d+ → \d+ µV/.test(html))
+    fail(c.name, 'fusion note lacks its noise figures (did the fusion decline?)');
+  if (c.fusion === 'declined' && !html.includes('the second copy was not used: reason '))
+    fail(c.name, 'fusion was expected to decline with a reason, and did not');
 
   /* ★ The assertions above prove the arithmetic. They cannot prove the
      sheet is right — CLAUDE.md §6.4 — and the only thing that can is a
@@ -290,6 +376,10 @@ if (failures > 0) {
 }
 console.log('\nAll cases passed. This proves the arithmetic, not the beauty (CLAUDE.md §6.4).');
 
+// v1.3.0 — Three dual-Lead-II cases (fused / second electrode off / fused with
+//          a study note — the tallest reference page there is), and the rule
+//          that a two-channel report never carries the fusion note. Labels
+//          follow en.ts: `procBody` lost "records TWO channels".
 // v1.2.0 — The `procBody` stub is deliberately the SAME LENGTH as the copy
 //          that ships. A short stub renders a block that looks comfortable
 //          in the harness and overflows on the phone, which is the exact

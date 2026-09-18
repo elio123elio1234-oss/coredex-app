@@ -7,8 +7,15 @@
      • onStatusChange   — connection lifecycle (low rate)
      • onEcgBatch       — batched mV samples, ≤ ~10 Hz emission
      • onHeartRate      — live bpm (low rate)
-     • onLeadOff        — hardware LOD bits
+     • onLeadOff        — hardware LOD bits (bit 3 = LL#2, 3-channel stream only)
      • onSignalRail     — int16 saturation latch (never hide it)
+     • onDeviceFlags    — the 3-channel packet's flags byte, on change
+                          (firmware v3+ only; never fires on a legacy device)
+
+   DUAL LEAD II (firmware v3+): the native halves subscribe to the 3-channel
+   characteristic when the device has one, else to the legacy one. Either way
+   `leadII` is the same electrode pair; `leadIIb` is ALWAYS in the batch and
+   EMPTY on a legacy device, which is how JS tells the two apart.
 
    In Expo Go the native module does not exist → `CyphixBleNative` is
    null and the app falls back to the simulator (services/ble/bleClient).
@@ -26,7 +33,13 @@ export interface BleStatusEvent {
 /** One batch of decoded samples, already converted to millivolts. */
 export interface EcgBatchEvent {
   leadI: number[];
+  /** Lead II as every device measures it (copy A on a dual-Lead-II device). */
   leadII: number[];
+  /**
+   * The second measured copy of Lead II. Same length as `leadII` on the
+   * 3-channel stream; ALWAYS present and EMPTY on a legacy device.
+   */
+  leadIIb: number[];
   /** Monotonic total-sample cursor after this batch (mirrors EcgBufferView.writeIdx). */
   writeIdx: number;
   droppedPackets: number;
@@ -40,6 +53,8 @@ export type CyphixBleEvents = {
   onHeartRate: (event: { bpm: number }) => void;
   onLeadOff: (event: { lodBits: number }) => void;
   onSignalRail: (event: { I: boolean; II: boolean }) => void;
+  /** Raw flags byte — test with the ECG3_FLAG_* masks from @cyphix/shared. */
+  onDeviceFlags: (event: { flags: number }) => void;
 };
 
 declare class CyphixBleNativeModule extends NativeModule<CyphixBleEvents> {
@@ -51,4 +66,6 @@ declare class CyphixBleNativeModule extends NativeModule<CyphixBleEvents> {
 /** null in Expo Go / web — callers must fall back to the simulator. */
 export const CyphixBleNative = requireOptionalNativeModule<CyphixBleNativeModule>('CyphixBle');
 
+// v0.2.0 — Dual Lead II: `EcgBatchEvent.leadIIb` (always present, empty on a
+//          legacy device) and the `onDeviceFlags` event.
 // v0.1.0 — Typed optional native module handle + event contracts.

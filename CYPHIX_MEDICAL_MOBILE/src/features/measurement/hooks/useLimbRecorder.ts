@@ -3,14 +3,27 @@
    filtered 6-lead report with automated measurements.
 
    FLOW:
-     record raw Lead I + Lead II for N seconds
-       → deriveLeads()        : I, II + III, aVR, aVL, aVF
+     record raw Lead I + Lead II (+ Lead II-b, when the device sends it)
+       → limbLeadsFromRaw()   : fuse the two Lead II copies if there are
+                                two, then deriveLeads(): I, II + III, aVR,
+                                aVL, aVF
        → reportFilterLeads()  : median baseline + notch + Savitzky-Golay
        → analyseLimbEcg()     : rate, rhythm, axis, intervals, amplitudes
        → 6 clean strips + a measurement sheet for the report
 
    Progress/phase are React state (they change ~1×/sec, not per sample).
    The raw samples are captured in a ref (per-sample, high rate).
+
+   ── THE SECOND LEAD II COPY (firmware v3+) ──
+   A dual-Lead-II device streams Lead II twice; the second copy is never
+   drawn live, only captured here. It is kept for a recording ONLY if the
+   buffer carried it from the first captured sample through the last. If
+   it appears or disappears part-way, the third channel is dropped for that
+   recording: a copy shorter than the others cannot be aligned with them
+   after the fact, and a recording with two channels is a complete, normal
+   recording. The fuse-or-not decision itself is not made here — it is
+   `limbLeadsFromRaw`'s, the same function every reader of the stored
+   record uses, so this report and the History view of it agree.
 
    ── STARTING ──
    The recorder exposes `start()` but does not decide WHEN. The page arms
@@ -21,12 +34,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBle } from '@/features/ble/useBle';
-import { deriveLeads } from '@cyphix/shared';
+import { limbLeadsFromRaw } from '@cyphix/shared';
 import { reportFilterLeads } from '@cyphix/shared';
 import { analyseLimbEcg } from '@cyphix/shared';
-import { LIMB_LEAD_ORDER, type LimbLeadName } from '@cyphix/shared';
+import type { LimbLeadName } from '@cyphix/shared';
 import { GUIDED_REC_SECS } from '@cyphix/shared';
-import type { EcgAnalysis } from '@cyphix/shared';
+import type { EcgAnalysis, LeadFusionInfo } from '@cyphix/shared';
 
 export type LimbRecorderPhase = 'idle' | 'recording' | 'done';
 
@@ -42,6 +55,12 @@ export interface LimbReport {
    */
   rawLeadI: Float32Array;
   rawLeadII: Float32Array;
+  /** The second measured copy of Lead II — present only when the device
+      streamed one for the WHOLE capture. Same length as the other two. */
+  rawLeadIIb?: Float32Array;
+  /** What the fusion did to this report's Lead II. null = not attempted
+      (one copy); `mode: 'single'` = attempted and declined, with the reason. */
+  fusion: LeadFusionInfo | null;
   heartRate: number;
   analysis: EcgAnalysis;
   sampleRate: number;
@@ -68,7 +87,13 @@ export function useLimbRecorder({
   const [progress, setProgress] = useState(0);
   const [report, setReport] = useState<LimbReport | null>(null);
 
-  const rawRef = useRef<{ I: number[]; II: number[] }>({ I: [], II: [] });
+  /* `IIb: null` = this capture has no usable second copy — never had one, or
+     lost it part-way. It is sticky until the next start(). */
+  const rawRef = useRef<{ I: number[]; II: number[]; IIb: number[] | null }>({
+    I: [],
+    II: [],
+    IIb: null,
+  });
   const recordingRef = useRef(false);
   const bleLastIdxRef = useRef(0);
   const startAtRef = useRef(0);
@@ -93,9 +118,14 @@ export function useLimbRecorder({
       const pi = bleLastIdxRef.current;
       if (ni <= pi) return;
       const size = b.leadI.length;
+      const raw = rawRef.current;
+      // The copy went away mid-capture (or was never there): two channels
+      // from here on, and for good — see the header.
+      if (raw.IIb && !b.leadIIb) raw.IIb = null;
       for (let i = pi; i < ni; i++) {
-        rawRef.current.I.push(b.leadI[i % size]);
-        rawRef.current.II.push(b.leadII[i % size]);
+        raw.I.push(b.leadI[i % size]);
+        raw.II.push(b.leadII[i % size]);
+        if (raw.IIb && b.leadIIb) raw.IIb.push(b.leadIIb[i % size]);
       }
       bleLastIdxRef.current = ni;
     });
@@ -106,21 +136,19 @@ export function useLimbRecorder({
     const n = Math.min(raw.I.length, raw.II.length);
     const fs = bleRef.current.SAMPLE_RATE;
 
-    // Build the six derived limb leads sample by sample.
-    const derived: Record<LimbLeadName, Float32Array> = {
-      I: new Float32Array(n),
-      II: new Float32Array(n),
-      III: new Float32Array(n),
-      aVR: new Float32Array(n),
-      aVL: new Float32Array(n),
-      aVF: new Float32Array(n),
-    };
-    for (let i = 0; i < n; i++) {
-      const s = deriveLeads(raw.I[i], raw.II[i]);
-      LIMB_LEAD_ORDER.forEach((l) => {
-        derived[l][i] = s[l];
-      });
-    }
+    const rawLeadI = Float32Array.from(raw.I.slice(0, n));
+    const rawLeadII = Float32Array.from(raw.II.slice(0, n));
+    // Never mismatched lengths: a copy that is not exactly as long as the
+    // other two is not stored and not fused.
+    const rawLeadIIb =
+      raw.IIb && raw.IIb.length === raw.I.length && n > 0
+        ? Float32Array.from(raw.IIb.slice(0, n))
+        : undefined;
+
+    // The six limb leads — Lead II fused from its two copies first, when
+    // there are two. Nothing frozen changes: `deriveLeads` is called exactly
+    // as before, inside `limbLeadsFromRaw`.
+    const { leads: derived, fusion } = limbLeadsFromRaw(rawLeadI, rawLeadII, rawLeadIIb, fs);
 
     const filtered = reportFilterLeads(derived, fs, 'II') as Record<LimbLeadName, Float32Array>;
 
@@ -131,8 +159,10 @@ export function useLimbRecorder({
 
     setReport({
       filtered,
-      rawLeadI: Float32Array.from(raw.I.slice(0, n)),
-      rawLeadII: Float32Array.from(raw.II.slice(0, n)),
+      rawLeadI,
+      rawLeadII,
+      rawLeadIIb,
+      fusion,
       // The analysis rate comes from the whole recording, so it beats the
       // live estimate; fall back only if too few beats were found.
       heartRate: analysis.rate.bpm ?? hrRef.current,
@@ -157,7 +187,7 @@ export function useLimbRecorder({
          lets the page re-arm on its own once samples come back. */
       if (bleRef.current.isStale) {
         recordingRef.current = false;
-        rawRef.current = { I: [], II: [] };
+        rawRef.current = { I: [], II: [], IIb: null };
         clearInterval(iv);
         setProgress(0);
         setPhase('idle');
@@ -177,8 +207,10 @@ export function useLimbRecorder({
   }, [phase, durationSec, finish]);
 
   const start = useCallback(() => {
-    rawRef.current = { I: [], II: [] };
-    bleLastIdxRef.current = bleRef.current.getBuffer()?.writeIdx ?? 0;
+    const buffer = bleRef.current.getBuffer();
+    // The third channel is kept only if it is there from the FIRST sample.
+    rawRef.current = { I: [], II: [], IIb: buffer?.leadIIb ? [] : null };
+    bleLastIdxRef.current = buffer?.writeIdx ?? 0;
     hrRef.current = liveHrRef.current || bleRef.current.heartRate || 0;
     startAtRef.current = Date.now();
     recordingRef.current = true;
@@ -197,5 +229,10 @@ export function useLimbRecorder({
   return { phase, progress, report, start, reset };
 }
 
+// v2.3.0 — Dual Lead II: captures the second copy when the buffer carries it
+//          for the whole recording (dropped otherwise — never mismatched
+//          lengths), and derives through the shared `limbLeadsFromRaw`, which
+//          fuses the copies before the frozen `deriveLeads`. `LimbReport`
+//          gains `rawLeadIIb?` and `fusion`. Stale-discard guard unchanged.
 // v2.2.0 — Discards an in-flight capture when the stream goes stale, instead
 //          of running the timer out and committing padded silence.

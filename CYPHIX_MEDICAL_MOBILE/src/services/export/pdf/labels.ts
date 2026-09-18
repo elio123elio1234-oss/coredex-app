@@ -22,6 +22,7 @@ import type {
   FindingCategory,
   FindingConfidence,
   FindingId,
+  LeadFusionFallback,
   RegularityClass,
   ScreeningLevel,
 } from '@cyphix/shared';
@@ -141,6 +142,14 @@ export interface PdfLabels {
       `{notch}` is filled from the shared NOTCH_HZ constant. */
   procTitle: string;
   procBody: string;
+  /**
+   * Dual Lead II (firmware v3+). Printed under `procBody`, and ONLY on a
+   * recording that carries two copies of Lead II. `fusionFused` carries
+   * `{from}` / `{to}` (non-repeating noise in Lead II before and after, µV);
+   * `fusionDeclined` carries `{reason}`, resolved by `fusionReason`.
+   */
+  fusionFused: string;
+  fusionDeclined: string;
   wallInferior: string;
   wallLateral: string;
   wallNotSeen: string;
@@ -159,6 +168,9 @@ export interface PdfLabels {
    */
   regularityName: (r: RegularityClass) => string;
   axisClassName: (c: AxisClass) => string;
+  /** Why the Lead II fusion declined — the shared package's enumeration,
+      a resolver for the same reason the two above are. */
+  fusionReason: (f: LeadFusionFallback) => string;
   finding: (id: FindingId) => { name: string; meaning: string; cause: string };
   level: (l: ScreeningLevel) => { headline: string; action: string };
   category: (c: FindingCategory) => string;
@@ -166,6 +178,8 @@ export interface PdfLabels {
   blindSpot: (b: BlindSpotId) => string;
 }
 
+// v1.4.0 — Dual Lead II: `fusionFused` / `fusionDeclined` + the `fusionReason`
+//          resolver. Provenance again — what the software did to Lead II.
 // v1.3.0 — Adds `procTitle` / `procBody`: the signal chain, stated on the
 //          paper for the first time. Provenance, not interpretation — it
 //          describes what the software did, never what the heart did, so it

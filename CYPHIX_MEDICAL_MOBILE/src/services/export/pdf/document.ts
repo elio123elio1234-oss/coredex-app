@@ -65,12 +65,10 @@
    ================================================================== */
 
 import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
+import { limbLeadsFromRecording } from '@/services/ecg/storedLimbLeads';
 import { measurementsPage } from './measurements';
 import {
   analyseLimbEcg,
-  decodeChannel,
-  deriveLeads,
-  LIMB_LEAD_ORDER,
   reportFilterLeads,
   screenLimbEcg,
   type EcgScreening,
@@ -115,23 +113,30 @@ export interface ReportInput {
 export function buildRecordingHtml(input: ReportInput): string {
   const { recording, labels, patient = {}, patientName } = input;
 
-  const rawI = decodeChannel(recording.channels.leadI);
-  const rawII = decodeChannel(recording.channels.leadII);
-  const n = Math.min(rawI.length, rawII.length);
   const fs = recording.sampleRate;
 
-  const derived: Record<LimbLeadName, Float32Array> = {
-    I: new Float32Array(n),
-    II: new Float32Array(n),
-    III: new Float32Array(n),
-    aVR: new Float32Array(n),
-    aVL: new Float32Array(n),
-    aVF: new Float32Array(n),
-  };
-  for (let i = 0; i < n; i++) {
-    const s = deriveLeads(rawI[i], rawII[i]);
-    for (const lead of LIMB_LEAD_ORDER) derived[lead][i] = s[lead];
-  }
+  /* ★ DUAL LEAD II (firmware v3+): FUSION IS FORCED ON, like every stage
+     below and for the same reason — the sheet that gets filed must not
+     depend on a switch the reader happened to have flipped in the viewer.
+     And because it is forced, it is LABELLED: `fusionNote` prints under the
+     processing paragraph on the last page, saying either what the fusion did
+     (noise before → after) or, when it declined, why the second copy was not
+     used. A recording with one copy never reaches the fusion, prints no
+     note, and builds exactly the document it always did. */
+  const { leads: derived, samples: n, fusion } = limbLeadsFromRecording(recording, {
+    fusion: true,
+  });
+  const fusionNote =
+    fusion === null
+      ? null
+      : fusion.mode === 'fused'
+        ? labels.fusionFused
+            .replace('{from}', String(Math.round(fusion.noiseCopyAUv)))
+            .replace('{to}', String(Math.round(fusion.noiseOutputUv)))
+        : labels.fusionDeclined.replace(
+            '{reason}',
+            labels.fusionReason(fusion.fallback ?? 'no-second-copy'),
+          );
 
   /* The full standard chain, with every stage ON. A printed sheet is the
      artefact that gets filed, and filing the unfiltered signal because the
@@ -258,6 +263,7 @@ export function buildRecordingHtml(input: ReportInput): string {
     leads.II ?? null,
     analysis,
     recording.note ?? null,
+    fusionNote,
     chrome,
     labels,
     totalPages,
@@ -289,6 +295,11 @@ ${reference}
 }
 
 
+// v0.65.0 - Dual Lead II: decodes through `limbLeadsFromRecording` with fusion
+//           FORCED ON (consistent with "every stage on"), and says so - a
+//           provenance note under the processing paragraph, only on a
+//           recording that has two Lead II copies. One-copy recordings build
+//           the same document as before.
 // v0.61.0 - The SIX-LEAD SHEETS open the report again, and the measurements
 //           page follows at 3. Reverses v0.60.0 at the user's instruction, and
 //           they are right: every number on the measurements page is a claim

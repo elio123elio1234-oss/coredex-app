@@ -12,20 +12,50 @@
 
    ⚠️ A simulated signal is NOT a patient signal. `isSimulated()` must be
    surfaced by every screen that shows it (web CLAUDE.md §6).
+
+   ══ DUAL LEAD II (firmware v3+) ══
+   A v3 device streams Lead II twice. The second copy gets a third ring,
+   `leadIIb` — RECORDED, never drawn. It exists on the buffer view only
+   while the device is actually sending it: undefined on a legacy device
+   and on the simulator, which is how the recorder knows whether there is
+   a third channel to keep. `leadII` is the same electrode pair on every
+   device, so the monitor, the gate and the HR detector cannot tell the two
+   streams apart — on purpose.
    ================================================================== */
 
 import { AppState, PermissionsAndroid, Platform, type AppStateStatus } from 'react-native';
 import type { BleStatus, EcgBufferView } from '@cyphix/shared';
-import { BUFFER_SIZE, EcgSimulator, SAMPLE_RATE, STREAM_STALE_MS } from '@cyphix/shared';
+import {
+  BUFFER_SIZE,
+  ECG3_FLAG_RLD_FAULT,
+  EcgSimulator,
+  LOD_LL2,
+  SAMPLE_RATE,
+  STREAM_STALE_MS,
+} from '@cyphix/shared';
 import { CyphixBleNative, type EcgBatchEvent } from '../../../modules/cyphix-ble';
 
 export type BleDataListener = (buffer: EcgBufferView) => void;
+
+/**
+ * The two electrodes only a dual-Lead-II device has. Both are false on a
+ * legacy device and on the simulator — there is nothing there to come off.
+ */
+export interface ElectrodeFaults {
+  /** The right-leg drive is out of range: every channel is unreferenced. */
+  rldFault: boolean;
+  /** The SECOND left-leg electrode is off. Lead II-a — everything on screen —
+      is unaffected; only the redundant copy is lost. */
+  secondLegOff: boolean;
+}
 
 export interface BleClientCallbacks {
   onStatusChange?: (status: BleStatus, detail?: string) => void;
   onDeviceNameChange?: (name: string) => void;
   onHeartRate?: (bpm: number) => void;
   onSignalRail?: (railed: { I: boolean; II: boolean }) => void;
+  /** Fired on CHANGE only — it feeds Redux, and the flags byte can flicker. */
+  onElectrodeFaults?: (faults: ElectrodeFaults) => void;
   /**
    * Samples stopped arriving (or started again). The link may still be
    * "connected" — this says nothing is coming through it, which is the only
@@ -60,6 +90,15 @@ export class BleClient {
   };
 
   private hr = { lastPeakIdx: 0, intervals: [] as number[], above: false };
+
+  /* ---- dual Lead II (firmware v3+) — see the header ----
+     The raw LOD byte and flags byte as the native bridge last reported them,
+     and what they currently add up to. Kept raw because the two arrive on
+     different clocks: the events are immediate, the first batch — which is
+     what proves the stream is 3-channel — is up to 100 ms behind them. */
+  private lodBits = 0;
+  private deviceFlags = 0;
+  private faults: ElectrodeFaults = { rldFault: false, secondLegOff: false };
 
   /* ---- staleness watchdog (root CLAUDE.md §3.2) ---- */
   private lastBatchAt = 0;
@@ -191,6 +230,7 @@ export class BleClient {
     }
 
     this.simulated = false;
+    this.resetDualLead();
     this.cb.onStatusChange?.('connecting');
     this.nativeSubs = [
       CyphixBleNative.addListener('onStatusChange', (e) => {
@@ -200,6 +240,14 @@ export class BleClient {
       CyphixBleNative.addListener('onEcgBatch', (e) => this.ingest(e)),
       CyphixBleNative.addListener('onHeartRate', (e) => this.cb.onHeartRate?.(e.bpm)),
       CyphixBleNative.addListener('onSignalRail', (e) => this.cb.onSignalRail?.(e)),
+      CyphixBleNative.addListener('onLeadOff', (e) => {
+        this.lodBits = e.lodBits;
+        this.refreshElectrodeFaults();
+      }),
+      CyphixBleNative.addListener('onDeviceFlags', (e) => {
+        this.deviceFlags = e.flags;
+        this.refreshElectrodeFaults();
+      }),
     ];
     this.startWatchdog();
     await CyphixBleNative.connect();
@@ -211,6 +259,7 @@ export class BleClient {
    */
   connectSimulator(): void {
     this.stopSimulator();
+    this.resetDualLead(); // the simulator has one Lead II and no electrodes
     this.simulated = true;
     this.simulator = new EcgSimulator(SAMPLE_RATE);
     this.cb.onStatusChange?.('connecting');
@@ -240,6 +289,7 @@ export class BleClient {
     this.nativeSubs = [];
     if (CyphixBleNative && !this.simulated) await CyphixBleNative.disconnect();
     this.simulated = false;
+    this.resetDualLead();
     this.cb.onStatusChange?.('disconnected');
   }
 
@@ -249,16 +299,60 @@ export class BleClient {
     this.simulator = null;
   }
 
-  private ingest(batch: Pick<EcgBatchEvent, 'leadI' | 'leadII' | 'droppedPackets'>): void {
+  /** Forget the third ring and both electrode states. The next device may
+      have neither, and a view that still carried `leadIIb` would tell the
+      recorder to keep a channel nobody is sending. */
+  private resetDualLead(): void {
+    delete this.data.leadIIb;
+    this.lodBits = 0;
+    this.deviceFlags = 0;
+    this.refreshElectrodeFaults();
+  }
+
+  /**
+   * Both faults are gated on the 3-channel stream being ACTIVE, not merely on
+   * the bit being set: LOD bit 3 is ADS1293 input IN4, which on older hardware
+   * is not an electrode at all, and the flags byte does not exist there.
+   */
+  private refreshElectrodeFaults(): void {
+    const threeChannel = this.data.leadIIb !== undefined;
+    const rldFault = threeChannel && (this.deviceFlags & ECG3_FLAG_RLD_FAULT) !== 0;
+    const secondLegOff = threeChannel && (this.lodBits & LOD_LL2) !== 0;
+    if (rldFault === this.faults.rldFault && secondLegOff === this.faults.secondLegOff) return;
+    this.faults = { rldFault, secondLegOff };
+    this.cb.onElectrodeFaults?.(this.faults);
+  }
+
+  private ingest(
+    batch: Pick<EcgBatchEvent, 'leadI' | 'leadII' | 'droppedPackets'> &
+      Partial<Pick<EcgBatchEvent, 'leadIIb'>>,
+  ): void {
     // Real samples arrived: this is the ONLY thing that clears staleness.
     this.lastBatchAt = Date.now();
     this.setStale(false);
 
-    const { leadI, leadII } = this.data;
+    /* The third ring follows the STREAM. It is allocated by the first batch
+       that carries a second copy and dropped by the first one that does not
+       (a native reconnect can land on a different device without JS ever
+       seeing a disconnect). A copy of the wrong length is no copy: the rings
+       share one write cursor, so it could only be written misaligned. */
+    const iib = batch.leadIIb;
+    if (batch.leadI.length > 0) {
+      const hasSecondCopy = iib !== undefined && iib.length === batch.leadI.length;
+      if (hasSecondCopy !== (this.data.leadIIb !== undefined)) {
+        if (hasSecondCopy) this.data.leadIIb = new Float32Array(BUFFER_SIZE);
+        else delete this.data.leadIIb;
+        this.refreshElectrodeFaults();
+      }
+    }
+
+    const { leadI, leadII, leadIIb } = this.data;
     for (let i = 0; i < batch.leadI.length; i++) {
       const idx = this.data.writeIdx % BUFFER_SIZE;
       leadI[idx] = batch.leadI[i];
       leadII[idx] = batch.leadII[i];
+      if (leadIIb && iib) leadIIb[idx] = iib[i];
+      // Peak detection stays on Lead II-a — the lead every device has.
       this.detectPeak(batch.leadII[i], this.data.writeIdx);
       this.data.writeIdx++;
       this.data.totalSamples++;
@@ -287,6 +381,11 @@ export class BleClient {
   }
 }
 
+// v1.2.0 — Dual Lead II: a third ring (`leadIIb`) that exists on the buffer view
+//          only while the device streams a second copy, and the two electrode
+//          faults only such a device has (RLD, LL#2), gated on that stream
+//          being active and reported on change. Live display path untouched:
+//          `leadI`/`leadII` and the HR detector read exactly what they did.
 // v1.1.0 — Two gaps between "the link is up" and "this is a patient signal":
 //          a staleness watchdog (+ AppState) so a frozen trace stops being
 //          called live, and the Android runtime permission request the native

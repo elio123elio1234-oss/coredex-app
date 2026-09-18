@@ -73,6 +73,16 @@ export const en = {
   limbRailWarning:
     'Lead {leads}: the signal is beyond what the Bluetooth link can carry, so it is drawn flat. ' +
     'Re-wet or re-seat that electrode. The electrode is not disconnected — this is a transport limit.',
+  /* Dual-Lead-II devices only (firmware v3+), in the rail note's own slot and
+     style. They are NOT the same size of problem and the copy says so: with
+     the reference electrode off nothing on screen can be trusted; with the
+     second leg electrode off the patient loses nothing they can see — so that
+     one states what it costs the recording instead of sounding an alarm. */
+  limbRldWarning:
+    'The reference electrode is not touching the skin, so the signal cannot be relied on. ' +
+    'Press the device against the skin until this message clears.',
+  limbSecondLegWarning:
+    'The second leg electrode is not touching the skin. The recording will use a single copy of Lead II.',
   limbBpmUnit: 'BPM',
   limbSecLeftUnit: 'SEC LEFT',
   countdownA11y: '{n} seconds left',
@@ -783,6 +793,28 @@ export const en = {
   vtNotchHint: 'Removes mains interference. Off shows the untouched signal.',
   vtSmooth: 'Smooth',
   vtSmoothHint: 'Savitzky-Golay smoothing. Off shows the sharpest detail, and the most noise.',
+  /* Offered only for a recording that HAS two Lead II copies (firmware v3+).
+     Not a filter, and the hint says so: it is the one switch in this sheet
+     that removes noise without touching the ECG's frequency content. */
+  vtFusion: 'Lead II fusion',
+  vtFusionHint:
+    'Combines the two measured copies of Lead II into one quieter trace, with no frequency filtering. Off shows the first electrode alone.',
+
+  /* ── Dual Lead II: what was done to this recording's Lead II ──
+     One quiet line beside the recording's other metadata (viewer header,
+     end-of-exam report). `{from}`/`{to}` are the non-repeating noise in
+     Lead II before and after, in µV, rounded. When the fusion was attempted
+     and DECLINED the line says why, in plain words — a second channel that
+     was silently ignored would look exactly like one that was used. */
+  fusionFused: 'Lead II fused from two electrodes · noise {from} → {to} µV',
+  fusionDeclined: 'Lead II uses the first electrode only — {reason}',
+  fusionOff: 'Lead II fusion is off — showing the first electrode alone',
+  fusionWhyNoCopy: 'no second copy was recorded',
+  fusionWhyLength: 'the two copies are different lengths',
+  fusionWhyShort: 'the recording is too short to compare them',
+  fusionWhyNotFinite: 'the second copy contains invalid samples',
+  fusionWhyFlat: 'one of the copies is a flat line',
+  fusionWhyNotSameLead: 'the two copies do not match (the second electrode was probably off)',
   vtFiltersOff: 'Some filters are off',
   vtZoomIn: 'Zoom in (show less time, larger)',
   vtZoomOut: 'Zoom out (show more time)',
@@ -1377,7 +1409,10 @@ export const en = {
   pdfTachogramCap: 'RR intervals in order of occurrence, against the mean. Shows where in the recording the variation happened.',
 
   pdfLeadMapTitle: 'What these six leads look at',
-  pdfLeadMapCap: 'Leads I, II and III are the three sides of Einthoven’s triangle, formed by the electrodes on the two arms and the left leg. aVR, aVL and aVF are derived from the same two measured channels. Together they view the heart in the frontal plane only.',
+  /* Dual Lead II: this used to end "derived from the same two measured
+     channels", which a three-channel recording makes false. What is true of
+     every recording is that they are computed from leads I and II. */
+  pdfLeadMapCap: 'Leads I, II and III are the three sides of Einthoven’s triangle, formed by the electrodes on the two arms and the left leg. aVR, aVL and aVF are computed from the measured leads I and II. Together they view the heart in the frontal plane only.',
   pdfWallInferior: 'the bottom (inferior) wall',
   pdfWallLateral: 'the side (high lateral) wall',
   pdfWallNotSeen: 'the front and back walls — chest electrodes, NOT recorded here',
@@ -1387,7 +1422,16 @@ export const en = {
      weight a reader should put on an interval measured off the paper. */
   pdfProcTitle: 'How this recording was processed',
   pdfProcBody:
-    'Each channel is baseline-corrected with a double median filter, notch-filtered at {notch} Hz with a zero-phase filter (so no interval is shifted in time), and lightly smoothed before it is drawn or measured. This device records TWO channels: leads I and II are measured, and III, aVR, aVL and aVF are computed from them by Einthoven’s and Goldberger’s equations — they are exact arithmetic, not extra electrodes. Every strip is printed at 25 mm/s and 10 mm/mV with a 1 mV calibration pulse, so the gain can be checked by eye rather than trusted.',
+    'Each channel is baseline-corrected with a double median filter, notch-filtered at {notch} Hz with a zero-phase filter (so no interval is shifted in time), and lightly smoothed before it is drawn or measured. Leads I and II are measured, and III, aVR, aVL and aVF are computed from them by Einthoven’s and Goldberger’s equations — they are exact arithmetic, not extra electrodes. Every strip is printed at 25 mm/s and 10 mm/mV with a 1 mV calibration pulse, so the gain can be checked by eye rather than trusted.',
+  /* Dual Lead II (firmware v3+): printed under the paragraph above, and ONLY
+     on a recording that carries two copies of Lead II. The paper always
+     fuses (it forces every stage on, for the same reason) and therefore
+     always has to say so. `pdfProcBody` lost its "records TWO channels"
+     clause in the same change — it was about to become false. */
+  pdfFusionFused:
+    'Lead II was measured twice, through two separate left-leg electrodes, and the two copies were combined into one trace before III, aVR, aVL and aVF were computed: the quieter copy is weighted more heavily, and what does not repeat from beat to beat is averaged out, never inside the QRS. This step applies no frequency filter. Non-repeating noise in lead II: {from} → {to} µV.',
+  pdfFusionDeclined:
+    'Lead II was measured twice, through two separate left-leg electrodes, but the second copy was not used: {reason}. Every lead in this report comes from the first copy alone.',
   /* v0.56.0: the four-sentence "how to read" tutorial was removed from the
      report — addressed to the wrong reader, and its last sentence had been
      false since v0.49 (there are no continuation sheets). */
@@ -1410,6 +1454,12 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.25.0 — Dual Lead II: the two electrode notes on the limb exam (reference
+//           electrode off / second leg electrode off), the viewer's fusion
+//           switch, the one-line statement of what the fusion did (and, when
+//           it declined, why), and the printed report's paragraph. Two PDF
+//           strings that said the device measures "two channels" were
+//           reworded so they stay true of a three-channel recording.
 // v1.24.0 — The signature's explanation moves off the screen and into the
 //           sheet its title opens, and gets to be COMPLETE there: what it
 //           is, why averaging is the whole point, and what the numbers

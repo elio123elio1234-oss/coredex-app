@@ -47,6 +47,18 @@ export interface ViewerSettings {
   overlayId: string | null;
   /** DSP stages. All on = the standard report chain. */
   filters: Required<ReportFilterOptions>;
+  /**
+   * Fuse the two measured copies of Lead II into one quieter trace. Only
+   * means anything on a dual-Lead-II recording (firmware v3+), and the
+   * toggle is only drawn for one.
+   *
+   * Beside `filters`, not inside it, for two reasons. It is not a stage of
+   * the report chain: it runs BEFORE `deriveLeads`, on raw channels, and
+   * applies no frequency filter at all. And `filters` is exactly the shared
+   * `ReportFilterOptions` — the shape `IDENTITY_FILTERS` and
+   * `DIGEST_FILTERS` are pinned copies of — so it stays exactly that.
+   */
+  fusion: boolean;
   /** Draw the R-peak ticks. */
   showRPeaks: boolean;
   /**
@@ -81,13 +93,18 @@ export const DEFAULT_VIEWER_SETTINGS: ViewerSettings = {
   focusLead: 'II',
   overlayId: null,
   filters: { baseline: true, notch: true, smoothing: true },
+  // On by default: it is what the PDF and the History digest always use, so a
+  // reader who touches nothing sees the same Lead II the paper prints.
+  fusion: true,
   // R peaks on by default: the reader wants to see which beats the rate came
   // from wherever they happen to be looking.
   showRPeaks: true,
   windowMm: DEFAULT_WINDOW_MM,
 };
 
-/** True when any DSP stage has been switched off. */
+/** True when any DSP stage has been switched off. Deliberately NOT `fusion`:
+    that toggle only exists for some recordings, and a red "filters are off"
+    warning with no visible switch to explain it would be a dead end. */
 export function hasFiltersOff(s: ViewerSettings): boolean {
   return !s.filters.baseline || !s.filters.notch || !s.filters.smoothing;
 }
@@ -126,6 +143,8 @@ export function fitWindowMm(
   return Math.min(MAX_WINDOW_MM, Math.max(MIN_WINDOW_MM, widthPt / ptPerMm));
 }
 
+// v1.2.0 — Adds `fusion` (default on): the dual-Lead-II switch, beside the DSP
+//          stages and held in the same viewer state.
 // v1.1.0 — Zoom ceiling raised to 600 mm and `fitWindowMm` added, so "Fit" and
 //          the full-screen view size the window to the HEIGHT — all six leads
 //          at once — instead of to the recording's length.

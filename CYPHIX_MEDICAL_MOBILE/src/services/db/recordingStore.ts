@@ -24,7 +24,8 @@
    would mean rewriting ~1.4 MB to save one note. So:
 
        cyphix:rec:index  →  RecordingListItem[]   (metadata, no samples)
-       cyphix:rec:<id>   →  { leadI, leadII }     (the base64 waveform)
+       cyphix:rec:<id>   →  { leadI, leadII, leadIIb? }  (the base64 waveform;
+                            `leadIIb` only on a dual-Lead-II capture)
 
    `list()` touches the index only; `getById` reads exactly one waveform.
    The two are written index-LAST on create and index-FIRST on delete, so a
@@ -48,10 +49,20 @@ const payloadKey = (id: string) => `cyphix:rec:${id}`;
  * Keep this many recordings on the device. Oldest beyond it are evicted.
  *
  * The web's cap is 40 against a 5 MB localStorage budget. AsyncStorage's
- * Android default is ~6 MB and a 10 s two-channel capture is ~34 kB of
- * base64, so 40 costs ~1.4 MB — comfortable, and the same number keeps the
- * two platforms behaving alike. A real server has no such cap, which is
- * exactly why it lives HERE and not in the interface or the UI.
+ * Android default is ~6 MB. The arithmetic, per 10 s capture at 320 Hz:
+ * 3 200 samples × 4 B = 12.8 kB per channel, × 4/3 for base64 = ~17 kB.
+ *
+ *     two channels   (every device so far)   ~34 kB  → 40 cost ~1.4 MB
+ *     three channels (dual Lead II, fw v3+)  ~51 kB  → 40 cost ~2.1 MB
+ *
+ * Re-derived for the third channel, and the cap STAYS 40: a history made
+ * entirely of three-channel captures is about a third of the budget, and
+ * this store is the only heavy thing in AsyncStorage — `deviceCache` keeps
+ * its large payloads in files. Each payload is its own row, so the ~2 MB
+ * per-row ceiling Android's cursor window imposes is nowhere near either.
+ * Same number as the web, so the two platforms keep behaving alike. A real
+ * server has no such cap, which is exactly why it lives HERE and not in
+ * the interface or the UI.
  */
 const MAX_STORED_RECORDINGS = 40;
 
@@ -115,7 +126,17 @@ export async function getRecording(id: string): Promise<StoredRecording | undefi
 }
 
 export async function createRecording(input: NewRecordingInput): Promise<StoredRecording> {
-  const n = Math.min(input.rawLeadI.length, input.rawLeadII.length);
+  /* The optional second Lead II copy counts only when it has samples, and
+     then it is clamped with the others: three channels of one recording are
+     one length, always. An empty array is "no second copy", the same as
+     absent — it must never become a zero-length `leadIIb` on the record,
+     which every reader would have to special-case forever. */
+  const rawIIb = input.rawLeadIIb && input.rawLeadIIb.length > 0 ? input.rawLeadIIb : null;
+  const n = Math.min(
+    input.rawLeadI.length,
+    input.rawLeadII.length,
+    rawIIb ? rawIIb.length : Infinity,
+  );
   const record: StoredRecording = {
     id: randomId('rec'),
     kind: 'EcgRecording',
@@ -127,6 +148,7 @@ export async function createRecording(input: NewRecordingInput): Promise<StoredR
     channels: {
       leadI: encodeChannel(input.rawLeadI.subarray(0, n)),
       leadII: encodeChannel(input.rawLeadII.subarray(0, n)),
+      ...(rawIIb ? { leadIIb: encodeChannel(rawIIb.subarray(0, n)) } : {}),
     },
     isSimulated: input.isSimulated,
     deviceLabel: input.deviceLabel,
@@ -215,5 +237,9 @@ export function setRecordingNote(id: string, note: string): Promise<StoredRecord
   return patchMeta(id, (meta) => ({ ...meta, note }));
 }
 
+// v1.1.0 — Stores the optional third raw channel (`channels.leadIIb`) when a
+//          capture has one, clamping `n` across every channel provided. The
+//          storage budget was re-derived for three channels (~51 kB a capture,
+//          ~2.1 MB at the cap) and the cap stays 40, in parity with the web.
 // v1.0.0 — On-device Scan History store (AsyncStorage), the mobile twin of the
 //          web's MockRecordingRepository: index + one payload per recording.
