@@ -66,6 +66,16 @@ Kotlin-only change under `modules/*/android/` counted as a reason to rebuild the
 ⚠️ **§6.4:** `tsc` clean, both platforms bundle, `expo-doctor` passes. It has
 not been seen on a phone — and neither has anything else in the 0.36.0 binary.
 
+**Shipping state, 2026-09-18.** Published OTA: branch `production`, runtime
+`0.36.0`, update group `3e565ffd-043f-4ddd-85d4-7006aeadfa99`;
+`eas channel:view production` confirms the channel serves that branch. It is
+waiting for a binary to land on: **iOS build 9 (0.36.0) is built but still NOT
+on TestFlight** — `eas submit` is a production deploy and was left to the
+owner to run (`npx eas-cli submit --platform ios --latest`). Once build 9 is
+installed: open the app, close it fully, open it again — the badge reads 0.66.0
+and Settings → ECG Device shows *Lead debug*. Settings → About → *App update*
+names the state if it does not.
+
 ## v0.65.0 - 2026-09-18 - Lead II, measured twice: recorded live, fused when it is read
 
 ⚠️ **NATIVE REBUILD REQUIRED — this is not an OTA.** `modules/cyphix-ble`
