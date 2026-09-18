@@ -166,6 +166,30 @@ Windows machine — and none of it has met a v3 device. The Android MTU sequence
 is the riskiest part: it changes how *every* Android connection is opened, on a
 half that has never been run. Everything here is `🔬` in PARITY.
 
+### The Kotlin half compiles too — and it turns out it never had (same release)
+
+There has never been an Android build of this app (no EAS keystore, no device in the
+loop), so the Kotlin module's `🔬` in `PARITY.md` meant "unverified". It actually meant
+**"does not compile"**. Generating the disposable `android/` folder locally and running
+`gradlew :cyphix-ble:compileDebugKotlin` found two errors:
+
+- `return@AsyncFunction` inside `connect` — the Expo Modules DSL types that lambda
+  `-> Any?`, and Kotlin 2 rejects a bare labelled return there ("expected 'Any?',
+  actual 'Unit'"). **That line is in the restore-point version and goes back to
+  v0.1.0**: the module had never once been through a compiler. Rewritten as if/else.
+- "Type checking has run into a recursive problem" — today's `mtuTimeout` closed a
+  reference cycle between members whose types were all inferred from anonymous
+  objects. Explicit types on the four of them.
+
+Now `BUILD SUCCESSFUL`. No behaviour change in either fix. This is still only
+"compiles": nothing Android has run on a device, and the new MTU request is reasoned
+from the ATT rules, not observed. `android/` was removed again afterwards — it is
+generated, git-ignored, and its presence would change what expo-doctor checks.
+
+To repeat the check: `npx expo prebuild --platform android --no-install`, then in
+`android/` with `JAVA_HOME` = Android Studio's `jbr`:
+`gradlew :cyphix-ble:compileDebugKotlin` (8 min cold, 20 s warm), then delete `android/`.
+
 ### The Swift half compiles (same release)
 
 EAS iOS build **#9 (0.36.0)** finished — the first time the new CoreBluetooth code

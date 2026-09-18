@@ -121,14 +121,19 @@ class CyphixBleModule : Module() {
       val manager = appContext.reactContext?.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
       adapter = manager?.adapter
       val scanner = adapter?.bluetoothLeScanner
+      // if/else, not an early `return@AsyncFunction`: the DSL's lambda is typed
+      // `-> Any?`, and a bare labelled return is `Unit` — which Kotlin 2 rejects
+      // ("expected 'Any?', actual 'Unit'"). That line shipped in v0.1.0 and meant
+      // this module had never once compiled; nobody knew, because there had never
+      // been an Android build to find out.
       if (scanner == null) {
         status("error", "Bluetooth unavailable or off")
-        return@AsyncFunction
+      } else {
+        status("connecting")
+        val filter = ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE_UUID)).build()
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        scanner.startScan(listOf(filter), settings, scanCallback)
       }
-      status("connecting")
-      val filter = ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE_UUID)).build()
-      val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
-      scanner.startScan(listOf(filter), settings, scanCallback)
     }
 
     AsyncFunction("disconnect") {
@@ -150,7 +155,10 @@ class CyphixBleModule : Module() {
     }
   }
 
-  private val scanCallback = object : ScanCallback() {
+  // Explicit types on the four members below: they refer to one another
+  // (scan -> gatt -> mtuTimeout -> startDiscovery -> mtuTimeout), and inferring
+  // an anonymous object's type through that cycle is a compile error.
+  private val scanCallback: ScanCallback = object : ScanCallback() {
     override fun onScanResult(callbackType: Int, result: ScanResult) {
       adapter?.bluetoothLeScanner?.stopScan(this)
       status("connecting", deviceName = result.device.name)
@@ -162,7 +170,7 @@ class CyphixBleModule : Module() {
     }
   }
 
-  private val gattCallback = object : BluetoothGattCallback() {
+  private val gattCallback: BluetoothGattCallback = object : BluetoothGattCallback() {
     override fun onConnectionStateChange(g: BluetoothGatt, statusCode: Int, newState: Int) {
       if (newState == BluetoothProfile.STATE_CONNECTED) {
         status("connected", deviceName = g.device.name)
@@ -228,7 +236,7 @@ class CyphixBleModule : Module() {
     }
   }
 
-  private val mtuTimeout = Runnable { gatt?.let { startDiscovery(it) } }
+  private val mtuTimeout: Runnable = Runnable { gatt?.let { startDiscovery(it) } }
 
   /** Once per connection, whichever of onMtuChanged / the timeout gets here first. */
   @Synchronized
@@ -360,7 +368,7 @@ class CyphixBleModule : Module() {
     }
   }
 
-  private val flushRunnable = object : Runnable {
+  private val flushRunnable: Runnable = object : Runnable {
     override fun run() {
       flush()
       handler.postDelayed(this, FLUSH_MS)
@@ -411,6 +419,9 @@ class CyphixBleModule : Module() {
   }
 }
 
+// v0.65.1 — COMPILES, for the first time: `:cyphix-ble:compileDebugKotlin` run locally found
+//           a `return@AsyncFunction` (Unit where the DSL wants Any?) that has been here since
+//           v0.1.0, and an inferred-type cycle from today's mtuTimeout. Both fixed; no behaviour change.
 // v0.2.0 — Dual Lead II (firmware v3): subscribes to the 3-channel
 //          characteristic when present, else legacy as before; strict 13-byte
 //          parser mirroring parseEcgPacket3; `leadIIb` in every batch (empty on
