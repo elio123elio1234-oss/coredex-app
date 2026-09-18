@@ -53,4 +53,18 @@ RLD_CN=0x6   CMDET_EN=0xF   LOD_EN=0xF   AFE_SHDN_CN=0x0   CH_CNFG=0x70
 - `lod=0x08` = ‏LL#2 מנותקת · `rld_fault=1` = אלקטרודת ה-RLD מנותקת.
 - שאר השורות הן ה-CSV של v2, ללא שינוי.
 
-<!-- v3.0.0 — flashing v3: VID-based port discovery, the COM4/Bluetooth-link collision, expected boot banner -->
+## 4. אימות מעל BLE — `tools/ble_check.py`
+
+נרשם לכל characteristic בנפרד (כמו אפליקציה) ובודק: הזרם הישן נשאר 16×9B ‏(146B)
+בלי אובדן וביטי LOD בתוך שלושת הביטים של v2; הזרם החדש 12×13B ‏(160B), בלי אובדן,
+דגל `ADS_OK` דלוק; ומדפיס את שני עותקי Lead II זה לצד זה. דורש `pip install bleak`.
+
+```powershell
+python toolsle_check.py        # 6 שניות לכל characteristic
+```
+
+קו בסיס שנמדד ב-2026-09-18 **על v2** (לפני הצריבה), עם הכלי הזה:
+`BeatAlign ECG`, ‏MTU 185, ‏99 חבילות × 146B ב-5 שניות, ‏317.8Hz, ‏0 אובדן, ה-characteristic
+החדש נעדר — כצפוי. אחרי צריבת v3 שורת ה-legacy חייבת להיראות **זהה**.
+
+<!-- v3.0.1 — adds tools/ble_check.py + the v2 baseline it measured; v3.0.0 — flashing v3: VID-based port discovery, the COM4/Bluetooth-link collision, expected boot banner -->
