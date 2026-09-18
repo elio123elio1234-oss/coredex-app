@@ -83,7 +83,7 @@ interface Sim {
 }
 
 /** mV. `indep`/`common` are noise RMS in mV. */
-function simulate(o: { seconds: number; indep: number; common: number; seed: number; ectopicAt?: number[]; bumpB?: boolean; stShift?: number }): Sim {
+function simulate(o: { seconds: number; indep: number; common: number; seed: number; ectopicAt?: number[]; bumpB?: boolean; stShift?: number; rr?: number }): Sim {
   const n = Math.round(o.seconds * FS);
   const r = rng(o.seed);
   const truth = new Float64Array(n);
@@ -112,7 +112,7 @@ function simulate(o: { seconds: number; indep: number; common: number; seed: num
         truth[i] += o.stShift * sig((tt - 0.052) / 0.012) * sig((0.3 - tt) / 0.055);
       }
     }
-    t += 0.86 * (1 + 0.06 * (r() * 2 - 1));
+    t += (o.rr ?? 0.86) * (1 + 0.06 * (r() * 2 - 1));
     k++;
   }
   const nRA = emg(n, r); // enters through the shared electrode: in BOTH copies
@@ -318,6 +318,36 @@ console.log('\n[6] Fallbacks — never worse than copy A');
   const e = rmsError(cleanSim(res.fused, s.baseA), truth, 1700, 2300);
   const eA = rmsError(cleanSim(s.a, s.baseA), truth, 1700, 2300);
   check('LL#2 off mid-recording does not leak in', e < 2 * eA, `mode ${res.info.mode}${res.info.fallback ? '/' + res.info.fallback : ''}: copy A ${(eA * 1000).toFixed(0)} µV, output ${(e * 1000).toFixed(0)} µV`);
+}
+
+console.log('\n[7] Edge cases');
+{
+  // 150 bpm: beat windows overlap and QRS guards sit close together
+  const fast = simulate({ seconds: 10, indep: 0.025, common: 0.015, seed: 21, rr: 0.4, stShift: 0.1 });
+  const rf = fuseLeadII(fast.a, fast.b, FS);
+  const truth = notch50(fast.truth);
+  const fT = fiducials(truth, fast.beats);
+  const fO = fiducials(cleanSim(rf.fused, fast.baseA), fast.beats);
+  const eA = rmsError(cleanSim(fast.a, fast.baseA), truth);
+  const eO = rmsError(cleanSim(rf.fused, fast.baseA), truth);
+  check('150 bpm: fused, and closer to the truth', rf.info.mode === 'fused' && eO < eA, `${(eA * 1000).toFixed(1)} → ${(eO * 1000).toFixed(1)} µV, ${rf.info.beats} beats`);
+  check('150 bpm: R within 2 %, ST within 10 µV', Math.abs(fO.r / fT.r - 1) < 0.02 && Math.abs(fO.st - fT.st) < 0.01, `R ${fO.r.toFixed(4)} vs ${fT.r.toFixed(4)} mV · ST ${(1000 * (fO.st - fT.st)).toFixed(1)} µV off`);
+
+  // a reversed electrode pair is not "the same lead"
+  const s = simulate({ seconds: 10, indep: 0.02, common: 0.01, seed: 22 });
+  const flipped = Float32Array.from(s.b, (v) => 20 - v);
+  check('inverted copy B is refused', fuseLeadII(s.a, flipped, FS).info.fallback === 'not-same-lead', 'single');
+  const nan = Float32Array.from(s.b);
+  nan[1234] = NaN;
+  check('a NaN in copy B is refused', fuseLeadII(s.a, nan, FS).info.fallback === 'not-finite', 'single');
+  check('under 2 s is refused', fuseLeadII(s.a.subarray(0, 500), s.b.subarray(0, 500), FS).info.fallback === 'too-short', 'single');
+
+  // a report must not make the phone wait
+  const long = simulate({ seconds: 60, indep: 0.025, common: 0.015, seed: 23 });
+  const t0 = Date.now();
+  const rl = fuseLeadII(long.a, long.b, FS);
+  const ms = Date.now() - t0;
+  check('60 s recording fuses in under 3 s on this machine', rl.info.mode === 'fused' && ms < 3000, `${ms} ms, ${rl.info.beats} beats`);
 }
 
 /* ══════════════════ 3. real recordings (report only) ══════════════════ */

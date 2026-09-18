@@ -47,23 +47,26 @@
         weighted by distance in time.
 
    ══ WHAT THE FILTERS IN THIS FILE ARE FOR ══
-   A median baseline and a mains notch do appear below. They are applied to
-   private copies used to ESTIMATE things (where the beats are, how noisy
-   each copy is), and a high-pass and a smoother are applied to the noise
-   reference d. None of them is ever applied to the ECG. The output is
-   assembled in the raw domain as `A − w·d + correction`: it keeps copy A's own
-   baseline and its own mains pickup, so the report chain downstream
-   (reportFilter.ts) sees exactly the kind of signal it has always been handed,
-   and old two-channel recordings never enter this file at all.
+   A 0.67 Hz zero-phase high-pass, a mains notch and a short smoother do appear
+   below. They are applied to private copies used to ESTIMATE things (where the
+   beats are, how noisy each copy is, how one beat differs from its neighbours)
+   and to the noise reference d. None of them is ever applied to the ECG. The
+   output is assembled in the raw domain as `A − w·d + correction`: it keeps
+   copy A's own baseline and its own mains pickup, so the report chain
+   downstream (reportFilter.ts) sees exactly the kind of signal it has always
+   been handed, and old two-channel recordings never enter this file at all.
 
    ══ MEASURED (scripts/verify-fusion.ts) ══
    Simulated, truth known, 25 µV independent + 15 µV shared EMG on a drifting
-   baseline: error vs truth 28.6 → 24.2 µV after fusion (the theoretical limit
-   for two copies is 23.2) → 17.6 µV after stage 2; R amplitude within 0.5 %,
-   ST level within 3 µV of the truth; a lone ectopic beat changed by 0.00 µV;
-   a 3 mV bump on copy B held to 12 µV where a plain average shows 246 µV.
+   baseline: error vs truth 28.6 → 24.3 µV after fusion (the theoretical limit
+   for two copies is 23.2) → 15.6 µV after stage 2; R amplitude within 0.5 %,
+   ST level within 3 µV of the truth (within 9 µV at 150 bpm); a lone ectopic
+   beat changed by 0.00 µV; a 3 mV bump on copy B held to 11 µV where a plain
+   average shows 246 µV; 60 s fuses in ~0.2 s.
    On a real 132 s HW_PLAYGROUND recording (IN3−IN1 / IN4−IN1): non-repeatable
-   noise down 5.5–10 dB per 10 s segment, ST level within 10 µV of copy A.
+   noise down 6–11 dB per 10 s segment (e.g. 26 → 8 µV), ST level within 9 µV
+   and R amplitude within 3 % of copy A — and most of that R "change" is copy
+   A's own noisy PR reference being cleaned, not the R wave moving.
 
    ══ LIMITS, STATED PLAINLY ══
    - Noise entering through the shared RA electrode is common to both copies.
@@ -193,50 +196,6 @@ function percentileOf(values: ArrayLike<number>, p: number): number {
   const a = Array.from(values).sort((x, y) => x - y);
   if (a.length === 0) return 0;
   return a[Math.min(a.length - 1, Math.max(0, Math.round(p * (a.length - 1))))];
-}
-
-function medianFilter(x: Float64Array, width: number): Float64Array {
-  const n = x.length;
-  const half = width >> 1;
-  const out = new Float64Array(n);
-  const buf: number[] = [];
-  for (let i = 0; i < n; i++) {
-    buf.length = 0;
-    for (let j = -half; j <= half; j++) buf.push(x[Math.min(n - 1, Math.max(0, i + j))]);
-    buf.sort((p, q) => p - q);
-    out[i] = buf[half];
-  }
-  return out;
-}
-
-/** Slow baseline (double median on block means, interpolated back).
-    ESTIMATION ONLY: whatever cardiac content it swallows, it swallows equally
-    from both copies, so it cancels in d and never reaches the output. */
-function slowBaseline(x: Float64Array, fs: number): Float64Array {
-  const n = x.length;
-  const dec = Math.max(1, Math.round(fs / 40));
-  const m = Math.ceil(n / dec);
-  const blocks = new Float64Array(m);
-  for (let k = 0; k < m; k++) {
-    let s = 0;
-    let c = 0;
-    for (let i = k * dec; i < Math.min(n, (k + 1) * dec); i++) {
-      s += x[i];
-      c++;
-    }
-    blocks[k] = s / c;
-  }
-  const rate = fs / dec;
-  const smooth = medianFilter(medianFilter(blocks, Math.round(0.2 * rate) | 1), Math.round(0.6 * rate) | 1);
-  const out = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    const p = Math.max(0, (i - (dec - 1) / 2) / dec);
-    const i0 = Math.min(m - 1, Math.floor(p));
-    const i1 = Math.min(m - 1, i0 + 1);
-    const f = p - i0;
-    out[i] = smooth[i0] * (1 - f) + smooth[i1] * f;
-  }
-  return out;
 }
 
 function biquad(x: Float64Array, b: number[], a: number[]): Float64Array {
@@ -568,18 +527,20 @@ export function fuseLeadII(
   }
 
   /* ── private estimation copies ── */
+  // Baseline out with a LINEAR zero-phase high-pass, not a median. A median
+  // baseline is the right tool for a trace someone will read (it spares the ST
+  // segment) and the wrong one here: its output has kinks, the kinks land
+  // differently on every beat of a drifting record, and stage 2 — which works on
+  // differences BETWEEN beats — took them for signal and stamped ~5 µV of them
+  // into the ST level. A linear filter bends every beat the same way, so what it
+  // does to the ST segment cancels exactly when one beat is compared with
+  // another. None of this reaches the output: these copies only answer "where
+  // are the beats", "how noisy is each copy" and "how does this beat differ
+  // from its neighbours".
   const a = Float64Array.from(copyA);
   const b = Float64Array.from(copyB);
-  const baseA = slowBaseline(a, fs);
-  const baseB = slowBaseline(b, fs);
-  const xa = new Float64Array(n);
-  const xb = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    xa[i] = a[i] - baseA[i];
-    xb[i] = b[i] - baseB[i];
-  }
-  const za = notchMains(xa, fs, mainsHz);
-  const zb = notchMains(xb, fs, mainsHz);
+  const za = notchMains(highpassZeroPhase(a, fs, DRIFT_CUTOFF_HZ), fs, mainsHz);
+  const zb = notchMains(highpassZeroPhase(b, fs, DRIFT_CUTOFF_HZ), fs, mainsHz);
   if (robustSigma(zb) < 1e-4 || robustSigma(za) < 1e-4) return single(copyA, 'flat');
 
   /* ── beats, from the copy every device has ── */
@@ -740,8 +701,8 @@ export function fuseLeadII(
     dNoise = softened;
   }
 
-  const y1 = new Float64Array(n); // fused, estimation domain, full band
-  for (let i = 0; i < n; i++) y1[i] = xa[i] - w[i] * dNoise[i];
+  const y1 = new Float64Array(n); // stage-1 result, RAW domain: copy A minus its share of the noise
+  for (let i = 0; i < n; i++) y1[i] = a[i] - w[i] * dNoise[i];
 
   const info: LeadFusionInfo = {
     mode: 'fused',
@@ -759,7 +720,7 @@ export function fuseLeadII(
   // Mains is set aside before stage 2 and handed back untouched afterwards.
   // Blending beat by beat would amplitude-modulate it, and a modulated hum has
   // sidebands the narrow notch downstream cannot reach.
-  const u = notchMains(y1, fs, mainsHz);
+  const u = notchMains(highpassZeroPhase(y1, fs, DRIFT_CUTOFF_HZ), fs, mainsHz);
   info.noiseFusedUv = 1000 * nonRepeatableNoise(u, peaks, fs);
 
   const correction = new Float64Array(n);
@@ -770,7 +731,7 @@ export function fuseLeadII(
   const fused = new Float32Array(n);
   const out = new Float64Array(n);
   for (let i = 0; i < n; i++) {
-    fused[i] = a[i] - w[i] * dNoise[i] + correction[i];
+    fused[i] = y1[i] + correction[i];
     out[i] = u[i] + correction[i];
   }
   info.noiseOutputUv = 1000 * nonRepeatableNoise(out, peaks, fs);
@@ -956,6 +917,10 @@ function averageBeats(u: Float64Array, fs: number, correction: Float64Array, inf
   for (let i = 0; i < n; i++) if (wsum[i] > 1e-9) correction[i] = acc[i] / wsum[i];
 }
 
+// v1.0.1 — Estimation copies use a LINEAR zero-phase high-pass instead of a median
+//          baseline: the median's kinks differed beat to beat on a drifting record and
+//          stage 2 stamped ~5 µV of them into the ST level. Mean ST error is now
+//          within ~1 µV of copy A at 70–100 bpm. Output path unchanged.
 // v1.0.0 — Dual Lead II fusion: signal-free-reference weighting of two copies
 //          (frequency-flat, unit gain by construction) + trust-gated
 //          beat-synchronous averaging that never touches the QRS. No
