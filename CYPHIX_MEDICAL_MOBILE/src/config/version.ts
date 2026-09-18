@@ -1,11 +1,59 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.66.0';
-export const APP_BUILD_LABEL = 'TEMPORARY lead debug screen: Lead I / II-a / II-b live (Settings > ECG Device) - OTA onto the 0.36.0 binary';
+export const APP_VERSION = '0.67.0';
+export const APP_BUILD_LABEL = 'new app icon (the ECG heart) - NATIVE REBUILD: an icon lives in the binary, not in the bundle';
+
+// v0.67.0 - THE APP ICON IS THE ECG HEART.
+//           ⚠️ NATIVE REBUILD: app.json 0.36.0 -> 0.37.0. An icon is compiled
+//           into the binary's asset catalog (iOS) and res/mipmap (Android) -
+//           there is no OTA that can change it, so `npm run ship:rebuild`.
+//           ★ AND THE 0.66.0 LEAD DEBUG SCREEN RIDES ALONG. It was published
+//           OTA to runtime 0.36.0; this binary is 0.37.0, so that update can
+//           never reach it - but the code is in this bundle, baked in, which
+//           is the correct outcome and not a loss.
+//
+//           Five files, from ONE square artwork, via `npm run icons`:
+//             icon.png                    iOS + legacy Android, full bleed,
+//                                         and deliberately NO ALPHA CHANNEL -
+//                                         the App Store rejects one outright.
+//             android-icon-foreground.png the adaptive foreground.
+//             android-icon-background.png the same colour field with the heart
+//                                         averaged out of it.
+//             android-icon-monochrome.png Android 13+ themed icon.
+//             favicon.png                 web.
+//
+//           ★ THE MONOCHROME ONE IS DRAWN, NOT DERIVED. Android tints that
+//           layer flat and throws its colour away, so a threshold of the
+//           artwork gives a ragged blob. It is a filled heart with the pulse
+//           trace punched out of it - and the punch is CHECKED: the script
+//           reads the centre column and fails if the R spike has reached the
+//           heart's own notch, because when those two gaps merge the lobes
+//           read as two separate blobs. The first two attempts did exactly
+//           that (the spike was sized against the canvas instead of the
+//           heart), which is why the check exists rather than an opinion.
+//
+//           Geometry that had to be true and now is: an adaptive layer is
+//           108dp and a launcher may crop everything outside the middle 72dp,
+//           so only 66.7 % of the frame is safe. The heart occupies ~54 %, so
+//           it survives a circular mask with room to spare; only the
+//           horizontal pulse line runs off the edge, which it does in the
+//           artwork too. Rendered and LOOKED AT under both masks before
+//           shipping (§6.4 applies to pictures as much as to code).
+//
+//           `adaptiveIcon.backgroundColor` went #FFFFFF -> #9971D8, the mean
+//           of the artwork's own field. It is only a fallback, but a white
+//           flash behind a purple icon is not this palette.
+//
+//           The splash screen is untouched and still carries the old mark -
+//           a separate decision, not an oversight.
 
 // v0.66.0 - A TEMPORARY SCREEN THAT DRAWS THE CHANNEL NOTHING ELSE DRAWS.
-//           JS ONLY: app.json stays 0.36.0, so this is an OTA onto the
-//           dual-Lead-II binary (build 9) - NOT a rebuild (CLAUDE.md 5A.2).
+// v0.66.0 - A TEMPORARY SCREEN THAT DRAWS THE CHANNEL NOTHING ELSE DRAWS.
+//           JS ONLY: app.json stayed 0.36.0, so this shipped as an OTA onto
+//           the dual-Lead-II binary (build 9) - NOT a rebuild (CLAUDE.md
+//           5A.2). ⚠️ v0.67.0 has since moved app.json to 0.37.0, so that
+//           update no longer reaches anything; the code is baked into the
+//           0.37.0 binary instead.
 //
 //           Asked for the day firmware v3 went on the board: "how can I see
 //           that it records two leads? Maybe a debug screen where I see only
