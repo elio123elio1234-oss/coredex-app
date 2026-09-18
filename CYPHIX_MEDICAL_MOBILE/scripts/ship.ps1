@@ -121,7 +121,16 @@ if ($builds.Count -eq 0) {
     $installedRuntime = $null
 }
 else {
-    $installedRuntime = $builds[0].runtimeVersion
+    # eas-cli reports the runtime as `runtime.version`. Up to v1.4.0 this read a flat
+    # `runtimeVersion`, which this JSON does not carry: it came back empty, so the
+    # gate below compared app.json against "" and demanded a REBUILD every time -
+    # including for a JS-only change onto a binary that was already correct. The
+    # flat name is kept as a fallback in case an older/newer cli uses it.
+    $installedRuntime = $builds[0].runtime.version
+    if (-not $installedRuntime) { $installedRuntime = $builds[0].runtimeVersion }
+    if (-not $installedRuntime) {
+        throw "EAS returned a build with no runtime version (neither runtime.version nor runtimeVersion). Refusing to guess - run 'npx eas-cli build:list --json' and look."
+    }
     $builtFrom = $builds[0].gitCommitHash
     Write-Host "  Newest build: runtime $installedRuntime (built from $($builtFrom.Substring(0,7)))" -ForegroundColor DarkGray
 }
@@ -160,8 +169,12 @@ if ($Path -eq 'auto') {
     }
     elseif ($builtFrom) {
         $touched = git diff --name-only $builtFrom HEAD
+        # The build being compared against is the iOS one (build:list --platform
+        # ios above), so a module's android/ half is not part of ITS native
+        # surface: a Kotlin-only fix must not force a 40-minute iOS rebuild.
         $native = $touched | Where-Object {
-            $_ -match 'CYPHIX_MEDICAL_MOBILE/(modules/|app\.json|package\.json|eas\.json)'
+            $_ -match 'CYPHIX_MEDICAL_MOBILE/(modules/|app\.json|package\.json|eas\.json)' -and
+            $_ -notmatch 'CYPHIX_MEDICAL_MOBILE/modules/[^/]+/android/'
         }
         if ($native) {
             Write-Host "  REBUILD REQUIRED: native surface changed since the installed build:" -ForegroundColor Yellow
@@ -183,7 +196,10 @@ if ($Path -eq 'ota' -and $installedRuntime -ne $nativeVersion) {
 # it eas-cli has no way to ask which App Store Connect app this is and
 # gives up - which is a miserable thing to discover once the build is done.
 $easJson = Read-Or-Die "$root\eas.json" | ConvertFrom-Json
-$ascAppId = $easJson.submit.production.ascAppId
+# The id lives under the PLATFORM key (submit.production.ios.ascAppId). v1.4.0 read
+# submit.production.ascAppId, which never exists, so the note below printed on
+# every rebuild even though the id had been in eas.json all along.
+$ascAppId = $easJson.submit.production.ios.ascAppId
 if ($Path -eq 'rebuild' -and -not $ascAppId) {
     Write-Host "  NOTE: eas.json has no submit.production.ascAppId." -ForegroundColor Yellow
     Write-Host "  The submit step will therefore ask you ONCE which App Store Connect" -ForegroundColor Yellow
@@ -257,6 +273,16 @@ else {
     Write-Host "  The badge should then read v$badge." -ForegroundColor DarkGray
 }
 
+# v1.5.0 - The installed runtime is read from `runtime.version`. The flat
+#          `runtimeVersion` this script read is not in the JSON eas-cli returns
+#          today (whether an older cli carried it was not checked), so it came
+#          back empty, the version gate compared app.json with "" and every
+#          run - JS-only ones included - was told REBUILD REQUIRED, and a forced
+#          -Path ota was refused. Found the day a JS-only debug screen needed to
+#          go onto a binary that was already right. An empty runtime now THROWS
+#          instead of quietly choosing the 40-minute path. Also reads ascAppId
+#          from submit.production.ios, where it actually is, and stops counting
+#          a module's android/ half as a reason to rebuild the iOS binary.
 # v1.4.0 - Build and submit are two commands instead of --auto-submit, and the
 #          submit profile is checked BEFORE the build rather than after it.
 #          `--auto-submit --non-interactive` needs eas.json to carry an

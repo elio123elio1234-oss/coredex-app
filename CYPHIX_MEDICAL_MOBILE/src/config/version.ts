@@ -1,7 +1,53 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.65.0';
-export const APP_BUILD_LABEL = 'dual Lead II: records the second copy (fw v3), fuses it in reports - NATIVE REBUILD, not an OTA';
+export const APP_VERSION = '0.66.0';
+export const APP_BUILD_LABEL = 'TEMPORARY lead debug screen: Lead I / II-a / II-b live (Settings > ECG Device) - OTA onto the 0.36.0 binary';
+
+// v0.66.0 - A TEMPORARY SCREEN THAT DRAWS THE CHANNEL NOTHING ELSE DRAWS.
+//           JS ONLY: app.json stays 0.36.0, so this is an OTA onto the
+//           dual-Lead-II binary (build 9) - NOT a rebuild (CLAUDE.md 5A.2).
+//
+//           Asked for the day firmware v3 went on the board: "how can I see
+//           that it records two leads? Maybe a debug screen where I see only
+//           Lead I, Lead II and the second Lead II - no intros, no timed
+//           recording, just to see the signal is live. Only for this debug,
+//           and then we switch it off as if it had never been."
+//
+//           The question is a fair one and v0.65.0 made it unanswerable ON
+//           PURPOSE: the second copy is recorded and never drawn (bleClient
+//           header), because a patient holding still does not need a monitor
+//           that changed. The person who just wired a fifth electrode does.
+//           Until now the only evidence the third channel arrived was a fusion
+//           caption on a finished report - ten seconds and a save later.
+//
+//           Settings > ECG Device > "Lead debug" (the row wears a DEBUG chip):
+//             * Connect, and three stacked traces on ONE shared scale - Lead I,
+//               II-a, and II-b in its own ink so a screenshot of this screen
+//               cannot pass for the exam monitor. Filtered (the exam's own
+//               display chain) or Raw.
+//             * What the stream IS: 3-channel (fw v3) or 2-channel (legacy),
+//               the MEASURED sample rate (not the nominal 320), lost packets,
+//               RLD / LL#2 / rail states.
+//             * ★ THE TWO NUMBERS THAT MATTER: the II-a vs II-b correlation and
+//               the RMS of their difference. The same lead from two electrodes
+//               should correlate near 1 - and the difference must be small BUT
+//               NOT ZERO. Exactly zero means one measurement duplicated
+//               somewhere in the pipeline: the one failure that would look
+//               perfect on a trace, so the screen says so in words.
+//             * No recording, no timer, no gate, no save.
+//
+//           IT IS A FLAG, AND THE FLAG IS THE OFF SWITCH:
+//           LEAD_DEBUG_SCREEN_ENABLED (config/featureFlags.ts). False = the
+//           route is not registered and the Settings row is not rendered; the
+//           three new files become unreachable. English only and outside the
+//           i18n tables on purpose (like the About diagnostics) - so removing
+//           it orphans no keys. Mobile-only; recorded in PARITY.md.
+//
+//           It reads the SAME ring buffer every other screen reads - no second
+//           path into the hardware - so what it shows is what gets recorded.
+//
+//           ⚠️ 6.4: typechecks and bundles. It has not been seen on a phone,
+//           and neither has anything else in the 0.36.0 binary.
 
 // v0.65.0 - ★ LEAD II, MEASURED TWICE. ⚠️ NATIVE REBUILD: app.json 0.35.0 →
 //           0.36.0 (`modules/cyphix-ble`, both halves). Ship with `npm run

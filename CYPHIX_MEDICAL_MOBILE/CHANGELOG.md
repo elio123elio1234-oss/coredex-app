@@ -1,5 +1,71 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.66.0 - 2026-09-18 - a temporary screen that draws the channel nothing else draws
+
+**JS only — an OTA onto the 0.36.0 binary** (`app.json` untouched, mobile
+CLAUDE.md §5A.2). It only reaches a phone that already runs build 9 or later;
+on the 0.35.0 binary there is no third channel to show anyway.
+
+**Why.** Asked for the day firmware v3 went on the board: *"how can I see that
+it records two leads? Maybe a debug screen where I see only Lead I, Lead II and
+the second Lead II — no intros, no timed recording, just to see the signal is
+live. Only for this debug, and then we switch it off as if it had never been."*
+
+The question is fair, and v0.65.0 made it unanswerable on purpose: the second
+copy is *recorded and never drawn*, because a patient holding still does not
+need a monitor that changed. The person who just wired a fifth electrode does.
+Until now the only evidence that the third channel arrived at all was a fusion
+caption on a finished report — a full capture and a save later.
+
+**What.** Settings → ECG Device → **Lead debug** (the row wears a `DEBUG` chip):
+
+- Connect, and three stacked live traces — Lead I, II-a, II-b — on **one shared
+  scale** (auto-scaling each card would make a copy at a tenth of the amplitude
+  look healthy). II-b is drawn in its own ink so a screenshot of this screen
+  cannot pass for the exam monitor. *Filtered* is the exam's own display chain;
+  *Raw* removes only the window mean, so drift, mains and muscle are visible as
+  they arrive.
+- What the stream *is*: 3-channel (firmware v3) / 2-channel (legacy) / simulator;
+  the **measured** sample rate rather than the nominal 320; lost packets; RLD,
+  LL#2 and rail states.
+- ★ The two numbers that matter: the II-a↔II-b **correlation** and the **RMS of
+  their difference**. The same lead from two electrodes should correlate near 1,
+  and the difference must be small **but not zero** — exactly zero means one
+  measurement duplicated somewhere in the pipeline, the one failure that would
+  look perfect on a trace. The screen says that in words.
+- No recording, no timer, no gate, no save. It reads the same `bleClient` ring
+  every other screen reads — there is no second path into the hardware, so what
+  it shows is what a recording would capture.
+
+**How it goes away.** `LEAD_DEBUG_SCREEN_ENABLED = false` in
+`config/featureFlags.ts`: the route is not registered, the Settings row is not
+rendered, and `LeadDebugScreen` / `LeadDebugMonitor` / `useLeadDebug` are
+unreachable. English-only and outside the i18n tables deliberately — it is a
+developer readout like the About diagnostics, and removing it orphans no keys.
+Mobile-only, recorded in PARITY.md with the reason.
+
+**The measured-rate readout is not decoration.** The same day, on the bench,
+firmware v3.0.0 turned out to stream at 306–309 Hz instead of 320 whenever a BLE
+client was subscribed (fixed in firmware v3.0.1 — `HW_PLAYGROUND/CHANGELOG.md`
+v0.2.1). Every packet was well-formed and `seq` never skipped; only a clock
+comparison could see it. This screen now does that comparison on the phone.
+
+**Found while shipping it: `scripts/ship.ps1` could not take the OTA path at
+all (now v1.5.0).** Its gate compares `app.json`'s version with the runtime of
+the newest finished build, read from `builds[0].runtimeVersion` — a field the
+JSON eas-cli returns today does not carry (it is `runtime.version`). It came
+back empty, `"0.36.0" -ne ""` was true, and every run said *REBUILD REQUIRED*
+and refused a forced `-Path ota` — for a JS-only change onto a binary that was
+already correct. An empty runtime now **throws** instead of quietly choosing
+the 40-minute path. Two smaller ones in the same read: `ascAppId` was looked up
+at `submit.production` instead of `submit.production.ios`, so the "no ascAppId"
+note printed on every rebuild although the id had been there all along; and a
+Kotlin-only change under `modules/*/android/` counted as a reason to rebuild the
+**iOS** binary. Dry run after the fix: `runtime 0.36.0`, path `OTA`.
+
+⚠️ **§6.4:** `tsc` clean, both platforms bundle, `expo-doctor` passes. It has
+not been seen on a phone — and neither has anything else in the 0.36.0 binary.
+
 ## v0.65.0 - 2026-09-18 - Lead II, measured twice: recorded live, fused when it is read
 
 ⚠️ **NATIVE REBUILD REQUIRED — this is not an OTA.** `modules/cyphix-ble`

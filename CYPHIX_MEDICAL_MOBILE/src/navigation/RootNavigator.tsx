@@ -54,6 +54,7 @@ import ChatScreen from '@/screens/ChatScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
 import HomeScreen from '@/screens/HomeScreen';
 import InsightsScreen from '@/screens/InsightsScreen';
+import LeadDebugScreen from '@/screens/LeadDebugScreen';
 import LimbMeasureScreen from '@/screens/LimbMeasureScreen';
 import PersonalDetailsScreen from '@/screens/PersonalDetailsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
@@ -64,6 +65,7 @@ import StudyViewerScreen from '@/screens/StudyViewerScreen';
 /* TestsScreen (the test-choice carousel) is intentionally NOT imported:
    v0.59.0 gave its dock slot to Insights. The screen is kept in the tree so
    the choice UI is not lost, and a patient starts a test from HOME. */
+import { LEAD_DEBUG_SCREEN_ENABLED } from '@/config/featureFlags';
 import { DARK, LIGHT } from '@/theme/tokens';
 import { useIsDark } from '@/theme/useTheme';
 
@@ -174,11 +176,22 @@ export default function RootNavigator() {
           component={StudyViewerScreen}
           options={{ animation: 'slide_from_right' }}
         />
+        {/* ⚠️ TEMPORARY — hardware bring-up. With the flag off the route does
+            not exist, so nothing can navigate to it even by name. */}
+        {LEAD_DEBUG_SCREEN_ENABLED ? (
+          <Stack.Screen
+            name="LeadDebug"
+            component={LeadDebugScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+        ) : null}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
+// v3.5.0 — Adds the TEMPORARY LeadDebug route (Lead I / II-a / II-b live),
+//          registered only while LEAD_DEBUG_SCREEN_ENABLED is on.
 // v3.4.0 — Adds the ReportPreview route, pushed from the study viewer.
 // v3.4.0 — Dock slot 2 routes to Insights (the ECG ID). TestsScreen is still
 //          in the tree and deliberately unrouted — a test starts from HOME.

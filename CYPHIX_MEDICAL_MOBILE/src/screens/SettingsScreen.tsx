@@ -52,6 +52,7 @@ import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
+import { LEAD_DEBUG_SCREEN_ENABLED } from '@/config/featureFlags';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
 import { useOtaUpdate } from '@/features/updates/useOtaUpdate';
 import { useAuth } from '@/features/auth/useAuth';
@@ -402,6 +403,21 @@ export default function SettingsScreen() {
               onPress={ble.isSupported ? () => void ble.connect() : ble.connectSimulator}
             />
           )}
+          {/* ⚠️ TEMPORARY — hardware bring-up for the dual-Lead-II device. The
+              one place Lead II-b is ever DRAWN. English like the About rows:
+              a developer tool, not patient copy, and no i18n keys to orphan
+              when the flag goes off and this row disappears with it. */}
+          {LEAD_DEBUG_SCREEN_ENABLED ? (
+            <SettingsRow
+              label="Lead debug"
+              description="Temporary. Live Lead I, II-a and II-b. Nothing is recorded."
+              value={<SettingsChip label="DEBUG" tone="warn" />}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                nav.navigate('LeadDebug');
+              }}
+            />
+          ) : null}
         </SettingsSection>
         </FadeUpView>
 
@@ -646,6 +662,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.2.0 — ECG Device gains a TEMPORARY "Lead debug" row (behind
+//          LEAD_DEBUG_SCREEN_ENABLED) that pushes the bring-up screen.
 // v3.1.0 — About carries an APP UPDATE row. expo-updates was installed,
 //          configured and delivering, and nothing in this app ever called
 //          it, so its defaults ran the show: check on a cold launch, apply

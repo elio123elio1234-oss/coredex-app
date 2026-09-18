@@ -86,6 +86,25 @@ export const INTERPRETATION_ENABLED = false;
  */
 export const PRECORDIAL_LEADS_ENABLED = false;
 
+/**
+ * ⚠️ TEMPORARY — THE LEAD DEBUG SCREEN (Settings → ECG Device → "Lead debug").
+ *
+ * On at the user's request (v0.66.0), for the bring-up of firmware v3: three
+ * live traces — Lead I, Lead II-a and the second copy II-b, which by design
+ * no other screen ever draws — with no intro, no timer and no recording.
+ * *"Only for this debug, and then we switch it off as if it had never been."*
+ *
+ * Flip to `false` and the route is not registered and the Settings row is not
+ * rendered; `LeadDebugScreen`, `LeadDebugMonitor` and `useLeadDebug` become
+ * unreachable. JS-only, so that is an OTA, not a rebuild.
+ *
+ * Mobile-only and outside the mirrored table for the same reason as the
+ * wordmark switch above. Recorded in PARITY.md.
+ */
+export const LEAD_DEBUG_SCREEN_ENABLED = true;
+
+// v0.66.0 — Adds LEAD_DEBUG_SCREEN_ENABLED (ON, temporarily): the hardware
+//           bring-up screen for the dual-Lead-II device.
 // v0.62.0 — Adds PRECORDIAL_LEADS_ENABLED (off): V1–V6 are hidden rather
 //           than drawn empty. Six permanently grey cells on a patient's
 //           screen read as six broken things, not as un-measured territory.
