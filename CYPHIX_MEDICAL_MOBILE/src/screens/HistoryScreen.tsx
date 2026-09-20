@@ -453,13 +453,18 @@ export default function HistoryScreen() {
           {list.isLoading ? (
           <View>
             {titleStandalone}
-            <View style={{ paddingHorizontal: padH }}>
-              <HistorySkeleton />
-            </View>
+            {/* Same entrance the cards and the Insights body use, so the
+                three states of this screen arrive the same way. */}
+            <FadeUpView delay={90} duration={420} distance={10}>
+              <View style={{ paddingHorizontal: padH }}>
+                <HistorySkeleton />
+              </View>
+            </FadeUpView>
           </View>
         ) : list.isError ? (
           <View>
             {titleStandalone}
+            <FadeUpView delay={90} duration={420} distance={10}>
             <View
               style={[
                 styles.card,
@@ -487,10 +492,12 @@ export default function HistoryScreen() {
               <Text style={[styles.retryText, { color: t.textPrimary }]}>{tr('viewerRetry')}</Text>
             </Pressable>
             </View>
+            </FadeUpView>
           </View>
         ) : empty ? (
           <View>
             {titleStandalone}
+            <FadeUpView delay={90} duration={420} distance={10}>
             <View
               style={[
                 styles.card,
@@ -508,6 +515,7 @@ export default function HistoryScreen() {
               {tr('histEmpty')}
             </Text>
             </View>
+            </FadeUpView>
           </View>
         ) : (
           <FlatList
@@ -654,6 +662,9 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v2.2.0 — The skeleton, the error card and the empty card rise in the same
+//          way the rows and the Insights body do, so the screen has one
+//          entrance rather than three arrivals.
 // v2.1.0 — No top bar. The title, the count and Import are the list's
 //          ListHeaderComponent and fade out as the page moves (`PageTitle`),
 //          which deletes the measured header height, `estimateHeaderH`, the

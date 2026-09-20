@@ -1,7 +1,52 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.73.0';
-export const APP_BUILD_LABEL = 'home: the greeting keeps the air the deleted subtitle was holding';
+export const APP_VERSION = '0.74.0';
+export const APP_BUILD_LABEL = 'Insights stops jumping on entry; History + Insights rise in';
+
+// v0.74.0 - THE INSIGHTS TAB STOPS JUMPING, AND BOTH TABS RISE IN. JS only.
+//
+//           Reported: "the Insights tab glitches - it shows for a split second
+//           and it looks unstable", with a screenshot of "Building your ECG ID"
+//           sitting UNDER the status-bar clock, hard against the left edge,
+//           with no screen title above it.
+//
+//           ★ ONE BUG, NOT TWO. `EcgIdentityPanel` has three early returns
+//           (error / building / no-identity) and every one of them rendered
+//           `<Empty>` BARE - outside the ScrollView. So they missed all three
+//           things that scroller carries: `header`, `paddingTop` and
+//           `paddingHorizontal`. On a bleedTop screen (v0.70.0 moved the title
+//           into the content and handed the safe area to it) that is not a
+//           cosmetic miss: the loading state drew at y=0 with no title, and
+//           then the ENTIRE PAGE jumped down and inward the moment the
+//           identity resolved and the real ScrollView took over. The jump IS
+//           the glitch. It was easy to miss because the building state is over
+//           in a frame or two on a warm cache - the slower the device, the
+//           longer the wrong layout is on screen, which is the opposite of how
+//           a bug should be found.
+//
+//           All four states now go through ONE `frame()`: the ScrollView is
+//           defined once and they can no longer disagree about where the page
+//           begins.
+//
+//           ── The entrance, asked for as "subtle and professional" ──
+//           `PageTitle` v1.1.0 rises 8 pt over 380 ms on mount, and the body
+//           follows 90 ms behind it (FadeUpView, 10 pt / 420 ms - the same
+//           values History's rows have used since v1.4.0, so the app has one
+//           motion vocabulary rather than a new one per screen). History's
+//           skeleton, error card and empty card take it too.
+//
+//           Two things that are easy to get wrong here and are not:
+//             - the title's entrance is MULTIPLIED INTO its scroll fade, in
+//               one animated style. Two nested animated views both writing
+//               `opacity` is how a screen entered mid-scroll ends up with a
+//               half-lit heading, each view correct about its own factor.
+//             - the body wrapper is KEYED BY PHASE. Without that, React keeps
+//               the same FadeUpView mounted across a state change and the real
+//               content appears instantly under a wrapper that already
+//               finished animating for the spinner.
+//             - and the wrapper restates `gap: 14`: the body is now ONE child
+//               of the content container instead of many, so the rhythm
+//               between sections would otherwise collapse.
 
 // v0.73.0 - THE GREETING SITS BACK WHERE IT WAS. JS only.
 //

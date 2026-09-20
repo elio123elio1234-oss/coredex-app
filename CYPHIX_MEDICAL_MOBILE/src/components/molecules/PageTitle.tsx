@@ -41,9 +41,15 @@
    threshold in JS, so they pass `interactive={false}` from the same test.
    ================================================================== */
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 /**
  * How far the page travels before the title is completely gone.
@@ -90,6 +96,21 @@ export default function PageTitle({
   paddingHorizontal,
   marginBottom = 14,
 }: Props) {
+  /**
+   * The entrance: the title lands first, and the page follows it.
+   *
+   * ★ It lives in the SAME animated style as the scroll fade, multiplied
+   * into it, rather than in a wrapper. Two nested animated views both
+   * writing `opacity` is how a title ends up half-lit: each one is correct
+   * about its own factor and neither knows about the other, so a screen
+   * entered mid-scroll would play the entrance over a value the scroll had
+   * already lowered. One expression, two factors, no ambiguity.
+   */
+  const intro = useSharedValue(0);
+  useEffect(() => {
+    intro.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
+  }, [intro]);
+
   /* Linear over `TITLE_FADE_DISTANCE`, clamped at both ends. A rubber-band
      overscroll drives `scrollY` NEGATIVE on iOS, so the lower clamp is not
      defensive padding — without it the title brightens past full opacity
@@ -97,7 +118,13 @@ export default function PageTitle({
   const fade = useAnimatedStyle(() => {
     const y = scrollY.value;
     const p = y <= 0 ? 0 : y >= TITLE_FADE_DISTANCE ? 1 : y / TITLE_FADE_DISTANCE;
-    return { opacity: 1 - p };
+    return {
+      opacity: (1 - p) * intro.value,
+      /* 8 pt, not the 10 the cards use: a 30 pt heading travelling as far
+         as a card reads as the heading being late rather than as the page
+         arriving. */
+      transform: [{ translateY: 8 * (1 - intro.value) }],
+    };
   });
 
   return (
@@ -124,6 +151,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.4 },
 });
 
+// v1.1.0 — Rises in on mount (380 ms, 8 pt), so both tabs open with the title
+//          landing ahead of their content instead of appearing finished. The
+//          entrance is MULTIPLIED INTO the scroll fade rather than wrapped
+//          around it: two nested animated views both writing `opacity` is how
+//          a screen entered mid-scroll ends up with a half-lit heading.
 // v1.0.0 — A screen title that lives in the scroll content and fades out as
 //          the page moves, replacing the frosted pinned bar on History and
 //          Insights. Rendered inside the scroller on purpose: it then travels

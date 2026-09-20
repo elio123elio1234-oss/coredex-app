@@ -1,5 +1,61 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.74.0 - 2026-09-20 - Insights stops jumping, and both tabs rise in
+
+**JS only.** Reported: *"the Insights tab glitches — it shows for a split second
+and it looks unstable"*, with a screenshot of **"Building your ECG ID" sitting
+under the status-bar clock**, hard against the left edge, with no screen title
+above it.
+
+### ★ One bug, not two
+
+`EcgIdentityPanel` has three early returns — error, building, no-identity — and
+**every one of them rendered `<Empty>` bare, outside the ScrollView**. So they
+missed all three things that scroller carries: `header`, `paddingTop` and
+`paddingHorizontal`.
+
+Before v0.70.0 that was survivable, because an absolutely-positioned glass bar
+was drawn over the top in every state and occupied the safe area regardless.
+v0.70.0 moved the title *into* the content and handed the safe area to it — and
+the early returns never got the memo. The loading state therefore drew at y=0
+with no title, and then **the entire page jumped down and inward** the moment
+the identity resolved and the real ScrollView took over.
+
+That jump is the glitch. It was easy to miss because the building state is over
+in a frame or two on a warm cache: the slower the device, the longer the wrong
+layout is on screen, which is the opposite of how a bug should surface.
+
+All four states now go through one `frame()`. The ScrollView is defined **once**
+and they can no longer disagree about where the page begins.
+
+### The entrance
+
+Asked for as *"subtle, professional"*. `PageTitle` rises **8 pt over 380 ms** on
+mount and the body follows **90 ms** behind it (`FadeUpView`, 10 pt / 420 ms —
+the same numbers History's rows have used since v1.4.0, so the app keeps one
+motion vocabulary instead of inventing one per screen). History's skeleton,
+error card and empty card take it too.
+
+Three things here are easy to get wrong and are deliberately not:
+
+- **The title's entrance is multiplied into its scroll fade**, inside one
+  animated style. Two nested animated views both writing `opacity` is how a
+  screen entered mid-scroll ends up with a half-lit heading — each view correct
+  about its own factor, neither aware of the other.
+- **The body wrapper is keyed by phase.** Without that, React reconciles the
+  same `FadeUpView` at the same position across a state change, keeps it
+  mounted, and the real content appears instantly under a wrapper that already
+  finished animating for the spinner.
+- **The wrapper restates `gap: 14`.** The body is now one child of the content
+  container instead of many, so the rhythm between sections would otherwise
+  collapse to nothing.
+
+Files: `components/organisms/EcgIdentityPanel.tsx` (v2.5.0),
+`components/molecules/PageTitle.tsx` (v1.1.0), `screens/HistoryScreen.tsx`
+(v2.2.0), `config/version.ts`.
+
+---
+
 ## v0.73.0 - 2026-09-20 - the greeting keeps the air the subtitle was holding
 
 **JS only.** Reported the moment v0.68.0 landed: *"now `Hello Elio` is really

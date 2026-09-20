@@ -126,6 +126,7 @@ import {
   type IdentityMatch,
   type MeasurementStats,
 } from '@cyphix/shared';
+import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import BeatSignature, { pickGain, SHEET_MARGIN } from '@/components/molecules/BeatSignature';
 import BottomSheet from '@/components/molecules/BottomSheet';
 import BeatBuilder from '@/components/molecules/BeatBuilder';
@@ -441,18 +442,77 @@ export default function EcgIdentityPanel({
     [lang],
   );
 
+  /**
+   * ★ EVERY STATE GOES THROUGH HERE — AND IT IS A BUG FIX, NOT TIDYING.
+   *
+   * The three early returns below used to render `<Empty>` BARE, outside
+   * the ScrollView. So they missed all three things the scroller carries:
+   * the `header`, `paddingTop` and `paddingHorizontal`. On a `bleedTop`
+   * screen that is not a cosmetic miss — it put "Building your ECG ID"
+   * underneath the status-bar clock and hard against the left edge, with
+   * no screen title at all, and then JUMPED the entire page down and in
+   * the moment the identity resolved and the real ScrollView took over.
+   *
+   * That jump is the whole of the reported "the tab glitches, it shows for
+   * a split second and looks unstable". It was invisible on a warm cache,
+   * because the building state is over in a frame or two; the slower the
+   * device, the longer the wrong layout is on screen.
+   *
+   * One ScrollView, defined once, used by all four states: they can no
+   * longer disagree about where the page begins.
+   *
+   * `phase` keys the body so that a state CHANGE replays the entrance.
+   * Without it React reconciles the same `FadeUpView` at the same position,
+   * keeps it mounted, and the real content would appear instantly under a
+   * wrapper that had already finished animating for the spinner.
+   */
+  const frame = (body: ReactNode, phase: string) => (
+    <ScrollView
+      style={styles.scroll}
+      /* ★ The dock's clearance lives HERE, not on the shell's padding, so
+         the page travels behind the frosted bar instead of stopping on a
+         bare strip above it (`PatientShell.scrollsUnderDock`). */
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingHorizontal,
+          paddingTop,
+          paddingBottom: dockFootprint(insets.bottom, screenH),
+        },
+      ]}
+      showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={onScroll ? (e) => onScroll(e.nativeEvent.contentOffset.y) : undefined}
+      /* The signature and the builder both own horizontal drags; without
+         this the scroll view steals them the moment a finger slides. */
+      directionalLockEnabled
+    >
+      {/* The screen's title, as CONTENT. It carries its own entrance
+          (`PageTitle` v1.1.0) and lands ahead of the body below. */}
+      {header}
+
+      {/* ⚠️ The body takes `styles.content`'s own gap. It is now ONE child
+          of the content container instead of many, so without this the
+          14 pt rhythm between every section would collapse to nothing. */}
+      <FadeUpView key={phase} delay={90} duration={420} distance={10} style={styles.bodyGroup}>
+        {body}
+      </FadeUpView>
+    </ScrollView>
+  );
+
   /* ── States before there is anything to draw ─────────────────── */
 
   if (view.isError) {
-    return (
-      <Empty title={tr('insTitle')} body={tr('histLoadError')} align={align} />
+    return frame(
+      <Empty title={tr('insTitle')} body={tr('histLoadError')} align={align} />,
+      'error',
     );
   }
 
   const buildingNow = view.isLoading || view.isBuilding || view.progress !== null;
 
   if (!identity && buildingNow) {
-    return (
+    return frame(
       <Empty
         title={tr('insBuilding')}
         align={align}
@@ -464,12 +524,13 @@ export default function EcgIdentityPanel({
               })
             : tr('insBuildingBody')
         }
-      />
+      />,
+      'building',
     );
   }
 
   if (!identity || identity.maturity === 'none') {
-    return (
+    return frame(
       <Empty title={tr('insEmptyTitle')} body={tr('insEmptyBody')} align={align}>
         {/* Studies exist but none qualified — say WHICH rule they failed,
             or "no ECG ID yet" reads as the feature being broken. */}
@@ -485,7 +546,8 @@ export default function EcgIdentityPanel({
             ))}
           </View>
         )}
-      </Empty>
+      </Empty>,
+      'empty',
     );
   }
 
@@ -508,32 +570,8 @@ export default function EcgIdentityPanel({
   const sheetWidth = Math.max(80, screenW - SHEET_MARGIN * 2);
   const bleedStyle = { marginHorizontal: -sheetInset };
 
-  return (
-    <ScrollView
-      style={styles.scroll}
-      /* ★ The dock's clearance lives HERE, not on the shell's padding, so
-         the page travels behind the frosted bar instead of stopping on a
-         bare strip above it (`PatientShell.scrollsUnderDock`). */
-      contentContainerStyle={[
-        styles.content,
-        {
-          paddingHorizontal,
-          paddingTop,
-          paddingBottom: dockFootprint(insets.bottom, screenH),
-        },
-      ]}
-      showsVerticalScrollIndicator={false}
-      scrollEventThrottle={16}
-      onScroll={onScroll ? (e) => onScroll(e.nativeEvent.contentOffset.y) : undefined}
-      /* The signature and the builder both own horizontal drags; without
-         this the scroll view steals them the moment a finger slides. */
-      directionalLockEnabled
-    >
-      {/* The screen's title, as CONTENT. `styles.content` has `gap: 14`, so
-          it takes the same air every other block does and `PageTitle` is
-          handed `marginBottom={0}` rather than adding a second gap. */}
-      {header}
-
+  return frame(
+    <>
       {/* ══ 1. THE RECORDING, FIRST AND WHOLE ═══════════════════
           ★ v0.44.0. The screen opens on the ECG and nothing else, and
           everything down to the lead buttons is sized to ONE viewport —
@@ -923,7 +961,8 @@ export default function EcgIdentityPanel({
           </Text>
         </View>
       </BottomSheet>
-    </ScrollView>
+    </>,
+    'ready',
   );
 }
 
@@ -1130,6 +1169,10 @@ const styles = StyleSheet.create({
      framing — strip them and leave the old gaps and the page reads as one
      undifferentiated column of grey. Air is what does that job now. */
   content: { gap: 14 },
+  /* The body is ONE child of `content` now (it is wrapped for its
+     entrance), so the 14 pt rhythm between its sections has to be
+     restated here or every block would close up against the next. */
+  bodyGroup: { gap: 14 },
   rowRtl: { flexDirection: 'row-reverse' },
   rowBetween: {
     flexDirection: 'row',
@@ -1390,6 +1433,16 @@ const styles = StyleSheet.create({
 //          — a box that resizes when you change lead reads as instability,
 //          because it is. Prose cut to one line per section; what survived is
 //          what the screen cannot say without words.
+// v2.5.0 — ALL FOUR STATES GO THROUGH ONE ScrollView (`frame`). The three
+//          early returns rendered `<Empty>` bare, outside it, so they missed
+//          the header, paddingTop AND paddingHorizontal - on a bleedTop
+//          screen that put "Building your ECG ID" under the status-bar clock
+//          against the left edge with no title, then JUMPED the whole page
+//          down and in when the identity resolved. Reported as "the Insights
+//          tab glitches, it shows for a split second and looks unstable".
+//          The body also rises in (FadeUpView, 90 ms behind the title), keyed
+//          by phase so a state change replays the entrance instead of
+//          appearing instantly under a wrapper that already finished.
 // v2.4.0 — Takes a `header` node and renders it as the FIRST CHILD of the
 //          scroll view, replacing the frosted bar Insights used to float over
 //          this panel. A title inside the scroller travels with the page for
