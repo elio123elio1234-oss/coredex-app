@@ -1,5 +1,58 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.79.0 - 2026-09-20 - the 6-lead icon on brand blue
+
+⚠️ **NATIVE REBUILD.** `app.json` 0.41.0 → **0.42.0**.
+
+Same concept as v0.78.0, new artwork: the report card now sits on a **brand-blue
+field** instead of being a pale card on a pale field.
+
+### It fixes the one thing v0.78.0 was filed with a warning about
+
+v0.78.0's honest note was that the icon **"floats" on a light wallpaper** — low
+internal contrast and low external contrast at the same time. That was the
+single biggest weakness of the choice, and this artwork removes it. Rendered
+side by side at 60 px on a light wall: the pale version loses its own outline,
+this one holds a hard edge. The `60 px – LIGHT wall` column is the whole
+argument.
+
+### ★ Android flips back to full-bleed — the opposite call, for the opposite reason
+
+v0.78.0 used the rebuilt safe-circle foreground because its artwork ran content
+to the card's edges, so the launcher's 1.5× zoom cut the "6" and the lead
+labels. **This artwork has generous margin built in**, so full-bleed survives
+the same crop with nothing lost — and it is bolder than the 47 % subject the
+safe-circle treatment produces. Both were rendered under a circular mask and
+compared before choosing. The faintness warned about in v0.78.0 is **resolved,
+not inherited**.
+
+This is the third artwork in a row where the Android answer differed, and the
+rule underneath is now clear enough to state: **full-bleed when the artwork's
+edges carry margin or texture; the rebuilt safe-circle layer when they carry
+meaning.** It is a property of the artwork, not a house style.
+
+### Two pipeline corrections this needed
+
+1. **`unmask-icon.js` treated an already-full-bleed source as an error** and
+   exited. It refused exactly the artwork that needs no un-masking — and *"no
+   corner to remove"* is not *"nothing to check"*: the mask-fit constraint
+   applies to every source, and that is the one that shipped a sliced "HR 72"
+   in v0.77.0. It now passes such a source through and runs the check alone.
+   Result here: content already clears the mask, no shrink needed.
+2. **A rendering script of mine lost its output path** to
+   `$s = [int]($cell * 1.5)`. PowerShell variable names are **case-insensitive**,
+   so that overwrote `$S` — the scratch directory — with `270`, and the save
+   went to a relative path. `make-icons.ps1`'s own header warns about precisely
+   this trap (*"NOT `$Src`/`$Out`"*), and I walked into it anyway. Only a
+   scratch render was affected; no asset was.
+
+`adaptiveIcon.backgroundColor` `#DBE8FA` → **`#6AA6E8`**, sampled.
+
+Files: `scripts/unmask-icon.js` (v1.4.0), the two brand sources, the five
+generated assets, `app.json`, `config/version.ts`.
+
+---
+
 ## v0.78.0 - 2026-09-20 - the 6-lead report icon, and the pipeline learns its second constraint
 
 ⚠️ **NATIVE REBUILD.** `app.json` 0.40.0 → **0.41.0**.

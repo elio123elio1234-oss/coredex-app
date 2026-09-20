@@ -1,7 +1,46 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.78.0';
-export const APP_BUILD_LABEL = 'the 6-lead report icon, and the icon pipeline learns its second constraint';
+export const APP_VERSION = '0.79.0';
+export const APP_BUILD_LABEL = 'the 6-lead icon on brand blue - it finally holds its edge on a light wallpaper';
+
+// v0.79.0 - THE SAME 6-LEAD IDEA, ON BRAND BLUE.
+//           ⚠️ REBUILD: app.json 0.41.0 -> 0.42.0.
+//
+//           v0.78.0 shipped the same concept as a PALE card, and the honest
+//           note filed with it was that it "floats" on a light wallpaper -
+//           low internal contrast and low external contrast at once. This
+//           artwork fixes exactly that, and the render proves it: side by side
+//           at 60 px on a light wall, the pale version loses its own outline
+//           and this one holds a hard edge. That was the single biggest
+//           weakness of the choice and it is gone.
+//
+//           ★ AND ANDROID FLIPS BACK TO FULL-BLEED, which is the opposite of
+//           v0.78.0's call and right for the opposite reason. v0.78.0's
+//           artwork ran its content to the card's edges, so the launcher's
+//           1.5x zoom cut the "6" and the lead labels and the rebuilt
+//           safe-circle layer was the only way to keep them. THIS artwork has
+//           generous margin built in, so full-bleed survives the same crop
+//           with nothing lost - and it is bolder than the 47 % subject the
+//           safe-circle treatment produces. Both were rendered under a
+//           circular mask and compared before choosing; the faintness warned
+//           about in v0.78.0 is resolved rather than inherited.
+//
+//           ── Two pipeline corrections this needed ──
+//           1. `unmask-icon.js` treated an ALREADY FULL-BLEED source as an
+//              error and exited. It refused exactly the artwork that needs no
+//              un-masking - and "no corner to remove" is not "nothing to
+//              check": the mask-fit constraint applies to every source, and
+//              that is the one that shipped a sliced "HR 72" in v0.77.0. It
+//              now passes such a source through and runs the check alone
+//              (result here: content already clears, no shrink).
+//           2. A rendering script of mine lost its output path to
+//              `$s = [int]($cell * 1.5)` - PowerShell variable names are
+//              CASE-INSENSITIVE, so it overwrote `$S`, the scratch directory,
+//              with 270. `make-icons.ps1`'s own header warns about precisely
+//              this trap ("NOT $Src/$Out"), and I walked into it anyway. Only
+//              a scratch render was affected; no asset was.
+//
+//           `adaptiveIcon.backgroundColor` #DBE8FA -> #6AA6E8, sampled.
 
 // v0.78.0 - THE APP ICON IS THE 6-LEAD REPORT CARD.
 //           ⚠️ REBUILD: app.json 0.40.0 -> 0.41.0.

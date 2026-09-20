@@ -131,9 +131,20 @@ for (let dy = 0; dy < cardH / 2; dy++) {
 
 console.log(`  card        ${cardW} x ${cardH} at (${left}, ${top})`);
 console.log(`  corner      ${radius} px deep  (${((radius / cardW) * 100).toFixed(1)} % of the card side)`);
-if (radius === 0) {
-  console.error('  no rounded corner found — is this artwork already full bleed?');
-  process.exit(1);
+
+/**
+ * ★ ALREADY FULL BLEED IS A VALID INPUT, not an error.
+ *
+ * This used to `exit(1)` on a zero corner, which made the script refuse
+ * exactly the artwork that needs no un-masking. But "no corner to remove"
+ * does NOT mean "nothing to check": constraint 2 below — does the content
+ * clear the OS mask? — applies to every source, and it is the one that
+ * shipped a sliced "HR 72". So the pass-through keeps the frame as-is and
+ * runs the rest unchanged.
+ */
+const alreadyFullBleed = radius === 0;
+if (alreadyFullBleed) {
+  console.log('  frame       already full bleed — nothing to un-mask; checking the mask fit only');
 }
 
 /* ---- the square the output maps onto ----
@@ -177,21 +188,31 @@ function uncoveredGap(L) {
 
 const maxSide = Math.min(cardW, cardH);
 let side = maxSide;
-for (let f = 1; f >= 0.7; f -= 0.005) {
-  const L = Math.round(maxSide * f);
-  if (uncoveredGap(L) <= L * MAX_GAP) { side = L; break; }
+let originX = (left + right) / 2 - side / 2;
+let originY = (top + bottom) / 2 - side / 2;
+
+if (alreadyFullBleed) {
+  /* Take the whole image; there is no page around it to exclude. */
+  side = Math.min(W, H);
+  originX = (W - side) / 2;
+  originY = (H - side) / 2;
+} else {
+  for (let f = 1; f >= 0.7; f -= 0.005) {
+    const L = Math.round(maxSide * f);
+    if (uncoveredGap(L) <= L * MAX_GAP) { side = L; break; }
+  }
+  const gapPx = uncoveredGap(side);
+  console.log(
+    `  frame       ${side} px  (${((side / maxSide) * 100).toFixed(0)} % of the card) ` +
+    `— worst uncovered corner ${gapPx} px (${((gapPx / side) * 100).toFixed(1)} %)`,
+  );
+  if (gapPx > side * MAX_GAP) {
+    console.error('  could not find a frame that the card nearly fills — is the corner radius enormous?');
+    process.exit(1);
+  }
+  originX = (left + right) / 2 - side / 2;
+  originY = (top + bottom) / 2 - side / 2;
 }
-const gapPx = uncoveredGap(side);
-console.log(
-  `  frame       ${side} px  (${((side / maxSide) * 100).toFixed(0)} % of the card) ` +
-  `— worst uncovered corner ${gapPx} px (${((gapPx / side) * 100).toFixed(1)} %)`,
-);
-if (gapPx > side * MAX_GAP) {
-  console.error('  could not find a frame that the card nearly fills — is the corner radius enormous?');
-  process.exit(1);
-}
-const originX = (left + right) / 2 - side / 2;
-const originY = (top + bottom) / 2 - side / 2;
 
 const bilinear = (fx, fy, c) => {
   fx = Math.max(0, Math.min(W - 1.001, fx));
@@ -223,6 +244,9 @@ const INSET = 10;
 
 /** The nearest point genuinely INSIDE the card, both axes clamped. */
 function clampToCard(x, y) {
+  /* Nothing to clamp to: the image IS the card, edge to edge. Clamping
+     here would shave a band off every side for no reason. */
+  if (alreadyFullBleed) return [x, y];
   /* Vertically first, so the row we then use is one with a real span and
      is itself clear of the top and bottom rims. */
   const yy = Math.max(top + INSET, Math.min(bottom - INSET, y));
