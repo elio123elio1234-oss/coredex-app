@@ -76,15 +76,22 @@ const N = 1024;
  * frame rather than 67 %.
  */
 const SAFE = 0.667;
-/**
- * The artwork's CONTENT block, in source pixels: the leftmost label to the
- * end of the longest trace, and the top of lead I to the bottom of aVF.
- * Measured off the 1254 px source, not guessed — if the artwork is ever
- * replaced these four numbers are what has to be re-measured.
- */
-const CONTENT = { x: 155, y: 210, w: 940, h: 835 };
-
 const src = PNG.sync.read(fs.readFileSync(SRC));
+
+/**
+ * The artwork's CONTENT block, in source pixels.
+ *
+ * ★ THE WHOLE FRAME, since v1.6.0. This used to be four hand-measured
+ * numbers picking the subject out of a page of white — which is what the
+ * v0.72.0 artwork needed, because it arrived as a subject floating on a
+ * backdrop. Every source now comes through `unmask-icon.js` first, which
+ * has already reduced the image to exactly the card, so there is no page
+ * left to exclude and a hardcoded box is just a stale crop waiting to
+ * mangle the next artwork. It did exactly that on the first run against
+ * the v0.78.0 source: 155/210/940/835 against a 1024 square produced a
+ * 511x454 subject with the wrong aspect and an off-centre crop.
+ */
+const CONTENT = { x: 0, y: 0, w: src.width, h: src.height };
 const px = (img, x, y, c) => img.data[((img.width * y + x) << 2) + c];
 
 /* ---- the gradient, traces averaged away ----
@@ -205,6 +212,11 @@ console.log(
   `(${((boxW / N) * 100).toFixed(1)}% of the frame)`,
 );
 
+// v1.6.0 — CONTENT is the whole frame. The four hand-measured numbers picked
+//          a subject out of a page of white, which no source has any more:
+//          `unmask-icon.js` runs first and hands this exactly the card. Left
+//          hardcoded, they were a stale crop that mangled the next artwork -
+//          and did, on the first run.
 // v1.5.0 — The subject difference is SIGNED. Clamping it at zero assumed the
 //          subject is brighter than its background - true of neon on navy,
 //          false of ECG paper (dark trace on white), where it would have

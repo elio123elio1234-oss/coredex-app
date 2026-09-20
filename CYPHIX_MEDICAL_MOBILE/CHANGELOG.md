@@ -1,5 +1,74 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.78.0 - 2026-09-20 - the 6-lead report icon, and the pipeline learns its second constraint
+
+⚠️ **NATIVE REBUILD.** `app.json` 0.40.0 → **0.41.0**.
+
+Chosen by the user from five candidates, after all five were rendered at the
+**real home-screen size** on both a dark and a light wallpaper and ranked. Two
+of my own claims died in that render and are corrected in the record: this
+artwork is **more** legible at 60 px than I predicted, and the neon heart was
+the **most** legible of the five — it still lost, on identity, not on eyesight.
+
+**★ Why it is the right one:** six leads at home is the product's actual
+differentiator, and the "6" is the one thing on any of the candidates that no
+other health app could put on its icon.
+
+### ⚠️ The pipeline bug this exposed
+
+v0.77.0's icon shipped with **"HR 72" sliced by iOS's squircle** — 7,178 ink
+pixels outside the mask, the worst by 31 px — and it was **reported from the
+phone, not caught here.**
+
+The cause was a one-sided optimisation. `unmask-icon.js` chose the frame so the
+card *nearly filled it* (constraint 1: no white corners) and never asked the
+opposite question, so it pushed the artwork's own content out towards the very
+corners the OS was about to cut off. **Two constraints pull against each other
+and I had checked one.**
+
+The script now measures both and re-checks the second. Three things had to be
+right for that check to be worth anything, and each was wrong first:
+
+1. **Local contrast, not a luminance threshold, decides what "content" is.**
+   *"Darker than 140"* is correct for a navy trace on white and finds
+   **nothing** on a pale-blue-on-pale-blue artwork — it would have reported "no
+   clipping" on exactly the icon most likely to have some. *"Darker than the
+   median"* then flagged the card's own **rim**, which reaches the frame edge by
+   definition and can never clear a mask. What separates a feature from the body
+   is not darkness, it is contrast against its surroundings.
+2. **The re-check ignores the padding band.** The band is made by repeating the
+   card's edge outward, so an element that runs to that edge — the ECG trace
+   does exactly this — is smeared into a bar reaching the corner. Counting it
+   meant chasing an artefact of the fix, and it never converged: two rounds of
+   *"STILL CLIPPED after the fix"* against a bar the fix itself had drawn.
+3. **`make-adaptive-foreground.js` had four hardcoded numbers** cropping a
+   subject out of a page of white — which no source has any more, since
+   `unmask-icon.js` runs first. Left in, they were a stale crop, and they
+   mangled this artwork on the first run (a 511×454 subject with the wrong
+   aspect).
+
+**Regression-tested:** run against v0.77.0's artwork, the check correctly
+detects the clipping and shrinks the content to 86.1 %.
+
+### Android uses the rebuilt safe-circle foreground here
+
+Unlike v0.75.0 and v0.77.0. Full-bleed was rendered first and it **cut the "6"
+and the lead labels** — on this artwork the edges carry the *concept*, not
+texture, so v0.72.0's treatment is the right one again.
+
+**Honest cost, recorded rather than glossed:** at 48 dp the result is **faint** —
+a pale card on a pale field, shrunk to 47 % of the frame. If Android ever
+becomes a real target, the fix is a deeper background field, not a bigger
+subject.
+
+`adaptiveIcon.backgroundColor` `#DBE5F5` → **`#DBE8FA`**, sampled.
+
+Files: `scripts/unmask-icon.js` (v1.3.0), `scripts/make-adaptive-foreground.js`
+(v1.6.0), the two brand sources, the five generated assets, `app.json`,
+`config/version.ts`.
+
+---
+
 ## v0.77.0 - 2026-09-20 - the new ECG card icon, and a script for pre-masked artwork
 
 ⚠️ **NATIVE REBUILD.** `app.json` 0.39.0 → **0.40.0** — an icon is compiled into

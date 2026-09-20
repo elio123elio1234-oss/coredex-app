@@ -44,6 +44,22 @@
    The script therefore PRINTS what it measured. If the numbers look
    nothing like the artwork, the detector is wrong for that image and the
    answer is to fix the detector, not to nudge the output.
+
+   ---- TWO CONSTRAINTS, AND v1.2.0 ONLY CHECKED ONE ----
+   ⚠️ The frame is chosen so the card NEARLY FILLS IT — which pushes the
+   artwork's own content outwards, towards the very corners the OS is about
+   to mask away. v1.2.0 optimised for "no white corner" and never asked the
+   opposite question, so it shipped an icon whose "HR 72" was sliced by
+   iOS's squircle: 7,178 ink pixels outside the mask, the worst by 31 px.
+   Reported from the phone, not caught here.
+
+   So there are TWO constraints and they pull against each other:
+     1. the card must nearly fill the frame, or the corners are page white;
+     2. the CONTENT must stay inside the OS mask, or it is cut.
+   Constraint 1 picks the frame. Constraint 2 then shrinks the content
+   inside that frame, and the gap it opens is filled by the same edge
+   extension — which is safe, because that band is under the mask anyway.
+   Both are measured, and the second is RE-CHECKED after the fix.
    ================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -217,16 +233,142 @@ function clampToCard(x, y) {
   return [Math.max(s + INSET, Math.min(e - INSET, x)), yy];
 }
 
-const out = new PNG({ width: N, height: N });
-for (let py = 0; py < N; py++) {
-  for (let px = 0; px < N; px++) {
-    const sx = originX + ((px + 0.5) / N) * side;
-    const sy = originY + ((py + 0.5) / N) * side;
-    const [qx, qy] = clampToCard(sx, sy);
-    const o = (N * py + px) << 2;
-    for (let c = 0; c < 3; c++) out.data[o + c] = Math.round(bilinear(qx, qy, c));
-    out.data[o + 3] = 255;
+/* ---- constraint 2: the content must clear the OS mask ----
+   iOS's continuous corner is modelled as a superellipse, |x|^n + |y|^n = 1
+   with n = 5 — the usual fit, and tighter than Android's rounded-rect
+   family, so clearing it clears both. */
+const MASK_N = 5;
+/** Pixels of clearance to leave between the content and the mask. */
+const MASK_MARGIN = 12;
+const maskR = (dx, dy) =>
+  Math.pow(Math.pow(Math.abs(dx), MASK_N) + Math.pow(Math.abs(dy), MASK_N), 1 / MASK_N);
+
+/**
+ * Is this pixel CONTENT (a glyph, a trace, a badge) rather than the card's
+ * own BODY?
+ *
+ * ⚠️ LOCAL CONTRAST, not a luminance threshold. Two earlier rules both
+ * failed, in opposite ways:
+ *   • "darker than 140" — correct for a navy trace on white, finds
+ *     NOTHING on a pale-blue-on-pale-blue artwork, so it would report "no
+ *     clipping" on exactly the icon most likely to have some;
+ *   • "darker than the median minus 25" — adapts to the palette, and then
+ *     flags the card's own RIM, which reaches the frame edge by definition
+ *     and can never clear a mask. It demanded an 85 % shrink and still
+ *     failed its own re-check, because the rim it was chasing shrank with
+ *     everything else.
+ *
+ * What separates a feature from the body is not darkness, it is CONTRAST
+ * AGAINST ITS SURROUNDINGS: a card's field and rim are smooth gradients,
+ * glyphs and traces are not. So a pixel is content when it departs from
+ * its own neighbourhood average. Palette-agnostic, and the body drops out
+ * by construction.
+ *
+ * A large solid shape registers only at its EDGES, which is all this needs
+ * — the question is where content REACHES, and an interior never reaches
+ * further than its own edge.
+ */
+function contentMask(img) {
+  const n = img.width;
+  const lum = new Float64Array(n * n);
+  for (let i = 0, k = 0; i < img.data.length; i += 4, k++) {
+    lum[k] = 0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2];
   }
+  /* Box average via an integral image — O(1) per pixel rather than O(r²). */
+  const S = new Float64Array((n + 1) * (n + 1));
+  for (let y = 0; y < n; y++) {
+    let row = 0;
+    for (let x = 0; x < n; x++) {
+      row += lum[n * y + x];
+      S[(n + 1) * (y + 1) + (x + 1)] = S[(n + 1) * y + (x + 1)] + row;
+    }
+  }
+  const R = 16;
+  const box = (x, y) => {
+    const x0 = Math.max(0, x - R), y0 = Math.max(0, y - R);
+    const x1 = Math.min(n, x + R + 1), y1 = Math.min(n, y + R + 1);
+    const sum = S[(n + 1) * y1 + x1] - S[(n + 1) * y0 + x1] - S[(n + 1) * y1 + x0] + S[(n + 1) * y0 + x0];
+    return sum / ((x1 - x0) * (y1 - y0));
+  };
+  const CONTRAST = 10;
+  const m = new Uint8Array(n * n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    m[n * y + x] = Math.abs(lum[n * y + x] - box(x, y)) > CONTRAST ? 1 : 0;
+  }
+  return { m, contrast: CONTRAST };
+}
+
+/**
+ * The uniform scale about the centre that brings all content inside.
+ *
+ * `within` is the fraction of the frame the ARTWORK occupies. Anything
+ * outside it is the edge-extension band, which must be ignored:
+ *
+ * ⚠️ OTHERWISE THIS NEVER CONVERGES, and it did not. The band is made by
+ * repeating the card's edge outward, so an element that runs to that edge
+ * — the ECG trace does exactly this — is smeared into a bar reaching the
+ * frame corner. The check then sees that bar as content outside the mask,
+ * demands another shrink, and the shrink makes a fresh bar. Two rounds of
+ * "STILL CLIPPED after the fix" chasing an artefact of the fix itself.
+ * The band is PADDING, by construction under the mask, and is not content.
+ */
+function requiredScale(img, within = 1) {
+  const { m, contrast } = contentMask(img);
+  const a = N / 2;
+  const half = (a * within) - 1;
+  let need = 1;
+  let n = 0;
+  let worst = null;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    if (!m[N * y + x]) continue;
+    if (Math.abs(x - a) > half || Math.abs(y - a) > half) continue; // the band
+    n++;
+    const r = maskR((x - a) / a, (y - a) / a);
+    if (r <= 0) continue;
+    const s = ((a - MASK_MARGIN) / a) / r;
+    if (s < need) { need = s; worst = [x, y]; }
+  }
+  return { need, n, contrast, worst };
+}
+
+const out = new PNG({ width: N, height: N });
+function render(img, contentScale) {
+  for (let py = 0; py < N; py++) {
+    for (let px = 0; px < N; px++) {
+      /* Expand about the centre by 1/contentScale: the artwork occupies
+         the middle `contentScale` of the frame and `clampToCard` fills the
+         band around it from the card's own edge. */
+      const ux = (px + 0.5 - N / 2) / contentScale + N / 2;
+      const uy = (py + 0.5 - N / 2) / contentScale + N / 2;
+      const [qx, qy] = clampToCard(originX + (ux / N) * side, originY + (uy / N) * side);
+      const o = (N * py + px) << 2;
+      for (let c = 0; c < 3; c++) img.data[o + c] = Math.round(bilinear(qx, qy, c));
+      img.data[o + 3] = 255;
+    }
+  }
+  return img;
+}
+
+render(out, 1);
+const first = requiredScale(out);
+console.log(`  content     ${first.n} px of features (local contrast over ${first.contrast})`);
+if (first.need < 1) {
+  const shrink = first.need;
+  render(out, shrink);
+  const after = requiredScale(out, shrink);
+  console.log(
+    `  mask fit    content scaled to ${(shrink * 100).toFixed(1)} % so it clears the OS mask ` +
+    `with ${MASK_MARGIN} px to spare`,
+  );
+  if (after.need < 0.995) {
+    console.error(
+      `  STILL CLIPPED after the fix (needs another ${(after.need * 100).toFixed(1)} %) ` +
+      `at ${after.worst} — look at the output`,
+    );
+    process.exit(1);
+  }
+} else {
+  console.log('  mask fit    content already clears the OS mask; no shrink needed');
 }
 fs.writeFileSync(OUT, PNG.sync.write(out));
 console.log(`  ${path.basename(OUT).padEnd(28)} ${N} px  full bleed, corners extended from the card's own edge`);

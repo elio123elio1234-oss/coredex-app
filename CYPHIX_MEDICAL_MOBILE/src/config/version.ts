@@ -1,7 +1,65 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.77.0';
-export const APP_BUILD_LABEL = 'the new ECG card icon - NATIVE REBUILD (an icon lives in the binary)';
+export const APP_VERSION = '0.78.0';
+export const APP_BUILD_LABEL = 'the 6-lead report icon, and the icon pipeline learns its second constraint';
+
+// v0.78.0 - THE APP ICON IS THE 6-LEAD REPORT CARD.
+//           ⚠️ REBUILD: app.json 0.40.0 -> 0.41.0.
+//
+//           Chosen by the user from five candidates, after all five were
+//           rendered at the REAL home-screen size on both a dark and a light
+//           wallpaper and ranked. Two of my own claims died in that render and
+//           are corrected in the record: this artwork is MORE legible at 60 px
+//           than I predicted, and the neon heart was the MOST legible of the
+//           five (it still lost, on identity, not on eyesight).
+//
+//           ★ WHY IT IS THE RIGHT ONE: six leads at home is the product's
+//           actual differentiator, and the "6" is the one thing on any of the
+//           candidates that no other health app could put on its icon.
+//
+//           ══ THE PIPELINE BUG THIS EXPOSED ══
+//           v0.77.0's icon shipped with "HR 72" SLICED by iOS's squircle -
+//           7,178 ink pixels outside the mask, the worst by 31 px - and it was
+//           reported from the phone, not caught here. The cause was a
+//           one-sided optimisation: `unmask-icon.js` chose the frame so the
+//           card NEARLY FILLED IT (no white corners) and never asked the
+//           opposite question, so it pushed the artwork's own content out
+//           towards the corners the OS was about to cut off. Two constraints
+//           pull against each other and I had checked one.
+//
+//           The script now measures BOTH and re-checks the second. Three
+//           things had to be got right for that check to be worth anything:
+//             1. LOCAL CONTRAST, not a luminance threshold, decides what is
+//                "content". "Darker than 140" is correct for a navy trace on
+//                white and finds NOTHING on a pale-blue-on-pale-blue artwork -
+//                it would have reported "no clipping" on exactly the icon most
+//                likely to have some. "Darker than the median" then flagged the
+//                card's own RIM, which reaches the frame edge by definition and
+//                can never clear a mask.
+//             2. The re-check IGNORES THE PADDING BAND. The band is made by
+//                repeating the card's edge outward, so an element that runs to
+//                that edge - the ECG trace does - is smeared into a bar
+//                reaching the corner. Counting it meant chasing an artefact of
+//                the fix, and it never converged: two rounds of "STILL CLIPPED"
+//                against a bar the fix itself had drawn.
+//             3. `make-adaptive-foreground.js` had four HARDCODED numbers
+//                cropping a subject out of a page of white - which no source
+//                has any more, since `unmask-icon.js` runs first. Left in, they
+//                were a stale crop, and they mangled this artwork on the first
+//                run (a 511x454 subject with the wrong aspect).
+//           Regression-tested: run against v0.77.0's artwork, the check
+//           correctly detects the clipping and shrinks to 86.1 %.
+//
+//           ANDROID USES THE REBUILT SAFE-CIRCLE FOREGROUND here, unlike
+//           v0.75.0 and v0.77.0. Full-bleed was rendered first and it cut the
+//           "6" and the lead labels - on this artwork the edges carry the
+//           CONCEPT, not texture, so the v0.72.0 treatment is the right one
+//           again. Honest cost, recorded rather than glossed: at 48 dp the
+//           result is FAINT - a pale card on a pale field, shrunk to 47 % of
+//           the frame. If Android ever becomes a real target, the fix is a
+//           deeper background field, not a bigger subject.
+//
+//           `adaptiveIcon.backgroundColor` #DBE5F5 -> #DBE8FA, sampled.
 
 // v0.77.0 - THE APP ICON IS THE ECG CARD (HR 72 / 25mm/s).
 //           ⚠️ REBUILD: app.json 0.39.0 -> 0.40.0. v0.76.0's orientation fix
