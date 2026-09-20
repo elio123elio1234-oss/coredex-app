@@ -323,6 +323,37 @@ function contentMask(img) {
 }
 
 /**
+ * ★ HOW MUCH OF THE SAFE AREA THE CONTENT SHOULD FILL.
+ *
+ * The script used to only ever SHRINK — it asked "is anything clipped?"
+ * and left the artwork alone if not. That is half a rule, and the other
+ * half arrived from the phone: *"on iOS it's too small, the elements need
+ * zooming in."* True, and measured: the content occupied 47 % of the
+ * frame while the mask allowed 78 %. Nothing was clipped, so the check
+ * passed, and the icon was a small picture in a big blue field.
+ *
+ * So the content is now NORMALISED in both directions: scaled to this
+ * fraction of the largest scale the mask permits. Whatever margin a
+ * designer happened to leave, every artwork comes out the same size.
+ *
+ * 0.87, not 1.0. At the ceiling the content touches the mask, and the
+ * rendered comparison shows why that is too tight: the lead labels and
+ * the keypad squares crowd the corner. 0.87 keeps the breathing room an
+ * icon needs and still fills the frame.
+ *
+ * ⚠️ THE CASE THIS IS WRONG FOR, so it is recognised rather than
+ * discovered: artwork whose CONTENT is a full-bleed texture — v0.75.0's
+ * photographed ECG paper, where the grid and the trace genuinely run edge
+ * to edge. There "the largest scale the mask allows" is already about 1,
+ * and multiplying by 0.87 shrinks a texture that was meant to bleed,
+ * leaving bands of extended edge around it. The rule fits artwork with a
+ * SUBJECT; it does not fit artwork that IS its own background. The log
+ * line below prints the scale every time, so the wrong answer is visible
+ * in one line rather than on a phone three days later.
+ */
+const SAFE_FILL = 0.87;
+
+/**
  * The uniform scale about the centre that brings all content inside.
  *
  * `within` is the fraction of the frame the ARTWORK occupies. Anything
@@ -340,7 +371,11 @@ function requiredScale(img, within = 1) {
   const { m, contrast } = contentMask(img);
   const a = N / 2;
   const half = (a * within) - 1;
-  let need = 1;
+  /* Starts at Infinity, not 1: this now answers "what is the LARGEST
+     scale the mask allows", which may be above 1 (the artwork is small)
+     or below it (the artwork is clipped). Capping at 1 is what made this
+     a shrink-only check. */
+  let need = Infinity;
   let n = 0;
   let worst = null;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -352,7 +387,7 @@ function requiredScale(img, within = 1) {
     const s = ((a - MASK_MARGIN) / a) / r;
     if (s < need) { need = s; worst = [x, y]; }
   }
-  return { need, n, contrast, worst };
+  return { need: Number.isFinite(need) ? need : 1, n, contrast, worst };
 }
 
 const out = new PNG({ width: N, height: N });
@@ -376,23 +411,26 @@ function render(img, contentScale) {
 render(out, 1);
 const first = requiredScale(out);
 console.log(`  content     ${first.n} px of features (local contrast over ${first.contrast})`);
-if (first.need < 1) {
-  const shrink = first.need;
-  render(out, shrink);
-  const after = requiredScale(out, shrink);
+
+/* Fill the safe area, whichever direction that means. */
+const fit = first.need * SAFE_FILL;
+if (Math.abs(fit - 1) > 0.005) {
+  render(out, fit);
+  const after = requiredScale(out, Math.min(1, fit));
   console.log(
-    `  mask fit    content scaled to ${(shrink * 100).toFixed(1)} % so it clears the OS mask ` +
-    `with ${MASK_MARGIN} px to spare`,
+    `  mask fit    content scaled x${fit.toFixed(3)} ` +
+    `(${(SAFE_FILL * 100).toFixed(0)} % of the x${first.need.toFixed(3)} the mask allows, ` +
+    `${MASK_MARGIN} px margin)`,
   );
   if (after.need < 0.995) {
     console.error(
-      `  STILL CLIPPED after the fix (needs another ${(after.need * 100).toFixed(1)} %) ` +
+      `  STILL CLIPPED after the fit (needs another ${(after.need * 100).toFixed(1)} %) ` +
       `at ${after.worst} — look at the output`,
     );
     process.exit(1);
   }
 } else {
-  console.log('  mask fit    content already clears the OS mask; no shrink needed');
+  console.log(`  mask fit    content already fills ${(SAFE_FILL * 100).toFixed(0)} % of the safe area`);
 }
 fs.writeFileSync(OUT, PNG.sync.write(out));
 console.log(`  ${path.basename(OUT).padEnd(28)} ${N} px  full bleed, corners extended from the card's own edge`);

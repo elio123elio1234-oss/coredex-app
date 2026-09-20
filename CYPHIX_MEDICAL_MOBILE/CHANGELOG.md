@@ -1,5 +1,57 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.80.0 - 2026-09-20 - the icon fills its frame
+
+⚠️ **NATIVE REBUILD.** `app.json` 0.42.0 → **0.43.0**.
+
+Reported: *"on iOS it's too small, the elements need zooming in."* Measured, and
+right: the content occupied **47 % × 54 %** of the frame while the OS mask
+allowed **78 %**. A small picture in a big blue field.
+
+### ★ And the check added in v0.78.0 passed it
+
+That check asked only *"is anything **clipped**?"* — which is half a rule.
+Nothing was clipped, so it said fine, and it had **no opinion at all** about an
+icon that was far too small. Shrink-only was never the right shape: the same
+measurement answers both questions, and I had only used one direction of it.
+
+`unmask-icon.js` now **normalises**. Content is scaled to `SAFE_FILL` (0.87) of
+the largest scale the mask permits, whether that means zooming or shrinking.
+Here it computes **×1.449** of a ×1.665 ceiling — the same value I had picked
+by eye from a rendered comparison *before* writing the rule, which is the only
+reason to trust it. 0.87 rather than the ceiling because at the ceiling the lead
+labels and the keypad squares crowd the corner; that was rendered too
+(×1.00 / ×1.30 / ×1.45 / ×1.60, side by side, at full size and at 60 px).
+
+⚠️ One case this rule is wrong for, recorded so it is recognised rather than
+discovered: artwork whose **content is a full-bleed texture** — v0.75.0's
+photographed ECG paper, where the grid runs edge to edge. There the ceiling is
+already ≈1 and multiplying by 0.87 shrinks something meant to bleed. The rule
+fits artwork with a *subject*, not artwork that *is* its own background. The
+script prints the scale every run, so a wrong answer shows up in one line.
+
+### Android: the launcher's own zoom is the Android version of this
+
+Zooming for iOS pushed content outward, and the launcher then adds its **own
+1.5× crop** on top — which cut the "6" clean off. But that 1.5× *is* a zoom:
+fed the **unzoomed** source, the crop leaves content at ~70 % of the visible
+area, which is exactly what was wanted.
+
+So iOS and Android are handed **different framings of one artwork**, for one
+reason: each platform applies a different amount of its own.
+
+Measured rather than assumed: the unzoomed content survives the square window,
+but its furthest corner sat **377 px** from centre against a **342 px** safe
+*radius* — a Pixel circular mask would have clipped the "6" and the keypad
+squares. ×0.90 brings it to 328 px. Both masks rendered and checked.
+
+`adaptiveIcon.backgroundColor` `#6AA6E8` → **`#92C2F2`**, sampled.
+
+Files: `scripts/unmask-icon.js` (v1.5.0), the five generated assets,
+`app.json`, `config/version.ts`.
+
+---
+
 ## v0.79.0 - 2026-09-20 - the 6-lead icon on brand blue
 
 ⚠️ **NATIVE REBUILD.** `app.json` 0.41.0 → **0.42.0**.

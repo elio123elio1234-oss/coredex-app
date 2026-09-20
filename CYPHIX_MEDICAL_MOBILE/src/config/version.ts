@@ -1,7 +1,46 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.79.0';
-export const APP_BUILD_LABEL = 'the 6-lead icon on brand blue - it finally holds its edge on a light wallpaper';
+export const APP_VERSION = '0.80.0';
+export const APP_BUILD_LABEL = 'the icon fills its frame - the pipeline now zooms as well as shrinks';
+
+// v0.80.0 - THE ICON FILLS ITS FRAME.
+//           ⚠️ REBUILD: app.json 0.42.0 -> 0.43.0.
+//
+//           Reported: "on iOS it's too small, the elements need zooming in."
+//           Measured, and right: the content occupied 47 % x 54 % of the frame
+//           while the OS mask allowed 78 %. A small picture in a big blue field.
+//
+//           ★ AND THE CHECK I ADDED IN v0.78.0 PASSED IT. That check asked
+//           only "is anything CLIPPED?" - which is half a rule. Nothing was
+//           clipped, so it said fine, and it had no opinion at all about an
+//           icon that was far too small. Shrink-only was never the right shape;
+//           the same measurement answers both questions and I used one
+//           direction of it.
+//
+//           `unmask-icon.js` now NORMALISES: content is scaled to SAFE_FILL
+//           (0.87) of the largest scale the mask permits, whether that means
+//           zooming or shrinking. Here it computes x1.449 of a x1.665 ceiling -
+//           the same value I had picked by eye from a rendered comparison
+//           BEFORE writing the rule, which is the only reason to trust it.
+//           0.87 and not the ceiling because at the ceiling the lead labels and
+//           the keypad squares crowd the corner; that too was rendered and
+//           looked at (x1.00 / x1.30 / x1.45 / x1.60, side by side).
+//
+//           == ANDROID: THE LAUNCHER'S OWN ZOOM IS THE ANDROID VERSION OF THIS,
+//              so its layer takes the UNZOOMED artwork ==
+//           Zooming for iOS pushed content outward, and the launcher then adds
+//           its own 1.5x crop on top - which cut the "6" clean off. But that
+//           1.5x IS a zoom: fed the unzoomed source, the crop leaves content at
+//           ~70 % of the visible area, which is what was wanted. So iOS and
+//           Android are handed DIFFERENT FRAMINGS of one artwork, for one
+//           reason: each platform applies a different amount of its own.
+//           Measured rather than assumed: the unzoomed content survives the
+//           square window but its furthest corner sat 377 px from centre
+//           against a 342 px safe RADIUS - a Pixel circular mask would have
+//           clipped the "6" and the keypad. x0.90 brings it to 328 px. Both
+//           masks rendered and checked.
+//
+//           `adaptiveIcon.backgroundColor` #6AA6E8 -> #92C2F2, sampled.
 
 // v0.79.0 - THE SAME 6-LEAD IDEA, ON BRAND BLUE.
 //           ⚠️ REBUILD: app.json 0.41.0 -> 0.42.0.
