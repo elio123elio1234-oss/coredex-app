@@ -238,7 +238,13 @@ if ($runs.Count -ne $rows -or $thinnest -lt ($stroke * 0.8)) {
     Write-Host ("  android-icon-monochrome.png    1024 px  FAIL - expected $rows runs of ~{0:N0} px, got {1} runs, thinnest {2:N0} px" -f $stroke, $runs.Count, $thinnest) -ForegroundColor Red
     exit 1
 }
-if ($corner -gt ($safeD / 2)) {
+# ** EPSILON, and it is not paranoia. ** The block above is SOLVED so that
+# the corner lands exactly on the radius, so this compares two floats that
+# are meant to be equal - and `$rows = 2` failed here at "342 px past a
+# 342 px radius", which is the solver and the check disagreeing in the last
+# bit. Half a pixel of slack cannot hide a real overrun (the failures this
+# caught were 64 px over) and stops the check rejecting its own answer.
+if ($corner -gt ($safeD / 2 + 0.5)) {
     Write-Host ("  android-icon-monochrome.png    1024 px  FAIL - corner {0:N0} px from centre, past the {1:N0} px safe radius; a circular mask would clip it" -f $corner, ($safeD / 2)) -ForegroundColor Red
     exit 1
 }

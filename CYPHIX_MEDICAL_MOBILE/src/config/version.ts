@@ -1,7 +1,84 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.74.0';
-export const APP_BUILD_LABEL = 'Insights stops jumping on entry; History + Insights rise in';
+export const APP_VERSION = '0.75.0';
+export const APP_BUILD_LABEL = 'the ECG paper icon + landscape is blocked outside the exam - NATIVE REBUILD';
+
+// v0.75.0 - TWO NATIVE CHANGES IN ONE BINARY.
+//           ⚠️ REBUILD: app.json 0.38.0 -> 0.39.0. v0.73.0/v0.74.0 were
+//           published to BOTH 0.37.0 and 0.38.0, so they are baked into this
+//           bundle either way. From here, every OTA targets 0.39.0.
+//
+//           ══ 1. LANDSCAPE IS BLOCKED EVERYWHERE EXCEPT THE EXAM ══
+//           Reported: "after you leave the measurement screen, turning the
+//           phone sideways is suddenly legal in ALL the tabs."
+//
+//           ★ THE PER-ROUTE MASKS WERE NEVER THE PROBLEM. They read correctly
+//           in both platforms' react-native-screens source: the walk finds the
+//           stack's `portrait_up` for the tabs and `landscape` for the exam.
+//           The problem was that ON iOS NOBODY WAS ASKING THEM. iOS decides
+//           whether the USER may rotate by asking the ROOT view controller for
+//           `supportedInterfaceOrientations`. A bare Expo app has no root VC
+//           that knows about react-native-screens, so the question fell
+//           through to Info.plist - which app.json's `"orientation": "default"`
+//           fills with every orientation. Free rotation, everywhere, always.
+//
+//           And this is WHY IT HID: RNS does not need the root VC in order to
+//           ROTATE. `enforceDesiredDeviceOrientation` calls
+//           `requestGeometryUpdate` on the window scene directly, so pushing
+//           the exam turned the phone correctly even though nothing enforced
+//           the mask between navigations. Rotation on push worked; rotation by
+//           the USER on every other screen was simply unchecked. The exam
+//           looked right, which is exactly what stopped anyone looking further.
+//
+//           Fix: `expo-screen-orientation` is now a dependency, AND IT IS
+//           NEVER IMPORTED. Its ReactDelegateHandler's
+//           `createRootViewController()` installs a root VC whose
+//           `supportedInterfaceOrientations` starts with
+//               guard !shouldUseRNScreenOrientation() else {
+//                 return super.supportedInterfaceOrientations
+//               }
+//           - i.e. when react-native-screens has a trait set (always, here) it
+//           DEFERS to the declarations in RootNavigator. Installing it is what
+//           makes the declarative approach take effect; CALLING it is what
+//           broke the exam in the first place (three rotations per navigation,
+//           see RootNavigator's header). ⚠️ The ban stands: no `lockAsync`, no
+//           `unlockAsync` anywhere in src/. An import of that package IS the
+//           bug coming back.
+//
+//           ══ 2. THE APP ICON IS THE ECG PAPER STRIP ══
+//           Replaces v0.72.0's six-lead artwork, which was flagged at the time
+//           as collapsing into a smudge at 60 px and shipped anyway at the
+//           user's choice. This one does not: rendered at a real 60 px, the
+//           trace and the grid are both legible. Source (a clean 1024 square,
+//           no backdrop, no pre-applied corner mask) at
+//           assets/brand/app-icon-source.png.
+//
+//           ★ ANDROID IS FULL-BLEED AGAIN, and that is a judgement, not a
+//           regression. v0.72.0 needed `make-adaptive-foreground.js` because
+//           its lead labels sat in a column hard against the left edge and
+//           every launcher mask sliced them mid-glyph. THIS artwork carries
+//           paper TEXTURE at its edges - part numbers already cropped in the
+//           source - so a circular crop reads as a window onto the strip
+//           rather than as damage. Rendered under circle, rounded-square and
+//           squircle masks and looked at before deciding; the script is kept
+//           (and its polarity bug fixed, below) for artwork of the other kind.
+//
+//           The MONOCHROME layer stays THREE traces even though the artwork is
+//           one strip. Both were rendered at a real 48 dp and compared: a lone
+//           trace is swallowed by the circle, three read as "ECG paper", which
+//           is what the artwork is. Same subject, different density - not the
+//           heart-vs-ECG contradiction v0.72.0 had to fix.
+//
+//           Two landmines found and removed while doing this:
+//             - `make-adaptive-foreground.js` clamped the subject difference at
+//               ZERO, silently assuming the subject is BRIGHTER than its
+//               background. True of neon on navy, false of a dark trace on
+//               white paper - it would have deleted the subject and shipped a
+//               blank gradient. Now signed.
+//             - the monochrome's safe-circle check compared two floats the
+//               solver makes EQUAL by construction, and rejected its own answer
+//               ("342 px past a 342 px radius") on `$rows = 2`. Half a pixel of
+//               slack; the real failures it caught were 64 px over.
 
 // v0.74.0 - THE INSIGHTS TAB STOPS JUMPING, AND BOTH TABS RISE IN. JS only.
 //

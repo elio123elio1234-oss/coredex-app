@@ -1,5 +1,98 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.75.0 - 2026-09-20 - landscape is blocked outside the exam, and the icon is ECG paper
+
+⚠️ **NATIVE REBUILD.** `app.json` 0.38.0 → **0.39.0** — a new native module and
+a new icon, neither of which a JS bundle can carry. v0.73.0 and v0.74.0 were
+published to *both* 0.37.0 and 0.38.0, so they are baked into this binary
+either way. From here, every OTA targets **0.39.0**.
+
+### 1. Landscape is blocked everywhere except the exam
+
+Reported: *"after you leave the measurement screen, turning the phone sideways
+is suddenly legal in **all** the tabs, not just the measurement page."*
+
+**★ The per-route masks were never the problem.** They read correctly in both
+platforms' `react-native-screens` source — the trait walk finds the stack's
+`portrait_up` for the tabs and `landscape` for the exam. The problem was that
+**on iOS nobody was asking them.**
+
+iOS decides whether the *user* may rotate by asking the **root view
+controller** for `supportedInterfaceOrientations`. A bare Expo app has no root
+VC that knows about react-native-screens, so that question fell through to
+`Info.plist` — which `app.json`'s `"orientation": "default"` fills with every
+orientation. Free rotation, everywhere, always.
+
+**And that is why it hid.** RNS does not need the root VC in order to *rotate*:
+`enforceDesiredDeviceOrientation` calls `requestGeometryUpdate` on the window
+scene directly. So pushing the exam turned the phone correctly even though
+nothing was enforcing the mask *between* navigations. Rotation on push worked;
+rotation by the user on every other screen was simply unchecked. The exam
+looked right, which is exactly what stopped anyone looking further.
+
+**The fix:** `expo-screen-orientation` is now a dependency, and **it is never
+imported**. Its `ScreenOrientationReactDelegateHandler.createRootViewController()`
+installs a root VC whose `supportedInterfaceOrientations` begins:
+
+```swift
+guard !shouldUseRNScreenOrientation() else {
+  return super.supportedInterfaceOrientations
+}
+```
+
+— i.e. when react-native-screens has a trait set (always, here) it **defers** to
+the declarations in `RootNavigator`.
+
+⚠️ Installing it is what makes the declarative approach take effect; **calling**
+it is what broke the exam in the first place — three rotations per navigation,
+the whole reason `lockAsync` was banned in v0.30-something. **The ban stands:**
+no `lockAsync`, no `unlockAsync` anywhere in `src/`. An `import … from
+'expo-screen-orientation'` in this codebase *is* the bug coming back, and
+`RootNavigator`'s header now says so.
+
+### 2. The app icon is the ECG paper strip
+
+Replaces v0.72.0's six-lead artwork — which was flagged at the time as
+collapsing into a blue-grey smudge at 60 px and shipped anyway at the user's
+choice. **This one does not:** rendered at a real 60 px, the trace and the grid
+are both legible. Source (a clean 1024 square, no backdrop, no pre-applied
+corner mask) at `assets/brand/app-icon-source.png`.
+
+**★ Android is full-bleed again, and that is a judgement rather than a
+regression.** v0.72.0 needed `make-adaptive-foreground.js` because its lead
+labels sat in a column hard against the left edge and every launcher mask
+sliced them mid-glyph. This artwork carries paper **texture** at its edges —
+part numbers already cropped in the source — so a circular crop reads as a
+window onto the strip rather than as damage. Rendered under circle,
+rounded-square and squircle masks and looked at before deciding. The script is
+kept for artwork of the other kind.
+
+**The monochrome layer stays three traces** even though the artwork is one
+strip. Both were rendered at a real 48 dp and compared: a lone trace is
+swallowed by the circle; three read as "ECG paper", which is what the artwork
+*is*. Same subject, different density — not the heart-vs-ECG contradiction
+v0.72.0 had to fix.
+
+`adaptiveIcon.backgroundColor` `#10307F` → **`#D1C9CB`**, sampled.
+
+### Two landmines found and removed on the way
+
+- **`make-adaptive-foreground.js` clamped the subject difference at zero**,
+  silently assuming the subject is *brighter* than its background. True of neon
+  on navy, false of a dark trace on white paper — it would have deleted the
+  subject and shipped a blank gradient. Now signed, so it works for both
+  polarities.
+- **The monochrome's safe-circle check compared two floats the solver makes
+  equal by construction** and rejected its own answer — "342 px past a 342 px
+  radius" — on `$rows = 2`. Half a pixel of slack now; the real failures it has
+  caught were 64 px over, so nothing is hidden.
+
+Files: `assets/brand/app-icon-source.png` + the five generated assets,
+`scripts/make-icons.ps1`, `scripts/make-adaptive-foreground.js` (v1.5.0),
+`navigation/RootNavigator.tsx`, `app.json`, `package.json`, `config/version.ts`.
+
+---
+
 ## v0.74.0 - 2026-09-20 - Insights stops jumping, and both tabs rise in
 
 **JS only.** Reported: *"the Insights tab glitches — it shows for a split second

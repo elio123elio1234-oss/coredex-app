@@ -186,8 +186,14 @@ for (let y = 0; y < N; y++) {
       /* Only what the artwork adds over its OWN background at that point
          — the trace. Zero everywhere else, so the content box has no
          visible edge. */
-      const glow = fade > 0 ? Math.max(0, artAt(sx, sy, c) - srcBgAt(sx, sy, c)) * fade : 0;
-      out.data[o + c] = Math.round(Math.min(255, bg + glow));
+      /* ⚠️ SIGNED. v1.4.0 clamped this at zero, which silently assumed the
+         subject is BRIGHTER than its background - true of the neon-on-navy
+         artwork this was written for, and false of ECG paper, where the
+         trace is DARK on white. Clamping there would have deleted the
+         subject entirely and shipped a blank gradient. A signed difference
+         is the same thing for light-on-dark and correct for both. */
+      const ink = fade > 0 ? (artAt(sx, sy, c) - srcBgAt(sx, sy, c)) * fade : 0;
+      out.data[o + c] = Math.round(Math.max(0, Math.min(255, bg + ink)));
     }
     out.data[o + 3] = 255;
   }
@@ -199,6 +205,13 @@ console.log(
   `(${((boxW / N) * 100).toFixed(1)}% of the frame)`,
 );
 
+// v1.5.0 — The subject difference is SIGNED. Clamping it at zero assumed the
+//          subject is brighter than its background - true of neon on navy,
+//          false of ECG paper (dark trace on white), where it would have
+//          deleted the subject and shipped a blank gradient.
+//          ⚠️ NOT USED by the v0.75.0 artwork - see its note in version.ts:
+//          that icon is full-bleed on Android too, because its edges carry
+//          paper texture rather than meaning.
 // v1.4.0 — The glow is feathered to zero over the box's outer 5 %. A fine
 //          reference grid reduced the step at the content box's edge; it did
 //          not remove it, and a step is what the eye finds. A ramp is not.

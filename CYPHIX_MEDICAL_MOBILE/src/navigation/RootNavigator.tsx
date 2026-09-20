@@ -39,6 +39,47 @@
    to tame it and could not: the race is between two native mechanisms,
    not between two React effects. Deleting the imperative locker removed
    the contention outright. **Do not reintroduce `lockAsync` anywhere.**
+
+   ══════════════════════════════════════════════════════════════════
+   ★ AND WHY `expo-screen-orientation` IS INSTALLED BUT NEVER CALLED
+   ══════════════════════════════════════════════════════════════════
+   Reported in v0.74.0: *"after you leave the measurement screen, turning
+   the phone sideways is suddenly legal in ALL the tabs, not just on the
+   measurement page."* The masks above were not the problem — they read
+   correctly in both platforms' react-native-screens source. The problem
+   was that **on iOS nobody was asking them.**
+
+   iOS decides whether the USER may rotate by asking the root view
+   controller for `supportedInterfaceOrientations`. A bare Expo app has no
+   root VC that knows about react-native-screens, so that question fell
+   through to `Info.plist` — which `app.json`'s `"orientation": "default"`
+   fills with every orientation. Free rotation, everywhere, always.
+
+   The exam still worked, and that is exactly why this hid for so long:
+   RNS does not rely on the root VC to ROTATE. It calls
+   `requestGeometryUpdate` on the window scene directly
+   (`RNSScreenWindowTraits.enforceDesiredDeviceOrientation`), so pushing
+   the exam turned the phone even though nothing was enforcing the mask
+   between navigations. Rotation on push: correct. Rotation by the user on
+   any other screen: unchecked.
+
+   `expo-screen-orientation` supplies the missing piece and nothing else.
+   Its `ScreenOrientationReactDelegateHandler.createRootViewController()`
+   installs a root VC whose `supportedInterfaceOrientations` begins:
+
+       guard !shouldUseRNScreenOrientation() else {
+         return super.supportedInterfaceOrientations
+       }
+
+   — i.e. when react-native-screens has a trait set (it always does here,
+   `portrait_up` on the stack), it DEFERS to the declarations above.
+
+   ⚠️ So the package is a dependency we never import. Installing it is
+   what makes the declarative approach actually take effect; calling it is
+   what broke the exam in the first place. **The ban stands: no
+   `lockAsync`, no `unlockAsync`, no `OrientationLock` anywhere in `src/`.**
+   If this file ever gains an `import … from 'expo-screen-orientation'`,
+   that is the bug coming back.
    ================================================================== */
 
 import {
