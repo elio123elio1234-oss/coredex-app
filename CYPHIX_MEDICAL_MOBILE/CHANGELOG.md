@@ -1,5 +1,46 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.73.0 - 2026-09-20 - the greeting keeps the air the subtitle was holding
+
+**JS only.** Reported the moment v0.68.0 landed: *"now `Hello Elio` is really
+close to the button, it should be a bit higher up."*
+
+Correct — and it is a **second-order effect** of that deletion rather than
+anything about the greeting. `PatientShell` centres its content vertically, so
+removing ~30 pt from the greet block did two things at once:
+
+- it left only `inner`'s **12 pt** gap between a 38 pt heading and the hero
+  button, and
+- it moved the greeting **down** by half the lost height, because the whole
+  column re-centred around a shorter block.
+
+`greet` now carries `marginBottom: 32` — `greetSub`'s old footprint
+(`marginTop: 6` plus a ~24 pt line at `fontSize: 20`) — so the composition
+returns to exactly where it stood. The words are gone; the air they held is
+not, because that air was doing its own job. Worth stating as a rule: on a
+vertically-centred screen, **deleting an element moves everything that is left**,
+and "remove the text" is not the same instruction as "remove the space".
+
+### ⚠️ Published to TWO runtimes, deliberately
+
+`app.json` is `0.38.0` for the icon rebuild, but the phone in the user's hand is
+still the **0.37.0** binary (build 10) — so an update published only at 0.38.0
+would have reached **nobody** until TestFlight delivered build 11. It is
+therefore published twice from the same code: once with `app.json` temporarily
+at 0.37.0 (group `f687b232`) and once at 0.38.0 (group `50f1fa8f`). Both sit on
+the `production` branch, and `expo-updates` serves each client the newest update
+matching **its** runtime — which is what that mechanism is for.
+
+`ship.ps1` refuses this, on purpose: it guards the far more common and far more
+expensive mistake of publishing into a void. So the two publishes were done by
+hand, with `tsc`, both bundles and `expo-doctor` run first, and `app.json`
+restored inside a `finally` — leaving it at 0.37.0 would silently re-point the
+icon rebuild's runtime and undo v0.72.0.
+
+Files: `screens/HomeScreen.tsx` (v2.3.1), `config/version.ts`.
+
+---
+
 ## v0.72.0 - 2026-09-20 - the app icon is the six-lead ECG
 
 ⚠️ **NATIVE REBUILD — there is no OTA for this.** An app icon is compiled into

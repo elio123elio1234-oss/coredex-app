@@ -139,12 +139,32 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   inner: { gap: 12, alignItems: 'stretch' },
-  greet: { alignItems: 'center' },
+  /**
+   * ★ THE SPACE THE SUBTITLE USED TO OCCUPY IS KEPT (v0.73.0).
+   *
+   * Reported the moment v0.68.0 landed: *"now `Hello Elio` is really close
+   * to the button, it should be a bit higher up."* Correct, and it is a
+   * second-order effect of the deletion rather than anything about the
+   * greeting: `PatientShell` centres its content vertically, so removing
+   * ~30 pt from this block did two things at once — it left only the
+   * `inner` gap (12) between a 38 pt heading and the hero, and it moved
+   * the greeting DOWN by half the lost height as the column re-centred.
+   *
+   * 32 is not a taste value: it is `greetSub`'s old footprint (marginTop 6
+   * + a ~24 pt line at fontSize 20), so the composition returns to exactly
+   * where it stood before the text was removed. The words are gone; the
+   * air they held is not, because that air was doing its own job.
+   */
+  greet: { alignItems: 'center', marginBottom: 32 },
   greetTitle: { fontSize: 38, fontWeight: '800', letterSpacing: -0.5 },
   demoRow: { alignItems: 'center', marginTop: 2 },
   demoLink: { fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
 });
 
+// v2.3.1 — Keeps the space the subtitle held. Deleting it in v2.3.0 left the
+//          38 pt greeting a 12 pt gap from the hero AND — because the shell
+//          centres vertically — dropped it half the lost height down the
+//          screen. Reported as "Hello Elio is really close to the button".
 // v2.3.0 — The "Performing a Home ECG Test" subtitle is gone. It told a
 //          patient standing on the home screen what the home screen is for,
 //          one line above a button reading "Start Test".

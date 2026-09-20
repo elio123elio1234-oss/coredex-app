@@ -1,7 +1,35 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.72.0';
-export const APP_BUILD_LABEL = 'the app icon is the six-lead ECG - NATIVE REBUILD (an icon lives in the binary)';
+export const APP_VERSION = '0.73.0';
+export const APP_BUILD_LABEL = 'home: the greeting keeps the air the deleted subtitle was holding';
+
+// v0.73.0 - THE GREETING SITS BACK WHERE IT WAS. JS only.
+//
+//           Reported the moment v0.68.0 landed: "now Hello Elio is really
+//           close to the button, it should be a bit higher up." Right, and it
+//           is a SECOND-ORDER effect of that deletion rather than anything
+//           about the greeting itself. PatientShell centres its content
+//           vertically, so removing the subtitle did two things at once:
+//             - it left only `inner`'s 12 pt gap between a 38 pt heading and
+//               the hero button, and
+//             - it moved the greeting DOWN by half the lost height, because
+//               the whole column re-centred around a shorter block.
+//           `greet` now carries `marginBottom: 32` - greetSub's old footprint
+//           (marginTop 6 + a ~24 pt line at fontSize 20) - so the composition
+//           returns to exactly where it stood. The words are gone; the air
+//           they held is not, because that air was doing its own job.
+//
+//           ⚠️ PUBLISHED TO TWO RUNTIMES, deliberately. app.json is 0.38.0 for
+//           the icon rebuild, but the phone in the user's hand is still the
+//           0.37.0 binary (build 10) - so an update published only at 0.38.0
+//           would reach NOBODY until TestFlight delivers build 11. It is
+//           therefore published twice, once with app.json temporarily at
+//           0.37.0 and once at 0.38.0. Both sit on the `production` branch;
+//           expo-updates serves each client the newest update matching ITS
+//           runtime, which is exactly what that mechanism is for. `ship.ps1`
+//           refuses this on purpose (it guards the far more common mistake of
+//           publishing into a void), so the two publishes are done by hand
+//           with the same checks run first.
 
 // v0.72.0 - THE APP ICON IS THE SIX-LEAD ECG.
 //           ⚠️ NATIVE REBUILD: app.json 0.37.0 -> 0.38.0. An icon is compiled
