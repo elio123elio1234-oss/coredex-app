@@ -83,10 +83,25 @@ export default function BootSplash() {
       <CyphixWordmark width={Math.min(width * WIDTH_RATIO, MAX_WIDTH)} />
 
       {/* ★ THE ORB IS THE INDICATOR. From the first frame, every launch.
-          `connecting` of the nine states, because that is literally what is
-          happening: a constellation wiring itself.
 
-          ⚠️ v0.85.0 put a 1.5 s threshold in front of this, on the
+          ⚠️ `composing` (mode `ribbon`) — AND THE STATE WAS NOT A FREE
+          CHOICE. v0.85.0 shipped `connecting` because the name matched what
+          the app was doing: waiting on a server, "a constellation wires
+          itself". Nobody asked for that. The request came with a link to a
+          demo and, later, a screen recording of ONE specific animation, and
+          picking by meaning instead of by looking got a completely different
+          object: `connecting` is 48 dots and 82 LINES, a sparse wireframe.
+          What was asked for is 566 dots in dense vertical dashes forming an
+          undulating sash — no line segments at all.
+
+          Settled by rendering, not by reading the names: the engine is pure
+          `Math` and runs in plain Node, so all nine states were rasterised
+          from the same `MODE_FRAMES` the app calls and compared against
+          frames pulled from the recording. `ribbon` is the only match; the
+          other eight are not close. Do not re-pick this from the state
+          names — they describe an AGENT's activity, not a shape.
+
+          ⚠️ v0.85.0 also put a 1.5 s threshold in front of this, on the
           reasoning quoted in the header — a disk read "is not an occasion",
           so the flourish should be reserved for a wait that earned it. The
           reasoning was fine and the number was fatal: `AuthGate`'s minimum
@@ -111,7 +126,7 @@ export default function BootSplash() {
       >
         <FadeUpView duration={ENTER_MS} distance={6} style={styles.spinner}>
           <ThinkingOrb
-            state="connecting"
+            state="composing"
             size={ORB_SIZE}
             ink={palette.navy}
             paper={palette.page}

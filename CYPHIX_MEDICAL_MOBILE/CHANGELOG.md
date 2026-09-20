@@ -1,5 +1,50 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.87.0 - 2026-09-21 - the orb that was actually asked for
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** One word changes in the
+source. The work was finding out *which* word.
+
+> *“השתמשת באנימציה אחרת לא מה שביקשתי … למה השתמשת באחר?”*
+
+### ★ Because I picked it by meaning, and never asked
+
+The package ships **nine** animations. v0.85.0 used `connecting` because the
+*name* matched what the app was doing — waiting on a server, “a constellation
+wires itself”. Nobody requested that. The request arrived with a link to a live
+demo, and the animation on it was a specific one that had already been **seen**.
+
+Choosing by semantics instead of by looking produced the opposite end of the
+set, not a near miss:
+
+| | mode | geometry |
+|---|---|---|
+| what shipped | `connecting` → `web` | 48 dots + **82 lines** — a sparse wireframe |
+| what was asked for | `composing` → `ribbon` | **566 dots**, no lines — a dense undulating sash |
+
+### Settled by rendering, not by reading names
+
+The state names describe an **agent's activity** (`working`, `listening`,
+`composing`), not a shape, so no amount of re-reading them answers “which one
+is in this video”. Guessing a second time was not an option.
+
+The engine is pure `Math` with zero dependencies, so it runs in **plain Node**:
+all nine states were rasterised from the same `MODE_FRAMES` the app calls, and
+compared against frames cut from the screen recording. (The recording is HEVC
+and the ffmpeg on this machine is a stub that cannot decode it, so a real
+decoder was fetched into the scratch directory.)
+
+`ribbon` is the only match — same dense vertical dashes, same undulating dark
+gap, same torus silhouette. The other eight are not close.
+
+⚠️ **Do not re-pick this from the state names.** That is precisely the
+mistake. The nine renders are cheap to reproduce: import `MODE_FRAMES` from
+`thinking-orbs/engine` in Node and draw the dot lists.
+
+Files: `components/organisms/Auth/BootSplash.tsx`, `config/version.ts`.
+
+---
+
 ## v0.86.0 - 2026-09-21 - the boot orb actually shows
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

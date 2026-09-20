@@ -1,7 +1,38 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.86.0';
-export const APP_BUILD_LABEL = 'the boot orb actually shows - the 1.5 s threshold meant it never mounted';
+export const APP_VERSION = '0.87.0';
+export const APP_BUILD_LABEL = 'the boot orb is the one that was asked for - composing/ribbon, matched by rendering';
+
+// v0.87.0 - THE RIGHT ORB. JS only - OTA. One word changes; the work was
+//           finding out WHICH word.
+//
+//           ★ I PICKED THE STATE BY MEANING AND NEVER ASKED. The package
+//           ships NINE animations. v0.85.0 used `connecting` because the
+//           name matched what the app is doing - waiting on a server, "a
+//           constellation wires itself". Nobody requested that. The request
+//           came with a link to a live demo, and the animation on it was a
+//           specific one that had been SEEN. Choosing by semantics instead
+//           of by looking produced a completely different object:
+//             connecting -> web      48 dots + 82 LINES   sparse wireframe
+//             composing  -> ribbon   566 dots, no lines   dense sash
+//           Not a near miss - the opposite end of the set.
+//
+//           SETTLED BY RENDERING, NOT BY READING NAMES. The state names
+//           describe an AGENT'S ACTIVITY (working, listening, composing),
+//           not a shape, so no amount of re-reading them answers "which one
+//           is in this video". The engine is pure `Math` with zero deps, so
+//           it runs in plain Node: all nine states were rasterised from the
+//           same MODE_FRAMES the app calls, and compared against frames cut
+//           out of the screen recording (HEVC - the local ffmpeg is a stub
+//           that cannot decode it, so a real one was fetched).
+//           `ribbon` is the only match - same dense vertical dashes, same
+//           undulating dark gap, same torus silhouette. The other eight are
+//           not close.
+//
+//           ⚠️ DO NOT RE-PICK THIS FROM THE STATE NAMES. That is exactly
+//           the mistake, and the nine renders are cheap to reproduce:
+//           import MODE_FRAMES from 'thinking-orbs/engine' in Node and draw
+//           the dot lists.
 
 // v0.86.0 - THE ORB IS THE INDICATOR, FROM THE FIRST FRAME. JS only - OTA.
 //
