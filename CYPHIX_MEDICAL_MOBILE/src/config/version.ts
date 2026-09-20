@@ -1,7 +1,25 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.67.0';
-export const APP_BUILD_LABEL = 'new app icon (the ECG heart) - NATIVE REBUILD: an icon lives in the binary, not in the bundle';
+export const APP_VERSION = '0.68.0';
+export const APP_BUILD_LABEL = 'home screen: the "Performing a Home ECG Test" subtitle is gone';
+
+// v0.68.0 - THE HOME SUBTITLE IS GONE. JS ONLY - app.json stays 0.37.0, so
+//           this is an OTA onto the build-10 binary (CLAUDE.md 5A.2).
+//
+//           "Performing a Home ECG Test" (`homeSubPatient`) sat between the
+//           greeting and the hero button. Removed at the user's instruction,
+//           and it earns the removal on its own: it narrated the screen to
+//           somebody already standing on it, one line above a button that
+//           says "Start Test". The greeting stays - it is the only thing up
+//           there the patient did not already know.
+//
+//           The key is deleted from BOTH locales rather than left orphaned.
+//           `he.ts` is `Record<TranslationKey, string>`, so removing it from
+//           `en.ts` alone would not compile - which is the shape working as
+//           intended, not an obstacle.
+//
+//           First of five changes asked for in one sitting; each ships as its
+//           own update so a regression has one candidate, not five.
 
 // v0.67.0 - THE APP ICON IS THE ECG HEART.
 //           ⚠️ NATIVE REBUILD: app.json 0.36.0 -> 0.37.0. An icon is compiled

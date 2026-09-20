@@ -1,5 +1,32 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.68.0 - 2026-09-20 - the home screen stops narrating itself
+
+**JS only — OTA onto the build-10 binary.** `app.json` stays `0.37.0`; only
+`src/config/version.ts` moves (CLAUDE.md §5A.2).
+
+The patient's home screen said, between the greeting and the big button:
+
+> **Performing a Home ECG Test**
+
+It is gone. The reason it goes is not only that it was asked for: it told
+someone already standing on the home screen what the home screen is for, one
+line above a button reading *Start Test*. The greeting stays, because a name is
+the one thing up there the patient did not already know.
+
+`homeSubPatient` is deleted from **both** locales rather than left orphaned —
+`he.ts` is typed `Record<TranslationKey, string>`, so dropping it from `en.ts`
+alone would not compile. That is the locale shape doing its job.
+
+This is the **first of five** changes requested in one sitting. Each ships as
+its own update on purpose: when something on the phone looks wrong, the list of
+things that could have caused it should be one item long.
+
+Files: `screens/HomeScreen.tsx` (v2.3.0), `i18n/locales/en.ts`,
+`i18n/locales/he.ts`, `config/version.ts`.
+
+---
+
 ## v0.67.0 - 2026-09-19 - the app icon is the ECG heart
 
 ⚠️ **NATIVE REBUILD — there is no OTA for this.** An app icon is compiled into

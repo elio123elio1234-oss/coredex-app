@@ -27,7 +27,8 @@ export const en = {
   /* ── Home ── */
   homeGreeting: 'Hello {name}',
   homeGreetingNoName: 'Hello',
-  homeSubPatient: 'Performing a Home ECG Test',
+  /* `homeSubPatient` ("Performing a Home ECG Test") was removed in v0.68.0 —
+     it narrated the screen to somebody already on it. See HomeScreen. */
   homeStart: 'Start Test',
   homeConnect: 'Connect',
   homeStartDemo: 'Start Demo',

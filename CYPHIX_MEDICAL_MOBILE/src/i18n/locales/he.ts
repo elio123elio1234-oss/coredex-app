@@ -26,7 +26,7 @@ export const he: Record<TranslationKey, string> = {
   /* ── מסך הבית ── */
   homeGreeting: 'שלום {name}',
   homeGreetingNoName: 'שלום',
-  homeSubPatient: 'מבצע בדיקת אק"ג ביתית',
+  /* homeSubPatient הוסר ב-v0.68.0 יחד עם המקור באנגלית. */
   homeStart: 'התחל בדיקה',
   homeConnect: 'התחבר',
   homeStartDemo: 'התחל הדגמה',

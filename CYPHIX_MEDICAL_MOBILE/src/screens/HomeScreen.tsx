@@ -97,13 +97,22 @@ export default function HomeScreen() {
   return (
     <PatientShell>
       <View style={styles.inner}>
-        {/* `homeGreeting: 'Hello {name}'` + `homeSubPatient` — the web's
-            GreetingHeader, with the same first-name resolution. */}
+        {/* `homeGreeting: 'Hello {name}'` — the web's GreetingHeader, with
+            the same first-name resolution.
+
+            ★ v0.68.0 — THE SUBTITLE IS GONE ("Performing a Home ECG Test",
+            `homeSubPatient`). Removed at the user's instruction, and it
+            earns its removal: it described what the screen is FOR to
+            somebody already standing on it, directly above a button that
+            says "Start Test". The greeting now sits alone above the hero,
+            which is also the one thing on this screen the patient did not
+            already know. The key is dropped from both locales rather than
+            left orphaned — a string nothing renders is a string the next
+            reader has to check. Divergence from web recorded in PARITY.md. */}
         <View style={styles.greet}>
           <Text style={[styles.greetTitle, { color: t.textPrimary }]}>
             {greetName ? tr('homeGreeting', { name: greetName }) : tr('homeGreetingNoName')}
           </Text>
-          <Text style={[styles.greetSub, { color: t.textSecondary }]}>{tr('homeSubPatient')}</Text>
         </View>
 
         <HeroBlobButton
@@ -132,11 +141,13 @@ const styles = StyleSheet.create({
   inner: { gap: 12, alignItems: 'stretch' },
   greet: { alignItems: 'center' },
   greetTitle: { fontSize: 38, fontWeight: '800', letterSpacing: -0.5 },
-  greetSub: { fontSize: 20, fontWeight: '400', marginTop: 6, textAlign: 'center' },
   demoRow: { alignItems: 'center', marginTop: 2 },
   demoLink: { fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
 });
 
+// v2.3.0 — The "Performing a Home ECG Test" subtitle is gone. It told a
+//          patient standing on the home screen what the home screen is for,
+//          one line above a button reading "Start Test".
 // v2.2.0 — Greets the account that actually signed in, falling back to the
 //          demo card when a session carries no display name.
 // v2.1.0 — All copy comes from the locale; the greeting uses the shared
