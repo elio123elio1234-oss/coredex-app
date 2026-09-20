@@ -30,9 +30,14 @@
       first ~50 pt of every trace underneath it. A cut-off ECG is not a
       cosmetic problem.
 
-   Orientation is declared through `navigation.setOptions`, never
-   `lockAsync` — react-native-screens stays the single owner of that API
-   (see the post-mortem in RootNavigator).
+   ⚠️ Orientation is `ScreenOrientation.lockAsync`, and it USED to be
+   `navigation.setOptions({ orientation })` with a comment claiming that
+   kept react-native-screens the single owner. It did the opposite: any RNS
+   orientation trait makes `expo-screen-orientation`'s root view controller
+   stand down and report "anything goes" to iOS — for the WHOLE app. This
+   screen's full-screen toggle was therefore one of three places quietly
+   unlocking rotation everywhere. Read RootNavigator's header before
+   touching this.
 
    ══ THE TOOLS ARE MODES, AND ONLY ONE IS ON ══
    A finger cannot hover and there is only one of it, so turning a tool on
@@ -49,7 +54,8 @@
    ================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
@@ -157,7 +163,6 @@ type ViewerRoute = RouteProp<{ StudyViewer: { id: string } }, 'StudyViewer'>;
 type Nav = {
   goBack: () => void;
   navigate: (screen: string, params?: object) => void;
-  setOptions: (o: { orientation?: 'portrait_up' | 'landscape' }) => void;
 };
 
 /** One zoom step. 0.65 is roughly the web's 0.6, softened for a tap. */
@@ -262,10 +267,30 @@ export default function StudyViewerScreen() {
     setGhostOffsetMm(0);
   }, [settings.overlayId, alignMode]);
 
-  /* ── Full screen is a ROTATION ── */
+  /* ── Full screen is a ROTATION ──
+     Through the one API iOS honours; see the header. Leaving this screen
+     while full screen is handled by the focus effect below rather than by
+     this one, because unmounting does not re-run an effect's deps. */
   useEffect(() => {
-    navigation.setOptions({ orientation: fullscreen ? 'landscape' : 'portrait_up' });
-  }, [navigation, fullscreen]);
+    void ScreenOrientation.lockAsync(
+      fullscreen
+        ? ScreenOrientation.OrientationLock.LANDSCAPE
+        : ScreenOrientation.OrientationLock.PORTRAIT_UP,
+    );
+  }, [fullscreen]);
+
+  /* ★ Restore the baseline on the way out, whatever state the viewer was
+     left in. Without this, backing out of a full-screen study would leave
+     the whole app landscape-locked — the mirror image of the bug this
+     release fixes, and just as invisible from a typecheck. */
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      },
+      [],
+    ),
+  );
 
   const view = useRecordingView(recording, settings);
   /* Reads the same filtered waveforms the measurements were taken from, so

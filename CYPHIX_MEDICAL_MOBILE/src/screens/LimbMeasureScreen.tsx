@@ -6,16 +6,24 @@
      set-up steps → live monitor → (heartbeat proven) → 10 s capture → REPORT
 
    ══ LANDSCAPE TO MEASURE, PORTRAIT TO READ ══
-   The route is declared `orientation: 'landscape'` in RootNavigator, so
-   the OS rotates as part of the push and this screen's FIRST layout pass
-   already measures the landscape box. Six live traces need the long edge.
+   Six live traces need the long edge; a REPORT is the opposite shape of
+   problem — a document read top to bottom, one full-width strip after
+   another — so when the capture finishes the screen asks for portrait
+   back.
 
-   A REPORT is the opposite shape of problem — a document read top to
-   bottom, one full-width strip after another — so when the capture
-   finishes the screen asks for portrait back. That is still ONE writer of
-   the orientation API (react-native-screens, via `setOptions`), which is
-   the whole point of the flicker fix; nothing here calls `lockAsync`. See
-   the post-mortem in RootNavigator.
+   ★ v0.76.0: BOTH of those are `ScreenOrientation.lockAsync`, and this
+   screen is the ONLY place in the app that changes orientation. It used to
+   be the route's static `orientation: 'landscape'` plus a
+   `nav.setOptions({ orientation })` per phase — two declarations that read
+   as "one declarative owner" and were in fact the thing keeping
+   `expo-screen-orientation` switched off for the WHOLE app, because any
+   react-native-screens trait makes its root VC stand down and report
+   "anything goes". That is why the tabs rotated freely.
+
+   ⚠️ So: never declare `orientation` on this route, and never call
+   `setOptions({ orientation })` here again. Read RootNavigator's header
+   before touching any of it — the mistake has been made in both
+   directions now.
 
    ══ NOBODY PRESSES ANYTHING (the point of this screen) ══
    Holding this measurement takes BOTH of the patient's hands: the watch
@@ -54,8 +62,9 @@
    the foot there.
    ================================================================== */
 
-import { useNavigation } from '@react-navigation/native';
-import { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import {
   type LayoutChangeEvent,
   StyleSheet,
@@ -98,10 +107,34 @@ const BAR_RING_SIZE = 40;
 export default function LimbMeasureScreen() {
   const t = useTheme();
   const { t: tr } = useTranslation();
-  const nav = useNavigation<{
-    goBack: () => void;
-    setOptions: (o: { orientation: 'landscape' | 'portrait_up' }) => void;
-  }>();
+  /* `setOptions({ orientation })` is gone from this type on purpose: nothing
+     may declare an orientation any more (RootNavigator's header explains why
+     a declaration switches the lock off app-wide). */
+  const nav = useNavigation<{ goBack: () => void }>();
+
+  /**
+   * ★ THE EXAM TAKES LANDSCAPE, AND GIVES IT BACK.
+   *
+   * Six simultaneous limb traces need the long edge, and since v0.76.0 this
+   * screen is the one that asks for it — `expo-screen-orientation` is the
+   * single authority (see RootNavigator). On the way out it restores the
+   * app's baseline rather than "unlocking": `unlockAsync` would hand the
+   * phone back to the sensor, which is exactly the free-rotating tabs this
+   * release exists to fix.
+   *
+   * ⚠️ Keyed to FOCUS, not to mount. A recording is reachable, then left,
+   * then started again within one visit; a mount effect would restore
+   * portrait once and never run again, and `goBack` from a screen pushed on
+   * top of this one would return to a portrait exam.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      return () => {
+        void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      };
+    }, []),
+  );
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const ble = useBle();
@@ -142,13 +175,21 @@ export default function LimbMeasureScreen() {
   }, [prepDone, gate.ready, phase, start, ble.isStreaming]);
 
   /* ── Landscape to measure, portrait to read ──
-     Declarative, like the route's own option: react-native-screens stays
-     the single owner of the orientation API. `phase` is the only input, so
-     "record again" rotates back to landscape by the same path it came. */
+     ⚠️ v0.76.0: this was `nav.setOptions({ orientation })`, and it was the
+     writer nobody was counting. The route's static declaration was the
+     obvious one; THIS set the same trait dynamically on every phase change,
+     which meant `shouldUseRNScreenOrientation()` kept answering YES and
+     `expo-screen-orientation` kept standing down — for the whole app, not
+     just this screen. Same lock, same two states, through the one API that
+     iOS actually honours. */
   const done = phase === 'done';
   useEffect(() => {
-    nav.setOptions({ orientation: done ? 'portrait_up' : 'landscape' });
-  }, [nav, done]);
+    void ScreenOrientation.lockAsync(
+      done
+        ? ScreenOrientation.OrientationLock.PORTRAIT_UP
+        : ScreenOrientation.OrientationLock.LANDSCAPE,
+    );
+  }, [done]);
 
   /* ── The capture files itself into Scan History ──
      Unconditionally hooked, above the early returns: `useSaveRecording` is a

@@ -11,14 +11,59 @@
    FLOATS over the content instead of being welded to the screen edge.
 
    ══════════════════════════════════════════════════════════════════
-   ★ ORIENTATION IS DECLARED HERE, PER ROUTE — NEVER LOCKED IMPERATIVELY
+   ★ ORIENTATION HAS EXACTLY ONE AUTHORITY, AND IT IS
+     `expo-screen-orientation` — NOT react-native-screens (v0.76.0)
    ══════════════════════════════════════════════════════════════════
-   `orientation` is passed straight through to react-native-screens,
-   which implements it the way the OS expects: on iOS the pushed view
-   controller answers `supportedInterfaceOrientations`, on Android the
-   activity's requested orientation is set. The rotation therefore
-   happens as PART of the push transition — the exam's first layout pass
-   already measures the landscape box.
+   Read the two sections below before changing anything here. They are
+   the history of getting this wrong twice, in opposite directions.
+
+   The rule now: **`orientation` is NOT declared on any route.** The
+   baseline portrait lock is applied once, here; the exam raises it to
+   landscape while it is focused and puts it back on the way out
+   (`LimbMeasureScreen`). One writer, one API, no negotiation.
+
+   ── Why the declarative version could never have worked on iOS ──
+   v0.75.0 installed `expo-screen-orientation` WITHOUT calling it, on the
+   theory that its root view controller would defer to react-native-screens'
+   per-route masks. It does not, and the source says so plainly:
+
+     ScreenOrientationAppDelegate:
+       application(_:supportedInterfaceOrientationsFor:)
+         -> ScreenOrientationRegistry.shared.currentOrientationMask
+     ScreenOrientationRegistry:
+       currentOrientationMask -> rootViewController.supportedInterfaceOrientations
+     ScreenOrientationViewController (a plain UIViewController):
+       guard !shouldUseRNScreenOrientation() else {
+         return super.supportedInterfaceOrientations   // ← UIKit's DEFAULT
+       }
+
+   `super` there is `UIViewController`, whose default is
+   `allButUpsideDown`. So the moment react-native-screens HAS a trait set —
+   which, with `orientation` declared on the stack, is always — the package
+   steps out of the way and reports "everything is allowed". Installing it
+   without using it changed nothing; the name
+   `shouldUseRNScreenOrientation` reads as "defer to RNS's mask" and means
+   "defer to UIKit's default behaviour". That misreading cost a build.
+
+   ⚠️ The consequence that matters for edits: **declaring `orientation` on
+   a route does not restrict anything on iOS — it actively DISABLES the
+   package that does.** That is why the declarations are gone rather than
+   kept "for documentation".
+
+   ══════════════════════════════════════════════════════════════════
+   ★ AND WHY `lockAsync` IS ALLOWED AGAIN — CAREFULLY
+   ══════════════════════════════════════════════════════════════════
+   ⚠️ HISTORICAL — this is the reasoning that produced the declarations
+   above, kept because it is exactly half right and the half that is wrong
+   is not obvious.
+
+   `orientation` IS passed straight through to react-native-screens, and
+   on ANDROID it does what it claims: the activity's requested orientation
+   is set per screen, so the rotation happens as part of the push and the
+   mask is enforced afterwards. Android was never broken. **On iOS it only
+   ever rotated** — nothing was enforcing the mask between navigations,
+   because nothing was asking the screens for it (see the section above).
+   One codebase, one prop, two completely different amounts of work done.
 
    ── Why the previous approach flickered (landscape → portrait →
       landscape) ──
@@ -36,52 +81,36 @@
         once more → landscape.
 
    Three rotations for one navigation. A mount/cleanup counter was added
-   to tame it and could not: the race is between two native mechanisms,
-   not between two React effects. Deleting the imperative locker removed
-   the contention outright. **Do not reintroduce `lockAsync` anywhere.**
+   to tame it and could not.
 
-   ══════════════════════════════════════════════════════════════════
-   ★ AND WHY `expo-screen-orientation` IS INSTALLED BUT NEVER CALLED
-   ══════════════════════════════════════════════════════════════════
-   Reported in v0.74.0: *"after you leave the measurement screen, turning
-   the phone sideways is suddenly legal in ALL the tabs, not just on the
-   measurement page."* The masks above were not the problem — they read
-   correctly in both platforms' react-native-screens source. The problem
-   was that **on iOS nobody was asking them.**
+   ★ THE DIAGNOSIS WAS RIGHT AND THE CURE WAS HALF-APPLIED. The race was
+   between TWO WRITERS of one native API — react-native-screens' declared
+   mask and `lockAsync`. Deleting the locker did remove the contention; it
+   also removed the only writer iOS actually listens to, which is how the
+   tabs ended up free-rotating for months without anyone noticing (see
+   above). Deleting the OTHER writer is the same cure and the one that
+   leaves a working app.
 
-   iOS decides whether the USER may rotate by asking the root view
-   controller for `supportedInterfaceOrientations`. A bare Expo app has no
-   root VC that knows about react-native-screens, so that question fell
-   through to `Info.plist` — which `app.json`'s `"orientation": "default"`
-   fills with every orientation. Free rotation, everywhere, always.
+   So `lockAsync` is back, and the invariant that replaces the ban is:
 
-   The exam still worked, and that is exactly why this hid for so long:
-   RNS does not rely on the root VC to ROTATE. It calls
-   `requestGeometryUpdate` on the window scene directly
-   (`RNSScreenWindowTraits.enforceDesiredDeviceOrientation`), so pushing
-   the exam turned the phone even though nothing was enforcing the mask
-   between navigations. Rotation on push: correct. Rotation by the user on
-   any other screen: unchecked.
+     ⚠️ **NO ROUTE MAY DECLARE `orientation`.** Not the stack, not the
+     exam, not a future full-screen viewer. A declaration does not merely
+     duplicate the lock — on iOS it makes `shouldUseRNScreenOrientation()`
+     answer YES, which switches `expo-screen-orientation` off and returns
+     UIKit's "anything goes". One declaration anywhere unlocks the whole
+     app. If a screen needs a different orientation, it locks and unlocks
+     it itself, the way `LimbMeasureScreen` does.
 
-   `expo-screen-orientation` supplies the missing piece and nothing else.
-   Its `ScreenOrientationReactDelegateHandler.createRootViewController()`
-   installs a root VC whose `supportedInterfaceOrientations` begins:
-
-       guard !shouldUseRNScreenOrientation() else {
-         return super.supportedInterfaceOrientations
-       }
-
-   — i.e. when react-native-screens has a trait set (it always does here,
-   `portrait_up` on the stack), it DEFERS to the declarations above.
-
-   ⚠️ So the package is a dependency we never import. Installing it is
-   what makes the declarative approach actually take effect; calling it is
-   what broke the exam in the first place. **The ban stands: no
-   `lockAsync`, no `unlockAsync`, no `OrientationLock` anywhere in `src/`.**
-   If this file ever gains an `import … from 'expo-screen-orientation'`,
-   that is the bug coming back.
+   The flicker cannot come back from this shape: there is nothing left to
+   race with. The cost, stated honestly, is that the exam's rotation now
+   happens just AFTER its push rather than as part of it — a beat of
+   portrait before it turns. That is the price of the platform only
+   honouring one mechanism, and it is far cheaper than a phone that
+   rotates on every screen.
    ================================================================== */
 
+import { useEffect } from 'react';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import {
   DarkTheme,
   DefaultTheme,
@@ -156,13 +185,25 @@ export default function RootNavigator() {
   // The patient's Settings choice, not the raw OS appearance — otherwise the
   // navigator's own surfaces stay on the system theme and the app is half dark.
   const dark = useIsDark();
+
+  /**
+   * The app's baseline, applied ONCE. See the header: this is the only
+   * mechanism iOS honours, and a per-route `orientation` would switch it off.
+   *
+   * Not in a cleanup: there is nothing to restore to. The navigator lives as
+   * long as the app does, and the exam is responsible for putting the lock
+   * back when it leaves.
+   */
+  useEffect(() => {
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
+
   return (
     <NavigationContainer theme={navTheme(dark)}>
-      {/* `portrait_up` is the app's baseline, declared once on the stack so
-          every route inherits it and only the exam opts out. */}
-      <Stack.Navigator
-        screenOptions={{ headerShown: false, orientation: 'portrait_up' }}
-      >
+      {/* ⚠️ NO `orientation` HERE, deliberately — see the header. Declaring it
+          does not restrict anything on iOS; it disables the package that
+          does, for the whole app. */}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={Tabs} />
         <Stack.Screen
           name="LimbMeasure"
@@ -171,10 +212,11 @@ export default function RootNavigator() {
             // A measurement in progress must not be swiped away by accident.
             gestureEnabled: false,
             animation: 'slide_from_bottom',
-            /* Six simultaneous limb traces need the long edge. Both landscape
-               orientations are permitted so the phone may be turned either
-               way; iOS picks the one matching how it is being held. */
-            orientation: 'landscape',
+            /* ⚠️ `orientation: 'landscape'` USED TO BE HERE and is gone on
+               purpose. Six simultaneous limb traces still need the long
+               edge — the screen now takes it itself, with `lockAsync` in a
+               focus effect, because a declaration here would switch
+               `expo-screen-orientation` off app-wide. See the header. */
           }}
         />
         <Stack.Screen

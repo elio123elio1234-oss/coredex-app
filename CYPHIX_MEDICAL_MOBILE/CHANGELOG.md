@@ -1,5 +1,89 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.76.0 - 2026-09-20 - orientation, actually fixed
+
+**JS only — OTA, and it needs build 12 (runtime 0.39.0),** because that is the
+binary carrying the native module this now calls. Published to **0.39.0 only**:
+an OTA of this code onto build 11 would call a module that is not in it.
+
+### ⚠️ v0.75.0 did not fix this, and shipped a whole binary saying it did
+
+Reported back immediately: *"the icon changed but the rotation still isn't
+fixed."* Correct. Written down in full because the reasoning was plausible at
+every step and still wrong.
+
+v0.75.0 installed `expo-screen-orientation` **without calling it**, on the
+reading that its root view controller defers to react-native-screens' per-route
+masks. It does not:
+
+```swift
+class ScreenOrientationViewController: UIViewController {
+  override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+    guard !shouldUseRNScreenOrientation() else {
+      return super.supportedInterfaceOrientations   // ← UIKit's default
+    }
+    …
+```
+
+`super` is `UIViewController`, whose default is `allButUpsideDown`.
+`shouldUseRNScreenOrientation` **reads** as "defer to RNS's mask" and **means**
+"defer to UIKit's default behaviour". I inferred the semantics from the method
+name and never read the class declaration.
+
+**★ So the declarations were not neutral — they were the bug.** Any RNS
+orientation trait makes that guard fire, which switches the package off for the
+*entire app* and reports "anything goes" to iOS. Declaring `portrait_up` on the
+stack is precisely what unlocked the tabs.
+
+### Three writers, not one
+
+The grep that should have come first found **three** places setting an RNS
+trait — two of them dynamic, and therefore invisible in the navigator:
+
+| | where | what |
+|---|---|---|
+| 1 | `RootNavigator` | `orientation` on the stack **and** on the exam route |
+| 2 | `LimbMeasureScreen` | `nav.setOptions({ orientation })` on every phase change |
+| 3 | `StudyViewerScreen` | `setOptions({ orientation })` on the full-screen toggle — under a comment claiming this kept react-native-screens "the single owner of that API" |
+
+Each one, on its own, unlocked rotation everywhere. Fixing the navigator alone
+would have shipped another binary that changed nothing — which is exactly what
+v0.75.0 was.
+
+### The fix: one authority
+
+No route declares `orientation`; nothing calls `setOptions` with it.
+`expo-screen-orientation` is the only writer:
+
+- **RootNavigator** locks `PORTRAIT_UP` once at start.
+- **LimbMeasureScreen** locks `LANDSCAPE` on focus and `PORTRAIT_UP` on blur,
+  and swaps to `PORTRAIT_UP` when the capture finishes (a report is read top to
+  bottom). Keyed to **focus**, not mount: a study is recorded, left, and
+  started again within one visit.
+- **StudyViewerScreen** locks `LANDSCAPE` for full screen and restores
+  `PORTRAIT_UP` on blur. Without that last part, backing out of a full-screen
+  study would leave the whole app **landscape**-locked — the mirror image of
+  the reported bug, and just as invisible to a typecheck.
+
+`lockAsync` was banned after the v0.30-era flicker. That ban is **lifted rather
+than worked around**, and the reasoning is worth keeping: the flicker's
+diagnosis was right — *two writers of one native API* — but the cure removed
+the wrong one. It deleted the only writer iOS listens to and left the
+declarations in place, which is how the tabs free-rotated for months without
+anyone connecting it to that fix. The invariant that replaces the ban now lives
+in `RootNavigator`'s header: **no route may declare `orientation`.** There is
+nothing left to race with.
+
+**Honest cost:** the exam's rotation now happens just *after* its push rather
+than as part of it — a beat of portrait before it turns. Android never had this
+bug (its per-screen `requestedOrientation` really is applied); it takes the same
+path now, for one behaviour across both.
+
+Files: `navigation/RootNavigator.tsx`, `screens/LimbMeasureScreen.tsx`,
+`screens/StudyViewerScreen.tsx`, `config/version.ts`.
+
+---
+
 ## v0.75.0 - 2026-09-20 - landscape is blocked outside the exam, and the icon is ECG paper
 
 ⚠️ **NATIVE REBUILD.** `app.json` 0.38.0 → **0.39.0** — a new native module and

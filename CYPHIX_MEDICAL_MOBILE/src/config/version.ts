@@ -1,7 +1,72 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.75.0';
-export const APP_BUILD_LABEL = 'the ECG paper icon + landscape is blocked outside the exam - NATIVE REBUILD';
+export const APP_VERSION = '0.76.0';
+export const APP_BUILD_LABEL = 'orientation, actually fixed: one authority, three writers removed';
+
+// v0.76.0 - ORIENTATION, ACTUALLY FIXED. JS ONLY - OTA, and it needs BUILD 12
+//           (runtime 0.39.0), because that is the binary that carries the
+//           native module this now calls. Published to 0.39.0 ONLY: an OTA of
+//           this code onto build 11 would call a module that is not in it.
+//
+//           ⚠️ v0.75.0 DID NOT FIX THIS and shipped a whole binary saying it
+//           did. The icon changed; the rotation did not. Written down in full
+//           because the reasoning was plausible at every step and still wrong.
+//
+//           v0.75.0 installed `expo-screen-orientation` WITHOUT calling it, on
+//           the reading that its root view controller defers to
+//           react-native-screens' per-route masks. It does not:
+//
+//             ScreenOrientationViewController (a plain UIViewController)
+//               guard !shouldUseRNScreenOrientation() else {
+//                 return super.supportedInterfaceOrientations
+//               }
+//
+//           `super` is UIViewController, whose default is `allButUpsideDown`.
+//           `shouldUseRNScreenOrientation` READS as "defer to RNS's mask" and
+//           MEANS "defer to UIKit's default behaviour". I inferred the
+//           semantics from the name and did not read the class declaration.
+//
+//           ★ SO THE DECLARATIONS WERE NOT NEUTRAL - THEY WERE THE BUG. Any
+//           RNS orientation trait makes that guard fire, which switches the
+//           package off for the ENTIRE APP and reports "anything goes" to iOS.
+//           Declaring `portrait_up` on the stack is what unlocked the tabs.
+//
+//           ── Three writers, not one ──
+//           The grep that should have come first found THREE places setting an
+//           RNS trait, two of them dynamic and invisible in the navigator:
+//             1. RootNavigator  - `orientation` on the stack + on the exam
+//             2. LimbMeasure    - `nav.setOptions({ orientation })` per phase
+//             3. StudyViewer    - `setOptions({ orientation })` on fullscreen,
+//                                 under a comment claiming this kept RNS "the
+//                                 single owner of that API"
+//           Each one, on its own, unlocked rotation everywhere. Fixing the
+//           navigator alone would have shipped another binary that changed
+//           nothing - which is exactly what v0.75.0 was.
+//
+//           ── The fix: ONE authority ──
+//           No route declares `orientation`; nothing calls `setOptions` with
+//           it. `expo-screen-orientation` is now the only writer:
+//             - RootNavigator locks PORTRAIT_UP once at start.
+//             - LimbMeasure locks LANDSCAPE on focus, PORTRAIT_UP on blur, and
+//               swaps to PORTRAIT_UP when the capture finishes (a report is
+//               read top to bottom).
+//             - StudyViewer locks LANDSCAPE for full screen, and restores
+//               PORTRAIT_UP on blur - without that, backing out of a
+//               full-screen study would leave the whole app landscape-locked,
+//               the mirror image of the reported bug.
+//
+//           `lockAsync` was banned after the v0.30-era flicker, and that ban
+//           is lifted rather than worked around. The flicker's diagnosis was
+//           right - TWO WRITERS of one native API - but the cure removed the
+//           wrong one: it deleted the only writer iOS listens to and left the
+//           declarations, which is how the tabs free-rotated for months. The
+//           invariant that replaces the ban is in RootNavigator's header:
+//           NO ROUTE MAY DECLARE `orientation`. There is nothing left to race.
+//
+//           Honest cost: the exam's rotation now happens just AFTER its push
+//           instead of as part of it - a beat of portrait before it turns.
+//           Android never had this bug (its per-screen requestedOrientation
+//           really is applied); it takes the same path now for one behaviour.
 
 // v0.75.0 - TWO NATIVE CHANGES IN ONE BINARY.
 //           ⚠️ REBUILD: app.json 0.38.0 -> 0.39.0. v0.73.0/v0.74.0 were
