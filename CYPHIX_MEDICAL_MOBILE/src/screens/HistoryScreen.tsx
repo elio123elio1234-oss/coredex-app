@@ -77,6 +77,7 @@ import { SELF_SUBJECT } from '@/features/history/hooks/useSaveRecording';
 import { useStudyDigests } from '@/features/history/hooks/useStudyDigests';
 import { useViewerFeatures } from '@/features/history/useViewerFeatures';
 import { useSync } from '@/features/sync/useSync';
+import { useReplayOnFocus } from '@/hooks/useReplayOnFocus';
 import { useTranslation } from '@/i18n/useTranslation';
 import { logAudit } from '@/services/audit/auditLogger';
 import {
@@ -126,10 +127,31 @@ export default function HistoryScreen() {
      the list itself still never decodes a waveform. */
   const { digests, progress: digesting } = useStudyDigests(list.data);
 
-  /* Rows animate in only on the screen's first landing. Digest updates and
-     refetches re-render the same mounted rows (same keys), so they never
-     re-stagger; rows mounted later by scrolling animate briefly, capped. */
-  const mountedAt = useRef(Date.now());
+  /* Rows cascade on ARRIVAL. Digest updates and refetches re-render the same
+     mounted rows (same keys), so they never re-stagger; rows mounted later by
+     scrolling animate briefly, capped.
+
+     ★ v0.84.0 — "arrival" now means every visit, not the one mount. This was
+     `useRef(Date.now())`, which is the same mistake `FadeUpView` had one level
+     down: a tab screen mounts once and stays mounted, so the 900 ms window
+     closed forever a second after the first landing and every later visit
+     computed a stagger of 0. The rows would still have replayed — all at the
+     same instant, which is the cheap version of the effect.
+
+     STATE, not a ref, and that is the whole difficulty: `renderCard` is
+     memoised, so unless something it depends on CHANGES, FlatList short-
+     circuits and re-renders no rows at all — the new delays would never reach
+     them. A ref mutated in an effect is invisible to that machinery.
+
+     ⚠️ This one IS a render behind the focus, unlike `FadeUpView`'s own
+     replay, which writes its shared value straight from the listener. So on a
+     return visit each row starts its entrance with `delay: 0` and is restarted
+     a frame later with its real stagger. Both restarts happen while the row is
+     still at opacity 0, so the seam is invisible — and the alternative is
+     computing the cascade before the screen knows it has been re-entered. */
+  const [arrivedAt, setArrivedAt] = useState(() => Date.now());
+  const markArrival = useCallback(() => setArrivedAt(Date.now()), []);
+  useReplayOnFocus(markArrival);
 
   /* ── What the title block fades against ──
      A shared value, not state: it is written on every scroll event and read
@@ -308,9 +330,9 @@ export default function HistoryScreen() {
   const renderCard = useCallback(
     ({ item, index }: { item: RecordingListItem; index: number }) => {
       const digest = digests[item.id];
-      /* First-landing stagger only (see `mountedAt`). Capped so a row far
+      /* On-arrival stagger only (see `arrivedAt`). Capped so a row far
          down a fast scroll never waits noticeably. */
-      const stagger = Date.now() - mountedAt.current < 900 ? Math.min(index, 8) * 45 : 0;
+      const stagger = Date.now() - arrivedAt < 900 ? Math.min(index, 8) * 45 : 0;
       return (
         <FadeUpView delay={stagger} duration={420} distance={10}>
           <StudyCard
@@ -342,7 +364,10 @@ export default function HistoryScreen() {
         </FadeUpView>
       );
     },
-    [digests, fmtWhen, rtl, cardLabels, openStudy],
+    /* ★ `arrivedAt` is load-bearing here even though it only feeds a number:
+       it is what changes this callback's identity on a return visit, which is
+       what makes FlatList re-render the rows with their new delays. */
+    [digests, fmtWhen, rtl, cardLabels, openStudy, arrivedAt],
   );
 
   /* ── The title block, as CONTENT ──

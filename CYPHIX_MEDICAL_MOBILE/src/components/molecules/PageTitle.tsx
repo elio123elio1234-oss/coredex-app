@@ -41,7 +41,7 @@
    threshold in JS, so they pass `interactive={false}` from the same test.
    ================================================================== */
 
-import { useEffect, type ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -50,6 +50,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReplayOnFocus } from '@/hooks/useReplayOnFocus';
 
 /**
  * How far the page travels before the title is completely gone.
@@ -107,9 +108,15 @@ export default function PageTitle({
    * already lowered. One expression, two factors, no ambiguity.
    */
   const intro = useSharedValue(0);
-  useEffect(() => {
+  /* ★ Every VISIT, not once per session: a bottom-tab screen mounts once and
+     stays mounted, so an entrance keyed on mount plays for the first arrival
+     and never again. Reset first — `withTiming` starts from the CURRENT
+     value, which on a return visit is already 1. */
+  const play = useCallback(() => {
+    intro.value = 0;
     intro.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
   }, [intro]);
+  useReplayOnFocus(play);
 
   /* Linear over `TITLE_FADE_DISTANCE`, clamped at both ends. A rubber-band
      overscroll drives `scrollY` NEGATIVE on iOS, so the lower clamp is not

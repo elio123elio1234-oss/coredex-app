@@ -1,7 +1,61 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.83.0';
-export const APP_BUILD_LABEL = 'sheets can be HELD and dragged - the grabber was a picture of a handle';
+export const APP_VERSION = '0.84.0';
+export const APP_BUILD_LABEL = 'the entrance animation replays on EVERY tab visit, not once per session';
+
+// v0.84.0 - THE ENTRANCE REPLAYS ON EVERY VISIT. JS only - OTA onto 0.45.0.
+//
+//           Asked for as: "can the animation happen every time I switch tab
+//           and not only the first time I enter the tab in a session?"
+//
+//           ★ IT PLAYED ONCE BECAUSE IT WAS KEYED ON MOUNT. `FadeUpView`
+//           and `PageTitle` start from useEffect, and a bottom-tab screen
+//           mounts ONCE and then stays mounted for the life of the session -
+//           leaving a tab does not unmount it, which is exactly what makes
+//           coming back instant. So the second visit had nothing left to
+//           animate: the effect had already run, hours ago. The event that
+//           means "I am looking at this now" is FOCUS, not mount.
+//
+//           New hook `useReplayOnFocus`, and two decisions inside it that
+//           are the whole difficulty:
+//
+//           1. ⚠️ NOT `useIsFocused()`. It calls `useNavigation()`, which
+//              THROWS where there is no navigator - and three animated
+//              surfaces are in exactly that position: the AUTH FLOW
+//              (AuthGate stands in FRONT of the navigator, and SuccessStep
+//              uses FadeUpView), every SHEET (overlays are portalled to the
+//              app root, outside the navigator by design), and anything
+//              mounted above the navigator later. The idiomatic hook would
+//              have crashed the sign-in screen on launch. The context is read
+//              with a plain useContext, and no navigator means MOUNT ONLY -
+//              degrading to the old behaviour is the only safe direction.
+//
+//           2. ★ NOT A `focused` BOOLEAN IN REACT STATE. That shape was
+//              written first and puts the reset ONE COMMIT LATE:
+//                tab becomes visible (content still in its finished state)
+//                  -> focus event -> setState -> re-render -> reset to 0
+//              Between those commits the screen is drawn, complete, and then
+//              BLANKS. That is a flash - and this app has had precisely that
+//              reported before ("the tab is glitchy, it appears for a split
+//              second"). Writing the shared value straight from the listener
+//              has no commit in it: same JS tick as the commit that made the
+//              screen visible, so Reanimated flushes it in the same frame. It
+//              also avoids a re-render per row - FadeUpView is per-row in
+//              History.
+//
+//           History's per-row CASCADE needed the same fix one level up: its
+//           stagger was gated on `Date.now() - mountedAt < 900`, a ref set at
+//           mount, so every later visit computed a stagger of 0 and the rows
+//           would have replayed all at the same instant. It is STATE now,
+//           because `renderCard` is memoised: unless something it depends on
+//           changes, FlatList re-renders no rows and the new delays never
+//           reach them.
+//
+//           ⚠️ Home and Chat have NO entrance animation to replay - they
+//           never had one. Flagged, not invented: Home is the patient-first
+//           screen and animating its one big button is a decision, not a fix.
+//
+//           🔬 Typechecks and bundles; the flash question is a device one.
 
 // v0.83.0 - THE SHEETS CAN BE HELD. JS only - OTA onto runtime 0.45.0.
 //

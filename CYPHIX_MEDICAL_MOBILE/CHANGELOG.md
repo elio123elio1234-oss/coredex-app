@@ -1,5 +1,100 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.84.0 - 2026-09-20 - the entrance replays on every visit
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+Asked for as: *“אפשר לעשות שאפקט האנימציה יקרה כל פעם שאני עובר טאב ולא רק
+בפעם הראשונה שאני נכנס לטאב בכל סשן?”*
+
+### ★ It played once because it was keyed on MOUNT
+
+`FadeUpView` and `PageTitle` start their animation from `useEffect`, and a
+bottom-tab screen **mounts once and then stays mounted for the life of the
+session**. Leaving a tab does not unmount it — that is the entire point of a
+tab bar, and it is what makes coming back instant. So the second visit had
+nothing left to animate: the effect had already run, possibly hours earlier.
+
+The event that means *“I am looking at this now”* is **focus**, not mount.
+
+New hook, `hooks/useReplayOnFocus.ts`. Two decisions inside it carry the work:
+
+### 1. ⚠️ Not `useIsFocused()`
+
+It calls `useNavigation()`, which **throws** when there is no navigator above
+the component — and three of this app's animated surfaces are in exactly that
+position:
+
+| where | why there is no navigator |
+|---|---|
+| **The auth flow** | `AuthGate` stands in FRONT of the navigator (`App.tsx`), and `SuccessStep` uses `FadeUpView` |
+| **Every sheet** | overlays are portalled to the app root, deliberately outside the navigator — `OverlayPortal`'s own header says overlay content may not call `useNavigation()` |
+| Anything mounted above the navigator later | — |
+
+The idiomatic hook would have **taken the app down on launch for a signed-out
+user**. The context is read with a plain `useContext`, which returns
+`undefined` instead of throwing, and **no navigator means mount-only**:
+the component keeps exactly its old behaviour. Degrading to what it did before
+is the only safe direction for a presentation hook.
+
+### 2. ★ Not a `focused` boolean in React state
+
+That is the obvious shape, it was written first, and it puts the reset **one
+commit late**:
+
+```
+tab becomes visible (commit 1 — content still in its finished state)
+  → focus event → setState → re-render (commit 2) → effect → reset to 0
+```
+
+Between those two commits the screen is on screen, fully drawn, in the state it
+was left in. Then it blanks and rises. **That is a flash** — and this app has
+had precisely that reported before: *“the tab is glitchy, it appears for a
+split second”*. An entrance animation that introduces a flash is worse than no
+entrance animation.
+
+Writing the shared value **straight from the navigation listener** has no
+commit in it at all: the listener runs in the same JS tick as the commit that
+made the screen visible, and Reanimated flushes the write to the UI thread at
+the end of that tick — the same frame. It also avoids a re-render per row,
+which matters because `FadeUpView` is **per row** in History.
+
+### History's cascade needed the same fix one level up
+
+Its stagger was gated on `Date.now() - mountedAt < 900`, with `mountedAt` a ref
+set at mount — the same bug one level up. Every later visit computed a stagger
+of **0**, so the rows would have replayed *all at the same instant*: the cheap
+version of the effect.
+
+It is **state** now, and that is the whole difficulty: `renderCard` is
+memoised, so unless something it depends on changes, FlatList short-circuits
+and re-renders no rows at all — the new delays would never reach them. A ref
+mutated in an effect is invisible to that machinery.
+
+⚠️ That one *is* a render behind the focus, so on a return visit each row
+starts with `delay: 0` and is restarted a frame later with its real stagger.
+Both restarts happen while the row is at opacity 0, so the seam is invisible.
+
+### ⚠️ What has no animation to replay
+
+**Home and Chat never had an entrance animation at all.** Flagged rather than
+invented: Home is the patient-first screen whose whole job is one big button,
+and animating it is a design decision, not a fix for this report. Say the word
+and it gets one.
+
+Replaying now: **Insights** (title + identity panel), **History** (title +
+cascading rows), **Profile**, **Settings**.
+
+🔬 **Typechecks and bundles.** Whether the listener really lands in the same
+frame is a device question — it is the one thing that separates this from the
+flash described above.
+
+Files: `hooks/useReplayOnFocus.ts` (new), `components/atoms/Auth/FadeUpView.tsx`,
+`components/molecules/PageTitle.tsx`, `screens/HistoryScreen.tsx`,
+`config/version.ts`.
+
+---
+
 ## v0.83.0 - 2026-09-20 - the sheets can be held
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** One file does it for all
