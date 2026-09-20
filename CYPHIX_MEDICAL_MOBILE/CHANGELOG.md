@@ -1,5 +1,55 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.86.0 - 2026-09-21 - the boot orb actually shows
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“אבל אני לא רואה את אנימציית הטעינה … אני רואה רק את העיגול הרגיל של הטעינה
+> הקודם מתחת ל-cyphix בפתיחת האפליקציה”*
+
+Right, and it was not a rendering bug. **It was my threshold.**
+
+### ★ The reasoning was fine and the number was fatal
+
+v0.85.0 raised the orb only after **1.5 s**, reasoning from `BootSplash`'s own
+header that a disk read *“is not an occasion”* and the flourish should be
+reserved for a wait that earned it.
+
+`AuthGate`'s minimum splash is **`SPLASH_MS = 900`**.
+
+The screen was gone 600 ms before the timer fired. On a healthy launch the orb
+**was never mounted at all** — and a signed-in user with a stored principal
+never reaches the long `recovering` branch either, so in practice it could
+hardly ever run. I shipped a feature in a state where it essentially could not
+execute, and wrote three paragraphs defending the number that did it.
+
+Taste is not worth a feature that never runs, and a loading indicator that only
+appears when things go badly is not a loading indicator. **The threshold is
+deleted** — the orb is what the splash shows, every launch. The entrance drops
+**520 → 260 ms** for the same reason: it was still fading in when a 900 ms
+splash ended.
+
+### ★ And the second bug was that I could not tell which it was
+
+v0.85.1 wrapped the orb in `FailSoft` with **the old ring as its fallback**. So
+a crashed orb and an orb that never mounted looked *identical on screen*. “I
+only see the old circle” described both, and neither of us could have said
+which without another release.
+
+That is the v0.82.0 lesson repeated one release later: **a tool that records
+one of two outcomes cannot distinguish them.** Two fixes:
+
+1. With no threshold, the ring is no longer a legitimate state — so **seeing
+   one is itself the failure signal**.
+2. `FailSoft` now records what it caught, surfaced in **Settings › About** as
+   **Render fallback**. The row only exists when something fell back, so its
+   presence is the message and its absence is the all-clear.
+
+Files: `components/organisms/Auth/BootSplash.tsx`, `components/atoms/FailSoft.tsx`,
+`screens/SettingsScreen.tsx`, `i18n/locales/{en,he}.ts`, `config/version.ts`.
+
+---
+
 ## v0.85.1 - 2026-09-21 - the boot orb is bounded, and the dependency is on the record
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

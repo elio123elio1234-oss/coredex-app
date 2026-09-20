@@ -1,7 +1,41 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.85.1';
-export const APP_BUILD_LABEL = 'the boot orb is bounded - a fault in it can no longer stop the app starting';
+export const APP_VERSION = '0.86.0';
+export const APP_BUILD_LABEL = 'the boot orb actually shows - the 1.5 s threshold meant it never mounted';
+
+// v0.86.0 - THE ORB IS THE INDICATOR, FROM THE FIRST FRAME. JS only - OTA.
+//
+//           Reported: "I only see the old circle under Cyphix when the app
+//           opens." Correct, and it was not a rendering bug - it was MY
+//           THRESHOLD.
+//
+//           v0.85.0 raised the orb only after 1.5 s, reasoning from
+//           BootSplash's own header that a disk read "is not an occasion"
+//           and the flourish should be reserved for a wait that earned it.
+//           ★ THE REASONING WAS FINE AND THE NUMBER WAS FATAL: AuthGate's
+//           minimum splash is SPLASH_MS = 900 ms. The screen was gone 600 ms
+//           before the timer fired, so on a healthy launch the orb was never
+//           mounted at all - and a signed-in user with a stored principal
+//           never hits the long `recovering` branch either. The feature
+//           shipped in a state where it essentially could not run.
+//           Taste is not worth a feature that never executes, and a loading
+//           indicator that only appears when things go badly is not a
+//           loading indicator. Threshold deleted; the orb is what the splash
+//           shows, every launch. Entrance 520 -> 260 ms for the same reason:
+//           it was still fading in when a 900 ms splash ended.
+//
+//           ★ AND THE SECOND BUG WAS THAT I COULD NOT TELL. v0.85.1 wrapped
+//           the orb in FailSoft with the OLD RING as its fallback - so a
+//           crashed orb and an orb that never mounted looked IDENTICAL on
+//           screen. "I only see the old circle" described both, and neither
+//           of us could have said which without another release. That is the
+//           v0.82.0 lesson repeated: a tool that records one of two outcomes
+//           cannot distinguish them.
+//           Two fixes: with no threshold the ring is no longer a legitimate
+//           state, so seeing one IS the failure signal; and FailSoft now
+//           records what it caught, surfaced in Settings > About as "Render
+//           fallback" - a row that only exists when something fell back, so
+//           its presence is the message.
 
 // v0.85.1 - THE ORB CANNOT TAKE THE APP DOWN, AND THE DEPENDENCY IS ON THE
 //           RECORD. JS only - OTA onto runtime 0.45.0.

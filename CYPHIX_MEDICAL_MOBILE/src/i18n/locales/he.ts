@@ -353,6 +353,7 @@ export const he: Record<TranslationKey, string> = {
   setAboutVersion: 'גרסת אפליקציה',
   setAboutBuild: 'הגרסה הזו',
   setAboutMaterial: 'חומר המשטחים',
+  setAboutRender: 'נפילת רינדור',
   setAboutCompliance: 'תאימות רגולטורית',
   setAboutComplianceValue: 'HIPAA · GDPR · חוק הגנת הפרטיות',
 

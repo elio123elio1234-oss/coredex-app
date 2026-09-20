@@ -34,6 +34,7 @@ import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Pressable } from 'react-native';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
+import { failSoftReport } from '@/components/atoms/FailSoft';
 import { GLASS_MATERIAL } from '@/components/atoms/GlassSurface';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import SettingsChip from '@/components/atoms/SettingsChip';
@@ -138,6 +139,11 @@ export default function SettingsScreen() {
      never advice, and it names no secret (whether a token exists, not
      what it is). Same reason `GLASS_MATERIAL` is on this screen. */
   const [sessionState, setSessionState] = useState('…');
+  /* Whatever `FailSoft` last swallowed. Read at render rather than
+     subscribed to: nothing re-renders when a boundary trips, and every
+     boundary in the app is on a screen that is long gone by the time
+     anybody opens Settings looking for the answer. */
+  const renderFallback = failSoftReport();
   useEffect(() => {
     let cancelled = false;
     void canUseAppLock().then((ok) => {
@@ -610,6 +616,17 @@ export default function SettingsScreen() {
               for the same reason as the build label: a bug report should quote
               the string the changelog uses. */}
           <SettingsRow label={tr('setAboutMaterial')} value={GLASS_MATERIAL} />
+          {/* ★ Only when something actually fell back. `FailSoft` replaces a
+              decorative element with a quiet substitute, which is right for
+              the patient and useless for a bug report: the boot orb's
+              fallback is the ring that used to live there, so a crash and a
+              healthy older build looked IDENTICAL on screen — that is what
+              "I only see the old circle" turned out to be, and it cost a
+              release to tell apart. Absent when there is nothing to say, so
+              its presence is the signal. */}
+          {renderFallback && (
+            <SettingsRow label={tr('setAboutRender')} value={renderFallback} layout="stack" />
+          )}
           {/* English like the build label and the material, so a bug report
               quotes a string that can be grepped for. */}
           <SettingsRow label={tr('setAboutSession')} value={sessionState} layout="stack" />

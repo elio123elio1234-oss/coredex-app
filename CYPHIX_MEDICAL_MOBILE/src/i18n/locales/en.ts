@@ -386,6 +386,7 @@ export const en = {
   setAboutVersion: 'App version',
   setAboutBuild: 'This build',
   setAboutMaterial: 'Surface material',
+  setAboutRender: 'Render fallback',
   setAboutCompliance: 'Compliance',
   setAboutComplianceValue: 'HIPAA · GDPR · Israeli Privacy Law',
 

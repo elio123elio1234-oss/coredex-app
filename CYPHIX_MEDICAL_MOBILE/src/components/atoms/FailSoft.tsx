@@ -40,6 +40,31 @@
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
+/**
+ * The last thing this boundary caught, for Settings › About.
+ *
+ * ★ WHY A DIAGNOSTIC IS PART OF THE BOUNDARY. v0.85.1 wrapped the boot orb
+ * with the previous `ActivityIndicator` as its fallback — which meant a
+ * CRASHED orb and an orb that had simply not started looked **identical**
+ * on screen. It was reported as "I only see the old circle", and neither
+ * of us could tell which of the two it was without another release.
+ *
+ * That is the same mistake the session diagnostic made in v0.82.0: a tool
+ * that records only one of two outcomes cannot distinguish them. A silent
+ * fallback is right for the patient and wrong for everybody else, so the
+ * failure is silent ON SCREEN and loud in the one place built for it.
+ *
+ * A module-level `let`, not state: nothing re-renders when a boundary
+ * trips, and Settings is opened long afterwards. It survives until the
+ * app is killed, which is exactly as long as the question lasts.
+ */
+let lastFailure: string | null = null;
+
+/** What `FailSoft` last caught, or `null` if nothing has failed. */
+export function failSoftReport(): string | null {
+  return lastFailure;
+}
+
 interface Props {
   children: ReactNode;
   /** Rendered instead, if `children` ever throws. Must not throw itself. */
@@ -60,10 +85,13 @@ export default class FailSoft extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    /* The only record that the fallback is showing. `console.warn` rather
-       than the audit log on purpose: this boundary is for decoration, and
-       the audit trail is for things that happened to a PATIENT's data.
-       Filling it with rendering trivia is how a trail stops being read. */
+    /* Readable from the phone, which is the only place that matters — a
+       `console.warn` on a device nobody is debugging is not a record. */
+    lastFailure = `${this.props.label}: ${error.message || String(error)}`;
+    /* And the full version for anyone who IS attached. NOT the audit log:
+       this boundary is for decoration, and the audit trail is for things
+       that happened to a PATIENT's data. Filling it with rendering trivia
+       is how a trail stops being read. */
     console.warn(`[FailSoft] ${this.props.label} failed and was replaced`, error, info.componentStack);
   }
 
