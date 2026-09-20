@@ -1,5 +1,114 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.85.0 - 2026-09-21 - the splash says something while the server wakes
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** `thinking-orbs` is pure
+JavaScript and Skia, which draws it, was already in the binary — so this is
+not a rebuild.
+
+Asked for: use the `thinking-orbs` animation as the loading state when the app
+opens, until the server is up.
+
+### ★ The package's own component cannot run here
+
+`thinking-orbs` ships a React component and it is a **web** component. Its
+README says so in the first sentence — *“rendered on a plain 2D canvas … works
+identically in Chrome, Safari and Firefox”* — and the published bundle backs it
+up:
+
+| API it uses | in React Native |
+|---|---|
+| `canvas.getContext('2d')` | there is no `<canvas>` element |
+| `matchMedia` (×6, the auto theme) | does not exist |
+| `document.visibilityState` | there is no `document` |
+| `devicePixelRatio` | — |
+
+`import { ThinkingOrb } from 'thinking-orbs'` does not render badly here. It
+throws.
+
+### ★ But the author split the maths out on purpose, and said who for
+
+From the package's own `engine/registry.d.ts`:
+
+> “The portable surface: pure geometry, no canvas. **The React Native port
+> imports exactly these functions**, so its output is identical to the web's by
+> construction rather than by re-implementation.”
+
+and on `finalizeFrame`:
+
+> “…every value is final and the array order is the order to draw in. That is
+> what lets the **RN and SwiftUI ports** share this output verbatim — a port
+> draws the list, it never re-derives anything.”
+
+So: `thinking-orbs/engine` is imported — **never** the root entry — and a new
+atom, `components/atoms/ThinkingOrb.tsx`, paints the finished frame with Skia.
+It is deliberately stupid: it asks for a frame and draws the list. No geometry,
+no sorting, no re-derivation. Every tuning decision stays in the package, which
+is the only way a future upgrade is a version bump rather than a re-port.
+
+Dots are drawn as one Skia `Picture` — 200 `drawCircle` calls in a single
+native node — rather than 200 `<View>`s or SVG nodes through React
+reconciliation per frame.
+
+### Verified by bundling, not by reading the docs
+
+This is the **first screen the app shows**. A module Metro cannot resolve is
+not a missing animation, it is an app that does not start — so `expo export`
+was run and the output inspected rather than trusted:
+
+| check | result |
+|---|---|
+| engine present (`rubik`, `connecting → web`) | ✅ |
+| `getContext("2d")` in the bundle | **0** |
+| `prefers-color-scheme` | **0** |
+| the one `matchMedia` | Reanimated's reduced-motion check |
+| the two `visibilityState` | RTK Query's focus tracking |
+
+Metro resolves the subpath because `unstable_enablePackageExports` has been on
+by default since SDK 53 — also checked against the running config, not assumed.
+
+### ★ It only appears after 1.5 s, and that number is the design
+
+`BootSplash`'s own header argues that a busy ring is right for a disk read,
+because *“a disk read … is not an occasion. Reserving the theatrical version
+for somewhere it is earned keeps it meaning something.”* **That argument is
+kept, not overturned** — the orb is what “earned” looks like.
+
+`AuthGate` holds this screen for a minimum of 900 ms on every launch, and for
+as long as **60 s** while it waits for the server (`RECOVERY_TIMEOUT_MS`) —
+which on a cold Render instance is close to a minute of real waiting. At 1.5 s
+a healthy launch never shows the orb at all; if it appears, something genuinely
+is taking time, which is the only honest reason for a loading animation.
+
+It is also what makes the orb affordable. Its geometry runs on the **JS
+thread**, because workletising an *imported* function is impossible —
+workletisation is a Babel step over our own source, and an imported function
+has no `'worklet'` directive and cannot be given one. Calling a plain function
+from a worklet throws rather than degrading. By 1.5 s the JS thread is blocked
+on a socket, not doing work, so the loop has it to itself; the busy second is
+the one the ring covers.
+
+⚠️ And it is bounded work: each frame builds a fresh `SkPicture`, a native
+object freed by GC rather than promptly. ~1 800 a minute is fine under a 60 s
+ceiling and would not be fine as ambient chrome.
+
+### The look
+
+State **`connecting`** of the nine — *“a constellation wires itself, packets
+running the edges”* — because that is literally what is happening. Painted in
+**brand navy on white** rather than the package's grey: the atom maps the
+package's ink-depth language (`white`: 0 = darkest = nearest) onto the two
+brand colours, so the depth reads exactly as designed while the orb belongs to
+this app.
+
+🔬 **Typechecks AND bundles** — and bundling is the load-bearing check here,
+not a formality. But the orb has never been seen on a screen from this machine.
+
+Files: `components/atoms/ThinkingOrb.tsx` (new),
+`components/organisms/Auth/BootSplash.tsx`, `package.json`, `config/version.ts`.
+
+---
+
 ## v0.84.0 - 2026-09-20 - the entrance replays on every visit
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

@@ -1,7 +1,58 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.84.0';
-export const APP_BUILD_LABEL = 'the entrance animation replays on EVERY tab visit, not once per session';
+export const APP_VERSION = '0.85.0';
+export const APP_BUILD_LABEL = 'the boot splash raises a thinking-orb while it waits for the server';
+
+// v0.85.0 - THE SPLASH SAYS SOMETHING WHILE THE SERVER WAKES. JS only -
+//           OTA onto runtime 0.45.0. `thinking-orbs` is pure JS; Skia, which
+//           draws it, was already in the binary.
+//
+//           ★ THE PACKAGE'S OWN COMPONENT CANNOT RUN HERE. `thinking-orbs`
+//           ships a WEB component - its README says so in the first sentence
+//           ("a plain 2D canvas ... Chrome, Safari and Firefox") and the
+//           published bundle proves it: canvas.getContext('2d'), matchMedia
+//           x6, document.visibilityState, devicePixelRatio. None of those
+//           exist in React Native. `import { ThinkingOrb } from
+//           'thinking-orbs'` does not render badly - it throws.
+//
+//           ★ BUT THE AUTHOR SPLIT THE MATHS OUT ON PURPOSE, AND SAID WHO
+//           FOR. From engine/registry.d.ts: "The portable surface: pure
+//           geometry, no canvas. The React Native port imports exactly these
+//           functions." So `thinking-orbs/engine` is imported - never the
+//           root entry - and a new atom `ThinkingOrb` draws the finished
+//           frame with Skia. It derives NOTHING: the frame arrives z-sorted
+//           and radius-clamped, and array order is draw order. That is what
+//           keeps an upgrade a version bump instead of a re-port.
+//
+//           VERIFIED BY BUNDLING, NOT BY READING THE DOCS. This is the FIRST
+//           screen the app shows, so a module Metro cannot resolve is not a
+//           missing animation - it is an app that does not start. `expo
+//           export` was run and the output inspected: the engine is present
+//           (`rubik`, `connecting -> web`), `getContext("2d")` appears ZERO
+//           times, and the one `matchMedia` in the bundle belongs to
+//           Reanimated's reduced-motion check.
+//
+//           ★ IT ONLY APPEARS AFTER 1.5 s, AND THAT NUMBER IS THE DESIGN.
+//           BootSplash's own header argues a busy ring is right for a disk
+//           read because "a disk read ... is not an occasion. Reserving the
+//           theatrical version for somewhere it is earned keeps it meaning
+//           something." That argument is KEPT. AuthGate holds this screen
+//           900 ms on a healthy launch and up to 60 s waiting for the server
+//           (RECOVERY_TIMEOUT_MS) - a cold Render instance takes close to a
+//           minute. So a healthy launch never sees the orb; if it appears,
+//           something really is taking time.
+//           It is also what makes it affordable: the geometry runs on the JS
+//           thread (workletising an IMPORTED function is impossible - the
+//           Babel plugin only transforms our own source), and by 1.5 s that
+//           thread is blocked on a socket rather than doing work.
+//
+//           State `connecting` of the nine, because that is literally what is
+//           happening. Painted in brand navy on white rather than the
+//           package's grey: the atom maps its ink-depth language onto two
+//           colours, so nearest still reads darkest.
+//
+//           🔬 Typechecks AND bundles - but the orb has never been seen on
+//           a screen from this machine.
 
 // v0.84.0 - THE ENTRANCE REPLAYS ON EVERY VISIT. JS only - OTA onto 0.45.0.
 //
