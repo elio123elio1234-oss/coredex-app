@@ -1,7 +1,42 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.87.0';
-export const APP_BUILD_LABEL = 'the boot orb is the one that was asked for - composing/ribbon, matched by rendering';
+export const APP_VERSION = '0.88.0';
+export const APP_BUILD_LABEL = 'History pull-to-refresh spins the orb instead of the system ring';
+
+// v0.88.0 - THE REFRESH INDICATOR IS THE ORB. JS only - OTA.
+//
+//           Asked for: in History, when you pull down to refresh, show the
+//           orb instead of the plain circle - small, not huge.
+//
+//           Easier than it looked, because this screen ALREADY draws its own
+//           indicator. v0.58.x learned that a RefreshControl's spinner sits
+//           at the top of the SCROLL VIEW - which here was behind a ~180 pt
+//           frosted header - and that `progressViewOffset` is not dependable
+//           on iOS (RN rewrites UIRefreshControl's frame from layoutSubviews
+//           and its own source warns that breaks ContentInset). So the
+//           control kept the pull gesture and a 36 pt badge drawn by this
+//           screen became the visible part. That badge just swapped its
+//           ActivityIndicator for the orb - the native control is untouched.
+//
+//           ★ `design={20}` IS THE WHOLE CRAFT OF THIS ONE. The package
+//           ships TWO designs, not one scalable design: "64 (chat-avatar
+//           scale) and 20 (inline-text scale) ... separate designs, not a
+//           scale factor." The 64 ribbon is 566 dots at radius multiplier
+//           0.395; scaled into a 26 pt badge every dot lands at a fraction
+//           of a pixel and it reads as a grey smudge. The 20 design is 208
+//           dots at 1.011 - sparser and fatter, so it survives being small.
+//           RENDERED BOTH AT 26 pt AND LOOKED, rather than reasoned about:
+//           the 64 one is exactly the blur predicted, the 20 one keeps its
+//           dashes. `ThinkingOrb` takes `design` now; callers pick by
+//           FOOTPRINT (20 up to ~40 pt, 64 above), never by preference.
+//
+//           Bounded in FailSoft like the splash's, falling back to the same
+//           ActivityIndicator - a refresh spinner must not be able to take
+//           down the History tab, and a ring appearing there is the signal.
+//
+//           ⚠️ ProfileScreen still uses the PLAIN native RefreshControl
+//           with a tint - it has no self-drawn badge to swap. Flagged, not
+//           silently half-done; it needs the same treatment to match.
 
 // v0.87.0 - THE RIGHT ORB. JS only - OTA. One word changes; the work was
 //           finding out WHICH word.

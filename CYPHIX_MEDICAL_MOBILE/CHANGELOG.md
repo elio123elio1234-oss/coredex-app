@@ -1,5 +1,61 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.88.0 - 2026-09-21 - History pull-to-refresh spins the orb
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“בטאב של history … העיגול הזה כשגוללים למטה לטעון מחדש … שזה יופיע של בקטן
+> אבל לא בענק”*
+
+### The hard part was already solved, in v0.58.x
+
+A `RefreshControl`'s spinner is positioned at the top of the **scroll view**,
+which on this screen was behind a ~180 pt frosted header — so it span there
+invisibly. `progressViewOffset` looked like the fix and is **not dependable on
+iOS**: RN implements it by rewriting `UIRefreshControl`'s frame from
+`layoutSubviews`, and RN's own source warns that setting the frame breaks
+integration with `ContentInset`. It shipped and changed nothing on the phone.
+
+So the control was already reduced to the job it is good at — the pull gesture
+and the refreshing state — and a **36 pt badge this screen draws itself**, level
+with the title row, became the thing anyone actually looks at. This release
+swaps that badge's `ActivityIndicator` for the orb. The native control is
+untouched.
+
+### ★ `design={20}` is the whole craft of this one
+
+The package ships **two designs, not one scalable design**:
+
+> “64 (chat-avatar scale) and 20 (inline-text scale). Each size carries its own
+> dot count, dot size and speed tuning — **they are separate designs, not a
+> scale factor**.”
+
+| design | dots on `ribbon` | radius multiplier | at 26 pt |
+|---|---|---|---|
+| 64 | **566** | 0.395 | every dot lands at a fraction of a pixel — a grey smudge |
+| 20 | **208** | 1.011 | sparser and fatter; the dashes survive |
+
+**Both were rendered at 26 pt and looked at**, not reasoned about — the engine
+runs in plain Node, so this costs a minute. The 64 one is exactly the blur
+predicted; the 20 one keeps its structure. `ThinkingOrb` takes a `design` prop
+now, and callers pick by **footprint** (20 up to ~40 pt, 64 above), never by
+preference.
+
+Bounded in `FailSoft` like the splash's, with the same `ActivityIndicator`
+fallback: a refresh spinner must not be able to take down the History tab, and
+a ring appearing there is itself the signal that something threw.
+
+### ⚠️ What is deliberately not done
+
+**`ProfileScreen` still uses the plain native `RefreshControl`** with a tint —
+it has no self-drawn badge to swap, so matching it is the v0.58.x exercise over
+again. Flagged rather than half-done.
+
+Files: `components/atoms/ThinkingOrb.tsx`, `screens/HistoryScreen.tsx`,
+`config/version.ts`.
+
+---
+
 ## v0.87.0 - 2026-09-21 - the orb that was actually asked for
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** One word changes in the

@@ -68,6 +68,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSharedValue } from 'react-native-reanimated';
 import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
+import FailSoft from '@/components/atoms/FailSoft';
+import ThinkingOrb from '@/components/atoms/ThinkingOrb';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
 import PageTitle, { TITLE_FADE_DISTANCE } from '@/components/molecules/PageTitle';
 import StudyCard from '@/components/molecules/StudyCard';
@@ -631,7 +633,30 @@ export default function HistoryScreen() {
                 { backgroundColor: t.surface, borderColor: t.border },
               ]}
             >
-              <ActivityIndicator size="small" color={t.textSecondary} />
+              {/* ★ The same orb as the boot splash, at the package's SMALL
+                  design. `design={20}` is not a preference — the two sizes
+                  are separate designs, and the 64 one scaled into a 36 pt
+                  badge puts its ~566 dots at a fraction of a pixel each and
+                  reads as a smudge. The 20 design is drawn sparser and
+                  fatter so it survives being small. See `OrbDesign`.
+
+                  Bounded like the splash's: a fault in a refresh spinner
+                  must not take down the History tab, and the fallback is
+                  the `ActivityIndicator` that was here before — so the
+                  worst case is the previous release, and a ring appearing
+                  here is itself the failure signal. */}
+              <FailSoft
+                label="history refresh orb"
+                fallback={<ActivityIndicator size="small" color={t.textSecondary} />}
+              >
+                <ThinkingOrb
+                  state="composing"
+                  size={26}
+                  design={20}
+                  ink={t.textPrimary}
+                  paper={t.surface}
+                />
+              </FailSoft>
             </View>
           </View>
         )}

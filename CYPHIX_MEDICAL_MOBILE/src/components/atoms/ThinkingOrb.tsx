@@ -83,18 +83,27 @@ import { StyleSheet, View } from 'react-native';
 import { MODE_FRAMES, resolvePreset, type OrbState } from 'thinking-orbs/engine';
 
 /**
- * The tuned design size the geometry is asked for, in the package's own
- * units.
+ * The two design sizes the package actually ships, in its own units.
  *
- * ★ NOT the size on screen. The package ships two SEPARATE designs —
- * "64 (chat-avatar scale) and 20 (inline-text scale) … separate designs,
- * not a scale factor" — each with its own dot count and radii. Asking
- * for geometry at an arbitrary 132 px would apply 64's tuning to a frame
- * it was not tuned for. So the frame is always built at 64 and the
- * PICTURE is scaled, which enlarges the tuned design as vectors instead
- * of inventing an untuned one.
+ * ★ NEITHER IS "the size on screen". From its own type docs: "64
+ * (chat-avatar scale) and 20 (inline-text scale). Each size carries its
+ * own dot count, dot size and speed tuning — **they are separate
+ * designs, not a scale factor**."
+ *
+ * So the geometry is always asked for at one of these two, and the
+ * PICTURE is scaled to whatever the screen needs. Asking for geometry at
+ * an arbitrary 132 px would apply 64's tuning to a frame it was not
+ * tuned for; scaling the picture enlarges a tuned design as vectors
+ * instead of inventing an untuned one.
+ *
+ * ⚠️ And picking the WRONG one of the two is how a small orb turns to
+ * mush. The 64 design puts ~566 dots on a ribbon at radius multiplier
+ * 0.395; scaled to a 28 pt badge those dots land at a fraction of a
+ * pixel each. The 20 design carries roughly half the dots at 1.011 — it
+ * is drawn sparser and fatter precisely so it survives being small.
+ * Callers pick by FOOTPRINT, not by preference.
  */
-const DESIGN = 64;
+export type OrbDesign = 64 | 20;
 
 /**
  * Frame interval. 30 fps, not 60, and that is a choice rather than a
@@ -112,6 +121,12 @@ interface Props {
   state: OrbState;
   /** Rendered edge length in points. The design is scaled to it. */
   size: number;
+  /**
+   * Which of the package's two tuned designs to draw. Choose by the
+   * FOOTPRINT this will occupy, not by taste: `20` up to roughly 40 pt,
+   * `64` above it. See `OrbDesign`.
+   */
+  design?: OrbDesign;
   /** The darkest ink — what a dot at the FRONT of the orb is painted. */
   ink: string;
   /** The page behind it. A dot at the BACK fades into this. */
@@ -126,9 +141,9 @@ function rgb(hex: string): [number, number, number] {
   return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0];
 }
 
-export default function ThinkingOrb({ state, size, ink, paper, speed = 1 }: Props) {
+export default function ThinkingOrb({ state, size, design = 64, ink, paper, speed = 1 }: Props) {
   const [picture, setPicture] = useState<SkPicture | null>(null);
-  const preset = useMemo(() => resolvePreset(state, DESIGN), [state]);
+  const preset = useMemo(() => resolvePreset(state, design), [state, design]);
   const near = useMemo(() => rgb(ink), [ink]);
   const far = useMemo(() => rgb(paper), [paper]);
 
@@ -136,8 +151,8 @@ export default function ThinkingOrb({ state, size, ink, paper, speed = 1 }: Prop
      array these would tear down the timer and restart the clock on every
      parent render — the orb would stutter for a reason with nothing to do
      with the orb. Same lesson as `OverlayLayer`'s back-button listener. */
-  const look = useRef({ preset, near, far, size, speed });
-  look.current = { preset, near, far, size, speed };
+  const look = useRef({ preset, near, far, size, speed, design });
+  look.current = { preset, near, far, size, speed, design };
 
   useEffect(() => {
     /* One Paint and one colour buffer for the whole animation. `setColor`
@@ -152,10 +167,10 @@ export default function ThinkingOrb({ state, size, ink, paper, speed = 1 }: Prop
 
     const tick = () => {
       if (!live) return;
-      const { preset: p, near: n, far: f, size: s, speed: sp } = look.current;
+      const { preset: p, near: n, far: f, size: s, speed: sp, design: dz } = look.current;
       const t = ((Date.now() - started) / 1000) * p.speed * sp;
-      const frame = MODE_FRAMES[p.mode](DESIGN, t, p.opts);
-      const scale = s / DESIGN;
+      const frame = MODE_FRAMES[p.mode](dz, t, p.opts);
+      const scale = s / dz;
 
       /* `white` is the package's ink value: 0 = darkest = nearest. On a
          light page that maps straight onto "how much of the paper shows
