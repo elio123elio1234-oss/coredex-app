@@ -1,5 +1,44 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.81.0 - 2026-09-20 - the app is called Cyphix
+
+⚠️ **NATIVE REBUILD.** `app.json` 0.44.0 → **0.45.0**. (0.43.0 was build 16,
+which this supersedes.) `expo.name` is compiled into the binary —
+`CFBundleDisplayName` on iOS, `app_name` on Android — so there is no OTA for a
+rename.
+
+**"CYPHIX Medical" → "Cyphix"**, in the two places it was written:
+
+- `app.json`'s `name` — the label under the home-screen icon, in the app
+  switcher, and in TestFlight;
+- `BrandLogo`'s `accessibilityLabel` — what a screen reader announces. Those
+  two have to agree: a blind user hearing a different product name from the one
+  on the screen is the accessibility equivalent of a wrong label.
+
+### ⚠️ What is *not* renamed, and is flagged rather than guessed
+
+**The wordmark still draws the word MEDICAL.** It is a separate `<Path>` in
+`BrandLogo` (`fill={medical}`), so hiding it is one line — but the logo's crop
+box is measured around the *full* lockup (`CROP_BOX`, 40.988 → 181.798), and
+dropping the subtitle leaves ~56 units of dead air on the right. Anywhere the
+mark is **centred** — `BootSplash` is — it would sit visibly off-centre, which
+is precisely the class of defect `crop` was added in v1.1.0 to fix.
+
+A new box has to be measured and **looked at**, and react-native-svg cannot be
+rendered from this machine. So it is not guessed and not shipped blind.
+
+The wordmark appears on **BootSplash**, **ProfileScreen** and the **report
+letterhead** (`ReportHeader`) — and that last one is its own decision anyway,
+since it identifies the issuer of a clinical document rather than decorating a
+screen.
+
+The **App Store listing** name lives in App Store Connect, not here. This
+changes the home screen, the app switcher and TestFlight.
+
+Files: `app.json`, `components/atoms/BrandLogo.tsx`, `config/version.ts`.
+
+---
+
 ## v0.80.0 - 2026-09-20 - the icon fills its frame
 
 ⚠️ **NATIVE REBUILD.** `app.json` 0.42.0 → **0.43.0**.

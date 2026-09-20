@@ -1,7 +1,37 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.80.0';
-export const APP_BUILD_LABEL = 'the icon fills its frame - the pipeline now zooms as well as shrinks';
+export const APP_VERSION = '0.81.0';
+export const APP_BUILD_LABEL = 'the app is called Cyphix';
+
+// v0.81.0 - THE APP IS CALLED CYPHIX.
+//           ⚠️ REBUILD: app.json 0.44.0 -> 0.45.0 (0.43.0 was build 16,
+//           which this supersedes). `expo.name` is compiled into the binary -
+//           CFBundleDisplayName on iOS, app_name on Android - so there is no
+//           OTA for a rename.
+//
+//           "CYPHIX Medical" -> "Cyphix", in the two places it was written:
+//           `app.json`'s `name` (the label under the home-screen icon) and
+//           `BrandLogo`'s accessibilityLabel (what a screen reader announces).
+//           Those two have to agree; a blind user hearing a different product
+//           name from the one on the screen is the accessibility equivalent of
+//           a wrong label.
+//
+//           ⚠️ WHAT IS *NOT* RENAMED, AND IS FLAGGED RATHER THAN GUESSED:
+//           the WORDMARK still draws the word MEDICAL. It is a separate
+//           <Path> in `BrandLogo` (fill={medical}), so hiding it is one line -
+//           but the logo's crop box is measured around the full lockup
+//           (CROP_BOX, 40.988 -> 181.798), and dropping the subtitle leaves
+//           ~56 units of dead air on the right. Anywhere the mark is CENTRED -
+//           BootSplash is - it would sit visibly off-centre, which is exactly
+//           the class of defect v1.1.0 added `crop` to fix. A new box has to
+//           be measured and LOOKED AT, and react-native-svg cannot be
+//           rendered from this machine. So: not guessed, not shipped blind.
+//           It shows on BootSplash, ProfileScreen and the report letterhead
+//           (ReportHeader) - and that last one is its own decision anyway,
+//           since it identifies the issuer of a clinical document.
+//
+//           The App Store listing name lives in App Store Connect, not here.
+//           This changes the home screen, the app switcher and TestFlight.
 
 // v0.80.0 - THE ICON FILLS ITS FRAME.
 //           ⚠️ REBUILD: app.json 0.42.0 -> 0.43.0.

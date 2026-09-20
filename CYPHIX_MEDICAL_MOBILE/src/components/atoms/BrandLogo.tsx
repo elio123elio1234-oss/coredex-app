@@ -57,7 +57,9 @@ export default function BrandLogo({ width, tint = 'brand', crop = false }: Props
       height={width / (crop ? CROP_ASPECT : ASPECT)}
       viewBox={crop ? CROP_BOX : '34 79 175 30'}
       preserveAspectRatio="xMinYMid meet"
-      accessibilityLabel="CYPHIX Medical"
+      /* Matches `app.json`'s `name`: the word a screen reader announces and
+         the word under the home-screen icon have to be the same one. */
+      accessibilityLabel="Cyphix"
     >
       <G transform="matrix(0.64140467,0,0,0.64140467,25.943876,74.856651)">
         <Path
