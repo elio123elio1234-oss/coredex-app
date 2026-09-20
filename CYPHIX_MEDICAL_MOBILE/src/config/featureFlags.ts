@@ -2,6 +2,8 @@
    Cross-Platform Rule (root CLAUDE.md §1). A flag that exists on web
    exists here, and PARITY.md tracks any divergence. */
 
+import type { Role } from '@/types/rbac';
+
 export const FEATURE_FLAGS = {
   liveScan: true,
   measure: true,
@@ -103,6 +105,40 @@ export const PRECORDIAL_LEADS_ENABLED = false;
  */
 export const LEAD_DEBUG_SCREEN_ENABLED = true;
 
+/**
+ * ⚠️ TEMPORARY — WHICH ROLE THE APP DRAWS ITSELF AS, BEFORE ANYONE ASKS.
+ *
+ * `'admin'` at the user's instruction (v0.69.0): *"make the default user
+ * admin, instead of me going into Settings to change it myself every time."*
+ * Settings → Account → "Preview as role" still works exactly as before; this
+ * only decides where that picker STARTS, on every launch, instead of `null`.
+ *
+ * ★ IT GRANTS NOTHING, AND THAT IS NOT A CAVEAT — IT IS THE DESIGN.
+ * The server authorises every request against the session's REAL role
+ * (`CYPHIX_SERVER/src/policy/permissions.ts`), which for an account created
+ * through registration is `patient` (`routes/auth.ts` writes it literally).
+ * So this draws the admin affordances and any genuinely admin-only request
+ * behind one still comes back 403. It is a rendering switch. It must never
+ * reach `tokenStore`, a request header, or an audit entry — `useCurrentUser`
+ * is the one place it is applied, and it deliberately leaves `id` and
+ * `linkedPatientId` alone.
+ *
+ * ── Why this is safe for History, which was the one thing worth checking ──
+ * An admin has `history:read`, so `HistoryScreen`/`InsightsScreen` stop
+ * passing a `patientId` and call `GET /recordings` instead of
+ * `GET /patients/:id/recordings`. That is NOT a 403 for a patient account:
+ * the server's `listFor` falls through to
+ * `assertCanOrSelf(..., 'history:read:self', req.user.patientId)` — which a
+ * patient satisfies against their own id — and then scopes the rows with
+ * `allowedPatientIds()`. Same studies, different URL.
+ *
+ * Set to `null` to go back to "draw whatever the account actually is".
+ */
+export const DEFAULT_PREVIEW_ROLE: Role | null = 'admin';
+
+// v0.69.0 — Adds DEFAULT_PREVIEW_ROLE ('admin'): where the role preview
+//           starts on every launch, so it stops being a per-session chore.
+//           Rendering only — the server still authorises the real role.
 // v0.66.0 — Adds LEAD_DEBUG_SCREEN_ENABLED (ON, temporarily): the hardware
 //           bring-up screen for the dual-Lead-II device.
 // v0.62.0 — Adds PRECORDIAL_LEADS_ENABLED (off): V1–V6 are hidden rather

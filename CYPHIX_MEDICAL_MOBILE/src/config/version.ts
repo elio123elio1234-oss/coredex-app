@@ -1,7 +1,32 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.68.0';
-export const APP_BUILD_LABEL = 'home screen: the "Performing a Home ECG Test" subtitle is gone';
+export const APP_VERSION = '0.69.0';
+export const APP_BUILD_LABEL = 'the app opens previewing the admin role, without a trip to Settings';
+
+// v0.69.0 - THE ROLE PREVIEW STARTS AT ADMIN. JS ONLY - OTA onto runtime
+//           0.37.0.
+//
+//           Settings -> Account -> "Preview as role" was being set to Admin by
+//           hand on every launch, because the slice booted it at `null`. It now
+//           boots at DEFAULT_PREVIEW_ROLE ('admin', config/featureFlags.ts),
+//           and the two paths that used to reset it to null - sign-out and a
+//           server-rejected session - reset it to that default instead.
+//
+//           ★ IT STILL GRANTS NOTHING, and that is the design rather than a
+//           caveat. The server authorises every request against the session's
+//           REAL role, and an account made through registration is written
+//           `patient` literally (CYPHIX_SERVER/src/routes/auth.ts). So this
+//           draws the admin affordances; a genuinely admin-only request behind
+//           one still returns 403.
+//
+//           The one thing worth checking before shipping it, checked: an admin
+//           has `history:read`, so History and Insights stop sending a
+//           patientId and call GET /recordings instead of
+//           GET /patients/:id/recordings. That is NOT a 403 for a patient
+//           account - the server's `listFor` falls through to
+//           assertCanOrSelf(..., 'history:read:self', req.user.patientId),
+//           which a patient satisfies against their own id, and then scopes
+//           the rows with allowedPatientIds(). Same studies, different URL.
 
 // v0.68.0 - THE HOME SUBTITLE IS GONE. JS ONLY - app.json stays 0.37.0, so
 //           this is an OTA onto the build-10 binary (CLAUDE.md 5A.2).

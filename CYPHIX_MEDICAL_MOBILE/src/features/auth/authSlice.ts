@@ -26,6 +26,7 @@ import {
   type SessionUser,
 } from '@cyphix/shared';
 import { authService } from '@/services/auth/authService';
+import { DEFAULT_PREVIEW_ROLE } from '@/config/featureFlags';
 import { readAppLock, setAppLock } from '@/services/api/tokenStore';
 import {
   serverReachable,
@@ -48,7 +49,13 @@ export interface AuthState {
   error: AuthErrorCode | null;
   /**
    * DEBUG ONLY — draw the app as if the signed-in account held this role.
-   * `null` (default) means the real principal is used untouched.
+   * `null` means the real principal is used untouched.
+   *
+   * ⚠️ It no longer STARTS at `null`. Since v0.69.0 it boots at
+   * `DEFAULT_PREVIEW_ROLE` (`config/featureFlags.ts`, currently `'admin'`),
+   * because the alternative was the user opening Settings and tapping the
+   * same chip on every single launch. The picker is unchanged; only its
+   * starting point moved.
    *
    * ★ This grants NOTHING. The server authorises every request against the
    * session's real role, so previewing `admin` on a patient account draws the
@@ -130,7 +137,9 @@ const initialState: AuthState = {
   status: 'restoring',
   error: null,
   justRegistered: false,
-  debugRole: null,
+  /* v0.69.0 — starts at the configured preview role ('admin') instead of
+     `null`. See DEFAULT_PREVIEW_ROLE: a rendering default, not a grant. */
+  debugRole: DEFAULT_PREVIEW_ROLE,
   /* Nothing has been confirmed yet, and claiming `live` before a server
      has answered is the lie the strip exists to prevent. */
   sessionMode: 'offline',
@@ -354,7 +363,10 @@ const authSlice = createSlice({
             state.profile = {};
             state.sessionMode = 'offline';
             state.locked = false;
-            state.debugRole = null;
+            /* Back to the DEFAULT, not to null — the preview must not
+               outlive the account it was previewed on, and since v0.69.0
+               "no preview chosen" is `DEFAULT_PREVIEW_ROLE`, not nothing. */
+            state.debugRole = DEFAULT_PREVIEW_ROLE;
             break;
           case 'offline':
             /* Nothing was learned, so nothing changes. Deliberately not
@@ -390,8 +402,9 @@ const authSlice = createSlice({
         state.locked = false;
         /* A preview must not outlive the account it was previewed on: the
            next person to sign in would silently get someone else's chosen
-           role drawn over their own. */
-        state.debugRole = null;
+           role drawn over their own. Reset to the DEFAULT rather than to
+           null — see `DEFAULT_PREVIEW_ROLE`. */
+        state.debugRole = DEFAULT_PREVIEW_ROLE;
       })
       /* The HTTP layer exhausted its refresh (token revoked, expired, or
          replay detected server-side). Same landing as a sign-out, and
@@ -471,6 +484,12 @@ export const { appRelocked, appUnlocked, clearAuthError, debugRoleSet, welcomeAc
   authSlice.actions;
 export default authSlice.reducer;
 
+// v2.4.0 — `debugRole` boots at DEFAULT_PREVIEW_ROLE ('admin') instead of null,
+//          and the two paths that used to reset it to null now reset it to that
+//          same default. Asked for because the alternative was opening Settings
+//          and tapping the same chip on every launch. It still grants nothing:
+//          the server authorises the session's real role, which for a
+//          registered account is `patient` (CYPHIX_SERVER routes/auth.ts).
 // v2.3.0 — Adds `recovering`: a credential on the device with no principal yet.
 //          The gate holds the splash for it rather than showing a door to
 //          somebody who IS signed in. v0.40.2 resolved this inside restore() by

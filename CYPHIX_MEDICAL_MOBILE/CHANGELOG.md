@@ -1,5 +1,51 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.69.0 - 2026-09-20 - the app opens as admin, without a trip to Settings
+
+**JS only — OTA onto runtime 0.37.0.**
+
+Settings → Account → *Preview as role* was being set to **Admin** by hand on
+every single launch, because `authSlice` booted `debugRole` at `null`. It now
+boots at `DEFAULT_PREVIEW_ROLE` — a new constant in `config/featureFlags.ts`,
+currently `'admin'` — and the two paths that used to reset it to `null`
+(sign-out, and a session the server rejected) reset it to that same default.
+
+The picker is otherwise untouched: tapping the chip that is already shown still
+clears the override for the session, so there is always a way to see what the
+account really is.
+
+### ★ It grants nothing, and that is the design
+
+The server authorises every request against the session's **real** role
+(`CYPHIX_SERVER/src/policy/permissions.ts`), and an account created through
+registration is written `patient` — literally, at `routes/auth.ts:118`. So this
+draws the admin affordances and a genuinely admin-only request behind one still
+comes back 403. It is a rendering switch. `useCurrentUser` remains the single
+place it is applied, and it still leaves `id` and `linkedPatientId` alone —
+swapping those would not be a preview, it would be reading another person's
+record.
+
+### The one thing worth checking, checked
+
+An admin holds `history:read`, so History and Insights stop passing a
+`patientId` and call `GET /recordings` instead of
+`GET /patients/:id/recordings`. That is **not** a 403 for a patient account: the
+server's `listFor` falls through to
+`assertCanOrSelf(…, 'history:read:self', req.user.patientId)` — which a patient
+satisfies against their own id — and then scopes the rows with
+`allowedPatientIds()`. Same studies, different URL. Worth writing down because
+the opposite outcome (an empty History by default) would have passed typecheck,
+both bundles and `expo-doctor` without a murmur.
+
+**If what is actually wanted is a real admin**, that is a one-row `UPDATE` on
+the `users` table in the production Neon database, not a client change — flagged
+to the user rather than done unasked.
+
+Files: `config/featureFlags.ts`, `features/auth/authSlice.ts` (v2.4.0),
+`config/version.ts`.
+
+---
+
 ## v0.68.0 - 2026-09-20 - the home screen stops narrating itself
 
 **JS only — OTA onto the build-10 binary.** `app.json` stays `0.37.0`; only
