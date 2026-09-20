@@ -78,13 +78,30 @@ const RESTORE_TIMEOUT_MS = 4000;
  * a guaranteed loss. That is precisely how v0.40.2 put a signed-in
  * patient on the sign-in screen.
  *
- * 20 s is the compromise, and it is a compromise: long enough for a warm
- * server and a slow network, short enough that a truly dead one does not
- * hold someone on a logo indefinitely. It costs at most one launch per
- * install — the refresh writes the principal, and every launch after it
- * takes the instant path.
+ * ⚠️ RAISED 20 s → 60 s in v0.71.0, because 20 s was the same mistake this
+ * comment was written to warn about, one size smaller. The paragraph above
+ * states that the free tier takes ~50 s to wake and that a ceiling under
+ * that "is not a timeout, it is a guaranteed loss" — and then set one at
+ * 20 s. Against a sleeping container the gate therefore lost the race every
+ * time and showed the sign-in screen to somebody who was signed in, with
+ * the refresh still in flight behind it. The app would often swap back a
+ * moment later, which is the "sometimes it just logs me out and I have to
+ * sign in again" this release is chasing.
+ *
+ * 60 s is still a compromise, and the cost is stated rather than glossed: a
+ * genuinely dead server now holds the splash for a full minute before the
+ * door appears. That is the better failure. Showing the door is not
+ * neutral — it invites someone to re-enter a password they did not need to
+ * — whereas a logo that takes too long is merely slow, and it costs at most
+ * one launch per install: the refresh writes the principal, and every
+ * launch after it takes the instant path.
+ *
+ * It stays a wall clock rather than "hold until the revalidation settles",
+ * which would be more correct and is not safe here: none of the auth
+ * fetches carries an AbortController, so a request that never resolves
+ * would hold the splash forever.
  */
-const RECOVERY_TIMEOUT_MS = 20_000;
+const RECOVERY_TIMEOUT_MS = 60_000;
 
 /**
  * How long the app may sit in the background before the lock goes back up.
@@ -315,6 +332,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
 //          behind the rendered app; only a rejection ends a session. Adds the
 //          app lock, in front of `children` rather than over them, and puts it
 //          back up after a spell in the background.
+// v1.5.0 — RECOVERY_TIMEOUT_MS 20 s -> 60 s. The comment beside it already
+//          said a Render free-tier container takes ~50 s to wake and that a
+//          ceiling under that "is not a timeout, it is a guaranteed loss" -
+//          and then set one at 20 s. Against a sleeping server the gate lost
+//          that race every time and put the sign-in screen in front of
+//          somebody who was signed in, with their refresh still in flight.
 // v1.3.0 — Confirms who the device's cached data belongs to before letting the
 //          app render over it: a different account is wiped inside the splash,
 //          not after History has already drawn the previous patient's list.

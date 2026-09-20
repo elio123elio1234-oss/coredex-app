@@ -55,9 +55,26 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError, object, H
   api,
   extraOptions,
 ) => {
+  /**
+   * ★ WHICH ACCESS TOKEN THIS REQUEST WAS ACTUALLY SENT WITH.
+   *
+   * `prepareHeaders` reads the token when the request goes out, so a
+   * request already in flight when a refresh lands carries the OLD one and
+   * comes back 401 afterwards — through no fault of the session. Without
+   * this guard that 401 started a second refresh, which with rotation
+   * means a second token exchange, which is another chance for a reply to
+   * go missing and leave the phone holding a retired token. One user tap
+   * that fans out to four queries could chain four rotations.
+   *
+   * If the token has changed since, the answer is simply to send the
+   * request again with the new one. No refresh, no rotation.
+   */
+  const sentWith = getAccessToken();
   let result = await rawQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
+  if (result.error && result.error.status === 401 && getAccessToken() !== sentWith) {
+    result = await rawQuery(args, api, extraOptions);
+  } else if (result.error && result.error.status === 401) {
     const outcome = await refreshSession(); // single-flight across parallel 401s
     if (outcome.kind === 'refreshed') {
       /* Tell the slice a server just answered. Any request in the app can
@@ -122,6 +139,13 @@ export const httpBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError, object, H
   return { data: result.data, meta };
 };
 
+// v1.4.0 — A 401 on a request that was sent with a NOW-STALE access token is
+//          retried, not refreshed. `prepareHeaders` reads the token at send
+//          time, so any request in flight when a refresh lands comes back 401
+//          through no fault of the session — and each of those used to start
+//          its own rotation. One tap fanning out to four queries could chain
+//          four token exchanges, every one of them another chance for a reply
+//          to go missing and strand the phone on a retired token.
 // v1.3.0 — Reports reachability in BOTH directions (`serverReachable` /
 //          `serverUnreachable`) from every request. Nothing was watching for the
 //          network coming BACK under an app already open — the boot revalidation

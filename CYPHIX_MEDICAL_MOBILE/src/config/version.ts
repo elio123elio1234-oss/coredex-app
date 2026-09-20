@@ -1,7 +1,81 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.70.0';
-export const APP_BUILD_LABEL = 'History + Insights: no top bar - the title is page content and fades on scroll';
+export const APP_VERSION = '0.71.0';
+export const APP_BUILD_LABEL = 'the random sign-out: four client causes closed (server half is CYPHIX_SERVER v0.7.0)';
+
+// v0.71.0 - THE RANDOM SIGN-OUT. JS ONLY - OTA onto runtime 0.37.0.
+//           Server half ships separately as CYPHIX_SERVER v0.7.0.
+//
+//           Reported as: "sometimes the app just logs me out and sends me back
+//           to the login screen, and then I have to sign in again - probably
+//           something on the server." Half right. There were SIX causes across
+//           the two sides; four of them are in this bundle.
+//
+//           ★ THE WHOLE SURFACE IS FOUR LINES. A session can only end via
+//           logoutUser, `sessionExpired` from the transport, revalidate
+//           returning `rejected`, or the cold-start gate giving up. The middle
+//           two both reduce to refreshSession() answering `rejected`, which
+//           tokenStore produces in exactly two places. That is what made this
+//           tractable rather than a hunt.
+//
+//           (a) ONLY 401/403 END A SESSION (tokenStore v2.3.0). The rule was
+//               "any 4xx", which also covered:
+//                 429 - /auth/refresh inherits the server's GLOBAL 300/min
+//                       limiter keyed on req.ip with trustProxy, so clinic
+//                       Wi-Fi and carrier CGNAT share one bucket. A "not right
+//                       now" was signing people out permanently.
+//                 404 - a rollback, a proxy answering mid-deploy, a base-URL
+//                       typo. That one would have signed out EVERY user at once.
+//               Those are `offline` now, which is what they always meant.
+//
+//           (b) A FAILED ENCLAVE WRITE IS NO LONGER FATAL (tokenStore v2.3.0).
+//               With rotation the server retires the presented token the moment
+//               it answers, so a swallowed SecureStore write left a REVOKED
+//               token on disk - while storeSession reported success and the app
+//               behaved perfectly for the ~15 minutes the access token had left,
+//               then hit the server's replay detection. `memoryRefreshToken`
+//               holds the newest token this process has seen and is preferred
+//               over the enclave, which becomes what it should always have
+//               been: the COLD-START source. Still recorded when the write
+//               fails, because a cold start after one is still exposed.
+//
+//           (c) ONE REVALIDATION AT A TIME (httpAuthService v2.4.0 + the thunk's
+//               `condition`). refreshSession was single-flight but released the
+//               instant one exchange settled, and AuthGate dispatches
+//               revalidateSession from three places that fire in the same second
+//               on a foreground (boot, AppState->active, the offline backoff).
+//               Three probes returning 401 a few hundred ms apart therefore
+//               chained three SEQUENTIAL rotations - three more chances for a
+//               reply to go missing. The lock had to move up to `revalidate`
+//               itself, because the probe is where that 401 comes from.
+//
+//           (d) A STALE-TOKEN 401 IS RETRIED, NOT REFRESHED (httpBaseQuery
+//               v1.4.0). prepareHeaders reads the access token at SEND time, so
+//               any request in flight when a refresh lands comes back 401
+//               through no fault of the session - and each one used to start its
+//               own rotation. One tap fanning out to four queries could chain
+//               four token exchanges.
+//
+//           (e) RECOVERY_TIMEOUT_MS 20 s -> 60 s (AuthGate v1.5.0). The comment
+//               beside it already said a Render free-tier container takes ~50 s
+//               to wake and that a ceiling under that "is not a timeout, it is a
+//               guaranteed loss" - and then set one at 20 s. The gate lost that
+//               race every time and put the sign-in screen in front of somebody
+//               who was signed in, with their refresh still in flight.
+//
+//           ⚠️ WHAT THIS IS NOT. `tsc`, both bundles and expo-doctor cannot see
+//           any of it: every one of these is a timing race or an error path that
+//           only fires against a cold server, a locked screen or a lost packet.
+//           It stays 🔬 in PARITY.md until it has gone a stretch on the phone
+//           without a surprise sign-in. Settings -> About prints the last
+//           session event, which is how to tell WHICH cause if it recurs.
+//
+//           KNOWN REMAINING, written down rather than quietly left: the web app
+//           still signs out on ANY refresh failure (its httpBaseQuery is on the
+//           old two-outcome contract, mobile's pre-v1.2.0 bug), which is a
+//           parity violation of root CLAUDE.md 2.2; and `isPrincipalUsable` in
+//           CYPHIX_SHARED has no clock-skew allowance - harmless at a 30-day
+//           refresh TTL, real if that TTL is ever shortened.
 
 // v0.70.0 - THE TOP BAR IS GONE FROM HISTORY AND INSIGHTS. JS ONLY - OTA
 //           onto runtime 0.37.0.

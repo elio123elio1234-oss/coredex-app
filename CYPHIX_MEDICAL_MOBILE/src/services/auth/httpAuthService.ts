@@ -240,7 +240,35 @@ export class HttpAuthService implements MobileAuthService {
    * result is one rotation per ~15 minutes of use rather than one per
    * foreground, and NONE at all while offline.
    */
+  /**
+   * ⚠️ SINGLE-FLIGHT, and it has to be at THIS level rather than only
+   * around `refreshSession`.
+   *
+   * `AuthGate` dispatches `revalidateSession` from three independent
+   * places that can all fire inside the same second on a foreground: the
+   * boot effect, every `AppState → 'active'`, and the offline retry
+   * backoff. `refreshSession` is single-flight, but it releases the
+   * instant one exchange settles — so three probes arriving a few hundred
+   * milliseconds apart, each returning 401, produced three SEQUENTIAL
+   * rotations, not one. That is three chances for a reply to go missing
+   * and strand the phone on a token the server has already retired, and
+   * it contradicts this file's own stated aim of one rotation per ~15
+   * minutes of use rather than one per foreground.
+   *
+   * Sharing the whole `revalidate` — probe included — is what makes that
+   * true, because the probe is where the 401 that triggers the rotation
+   * comes from.
+   */
   async revalidate(): Promise<RefreshOutcome> {
+    this.revalidateInFlight ??= this.doRevalidate().finally(() => {
+      this.revalidateInFlight = null;
+    });
+    return this.revalidateInFlight;
+  }
+
+  private revalidateInFlight: Promise<RefreshOutcome> | null = null;
+
+  private async doRevalidate(): Promise<RefreshOutcome> {
     const probed = await this.probe();
     if (probed) return probed;
     const outcome = await refreshSession();
@@ -432,6 +460,15 @@ export class HttpAuthService implements MobileAuthService {
 //          rotates only when that cannot answer: no token (cold start) or a 401.
 //          One rotation per ~15 min of use instead of one per foreground, and
 //          none at all while offline. Server half: CYPHIX_SERVER migration 0003.
+// v2.4.0 — `revalidate()` is SINGLE-FLIGHT as a whole, probe included.
+//          `refreshSession` already was, but it releases the instant one
+//          exchange settles - and AuthGate dispatches this from three places
+//          that can fire in the same second (boot, every foreground, the
+//          offline backoff). Three probes returning 401 a few hundred ms
+//          apart therefore chained three SEQUENTIAL rotations, each one
+//          another chance for a reply to go missing and leave the phone
+//          holding a token the server has retired. It has to be shared at
+//          this level because the probe is where that 401 comes from.
 // v2.2.0 — `restore()` is a pure disk read again. v0.40.2 had it await a refresh
 //          when a token existed with no principal (the pre-v0.40.0 migration),
 //          and AuthGate's 4 s ceiling raced that request and won against every

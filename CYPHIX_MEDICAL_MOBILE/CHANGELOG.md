@@ -1,5 +1,121 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.71.0 - 2026-09-20 - the random sign-out
+
+**JS only — OTA onto runtime 0.37.0.** The server half ships separately as
+**CYPHIX_SERVER v0.7.0** and must be deployed for the most likely cause to be
+fixed.
+
+Reported as: *"sometimes the app just logs me out and sends me back to the login
+screen, and then I have to sign in again — probably something on the server."*
+Half right. There were **six** causes across the two sides. Four are in this
+bundle; two are in the server.
+
+### Why this was findable at all
+
+A session can only end in four ways in the whole app: the user taps Sign out,
+`sessionExpired` arrives from the transport, `revalidateSession` returns
+`rejected`, or the cold-start gate gives up. The middle two both reduce to
+`refreshSession()` answering `rejected`, which `tokenStore` produces in exactly
+**two** places. So every "random" logout is one of those two lines firing, and
+the question became which — not a hunt.
+
+### (a) Only 401 and 403 end a session
+
+`doRefresh` treated **any 4xx** as "an authority refused you". Only two statuses
+mean that. The others it was catching:
+
+- **429** — `/auth/refresh` inherits the server's **global** 300/min rate limit,
+  keyed on `req.ip` with `trustProxy`, and is *not* covered by the tighter
+  login limiter. Clinic Wi-Fi and carrier CGNAT share one bucket; a burst of
+  retries against a cold container can reach it unaided. A "not right now" was
+  signing people out **permanently**.
+- **404** — a rollback, a proxy answering during a deploy, a base-URL typo.
+  That one would have signed out *every* user at once.
+- **400 / 408 / 413** from anything in between.
+
+None is evidence about the session. They are `offline` now — the rule this file
+already applied to 5xx, extended to the statuses that always meant the same
+thing.
+
+### (b) A failed enclave write is no longer fatal
+
+With rotation the server retires the presented token the moment it answers, so
+the only token still worth anything is the one in that reply. If persisting it
+failed, `storeSession` logged it **and reported success anyway** — the app then
+behaved perfectly for the ~15 minutes the access token had left, presented the
+revoked token, and hit the server's replay detection. The retry added in v2.2.0
+made the write fail less often; it could not make a failure survivable.
+
+`memoryRefreshToken` now holds the newest token this process has seen, is
+assigned *before* the write is attempted, and is preferred over the enclave.
+The enclave becomes what it should always have been: the **cold-start** source.
+The failure is still recorded, because a cold start after one is still exposed —
+that is what the server's grace window is for.
+
+### (c) One revalidation at a time
+
+`refreshSession` was single-flight, but it releases the instant one exchange
+settles. `AuthGate` dispatches `revalidateSession` from three independent places
+that can all fire inside the same second on a foreground — the boot effect,
+every `AppState → 'active'`, and the offline retry backoff — and `probe()` was
+not shared at all. Three probes returning 401 a few hundred milliseconds apart
+therefore chained **three sequential rotations**, each another chance for a
+reply to go missing. That also contradicted `httpAuthService`'s own stated aim
+of one rotation per ~15 minutes of use rather than one per foreground.
+
+The lock had to move up to `revalidate()` itself, probe included, because the
+probe is where the 401 that triggers the rotation comes from.
+
+### (d) A stale-token 401 is retried, not refreshed
+
+`prepareHeaders` reads the access token at **send** time, so any request already
+in flight when a refresh lands carries the old one and comes back 401 through no
+fault of the session. Each of those used to start its own rotation: one tap
+fanning out to four queries could chain four token exchanges. If the token has
+changed since, the answer is simply to send the request again.
+
+### (e) The cold-start gate stops losing a race it documented
+
+`RECOVERY_TIMEOUT_MS` 20 s → **60 s**. The comment beside it already said a
+Render free-tier container takes ~50 s to wake, and that a ceiling under that
+"is not a timeout, it is a guaranteed loss" — and then set one at 20 s. Against
+a sleeping server the gate lost every time and showed the sign-in screen to
+somebody who *was* signed in, with the refresh still in flight behind it.
+
+The cost is stated rather than glossed: a genuinely dead server now holds the
+splash for a full minute. That is the better failure — a door invites someone to
+re-enter a password they did not need to; a slow logo is merely slow.
+
+### ⚠️ What "verified" means here
+
+`tsc`, both bundles and `expo-doctor` pass and **cannot see any of this**. Every
+one of these is a timing race or an error path that only fires against a cold
+server, a locked screen or a lost packet. It stays `🔬` in PARITY.md until the
+app has gone a real stretch on the phone without a surprise sign-in.
+
+**If it recurs:** Settings → About prints the last session event. It will name
+which of these it was — `refresh refused by server (401)`, `refresh could not be
+served (429) — kept the session`, `enclave write failed — token held in memory
+only`, and so on. The server also writes an audit row on every reuse detection
+(`refresh-token-reuse-detected; family revoked`).
+
+### Known remaining, written down rather than quietly left
+
+- The **web** app still signs out on any refresh failure — its `httpBaseQuery`
+  is on the old two-outcome contract, i.e. mobile's own pre-v1.2.0 bug. That is
+  a parity violation of root CLAUDE.md §2.2 and is a separate change in a
+  separate repo.
+- `isPrincipalUsable` in `CYPHIX_SHARED` has no clock-skew allowance. Harmless
+  at a 30-day refresh TTL; real the moment that TTL is shortened.
+
+Files: `services/api/tokenStore.ts` (v2.3.0), `services/api/httpBaseQuery.ts`
+(v1.4.0), `services/auth/httpAuthService.ts` (v2.4.0),
+`features/auth/authSlice.ts`, `features/auth/AuthGate.tsx` (v1.5.0),
+`config/version.ts`.
+
+---
+
 ## v0.70.0 - 2026-09-20 - History and Insights lose their top bar
 
 **JS only — OTA onto runtime 0.37.0.**

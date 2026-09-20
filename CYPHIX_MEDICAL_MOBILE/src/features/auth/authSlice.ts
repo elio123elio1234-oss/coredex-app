@@ -203,6 +203,19 @@ export const restoreSession = createAsyncThunk('auth/restore', async () => {
  */
 export const revalidateSession = createAsyncThunk('auth/revalidate', async () => {
   return authService.revalidate();
+}, {
+  /**
+   * ⚠️ Don't start a second one while the first is still running.
+   *
+   * `AuthGate` dispatches this from three places that can all fire inside
+   * the same second on a foreground — the boot effect, every
+   * `AppState → 'active'`, and the offline retry backoff. The service is
+   * single-flight as of v2.4.0, so the extra dispatches would no longer
+   * cause extra token rotations, but they would still each flip
+   * `revalidating` and land a duplicate `fulfilled`. Cheaper and clearer
+   * to not start them.
+   */
+  condition: (_arg, { getState }) => !(getState() as { auth: AuthState }).auth.revalidating,
 });
 
 /** Turn the app lock on or off, and persist it to the enclave. */

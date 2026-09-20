@@ -88,6 +88,33 @@ const PRINCIPAL_KEY = 'cyphix.principal';
 let accessToken: string | null = null;
 let refreshInFlight: Promise<RefreshOutcome> | null = null;
 
+/**
+ * ★ THE NEWEST REFRESH TOKEN THIS PROCESS HAS EVER SEEN.
+ *
+ * Not a cache of the enclave — a correction for it. With rotation, the
+ * server retires the presented token the moment it answers, so the ONLY
+ * token that is still worth anything is the one that came back in that
+ * reply. If persisting it fails, the enclave is left holding a token the
+ * server has already revoked, and presenting that is exactly what the
+ * server's replay detection kills a whole token family for.
+ *
+ * `storeSession` used to log that failure and carry on, reporting
+ * `refreshed` either way — so the app behaved perfectly for the ~15
+ * minutes the access token had left and then signed the patient out with
+ * nothing on screen connecting the two. The retry there reduced how often
+ * the write fails; it could not make a failure survivable.
+ *
+ * This does. It is assigned BEFORE the write is attempted, so it is
+ * correct whether or not the write lands, and `doRefresh` prefers it over
+ * the enclave. The enclave is then what it should always have been: the
+ * COLD-START source, read once when this variable is still null.
+ *
+ * It holds a credential, so it is cleared by `clearSession` alongside the
+ * enclave — a live token in a module variable after a sign-out is the
+ * same defect in a different place.
+ */
+let memoryRefreshToken: string | null = null;
+
 /** `https://host/api/v1` — the one place the version prefix is applied. */
 export function apiRoot(): string {
   return `${ENV.apiBaseUrl.replace(/\/+$/, '')}${API_VERSION_PATH}`;
@@ -182,6 +209,10 @@ export async function setAppLock(enabled: boolean): Promise<void> {
     server rotated the previous one out the moment it answered. */
 export async function storeSession(tokens: AuthTokens): Promise<void> {
   accessToken = tokens.accessToken;
+  /* ★ BEFORE the write, not after it, and not conditional on it. This is
+     what makes a failed enclave write survivable for the rest of the run
+     — see `memoryRefreshToken`. */
+  memoryRefreshToken = tokens.refreshToken;
   const now = Date.now();
 
   /**
@@ -210,7 +241,13 @@ export async function storeSession(tokens: AuthTokens): Promise<void> {
       if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 150));
     }
   }
-  if (!stored) await noteSessionEvent('enclave write failed — token not persisted');
+  /* Still recorded, and still worth recording: this run survives it via
+     `memoryRefreshToken`, but a COLD START after it does not — the enclave
+     would then hand back a token the server retired, and the only thing
+     standing between that and a sign-out is the server's undelivered-
+     successor grace window. So it is a real fault, just no longer an
+     immediate one, and the diagnostic must keep saying so. */
+  if (!stored) await noteSessionEvent('enclave write failed — token held in memory only');
 
   await writePrincipal({
     user: tokens.user,
@@ -237,6 +274,9 @@ export async function readRefreshToken(): Promise<string | null> {
  */
 export async function clearSession(): Promise<void> {
   accessToken = null;
+  /* A live refresh token left in a module variable after a sign-out is the
+     same defect as one left in the enclave — see `memoryRefreshToken`. */
+  memoryRefreshToken = null;
   await Promise.all([
     SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY).catch(() => {}),
     SecureStore.deleteItemAsync(PRINCIPAL_KEY).catch(() => {}),
@@ -348,10 +388,19 @@ async function doRefresh(): Promise<RefreshOutcome> {
    * failure and the absence can be told apart.
    */
   let refreshToken: string | null;
-  try {
-    refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY, KEYCHAIN);
-  } catch {
-    return { kind: 'offline' };
+  if (memoryRefreshToken) {
+    /* ★ The enclave is the COLD-START source, not the authority. Whenever
+       this process has already adopted a pair, the token that came back in
+       that reply is by construction the newest one in existence — and if
+       persisting it failed, it is the only correct one. Reading the
+       enclave here would present a token the server retired. */
+    refreshToken = memoryRefreshToken;
+  } else {
+    try {
+      refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY, KEYCHAIN);
+    } catch {
+      return { kind: 'offline' };
+    }
   }
   if (!refreshToken) {
     /**
@@ -391,17 +440,31 @@ async function doRefresh(): Promise<RefreshOutcome> {
   }
 
   /**
-   * ★ Only a 4xx is a refusal.
+   * ★ ONLY 401 AND 403 END A SESSION. Narrowed in v0.71.0, and the
+   * previous rule — "any 4xx" — was too wide in a way that mattered.
    *
-   * A 502 from a proxy, a 503 from a container that is still booting, a
-   * 504 from a cold start that took too long — those are the SERVER being
-   * unreachable dressed as an HTTP status, and treating them as "your
-   * session is over" is exactly the bug this release exists to fix. Render
-   * answers a sleeping service with a 5xx while it wakes, which is the
-   * common case here rather than an exotic one.
+   * "An authority refused you" is what 401 and 403 mean, and nothing else
+   * in 400–499 means it:
+   *
+   *   • 429 — `app.ts` registers `@fastify/rate-limit` GLOBALLY at 300/min
+   *     keyed on `req.ip` with `trustProxy`, and `/auth/refresh` is not
+   *     covered by the tighter login limiter. Behind clinic Wi-Fi or
+   *     carrier CGNAT, that ip is shared; against a cold Render container
+   *     a burst of retries can reach it on its own. A 429 is the server
+   *     saying "not right now", and it was signing people out permanently.
+   *   • 404 — a base URL typo, a rollback, a proxy answering during a
+   *     deploy. That would have signed out every user at once.
+   *   • 400 / 408 / 413 from anything between us and the server.
+   *
+   * None of those is evidence about the session, and the rule this file
+   * already states for 5xx applies to them unchanged: we learned nothing,
+   * so we change nothing, keep the token and ask again later.
    */
   if (!res.ok) {
-    if (res.status >= 500) return { kind: 'offline' };
+    if (res.status !== 401 && res.status !== 403) {
+      await noteSessionEvent(`refresh could not be served (${res.status}) — kept the session`);
+      return { kind: 'offline' };
+    }
     /* The one path that genuinely ends a session. Recorded before the
        enclave is cleared, so the sign-in screen can say WHY it is being
        shown rather than leaving another unexplained logout. */
@@ -428,6 +491,19 @@ async function doRefresh(): Promise<RefreshOutcome> {
   };
 }
 
+// v2.3.0 — Two more paths to a sign-out nobody asked for, closed.
+//          (a) ONLY 401/403 end a session. "Any 4xx" also covered 429 — and
+//              /auth/refresh inherits the GLOBAL 300/min limiter keyed on a
+//              shared ip — plus 404 from a rollback or a base-URL typo, which
+//              would have signed out every user at once. Those are now
+//              `offline`, which is what they always meant.
+//          (b) `memoryRefreshToken`: the newest token this process has seen is
+//              presented in preference to the enclave's copy. A failed enclave
+//              write used to leave a REVOKED token on disk while the app
+//              reported `refreshed` and carried on for ~15 minutes — then the
+//              server's replay detection killed the family. The write is still
+//              recorded when it fails, because a cold start after one is still
+//              exposed; it is no longer fatal to the session in progress.
 // v2.2.0 — Fixes a spontaneous MID-SESSION sign-out with two causes, both from
 //          expo-secure-store defaulting to WHEN_UNLOCKED — the keychain item is
 //          unreadable AND UNWRITABLE while the screen is locked. Every call now
