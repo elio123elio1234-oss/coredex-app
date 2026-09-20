@@ -1,7 +1,57 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.69.0';
-export const APP_BUILD_LABEL = 'the app opens previewing the admin role, without a trip to Settings';
+export const APP_VERSION = '0.70.0';
+export const APP_BUILD_LABEL = 'History + Insights: no top bar - the title is page content and fades on scroll';
+
+// v0.70.0 - THE TOP BAR IS GONE FROM HISTORY AND INSIGHTS. JS ONLY - OTA
+//           onto runtime 0.37.0.
+//
+//           Both tabs carried their title (and History its count and Import
+//           button) on a frosted GlassSurface pinned to the top, with the page
+//           scrolling behind it. Asked for as: "in Insights and History there
+//           is no need for a top bar - it can be part of the page and fade out
+//           as you scroll down."
+//
+//           ★ IT IS RENDERED INSIDE THE SCROLLER, NOT ANIMATED OVER IT.
+//           The obvious implementation keeps the absolute bar and animates
+//           `translateY: -scrollY` so it appears to scroll away. That is the
+//           wrong one: it makes the title's POSITION a 60 Hz animation driven
+//           by a throttled JS onScroll, and a position that lags the content
+//           it belongs to reads as the title sliding on its own - exactly the
+//           thing it is pretending not to do. As a ListHeaderComponent (and
+//           as EcgIdentityPanel's new `header` first child) it travels with
+//           the page for free, at the scroller's own frame rate, leaving
+//           OPACITY as the only animated property. A lagging opacity is
+//           invisible; a lagging position is not.
+//
+//           What the bar's removal DELETES, which is the real win:
+//             - the measured header height, carried on every scroller's
+//               content inset;
+//             - `estimateHeaderH()`, which existed only to cover the first
+//               frame before that measurement existed and was wrong by ~35 pt
+//               on a notched phone when it was a flat constant;
+//             - the `onLayout` that added the bar's own padding back by hand;
+//             - the `scrolled` state and the hairline it switched;
+//             - HEADER_PAD_BOTTOM, HEADER_SHADOW_AT and the Liquid-Glass tint
+//               pair that had to be kept in step with the dock's.
+//           Three numbers that had to agree, with no way of failing loudly
+//           when they did not, in service of restating the name of the tab
+//           the dock already highlights.
+//
+//           Two details that are not obvious and are therefore written down:
+//             - a faded-out Import button must stop being a TARGET. Pointer
+//               events are not animatable, so the screens keep one boolean,
+//               flipped at the same threshold the fade uses (exported as
+//               TITLE_FADE_DISTANCE so the two cannot drift).
+//             - History's refresh badge used to hang off the measured header
+//               height. It now sits level with the title row and centred -
+//               the one part of that line nothing occupies, since the heading
+//               hugs the leading edge and Import is a square on the trailing
+//               one. It has to be a fixed position rather than one that
+//               assumes the page has been pulled down, because `refreshing`
+//               is also true during a background sync.
+//
+//           Fifth of five changes asked for in one sitting.
 
 // v0.69.0 - THE ROLE PREVIEW STARTS AT ADMIN. JS ONLY - OTA onto runtime
 //           0.37.0.

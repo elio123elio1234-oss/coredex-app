@@ -1,5 +1,73 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.70.0 - 2026-09-20 - History and Insights lose their top bar
+
+**JS only — OTA onto runtime 0.37.0.**
+
+Both tabs carried their title — and History its study count and Import button —
+on a frosted `GlassSurface` pinned to the top, with the page scrolling behind
+it. Asked for as: *"in Insights and History there is no need for a top bar; it
+can be part of the page and fade out as you scroll down."*
+
+New shared molecule: **`PageTitle`**. Both screens use it, so the two tabs
+cannot drift apart by a font weight.
+
+### ★ It is rendered INSIDE the scroller, not animated over it
+
+The obvious implementation keeps the absolute bar and animates
+`translateY: -scrollY` so it *appears* to scroll away. That is the wrong one. It
+makes the title's **position** a 60 Hz animation driven by a throttled JS
+`onScroll`, and a position that lags the content it is meant to belong to reads
+as the title sliding independently — precisely the thing it is pretending not to
+do.
+
+As a `ListHeaderComponent` (History) and as `EcgIdentityPanel`'s new `header`
+first child (Insights), the title travels with the page **for free**, at the
+scroller's own frame rate. That leaves **opacity** as the only animated
+property, and a lagging opacity is invisible in a way a lagging position never
+is.
+
+### What the bar's removal deletes — the real win
+
+- the **measured** header height, carried on every scroller's content inset;
+- `estimateHeaderH()`, which existed only to cover the first frame before that
+  measurement existed (a flat constant there was wrong by ~35 pt on a notched
+  phone, a visible jolt as the list dropped into place);
+- the `onLayout` that added the bar's own padding back by hand;
+- the `scrolled` state and the hairline it switched on;
+- `HEADER_PAD_BOTTOM`, `HEADER_SHADOW_AT`, and the Liquid-Glass tint pair that
+  had to be kept in step with the dock's.
+
+Three numbers that had to agree, with no way of failing loudly when they did
+not — in service of restating the name of the tab the dock already highlights.
+
+### Two things that are not obvious, so they are written down
+
+- **A faded-out Import button must stop being a target.** An invisible live
+  button is worse than a visible dead one. `pointerEvents` is not an animatable
+  property, so each screen keeps one boolean flipped at the same threshold the
+  fade uses — exported as `TITLE_FADE_DISTANCE` so the two cannot drift apart.
+- **History's refresh badge** used to hang off the measured header height. It
+  now sits level with the title row and centred — the one part of that line
+  nothing occupies, since the heading hugs the leading edge and Import is a
+  44 pt square on the trailing one. It must be a fixed position rather than one
+  assuming the page has been pulled down, because `refreshing` is also true
+  during a background sync, when nothing has moved.
+
+Also corrected while in the file: `HistoryScreen`'s header comment still argued
+at length for the `Studies | Insights` segmented control. That argument lost in
+**v0.59.0**, when Insights became its own dock tab, and the paragraph outlived
+it by eleven versions. Deleted rather than left to mislead.
+
+`scrollEventThrottle` 32 → 16 in both scrollers: the offset drives a fade now,
+not a one-shot threshold.
+
+Files: `components/molecules/PageTitle.tsx` (new, v1.0.0),
+`screens/HistoryScreen.tsx` (v2.1.0), `screens/InsightsScreen.tsx` (v0.70.0),
+`components/organisms/EcgIdentityPanel.tsx` (v2.4.0), `config/version.ts`.
+
+---
+
 ## v0.69.0 - 2026-09-20 - the app opens as admin, without a trip to Settings
 
 **JS only — OTA onto runtime 0.37.0.**

@@ -160,13 +160,32 @@ interface Props {
    */
   paddingHorizontal: number;
   /**
-   * Clearance for History's frosted header, applied to this panel's own
-   * scroll CONTENT — the mirror of `paddingBottom`'s dock clearance below.
-   * The panel passes BEHIND the glass; it does not start under it.
+   * Top clearance applied to this panel's own scroll CONTENT — the mirror
+   * of `paddingBottom`'s dock clearance below.
+   *
+   * ⚠️ v0.70.0: this used to be the measured height of Insights' frosted
+   * header, which the panel passed BEHIND. There is no such bar any more —
+   * the title is `header` below, a real first child — so the screen passes
+   * 0 and the title carries the safe area itself.
    */
   paddingTop?: number;
-  /** Lets History know when this tab has been scrolled, so the header can
-      earn its hairline the same way it does over the studies list. */
+  /**
+   * The screen's title block, rendered as the FIRST CHILD of this scroll
+   * view rather than floated over it.
+   *
+   * ★ That placement is the whole point (see `PageTitle`): a title inside
+   * the scroller travels with the page for free, at the scroller's own
+   * frame rate, so the only thing left to animate is its opacity. A pinned
+   * bar animated to `translateY: -scrollY` from a throttled JS `onScroll`
+   * lags the content it is pretending to be part of, and that lag is
+   * visible as the title sliding on its own.
+   *
+   * It is a NODE, not a title string, because History's version of the same
+   * block carries a count line and an Import button and this panel has no
+   * business knowing about either.
+   */
+  header?: ReactNode;
+  /** The live scroll offset, so the screen can fade its title out. */
   onScroll?: (offsetY: number) => void;
   onOpenStudy: (recordingId: string) => void;
   /**
@@ -224,6 +243,7 @@ export default function EcgIdentityPanel({
   patientId,
   paddingHorizontal,
   paddingTop = 0,
+  header,
   onScroll,
   onOpenStudy,
   active = true,
@@ -503,12 +523,17 @@ export default function EcgIdentityPanel({
         },
       ]}
       showsVerticalScrollIndicator={false}
-      scrollEventThrottle={32}
+      scrollEventThrottle={16}
       onScroll={onScroll ? (e) => onScroll(e.nativeEvent.contentOffset.y) : undefined}
       /* The signature and the builder both own horizontal drags; without
          this the scroll view steals them the moment a finger slides. */
       directionalLockEnabled
     >
+      {/* The screen's title, as CONTENT. `styles.content` has `gap: 14`, so
+          it takes the same air every other block does and `PageTitle` is
+          handed `marginBottom={0}` rather than adding a second gap. */}
+      {header}
+
       {/* ══ 1. THE RECORDING, FIRST AND WHOLE ═══════════════════
           ★ v0.44.0. The screen opens on the ECG and nothing else, and
           everything down to the lead buttons is sized to ONE viewport —
@@ -1365,5 +1390,11 @@ const styles = StyleSheet.create({
 //          — a box that resizes when you change lead reads as instability,
 //          because it is. Prose cut to one line per section; what survived is
 //          what the screen cannot say without words.
+// v2.4.0 — Takes a `header` node and renders it as the FIRST CHILD of the
+//          scroll view, replacing the frosted bar Insights used to float over
+//          this panel. A title inside the scroller travels with the page for
+//          free; a pinned one animated from a throttled onScroll lags the
+//          content it is meant to belong to. `scrollEventThrottle` 32 -> 16,
+//          because that offset now drives a fade rather than a hairline.
 // v2.0.0 — Instrument header, caliper, builder, rejected beats, amber not red.
 // v1.0.0 — The Insights tab.

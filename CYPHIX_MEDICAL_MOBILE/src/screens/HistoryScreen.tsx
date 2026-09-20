@@ -13,37 +13,34 @@
    patient-facing tab that is allowed to be a list of records rather than
    one big button.
 
-   ══ TWO TABS: STUDIES · INSIGHTS ══
-   The list answers "what do I have". It cannot answer "has anything
-   changed", because that question is about all the studies at once and a
-   list is a thing you read one row at a time. INSIGHTS is that second
-   view: the patient's ECG ID — a representative beat fused from every
-   good study — with every study scored against it.
+   ⚠️ THIS FILE USED TO DESCRIBE TWO TABS (`Studies | Insights`) and argue
+   at length for why they were a segmented control rather than two dock
+   destinations. That argument lost in v0.59.0 — Insights became
+   `InsightsScreen`, its own dock tab — and the paragraph describing it
+   outlived it by eleven versions. It is deleted here rather than left to
+   mislead the next reader; History is one list and has no sub-tab.
 
-   They are TABS of one module rather than two dock destinations on
-   purpose. Both are about the same set of records, the dock is already
-   five items wide, and the reader moves between them constantly: flag on
-   the Insights side → open the study → back. A segmented control at the
-   top is one thumb-width away; a sixth dock item would be a different
-   place to go.
+   ══ ★ v0.70.0 — THE HEADER IS NOT A BAR ANY MORE ══
+   The title, the count and the Import button rode a frosted `GlassSurface`
+   pinned to the top, with the list scrolling behind it. They are now the
+   list's `ListHeaderComponent` — real content — and fade out as the page
+   moves (`PageTitle`). Asked for as *"in Insights and History there is no
+   need for a top bar; it can be part of the page and fade out as you
+   scroll down."*
 
-   The control sits UNDER the title, not beside it: it belongs to History,
-   and a switch level with a heading reads as a switch for the screen.
+   The bar cost more than it gave. Because it was absolutely positioned,
+   its height was not part of the layout, so it had to be MEASURED — it
+   grows a count line, a progress clause and an error banner — and that
+   measurement had to be carried on every scroller's content inset, with an
+   `estimateHeaderH()` covering the first frame before any measurement
+   existed and an `onLayout` adding the bar's own padding back by hand.
+   Three numbers that had to agree, with no way of failing loudly when they
+   did not, in service of restating the name of the tab the dock already
+   highlights. All of it is gone, and so is the rule that anything sitting
+   "between the header and the list" had to be moved INSIDE the glass.
 
-   ══ THE HEADER IS GLASS, AND THE PAGE GOES UNDER IT ══
-   The title, the count and the tab switch sit on a frosted bar pinned to
-   the top, and the list scrolls BEHIND it — the same material and the
-   same rules as the study viewer's header and the dock. Two consequences
-   worth knowing before editing this file:
-
-     · the bar is absolutely positioned, so its height is not part of the
-       layout. Every scroller therefore carries `headerH` on its CONTENT
-       inset (`PatientShell.bleedTop` explains the third axis of this),
-       and that height is MEASURED, because the bar grows a count line, a
-       progress clause, a tab row and an error banner depending on state.
-     · anything that would sit "between the header and the list" has to
-       go INSIDE the glass instead. A sibling gets pushed down by the
-       clearance and then the list pads for the header again below it.
+   `bleedTop` stays: the shell must still not add top padding, because the
+   title now carries the safe area itself.
 
    ══ THIS SCREEN OWNS FETCHING ══
    Cards take data as props. Storage, RBAC and audit live behind hooks.
@@ -68,10 +65,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSharedValue } from 'react-native-reanimated';
 import { parseEcgCsv, type RecordingListItem } from '@cyphix/shared';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
-import GlassSurface, { IS_LIQUID_GLASS } from '@/components/atoms/GlassSurface';
 import HistorySkeleton from '@/components/molecules/HistorySkeleton';
+import PageTitle, { TITLE_FADE_DISTANCE } from '@/components/molecules/PageTitle';
 import StudyCard from '@/components/molecules/StudyCard';
 import PatientShell, { shellPaddingH } from '@/components/templates/PatientShell';
 import { usePermissions, useCurrentUser } from '@/features/auth/useCurrentUser';
@@ -89,41 +87,24 @@ import {
 import { INTERPRETATION_ENABLED } from '@/config/featureFlags';
 import { dockFootprint } from '@/navigation/dockMetrics';
 import { RADIUS } from '@/theme/tokens';
-import { useIsDark, useTheme } from '@/theme/useTheme';
+import { useTheme } from '@/theme/useTheme';
 
-/** The glass bar's own bottom padding, added back when measuring it. */
-const HEADER_PAD_BOTTOM = 12;
-/** Points of scroll before the header earns its edge. Below this nothing is
-    behind it yet and a hairline would divide nothing from nothing. */
-const HEADER_SHADOW_AT = 6;
 /**
- * ★ Air between the glass and the first card.
+ * ★ Air between the title block and the first card.
  *
- * `paddingTop: headerH` alone parks the newest study hard against the bar —
- * reported, and right: the one row a reader looks at first was the one row
- * with no room to breathe. The gap is the resting position only; the card
- * still travels under the glass as soon as the list moves.
+ * `paddingTop: headerH` alone used to park the newest study hard against
+ * the bar — reported, and right: the one row a reader looks at first was
+ * the one row with no room to breathe. It survives the bar's removal as the
+ * title block's own bottom margin.
  */
 const CONTENT_TOP_GAP = 14;
 
-/* ── The header's height BEFORE it has been measured ──
-   It is measured (`onLayout`) because it grows a count line, a progress
-   clause and an error banner — but the first frame paints before any
-   measurement exists, and a flat constant there was wrong by ~35 pt on a
-   notched phone, which is a visible jolt as the list drops into place.
-   These are the same blocks the bar is built from, so the estimate lands
-   within a point or two and the correction is invisible.
-   ★ v0.59.0 dropped the `withTabs` term along with the sub-tab itself. */
-const EST_TITLE = 36;
-const EST_COUNT = 20;
-
-function estimateHeaderH(safeTop: number, withCount: boolean): number {
-  return safeTop + 6 + EST_TITLE + (withCount ? EST_COUNT : 0) + HEADER_PAD_BOTTOM;
-}
+/** `styles.listContent`'s own `gap`. Named because the title block is one of
+    the list's children and must subtract it rather than add a second gap. */
+const LIST_GAP = 10;
 
 export default function HistoryScreen() {
   const t = useTheme();
-  const dark = useIsDark();
   const { t: tr, lang, rtl } = useTranslation();
   const navigation = useNavigation<{ navigate: (screen: string, params: object) => void }>();
   const insets = useSafeAreaInsets();
@@ -150,21 +131,25 @@ export default function HistoryScreen() {
      re-stagger; rows mounted later by scrolling animate briefly, capped. */
   const mountedAt = useRef(Date.now());
 
-  /* ── The frosted header's own state ──
-     Its height is MEASURED rather than assumed: it carries a title, an
-     optional count line that grows a progress clause, and tabs that only
-     exist once there are studies, so any constant here would be wrong in
-     at least one of those states. `HEADER_H_GUESS` covers the first frame
-     only — without it the first cards paint under the bar and jump. */
-  const [measuredHeaderH, setMeasuredHeaderH] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
+  /* ── What the title block fades against ──
+     A shared value, not state: it is written on every scroll event and read
+     on the UI thread, so putting it in React would re-render the whole list
+     per frame — which is exactly what the old `scrolled` threshold existed
+     to avoid. */
+  const scrollY = useSharedValue(0);
+  /* The one thing that DOES need a re-render, and only twice per scroll, at
+     the threshold: a faded-out Import button must stop being a target, and
+     pointer events are not an animatable property. */
+  const [titleGone, setTitleGone] = useState(false);
 
-  /* Only re-render when the header actually crosses the threshold — an
-     onScroll that setStates every frame would re-render the whole list. */
-  const onContentScroll = useCallback((offsetY: number) => {
-    const past = offsetY > HEADER_SHADOW_AT;
-    setScrolled((was) => (was === past ? was : past));
-  }, []);
+  const onContentScroll = useCallback(
+    (offsetY: number) => {
+      scrollY.value = offsetY;
+      const gone = offsetY >= TITLE_FADE_DISTANCE;
+      setTitleGone((was) => (was === gone ? was : gone));
+    },
+    [scrollY],
+  );
 
   /* ── Which rows have been LOOKED AT ──
      A trace sweeps on when its row reaches the screen, so the ids that
@@ -279,28 +264,10 @@ export default function HistoryScreen() {
 
   const align = rtl ? ('right' as const) : ('left' as const);
 
-  /* ── The header's material ──
-     Denser than the dock's (0.38/0.55) and lighter than the study
-     viewer's (0.74), for a reason on each side: this bar carries a 30 pt
-     title that has to stay readable while cards pass under it, but it was
-     asked for as "glass like the dock", and the dock is a small floating
-     pill over a strip of page rather than a full-width bar over a list.
-     Liquid Glass tints itself a little, so it takes the lower pair —
-     the same split the dock makes, for the same v0.19.2 reason. */
-  const headerTint = IS_LIQUID_GLASS
-    ? dark
-      ? 'rgba(19, 27, 44, 0.46)'
-      : 'rgba(255, 255, 255, 0.50)'
-    : dark
-      ? 'rgba(19, 27, 44, 0.58)'
-      : 'rgba(255, 255, 255, 0.64)';
-
   const empty = !list.data || list.data.length === 0;
-  /* The measurement once it exists, an estimate built from the same blocks
-     until then — see `estimateHeaderH`. */
-  const headerH = measuredHeaderH || estimateHeaderH(insets.top, !empty);
-  /** Where content actually starts: under the glass, plus air. */
-  const contentTop = headerH + CONTENT_TOP_GAP;
+  /** Where the title block starts: the safe area, which the shell no longer
+      applies (`bleedTop`) because the title now owns it. */
+  const contentTop = insets.top + 6;
   /* One expression for the state, read by the RefreshControl (which owns
      the gesture) and by the badge (which is what anyone actually sees). */
   const refreshing = sync.phase === 'syncing' || (list.isFetching && !list.isLoading);
@@ -378,6 +345,90 @@ export default function HistoryScreen() {
     [digests, fmtWhen, rtl, cardLabels, openStudy],
   );
 
+  /* ── The title block, as CONTENT ──
+     Built once here and rendered by whichever branch is on screen, so the
+     skeleton, the error card, the empty card and the list cannot drift into
+     four slightly different headings. In the list branch it is the
+     `ListHeaderComponent`, which is what makes it scroll and fade; in the
+     other three there is nothing to scroll, so it simply sits at the top at
+     full opacity. */
+  const renderTitle = (paddingHorizontal: number, marginBottom: number) => (
+    <PageTitle
+      title={tr('histTitle')}
+      scrollY={scrollY}
+      interactive={!titleGone}
+      align={align}
+      rtl={rtl}
+      color={t.textPrimary}
+      paddingTop={contentTop}
+      paddingHorizontal={paddingHorizontal}
+      marginBottom={marginBottom}
+      subtitle={
+        !empty ? (
+          <Text style={[styles.count, { color: t.textSecondary, textAlign: align }]}>
+            {tr('histCount', { n: String(list.data?.length ?? 0) })}
+            {selfOnly ? ` · ${tr('histOwnOnly')}` : ''}
+            {/* A visible backfill is a screen doing work; a list quietly
+                filling with verdicts is a screen that might be broken. */}
+            {digesting
+              ? ` · ${tr('histDigestProgress', {
+                  done: String(digesting.done),
+                  total: String(digesting.total),
+                })}`
+              : ''}
+          </Text>
+        ) : null
+      }
+      /* Import lives on the LIST, not inside a study: it CREATES a study,
+         and an action that adds a row belongs where the rows are. */
+      accessory={
+        features.has('exportRaw') ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr('histImport')}
+            disabled={importing}
+            onPress={() => void handleImport()}
+            style={({ pressed }) => [
+              styles.importBtn,
+              {
+                backgroundColor: t.surface,
+                borderColor: t.border,
+                opacity: importing ? 0.4 : pressed ? 0.6 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="add" size={22} color={t.textPrimary} />
+          </Pressable>
+        ) : null
+      }
+      /* Belongs to the Import button, so it travels with it. As a sibling of
+         the list it used to be pushed down by the old header's clearance and
+         then the list padded for the header AGAIN underneath it, leaving a
+         header-sized hole — which is why it had to live inside the glass. */
+      below={
+        importError ? (
+          <Text
+            style={[
+              styles.error,
+              { color: t.danger, backgroundColor: t.dangerSoft, marginTop: 10 },
+            ]}
+          >
+            {importError}
+          </Text>
+        ) : null
+      }
+    />
+  );
+
+  /* The list's content container already carries `padH` and a 10 pt `gap`
+     between children, and the header is one of those children — so it asks
+     for neither again. The other three branches are plain Views with no gap
+     and no padding of their own, so they ask for both. Two call sites, one
+     component: the numbers are stated where they differ rather than being
+     cancelled out somewhere else. */
+  const titleInList = renderTitle(0, CONTENT_TOP_GAP - LIST_GAP);
+  const titleStandalone = renderTitle(padH, CONTENT_TOP_GAP);
+
   return (
     /* Both tabs scroll, so the dock's clearance belongs on their content
        insets rather than on the shell's padding — otherwise the page ends
@@ -389,33 +440,36 @@ export default function HistoryScreen() {
        cut at the scroller's frame, which is what was clipping the trace
        and the lead label. So the SHELL drops its side padding and this
        screen applies the same `shellPaddingH` itself, per element. */
-    /* `bleedTop`: the title and tabs now ride a frosted bar that the page
-       passes UNDER, so the shell must not also push the content down —
-       the header takes the safe area, and the scrollers take the header's
-       measured height on their content inset. */
+    /* `bleedTop`: the title owns the safe area (it is the first thing in the
+       page, not a bar floating over it), so the shell must not also push the
+       content down. */
     <PatientShell scrollsUnderDock bleedHorizontal bleedTop>
       <View style={styles.root}>
         {/* ★ v0.59.0 — ONE pane. The Insights half of this screen became a
             dock tab of its own (InsightsScreen), so the hide-don't-unmount
-            machinery that kept both alive went with it. This wrapper stays
-            because the header is absolutely positioned over it. */}
+            machinery that kept both alive went with it. The wrapper stays
+            because the refresh badge is absolutely positioned over it. */}
         <View style={styles.pane}>
           {list.isLoading ? (
-          <View style={{ paddingHorizontal: padH, paddingTop: contentTop }}>
-            <HistorySkeleton />
+          <View>
+            {titleStandalone}
+            <View style={{ paddingHorizontal: padH }}>
+              <HistorySkeleton />
+            </View>
           </View>
         ) : list.isError ? (
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: t.surface,
-                borderColor: t.border,
-                marginHorizontal: padH,
-                marginTop: contentTop,
-              },
-            ]}
-          >
+          <View>
+            {titleStandalone}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: t.surface,
+                  borderColor: t.border,
+                  marginHorizontal: padH,
+                },
+              ]}
+            >
             <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
               {tr('histTitle')}
             </Text>
@@ -432,31 +486,38 @@ export default function HistoryScreen() {
             >
               <Text style={[styles.retryText, { color: t.textPrimary }]}>{tr('viewerRetry')}</Text>
             </Pressable>
+            </View>
           </View>
         ) : empty ? (
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: t.surface,
-                borderColor: t.border,
-                marginHorizontal: padH,
-                marginTop: contentTop,
-              },
-            ]}
-          >
+          <View>
+            {titleStandalone}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: t.surface,
+                  borderColor: t.border,
+                  marginHorizontal: padH,
+                },
+              ]}
+            >
             <Text style={[styles.cardTitle, { color: t.textPrimary, textAlign: align }]}>
               {tr('histEmptyTitle')}
             </Text>
             <Text style={[styles.body, { color: t.textSecondary, textAlign: align }]}>
               {tr('histEmpty')}
             </Text>
+            </View>
           </View>
         ) : (
           <FlatList
             data={list.data}
             keyExtractor={(item) => item.id}
             renderItem={renderCard}
+            /* ★ The title, as the list's own first row — which is what makes
+               it travel with the cards at the scroller's frame rate instead
+               of being animated after them. */
+            ListHeaderComponent={titleInList}
             /* Rows read `digests` and `drawnIds` from the closure; without
                this, a row already rendered would keep its placeholder after
                its digest lands — and would never learn it had been seen. */
@@ -467,15 +528,17 @@ export default function HistoryScreen() {
               styles.listContent,
               {
                 paddingHorizontal: padH,
-                /* The frosted header's clearance, on the CONTENT — so cards
-                   pass behind the glass instead of starting below it. The
-                   dock's clearance below does the same job (PatientShell). */
-                paddingTop: contentTop,
+                /* 0: the header row carries the safe area itself, the way
+                   every other row carries its own height. The dock's
+                   clearance below still belongs here (PatientShell). */
+                paddingTop: 0,
                 paddingBottom: dockFootprint(insets.bottom, screenH),
               },
             ]}
             showsVerticalScrollIndicator={false}
-            scrollEventThrottle={32}
+            /* 16, not 32: this offset now drives a fade rather than a
+               one-shot hairline threshold. */
+            scrollEventThrottle={16}
             onScroll={(e) => onContentScroll(e.nativeEvent.contentOffset.y)}
             accessibilityLabel={tr('histListLabel')}
             refreshControl={
@@ -513,13 +576,21 @@ export default function HistoryScreen() {
         </View>
 
         {/* ── The refresh indicator this screen draws itself ──
-            Placed by us, at a position we own, so no floating header can
-            hide it and no platform's idea of "the top of the scroll view"
-            is involved. Non-interactive: it reports, it is not a button. */}
+            Placed by us, at a position we own, so no platform's idea of "the
+            top of the scroll view" is involved. Non-interactive: it reports,
+            it is not a button.
+
+            ★ It sits level with the title row and CENTRED, which is the one
+            place on that line nothing else occupies: the heading is 30 pt of
+            text hugging the leading edge and Import is a 44 pt square on the
+            trailing one, so the middle is empty in both directions.
+            `refreshing` is also true during a background sync, when the page
+            is at rest and nothing has been pulled down — so a position that
+            relied on the content having moved would be wrong exactly then. */}
         {refreshing && (
           <View
             pointerEvents="none"
-            style={[styles.refreshBadgeRow, { top: headerH + 10 }]}
+            style={[styles.refreshBadgeRow, { top: contentTop }]}
           >
             <View
               style={[
@@ -532,109 +603,14 @@ export default function HistoryScreen() {
           </View>
         )}
 
-        {/* ── The frosted header, over everything ──
-            Same material and the same behaviour as the study viewer's:
-            the page travels underneath it, and the hairline appears only
-            once something is actually behind it. It is drawn LAST so it
-            sits above the list without needing a zIndex argument. */}
-        <GlassSurface
-          dark={dark}
-          tint={headerTint}
-          style={[
-            styles.header,
-            {
-              paddingTop: insets.top + 6,
-              paddingLeft: Math.max(insets.left, 0),
-              paddingRight: Math.max(insets.right, 0),
-              borderBottomColor: scrolled ? t.border : 'transparent',
-            },
-          ]}
-        >
-          <View
-            onLayout={(e) => {
-              /* The measured View is INSIDE the glass, so the bar's own
-                 padding has to be added back — without it the first card
-                 sits under the tabs (the study viewer paid for this one). */
-              const h = e.nativeEvent.layout.height + insets.top + 6 + HEADER_PAD_BOTTOM;
-              setMeasuredHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
-            }}
-          >
-            <View style={[styles.head, { paddingHorizontal: padH }, rtl && styles.rowRtl]}>
-              <View style={styles.headText}>
-                <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
-                  {tr('histTitle')}
-                </Text>
-                {!empty && (
-                  <Text style={[styles.count, { color: t.textSecondary, textAlign: align }]}>
-                    {tr('histCount', { n: String(list.data?.length ?? 0) })}
-                    {selfOnly ? ` · ${tr('histOwnOnly')}` : ''}
-                    {/* A visible backfill is a screen doing work; a list
-                        quietly filling with verdicts is a screen that might
-                        be broken. */}
-                    {digesting
-                      ? ` · ${tr('histDigestProgress', {
-                          done: String(digesting.done),
-                          total: String(digesting.total),
-                        })}`
-                      : ''}
-                  </Text>
-                )}
-              </View>
-
-              {/* Import lives on the LIST, not inside a study: it CREATES a
-                  study, and an action that adds a row belongs where the rows
-                  are. */}
-              {features.has('exportRaw') && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={tr('histImport')}
-                  disabled={importing}
-                  onPress={() => void handleImport()}
-                  style={({ pressed }) => [
-                    styles.importBtn,
-                    {
-                      backgroundColor: t.surface,
-                      borderColor: t.border,
-                      opacity: importing ? 0.4 : pressed ? 0.6 : 1,
-                    },
-                  ]}
-                >
-                  <Ionicons name="add" size={22} color={t.textPrimary} />
-                </Pressable>
-              )}
-            </View>
-
-            {/* ★ INSIDE the glass, not below it. As a sibling of the list it
-                would be pushed down by the header's clearance and then the
-                list would pad for the header AGAIN underneath it, leaving a
-                header-sized hole. In here it is part of what `onLayout`
-                measures, so the list simply starts lower while it shows —
-                and it belongs to the Import button either way. */}
-            {importError && (
-              <Text
-                style={[
-                  styles.error,
-                  {
-                    color: t.danger,
-                    backgroundColor: t.dangerSoft,
-                    marginHorizontal: padH,
-                    marginTop: 10,
-                  },
-                ]}
-              >
-                {importError}
-              </Text>
-            )}
-          </View>
-        </GlassSurface>
       </View>
     </PatientShell>
   );
 }
 
 const styles = StyleSheet.create({
-  /* No `gap`: the header floats above this box rather than sitting in it,
-     so the only children are full-bleed scrollers. */
+  /* No `gap`: the only children are the full-bleed scroller and the
+     absolutely-positioned refresh badge. */
   root: { flex: 1 },
   pane: { flex: 1 },
   /* Absolutely placed by this screen — see the badge's comment. `left/right`
@@ -648,21 +624,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: HEADER_PAD_BOTTOM,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    /* The material must clip to its own box or the blur bleeds past the
-       bar on Android. */
-    overflow: 'hidden',
-  },
-  rowRtl: { flexDirection: 'row-reverse' },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headText: { flex: 1, flexShrink: 1, gap: 2 },
-  title: { fontSize: 30, fontWeight: '800' },
+  /* `header`, `head`, `headText`, `title` and `rowRtl` went with the frosted
+     bar in v0.70.0 — the row layout and the 30 pt heading now belong to
+     `PageTitle`, which History and Insights share so the two tabs cannot
+     drift apart by a font weight. */
   count: { fontSize: 13 },
   importBtn: {
     flexShrink: 0,
@@ -689,6 +654,14 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v2.1.0 — No top bar. The title, the count and Import are the list's
+//          ListHeaderComponent and fade out as the page moves (`PageTitle`),
+//          which deletes the measured header height, `estimateHeaderH`, the
+//          `onLayout` that added the bar's padding back by hand, the
+//          `scrolled` hairline state and the tint pair. The refresh badge is
+//          anchored to the title row's empty middle instead of to a measured
+//          bar. `scrollEventThrottle` 32 → 16: the offset drives a fade now,
+//          not a one-shot threshold.
 // v1.7.0 — The hidden Insights pane is told it is hidden (`active`). Keeping it
 //          mounted is still right — it is what stopped the flicker — but a
 //          mounted pane's controls outlive the tab, and the builder's haptics
