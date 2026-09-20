@@ -1,5 +1,87 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.72.0 - 2026-09-20 - the app icon is the six-lead ECG
+
+⚠️ **NATIVE REBUILD — there is no OTA for this.** An app icon is compiled into
+the binary (iOS asset catalog, Android `res/mipmap`), never carried in a JS
+bundle, so `app.json` goes 0.37.0 → **0.38.0** and it ships with
+`npm run ship:rebuild`.
+
+**★ v0.68.0–v0.71.0 ride along.** They were published OTA to runtime 0.37.0;
+this binary is 0.38.0, so those four updates can never reach it — and do not
+need to. Their code is in this bundle, baked in. Every OTA after this one must
+be published while `app.json` still reads **0.38.0**.
+
+The source artwork is committed at `assets/brand/app-icon-source.png`, so the
+set can be regenerated rather than re-drawn.
+
+### What was flagged, and overruled
+
+Before building anything, the artwork was rendered at the **actual home-screen
+sizes** — 180 px and 60 px, magnified ×3 with **nearest neighbour** so nothing
+was flattered. At 60 px the six thin traces and the `I / II / III / aVR / aVL /
+aVF` labels collapse into a blue-grey smudge. Four alternatives built from the
+same artwork and the same palette (3 leads, 2 leads, 1 lead, each on the
+original gradient) were offered with previews.
+
+**The user chose the full artwork.** It is their brand, and this paragraph
+exists so that nobody later reads the density as an oversight.
+
+### The two things that were not a matter of taste
+
+**1. Android crops, and the safe zone is a circle.**
+An adaptive layer is 108dp and a launcher may crop everything outside the
+middle 72dp. Full-bleed, every mask sliced the lead labels through the middle
+of their glyphs — `aVR` → `R`. Fitting the content to the 72dp **square** then
+*still* clipped it under Pixel's round mask, because a 683 px box has a 914 px
+diagonal and does not fit a 683 px circle. The script's own header says "the
+middle 72dp", which reads as a square; that phrasing is now corrected in both
+places.
+
+New: `scripts/make-adaptive-foreground.js`. It rebuilds that layer from the
+artwork's own two halves — the gradient (traces averaged away on a coarse grid)
+with the six leads added back at **50 %** of the frame, fitted by the diagonal.
+The subject is added as **glow** (`artwork − artwork's own local background`,
+clamped at zero) rather than composited with `max()`, which left a visible
+bright rectangle where the artwork's cyan corner outran the averaged field; the
+reference for that subtraction is a **fine** grid while the field painted
+underneath is a **coarse** one, because the two jobs want opposite things. The
+last of the step is feathered out over the box's outer 5 %.
+
+**iOS is untouched and stays full-bleed** — it does not crop an icon, it only
+rounds its corners.
+
+**2. The monochrome layer was a heart.**
+Android 13+ tints that layer flat and discards its colour. Leaving v0.67.0's
+heart would have put a **different mark on a themed home screen than the one in
+the app drawer** — a brand disagreeing with itself depending on a display
+setting, and nothing on this Windows machine would have surfaced it.
+
+It is now three bold ECG traces. **Three, not six:** six rows inside the safe
+zone leaves ~114 px of pitch at 1024, roughly 5 dp once a launcher draws it at
+48 dp — hairlines that grey out into a smudge, i.e. exactly the failure the
+artwork has at 60 px, and the one layer we draw ourselves must not repeat it.
+Its block size is **solved** from the safe radius (the drawn extent includes the
+R spike and half a stroke, so fitting the block and hoping is how the
+square-vs-circle mistake gets made twice), and the script **fails the build** if
+the runs are the wrong count, too thin, or reach past the circle. It did fail,
+once, at 406 px against a 342 px radius — which is the check doing its job.
+
+`adaptiveIcon.backgroundColor` `#9971D8` → **`#10307F`**, sampled from the new
+artwork rather than guessed.
+
+### Verified, and what that does not mean
+
+All five files were rendered under a circular mask, a rounded-square mask and an
+iOS squircle and **looked at** before the build — §6.4 applies to pictures as
+much as to code. **Nobody has yet seen this on a real home screen.**
+
+Files: `assets/brand/app-icon-source.png` (new), the five generated assets,
+`scripts/make-icons.ps1` (v2.0.0), `scripts/make-adaptive-foreground.js` (new,
+v1.4.0), `app.json`, `config/version.ts`.
+
+---
+
 ## v0.71.0 - 2026-09-20 - the random sign-out
 
 **JS only — OTA onto runtime 0.37.0.** The server half ships separately as

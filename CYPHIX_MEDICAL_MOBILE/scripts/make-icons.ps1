@@ -115,70 +115,106 @@ Write-Host ("  -> mean colour #{0:X2}{1:X2}{2:X2}  (app.json adaptiveIcon.backgr
 $bg.Dispose(); $tiny.Dispose()
 
 # ---- 3. monochrome: a DRAWN silhouette ---------------------------------------
+#
+#  ** v2.0.0 - THIS USED TO BE A HEART, AND IT CANNOT STAY ONE. **
+#  The v0.67.0 artwork was a heart with a pulse trace through it, so the
+#  themed layer was that shape with the trace punched out. The artwork is
+#  now a six-lead ECG, and leaving the heart here would put a DIFFERENT
+#  MARK on an Android 13+ themed home screen than the one in the app
+#  drawer - a brand that disagrees with itself depending on a display
+#  setting. Nobody would have caught it from Windows.
+#
+#  ** AND IT IS THREE TRACES, NOT SIX. **
+#  Android tints this layer flat and throws its colour away, so the only
+#  thing carrying meaning is stroke WIDTH. Six rows inside the 66.7 % safe
+#  circle leaves ~114 px of pitch at 1024, which is ~12 dp on the 108 dp
+#  layer and roughly 5 dp once a launcher draws it at 48 dp - hairlines
+#  that grey out into a smudge, which is exactly the failure the full
+#  artwork has at 60 px and the reason it must not be repeated in the one
+#  layer we actually draw ourselves. Three rows at 40 px of stroke survive
+#  the same reduction and still say "more than one lead".
+#
+#  The beat is the artwork's own rhythm - P, a small Q, the tall R, a deep
+#  S, a T bump - stated as fractions of the ROW PITCH so the proportions
+#  hold at any size.
 $Size = 1024
-# The classic parametric heart, sampled as a polygon:
-#   x = 16 sin^3 t ,  y = 13 cos t - 5 cos 2t - 2 cos 3t - cos 4t
-# Sampled rather than drawn with beziers because GraphicsPath.GetBounds()
-# bounds a bezier's CONTROL POINTS, not its curve - scaling off that made the
-# first version narrow and undersized.
-$poly = @()
-for ($i = 0; $i -lt 240; $i++) {
-    $t = 2 * [Math]::PI * $i / 240
-    $x = 16 * [Math]::Pow([Math]::Sin($t), 3)
-    $y = 13 * [Math]::Cos($t) - 5 * [Math]::Cos(2 * $t) - 2 * [Math]::Cos(3 * $t) - [Math]::Cos(4 * $t)
-    $poly += New-Object System.Drawing.PointF ([float]$x, [float](-$y))   # screen y grows down
-}
-$heart = New-Object System.Drawing.Drawing2D.GraphicsPath
-$heart.AddPolygon([System.Drawing.PointF[]]$poly)
+# ** THE SAFE ZONE IS A CIRCLE, NOT A SQUARE. ** This script's own header
+# says "the middle 72dp", which reads as a square - and fitting the traces
+# to that square then rendering them under Pixel's circular mask clipped
+# both ends of the top and bottom rows. A box only survives every mask if
+# its DIAGONAL fits: w^2 + h^2 <= (Size * 0.667)^2. Same correction as
+# make-adaptive-foreground.js v1.1.0, for the same reason.
+$safeD = $Size * 0.667                     # the safe DIAMETER
+$rows = 3
+$beats = 2
+$ratio = 1.25                              # wider than tall: an ECG is horizontal
+$stroke = $Size * 0.033                    # ~34 px
 
-# 58 % of the canvas: inside the 66.7 % safe zone with margin to spare.
-$hbounds = $heart.GetBounds()
-$scale = ($Size * 0.58) / [Math]::Max($hbounds.Width, $hbounds.Height)
-$m = New-Object System.Drawing.Drawing2D.Matrix
-$m.Translate(($Size / 2), ($Size / 2))
-$m.Scale($scale, $scale)
-$m.Translate(-($hbounds.X + $hbounds.Width / 2), -($hbounds.Y + $hbounds.Height / 2))
-$heart.Transform($m)
-$hb = $heart.GetBounds()
+# ** THE BLOCK IS SOLVED FOR, NOT CHOSEN. **
+# A first pass picked a block that fitted the safe circle and the CHECK
+# below still failed at 406 px against a 342 px radius - because what has
+# to fit is not the block, it is the DRAWN EXTENT: the block plus the R
+# spike standing out of the top row, plus half a stroke all round. Fitting
+# the block and hoping is how the square-vs-circle mistake gets made twice.
+# So the extent is written down and the height falls out of it:
+#   halfW = ratio*h/2 + stroke/2
+#   halfH = h/2 + (h/rows)*spike + stroke/2
+#   halfW^2 + halfH^2 = (safeD/2)^2
+$spike = 0.42                              # R amplitude, in pitches (see $beat)
+$ea = $ratio / 2
+$eb = 0.5 + $spike / $rows
+$qa = $ea * $ea + $eb * $eb
+$qb = $stroke * ($ea + $eb)
+$qc = $stroke * $stroke / 2 - ($safeD / 2) * ($safeD / 2)
+$blockH = (-$qb + [Math]::Sqrt($qb * $qb - 4 * $qa * $qc)) / (2 * $qa)
+$blockW = $blockH * $ratio
+$safeX = ($Size - $blockW) / 2
+$pitch = $blockH / $rows                   # vertical distance between traces
+$beatW = $blockW / $beats
+
+# x fraction of a beat, y fraction of the ROW PITCH (screen y grows down).
+$beat = @(
+    @(0.00,  0.00), @(0.16,  0.00), @(0.22, -0.10), @(0.28, 0.00),
+    @(0.40,  0.00), @(0.44,  0.06), @(0.50, -0.42), @(0.56, 0.18),
+    @(0.60,  0.00), @(0.72,  0.00), @(0.78, -0.14), @(0.86, 0.00),
+    @(1.00,  0.00)
+)
 
 $mono = New-Canvas $Size $false
 $gm = New-Gfx $mono
-$gm.FillPath([System.Drawing.Brushes]::White, $heart)
-
-# The trace: flat, a small dip and bump, the tall R, the deep S, a recovery,
-# flat. Amplitudes are fractions of the HEART's box, never the canvas, so the
-# rhythm holds its proportions at any scale.
-# ** The R spike is capped at 0.18 h and the baseline sits BELOW centre. ** The
-# heart's own notch dips about 0.18 h from the top; a taller spike reaches it,
-# the two gaps merge, and the lobes read as two blobs. The bridge of flesh left
-# between them is MEASURED at the end of this script, not eyeballed.
-$cx = $hb.X + $hb.Width / 2
-$cy = $hb.Y + $hb.Height * 0.56
-$w = $hb.Width; $h = $hb.Height
-$trace = @(
-    @(-0.75, 0.00), @(-0.30, 0.00), @(-0.24, 0.06), @(-0.18, -0.045), @(-0.13, 0.00),
-    @(-0.06, 0.00), @( 0.00, -0.18), @( 0.07, 0.18), @( 0.12, -0.03), @( 0.17, 0.00),
-    @( 0.75, 0.00)
-) | ForEach-Object { New-Object System.Drawing.PointF (($cx + $_[0] * $w), ($cy + $_[1] * $h)) }
-
-# A transparent pen under SourceCopy writes its alpha instead of blending it,
-# so it ERASES. Outside the heart the canvas is already transparent, so the
-# trace needs no clipping - it can only show where it crosses the shape.
-# Antialiasing is OFF for the cut: under SourceCopy a blended edge writes
-# partial alpha and leaves a ghost rim. At 1024 px the aliased edge is far
-# under one pixel by the time a launcher scales it to 108dp.
-$pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::Transparent), ($w * 0.075)
+$pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), $stroke
 $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
 $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
 $pen.EndCap   = [System.Drawing.Drawing2D.LineCap]::Round
-$gm.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::None
-$gm.CompositingMode = [System.Drawing.Drawing2D.CompositingMode]::SourceCopy
-$gm.DrawLines($pen, [System.Drawing.PointF[]]$trace)
+
+$baselines = @()
+for ($r = 0; $r -lt $rows; $r++) {
+    # Centre of each band, so the outer two keep half a pitch of margin
+    # inside the safe zone rather than sitting on its edge.
+    $by = ($Size - $blockH) / 2 + $pitch * ($r + 0.5)
+    $baselines += $by
+    $pts = @()
+    for ($b = 0; $b -lt $beats; $b++) {
+        foreach ($p in $beat) {
+            # The first point of a later beat repeats the last of the one
+            # before it; harmless on a polyline and keeps the loop simple.
+            $x = $safeX + $beatW * ($b + $p[0])
+            $y = $by + $pitch * $p[1]
+            $pts += New-Object System.Drawing.PointF ([float]$x, [float]$y)
+        }
+    }
+    $gm.DrawLines($pen, [System.Drawing.PointF[]]$pts)
+}
 $gm.Dispose()
 
-# Down the centre column the shape must read: gap, FLESH, gap (the R spike),
-# flesh. A missing or thin first run means the spike has severed the lobes.
-$col = [int][Math]::Round($cx)
+# ---- the check that makes this more than an opinion ----
+# Down a column that crosses every trace on its FLAT baseline (5 % into the
+# first beat, before the P wave), the shape must read as exactly $rows runs
+# of opaque pixels, each about one stroke thick. Fewer runs means two traces
+# have merged; a thin run means the stroke has been scaled away. Both are
+# invisible at 1024 px and fatal at 48 dp, which is the whole reason this is
+# measured rather than eyeballed.
+$col = [int][Math]::Round($safeX + $beatW * 0.05)
 $runs = @(); $inRun = $false; $runStart = 0
 for ($y = 0; $y -lt $Size; $y++) {
     $isOpaque = $mono.GetPixel($col, $y).A -gt 128
@@ -186,15 +222,28 @@ for ($y = 0; $y -lt $Size; $y++) {
     elseif (-not $isOpaque -and $inRun) { $inRun = $false; $runs += , @($runStart, ($y - $runStart)) }
 }
 if ($inRun) { $runs += , @($runStart, ($Size - $runStart)) }
-$bridge = if ($runs.Count -ge 2) { $runs[0][1] } else { 0 }
-$mono.Save((Join-Path $OutDir 'android-icon-monochrome.png'), [System.Drawing.Imaging.ImageFormat]::Png)
-$mono.Dispose(); $heart.Dispose(); $pen.Dispose(); $art.Dispose()
+$thinnest = if ($runs.Count -gt 0) { ($runs | ForEach-Object { $_[1] } | Measure-Object -Minimum).Minimum } else { 0 }
 
-if ($runs.Count -lt 2 -or $bridge -lt ($h * 0.09)) {
-    Write-Host ("  android-icon-monochrome.png    1024 px  FAIL - the notch and the R spike merged (bridge {0:N0} px); lower the spike" -f $bridge) -ForegroundColor Red
+# And the SHAPE has to fit the safe circle, not just the safe square - the
+# thing that was got wrong the first time. Measured from the drawn extent,
+# including the stroke's own width and the R spike's reach.
+$halfW = $blockW / 2 + $stroke / 2
+$halfH = $blockH / 2 + $pitch * $spike + $stroke / 2
+$corner = [Math]::Sqrt($halfW * $halfW + $halfH * $halfH)
+
+$mono.Save((Join-Path $OutDir 'android-icon-monochrome.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+$mono.Dispose(); $pen.Dispose(); $art.Dispose()
+
+if ($runs.Count -ne $rows -or $thinnest -lt ($stroke * 0.8)) {
+    Write-Host ("  android-icon-monochrome.png    1024 px  FAIL - expected $rows runs of ~{0:N0} px, got {1} runs, thinnest {2:N0} px" -f $stroke, $runs.Count, $thinnest) -ForegroundColor Red
     exit 1
 }
-Write-Host ("  android-icon-monochrome.png    1024 px  drawn; lobes joined by {0:N0} px ({1:P0} of heart height)" -f $bridge, ($bridge / $h))
+if ($corner -gt ($safeD / 2)) {
+    Write-Host ("  android-icon-monochrome.png    1024 px  FAIL - corner {0:N0} px from centre, past the {1:N0} px safe radius; a circular mask would clip it" -f $corner, ($safeD / 2)) -ForegroundColor Red
+    exit 1
+}
+Write-Host ("  android-icon-monochrome.png    1024 px  drawn; $rows traces, thinnest run {0:N0} px, corner {1:N0} px vs a {2:N0} px safe radius" -f $thinnest, $corner, ($safeD / 2))
+
 
 # ---- 4. lossless re-encode ---------------------------------------------------
 # System.Drawing's PNG encoder takes no compression settings and picks a poor

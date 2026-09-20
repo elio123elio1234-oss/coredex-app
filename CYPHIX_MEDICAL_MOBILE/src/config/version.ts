@@ -1,7 +1,60 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.71.0';
-export const APP_BUILD_LABEL = 'the random sign-out: four client causes closed (server half is CYPHIX_SERVER v0.7.0)';
+export const APP_VERSION = '0.72.0';
+export const APP_BUILD_LABEL = 'the app icon is the six-lead ECG - NATIVE REBUILD (an icon lives in the binary)';
+
+// v0.72.0 - THE APP ICON IS THE SIX-LEAD ECG.
+//           ⚠️ NATIVE REBUILD: app.json 0.37.0 -> 0.38.0. An icon is compiled
+//           into the binary's asset catalog (iOS) and res/mipmap (Android) -
+//           no OTA can change it. ★ AND v0.68.0-v0.71.0 RIDE ALONG: they were
+//           published OTA to runtime 0.37.0, this binary is 0.38.0, so those
+//           updates can never reach it - but their code is in this bundle,
+//           baked in, which is the correct outcome and not a loss. Every OTA
+//           after this one must be published while app.json still reads
+//           0.38.0.
+//
+//           The source artwork is committed at assets/brand/app-icon-source.png
+//           so the set can be regenerated rather than re-drawn.
+//
+//           ⚠️ WHAT WAS FLAGGED AND OVERRULED, recorded because it is real.
+//           Rendered at the ACTUAL home-screen sizes before building (180 px
+//           and 60 px, magnified x3 with NEAREST NEIGHBOUR so nothing was
+//           flattered): at 60 px the six thin traces and the I/II/III/aVR/
+//           aVL/aVF labels collapse into a blue-grey smudge. Four alternatives
+//           built from the same artwork and the same palette - 3 leads, 2
+//           leads, 1 lead, each on the original gradient - were offered with
+//           previews. The user chose the full artwork. It is their brand; this
+//           note is here so nobody later mistakes the density for an oversight.
+//
+//           ── THE TWO THINGS THAT ARE NOT A MATTER OF TASTE ──
+//           (1) ANDROID CROPS. An adaptive layer is 108dp and a launcher may
+//               crop everything outside the middle 72dp. Full-bleed, every
+//               mask sliced the lead labels through the middle of their
+//               glyphs ("aVR" -> "R"). And the safe zone is a CIRCLE, not a
+//               square: fitting the content to the 72dp SQUARE still clipped
+//               it under Pixel's round mask, because a 683 px box has a
+//               914 px diagonal. So scripts/make-adaptive-foreground.js
+//               rebuilds that layer - the artwork's own gradient, with its own
+//               six leads added back at 50 % of the frame, fitted by the
+//               DIAGONAL and feathered at the edges so the content box leaves
+//               no visible step. iOS is untouched and stays full-bleed: it
+//               does not crop an icon, it only rounds its corners.
+//           (2) THE MONOCHROME LAYER WAS A HEART. Android 13+ tints that
+//               layer flat, and leaving v0.67.0's heart there would have put a
+//               DIFFERENT MARK on a themed home screen than the one in the app
+//               drawer - a brand disagreeing with itself depending on a display
+//               setting, which nobody would have caught from Windows. It is now
+//               three bold ECG traces (three, not six: at six the strokes are
+//               hairlines at 48dp, which is the same failure the artwork has at
+//               60 px and must not be repeated in the one layer we draw
+//               ourselves). Its block size is SOLVED from the safe radius
+//               rather than chosen, and the script fails the build if the runs
+//               are the wrong count, too thin, or reach past the circle.
+//
+//           All five files were rendered under a circular mask, a rounded-square
+//           mask and an iOS squircle, and LOOKED AT, before this was built
+//           (CLAUDE.md §6.4 applies to pictures as much as to code). Nobody has
+//           yet seen it on a real home screen.
 
 // v0.71.0 - THE RANDOM SIGN-OUT. JS ONLY - OTA onto runtime 0.37.0.
 //           Server half ships separately as CYPHIX_SERVER v0.7.0.

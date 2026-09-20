@@ -2,7 +2,7 @@
   "expo": {
     "name": "CYPHIX Medical",
     "slug": "elio-el-hassrouny",
-    "version": "0.37.0",
+    "version": "0.38.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "cyphix",
@@ -20,7 +20,7 @@
     "android": {
       "package": "com.cyphix.medical",
       "adaptiveIcon": {
-        "backgroundColor": "#9971D8",
+        "backgroundColor": "#10307F",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
