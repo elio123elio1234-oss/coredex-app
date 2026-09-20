@@ -363,8 +363,54 @@ export default function ProfileScreen() {
           )
         }
       >
-        {/* ── Header: portrait + identity + care team ── */}
-        <FadeUpView duration={420} distance={10} style={[styles.header, rtl && styles.rowReverse]}>
+        {/* ★ THE REFRESH INDICATOR SITS ABOVE THE IDENTITY, NOT BESIDE IT.
+            v0.89.0 put it in the header row's trailing status slot — which
+            already existed, which is why it was tempting — and it read as a
+            thing attached to the NAME rather than as the state of the page.
+            Asked for plainly: "it should be above the name, not next to it."
+
+            ★ THE SLOT IS ALWAYS THERE, AND THAT IS THE POINT. Rendering it
+            only while fetching would push the whole page down ~32 pt the
+            moment a refresh began — and on this screen `isFetching` goes
+            true on every ARRIVAL at the tab, which is exactly when someone
+            is looking at it. A reserved strip costs a little air at the top
+            of a page that scrolls anyway and can never jump. It is also
+            honest furniture: a fixed place where the page reports its own
+            state, rather than something that elbows the layout aside.
+
+            Outside `FadeUpView` deliberately — the entrance is for content
+            arriving, and a status indicator that fades up every time the tab
+            is opened would animate the wrong thing.
+
+            ⚠️ Why the native control is not simply tinted: a
+            `RefreshControl`'s indicator is positioned at the top of the
+            SCROLL VIEW, and this page's content starts at `insets.top + 12`
+            — so the ring lands in the status-bar strip, under the notch.
+            `progressViewOffset` is the obvious answer and is not dependable
+            on iOS; History's refresh block has the post-mortem, and it cost
+            a release there. Same conclusion as History, opposite cause. */}
+        <View style={styles.headerBlock}>
+          <View style={styles.refreshSlot}>
+            {isFetching && (
+              <FailSoft
+                label="profile refresh orb"
+                fallback={<ActivityIndicator color={t.textTertiary} />}
+              >
+                <ThinkingOrb
+                  state="composing"
+                  size={26}
+                  /* 20, not 64 — see `OrbDesign`. At this footprint the 64
+                     design's 566 dots land at a fraction of a pixel each. */
+                  design={20}
+                  ink={t.textPrimary}
+                  paper={t.bg}
+                />
+              </FailSoft>
+            )}
+          </View>
+
+          {/* ── Header: portrait + identity + care team ── */}
+          <FadeUpView duration={420} distance={10} style={[styles.header, rtl && styles.rowReverse]}>
           {/* Tappable ONLY where there is a record to write to. Offline the
               card is a fixture, and a picker that saved nowhere would be a
               control that appears to work. */}
@@ -435,43 +481,8 @@ export default function ProfileScreen() {
               </Text>
             )}
           </View>
-          {/* ★ THE REFRESH INDICATOR LIVES HERE, not at the top of the
-              scroll view where the platform puts it.
-
-              This slot already existed for `isLoading`, and it is the right
-              home for both meanings: a row that already ends in a status
-              position, inside the layout, so nothing has to be positioned
-              absolutely against a header whose height is not known. It is
-              gated on `isFetching` now, which is a superset of `isLoading` —
-              one indicator for the first load AND for a pull-to-refresh,
-              instead of a native ring for one and a spinner for the other.
-
-              ⚠️ Why not simply tint the native control: a `RefreshControl`'s
-              indicator is positioned at the top of the SCROLL VIEW, and this
-              page's content starts at `insets.top + 12` — so the ring lands
-              in the status-bar strip, under the notch. `progressViewOffset`
-              is the obvious answer and is not dependable on iOS; History's
-              refresh block has the post-mortem, and it cost a release there.
-              So the native indicator is made transparent and this one is the
-              visible part. Same conclusion as History, reached from a
-              different cause. */}
-          {isFetching && (
-            <FailSoft
-              label="profile refresh orb"
-              fallback={<ActivityIndicator color={t.textTertiary} />}
-            >
-              <ThinkingOrb
-                state="composing"
-                size={26}
-                /* 20, not 64 — see `OrbDesign`. At this footprint the 64
-                   design's 566 dots land at a fraction of a pixel each. */
-                design={20}
-                ink={t.textPrimary}
-                paper={t.bg}
-              />
-            </FailSoft>
-          )}
-        </FadeUpView>
+          </FadeUpView>
+        </View>
 
         {/* The portrait's own failures, said where the portrait is. A
             refusal is not an error — the patient declined a permission,
@@ -831,6 +842,14 @@ const styles = StyleSheet.create({
   rowReverse: { flexDirection: 'row-reverse' },
   brand: { position: 'absolute', left: 20, zIndex: 20 },
   page: { paddingHorizontal: 20, gap: 18 },
+  /* The identity block and the strip above it, as ONE child of the page,
+     so `page`'s own 18 pt gap applies to the block rather than opening a
+     second gap under the indicator. */
+  headerBlock: { gap: 6 },
+  /* Reserved whether or not anything is in it — see the comment at the
+     call site. A slot that appears only while fetching would shove the
+     page down on every arrival at the tab. */
+  refreshSlot: { height: 26, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   /* The tap target and the round mask are two views on purpose. This one
      does NOT clip, so the badge can overhang the portrait's edge; it stays

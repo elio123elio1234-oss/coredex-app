@@ -1,5 +1,39 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.89.1 - 2026-09-21 - the Profile orb sits above the name
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“רק שזה צריך להיות מעל השם ולא לידו”*
+
+v0.89.0 put it in the header row's trailing status slot **because that slot
+already existed** — which is a reason to notice a place, not a reason to use
+it. On the same line as the name it read as something attached to the
+**person** rather than as the state of the **page**. Reusing existing furniture
+is only tidy when the furniture means the right thing.
+
+It now has its own strip, centred, directly above the identity block.
+
+### ★ And the strip is reserved whether or not anything is in it
+
+Rendering it only while fetching would shove the whole page down ~32 pt the
+moment a refresh began — and on this screen `isFetching` goes true on **every
+arrival at the tab**, which is exactly when someone is looking at it. A fixed
+strip costs a little air at the top of a page that scrolls anyway, and can
+never jump.
+
+`headerBlock` wraps the strip and the identity as **one** child of the page, so
+`page`'s own 18 pt gap applies to the block rather than opening a second gap
+underneath the indicator.
+
+It sits **outside** `FadeUpView` on purpose: that entrance is for content
+arriving, and a status indicator that fades up every time the tab is opened
+would be animating the wrong thing.
+
+Files: `screens/ProfileScreen.tsx`, `config/version.ts`.
+
+---
+
 ## v0.89.0 - 2026-09-21 - Profile refreshes with the orb too
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** Finishes what v0.88.0 flagged

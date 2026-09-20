@@ -1,7 +1,31 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.89.0';
-export const APP_BUILD_LABEL = 'Profile refreshes with the orb too - and its ring was landing under the notch';
+export const APP_VERSION = '0.89.1';
+export const APP_BUILD_LABEL = 'the Profile orb sits ABOVE the name, not beside it';
+
+// v0.89.1 - THE PROFILE ORB MOVES ABOVE THE IDENTITY. JS only - OTA.
+//
+//           "It should be above the name, not next to it." v0.89.0 put it
+//           in the header row's trailing status slot BECAUSE THAT SLOT
+//           ALREADY EXISTED - which is a reason to notice a place, not a
+//           reason to use it. Sitting on the same line as the name, it read
+//           as something attached to the PERSON rather than as the state of
+//           the page. Reusing existing furniture is only tidy when the
+//           furniture means the right thing.
+//
+//           ★ AND THE SLOT IS RESERVED WHETHER OR NOT ANYTHING IS IN IT.
+//           Rendering it only while fetching would shove the whole page down
+//           ~32 pt the moment a refresh started - and on this screen
+//           `isFetching` goes true on every ARRIVAL at the tab, which is
+//           precisely when someone is looking at it. A fixed strip costs a
+//           little air at the top of a page that scrolls anyway and can
+//           never jump. `headerBlock` wraps the strip and the identity as
+//           ONE child so the page's own 18 pt gap applies to the block
+//           instead of opening a second gap under the indicator.
+//
+//           Outside `FadeUpView` on purpose: the entrance animation is for
+//           content arriving, and a status indicator that fades up every
+//           time the tab is opened would be animating the wrong thing.
 
 // v0.89.0 - PROFILE GETS THE ORB, AND A MISPLACED RING GOES. JS only - OTA.
 //           Finishes what v0.88.0 flagged rather than leaving it half done.
