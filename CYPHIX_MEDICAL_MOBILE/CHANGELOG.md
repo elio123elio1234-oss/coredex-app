@@ -1,5 +1,44 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.89.0 - 2026-09-21 - Profile refreshes with the orb too
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** Finishes what v0.88.0 flagged
+rather than leaving it half done.
+
+### ★ And it was not only cosmetic — Profile's ring was landing under the notch
+
+`ProfileScreen` still used the plain native `RefreshControl`, and a
+`RefreshControl`'s indicator is positioned at the top of the **scroll view**.
+This page's content starts at `insets.top + 12`, so the ring was appearing in
+the **status-bar strip, under the notch**.
+
+Same defect History had, reached from the opposite cause: there a frosted
+header covered it; here there is no header at all and the scroll view simply
+begins above the safe area. `progressViewOffset` is the obvious answer and is
+**not dependable on iOS** — History's refresh block carries the post-mortem,
+and it cost a release there. So the native indicator is made **transparent**
+(`tintColor` for iOS, `colors` for Android) and keeps only the pull gesture.
+
+### ★ The slot already existed
+
+The identity header row already ends in a status position — it was showing an
+`ActivityIndicator` while `isLoading`. The orb goes there: **inside the
+layout**, so nothing has to be positioned absolutely against a header whose
+height is not known, which is exactly the work History had to do. No new
+furniture on the page.
+
+It is gated on **`isFetching`**, a superset of `isLoading`, so one indicator
+covers the first load *and* every pull-to-refresh — instead of a native ring
+for one and a spinner for the other. `isLoading` is no longer destructured.
+
+`design={20}` and a `FailSoft` boundary with the same `ActivityIndicator`
+fallback, exactly as History — see v0.88.0 for why the 64 design turns to mush
+at this footprint.
+
+Files: `screens/ProfileScreen.tsx`, `config/version.ts`.
+
+---
+
 ## v0.88.0 - 2026-09-21 - History pull-to-refresh spins the orb
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

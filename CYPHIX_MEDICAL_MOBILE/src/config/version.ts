@@ -1,7 +1,38 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.88.0';
-export const APP_BUILD_LABEL = 'History pull-to-refresh spins the orb instead of the system ring';
+export const APP_VERSION = '0.89.0';
+export const APP_BUILD_LABEL = 'Profile refreshes with the orb too - and its ring was landing under the notch';
+
+// v0.89.0 - PROFILE GETS THE ORB, AND A MISPLACED RING GOES. JS only - OTA.
+//           Finishes what v0.88.0 flagged rather than leaving it half done.
+//
+//           ★ AND IT WAS NOT ONLY COSMETIC. Profile still used the plain
+//           native RefreshControl - and a RefreshControl's indicator is
+//           positioned at the top of the SCROLL VIEW. This page's content
+//           starts at `insets.top + 12`, so the ring was landing in the
+//           STATUS-BAR STRIP, under the notch. The same defect History had,
+//           reached from the opposite cause: there a frosted header covered
+//           it, here there is no header and the scroll view simply starts
+//           above the safe area. `progressViewOffset` is the obvious answer
+//           and is not dependable on iOS - History's refresh block carries
+//           the post-mortem, and it cost a release there. So the native
+//           indicator is made TRANSPARENT (tintColor for iOS, colors for
+//           Android) and keeps only the pull gesture.
+//
+//           ★ THE SLOT ALREADY EXISTED. The identity header row ends in a
+//           status position that was showing an ActivityIndicator while
+//           `isLoading`. The orb goes there - inside the layout, so nothing
+//           has to be positioned absolutely against a header whose height is
+//           not known, which is what History had to do. No new furniture.
+//
+//           Gated on `isFetching`, a SUPERSET of `isLoading`: one indicator
+//           for the first load AND for a pull-to-refresh, instead of a
+//           native ring for one and a spinner for the other. `isLoading` is
+//           no longer destructured at all.
+//
+//           `design={20}` and FailSoft with the same ActivityIndicator
+//           fallback, exactly as History - see v0.88.0 for why the 64 design
+//           turns to mush at this footprint.
 
 // v0.88.0 - THE REFRESH INDICATOR IS THE ORB. JS only - OTA.
 //

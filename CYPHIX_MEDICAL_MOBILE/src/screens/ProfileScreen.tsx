@@ -30,7 +30,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import BrandLogo from '@/components/atoms/BrandLogo';
+import FailSoft from '@/components/atoms/FailSoft';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
+import ThinkingOrb from '@/components/atoms/ThinkingOrb';
 import {
   AllergiesIllustration,
   AppearanceIllustration,
@@ -242,7 +244,10 @@ export default function ProfileScreen() {
   /* WHOSE record this is, and what is in it — one hook, three cases
      (server card / demo card / name-only when it will not load). The
      screen deliberately does not know which it got. */
-  const { card, photo, isLoading, isFetching, isError, isDemo, patientId, refetch } =
+  /* No `isLoading`: the header orb is gated on `isFetching`, which is a
+     superset of it, so one indicator covers the first load and every
+     refresh after it. */
+  const { card, photo, isFetching, isError, isDemo, patientId, refetch } =
     usePatientCard();
   const portrait = usePortrait(patientId);
   const [portraitSheet, setPortraitSheet] = useState(false);
@@ -343,7 +348,18 @@ export default function ProfileScreen() {
            the same broken promise as a button that does nothing. */
         refreshControl={
           isDemo ? undefined : (
-            <RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={t.textTertiary} />
+            <RefreshControl
+              refreshing={isFetching}
+              onRefresh={refetch}
+              /* ⚠️ INVISIBLE ON PURPOSE — the control keeps the pull gesture
+                 and the refreshing state, and the header row draws the thing
+                 anyone looks at. See the orb in the header for why: this
+                 indicator sits at the top of the SCROLL VIEW, which on this
+                 page is the status-bar strip under the notch. Two colours,
+                 because iOS reads `tintColor` and Android `colors`. */
+              tintColor="transparent"
+              colors={['transparent']}
+            />
           )
         }
       >
@@ -419,7 +435,42 @@ export default function ProfileScreen() {
               </Text>
             )}
           </View>
-          {isLoading && <ActivityIndicator color={t.textTertiary} />}
+          {/* ★ THE REFRESH INDICATOR LIVES HERE, not at the top of the
+              scroll view where the platform puts it.
+
+              This slot already existed for `isLoading`, and it is the right
+              home for both meanings: a row that already ends in a status
+              position, inside the layout, so nothing has to be positioned
+              absolutely against a header whose height is not known. It is
+              gated on `isFetching` now, which is a superset of `isLoading` —
+              one indicator for the first load AND for a pull-to-refresh,
+              instead of a native ring for one and a spinner for the other.
+
+              ⚠️ Why not simply tint the native control: a `RefreshControl`'s
+              indicator is positioned at the top of the SCROLL VIEW, and this
+              page's content starts at `insets.top + 12` — so the ring lands
+              in the status-bar strip, under the notch. `progressViewOffset`
+              is the obvious answer and is not dependable on iOS; History's
+              refresh block has the post-mortem, and it cost a release there.
+              So the native indicator is made transparent and this one is the
+              visible part. Same conclusion as History, reached from a
+              different cause. */}
+          {isFetching && (
+            <FailSoft
+              label="profile refresh orb"
+              fallback={<ActivityIndicator color={t.textTertiary} />}
+            >
+              <ThinkingOrb
+                state="composing"
+                size={26}
+                /* 20, not 64 — see `OrbDesign`. At this footprint the 64
+                   design's 566 dots land at a fraction of a pixel each. */
+                design={20}
+                ink={t.textPrimary}
+                paper={t.bg}
+              />
+            </FailSoft>
+          )}
         </FadeUpView>
 
         {/* The portrait's own failures, said where the portrait is. A
