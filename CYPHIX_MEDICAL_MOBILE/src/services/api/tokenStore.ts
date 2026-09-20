@@ -484,6 +484,22 @@ async function doRefresh(): Promise<RefreshOutcome> {
   if (!tokens?.refreshToken || !tokens.user?.id) return { kind: 'offline' };
 
   await storeSession(tokens);
+  /**
+   * ★ SUCCESSES ARE RECORDED TOO, and that is the point.
+   *
+   * This log only ever held FAILURES, which made it unreadable at exactly
+   * the moment it mattered. Asked whether a reported sign-out was still
+   * happening, the diagnostic answered `refresh refused by server (401) @
+   * 15:44` — at 18:51, after three hours of the app working perfectly.
+   * A three-hour-old error and a three-second-old one looked identical,
+   * and "nothing has gone wrong since" was indistinguishable from
+   * "nothing has happened since".
+   *
+   * With a success written on every exchange, the timestamp answers the
+   * real question on its own: a recent `refreshed` means the session is
+   * being renewed normally, and an error line older than it is history.
+   */
+  await noteSessionEvent('refreshed OK');
   return {
     kind: 'refreshed',
     user: tokens.user,

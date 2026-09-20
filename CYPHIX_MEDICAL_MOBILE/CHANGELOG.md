@@ -1,5 +1,65 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.82.0 - 2026-09-20 - the session diagnostic records successes, not only failures
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+The sign-out was reported again, and the diagnostic built for exactly that
+moment answered:
+
+```
+token + principal · last: refresh refused by server (401) @ 15:44:06
+```
+
+read at **18:51**, after three hours of the app working perfectly.
+
+### ★ The line was true and useless
+
+It logged only **failures**. So a three-hour-old error and a three-second-old
+one looked identical, and *"nothing has gone wrong since"* could not be told
+apart from *"nothing has happened since"*. The one question the tool exists to
+answer — **is it still happening?** — was the one it could not.
+
+Both healthy outcomes are now written:
+
+| line | meaning |
+|---|---|
+| `refreshed OK` | a real token rotation |
+| `confirmed OK (no rotation)` | a probe against `GET /auth/me` |
+
+Named apart on purpose. `httpAuthService.revalidate` prefers the probe
+precisely *because* it does not spend the refresh token, so probes happen far
+more often than rotations — a log showing only rotations would go quiet for
+fifteen minutes at a time and read as nothing happening.
+
+### What the evidence actually said
+
+Worth recording, because it is the first real test of the v0.71.0 and server
+v0.7.0 fixes:
+
+| time | event |
+|---|---|
+| **14:37** | server v0.7.0 live (grace window 60 s → 24 h), confirmed by `/healthz` |
+| **14:41** | mobile v0.71.0 OTA published — starts reaching the phone |
+| **15:44** | **the 401** — inside that changeover window |
+| 15:44 → **18:51** | no refusal recorded, across five builds |
+
+The old bundle chained concurrent rotations, and that produces the one state
+the grace window **cannot** rescue: the successor has genuinely been used, so
+the server is right to call it a replay. The server-side fix alone was never
+going to be enough — both halves had to land, and they did not land at the
+same instant.
+
+⚠️ **This is not a claim that the bug is fixed.** It is a claim that nothing
+has been refused for three hours, which is the most the evidence supports. From
+here the line dates itself, so the next report can be answered in one glance
+instead of a timeline reconstruction.
+
+Files: `services/api/tokenStore.ts`, `services/auth/httpAuthService.ts`,
+`config/version.ts`.
+
+---
+
 ## v0.81.0 - 2026-09-20 - the app is called Cyphix
 
 ⚠️ **NATIVE REBUILD.** `app.json` 0.44.0 → **0.45.0**. (0.43.0 was build 16,

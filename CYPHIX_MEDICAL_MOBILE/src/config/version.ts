@@ -1,7 +1,46 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.81.0';
-export const APP_BUILD_LABEL = 'the app is called Cyphix';
+export const APP_VERSION = '0.82.0';
+export const APP_BUILD_LABEL = 'Settings > About now records session SUCCESSES, not only failures';
+
+// v0.82.0 - THE SESSION DIAGNOSTIC RECORDS SUCCESSES. JS only - OTA onto
+//           runtime 0.45.0 (build 17).
+//
+//           The sign-out was reported again, and the diagnostic built for
+//           exactly that moment answered:
+//             token + principal - last: refresh refused by server (401) @ 15:44
+//           read at 18:51, after three hours of the app working perfectly.
+//
+//           ★ THE LINE WAS TRUE AND USELESS. It logged only FAILURES, so a
+//           three-hour-old error and a three-second-old one looked identical,
+//           and "nothing has gone wrong since" could not be told apart from
+//           "nothing has happened since". The one question the tool exists to
+//           answer - is it STILL happening? - was the one it could not.
+//
+//           Both healthy outcomes are now written:
+//             'refreshed OK'              - a real token rotation
+//             'confirmed OK (no rotation)' - a probe against GET /auth/me
+//           Named apart on purpose. `httpAuthService.revalidate` prefers the
+//           probe precisely because it does NOT spend the refresh token, so
+//           probes happen far more often than rotations; a log showing only
+//           rotations would go quiet for fifteen minutes at a time and read as
+//           nothing happening.
+//
+//           WHAT THE EVIDENCE ACTUALLY SAID, recorded because it is the first
+//           real test of the v0.71.0 / server v0.7.0 fixes:
+//             14:37  server v0.7.0 live (grace window 60 s -> 24 h)
+//             14:41  mobile v0.71.0 OTA published - starts reaching the phone
+//             15:44  the 401 - inside that changeover window
+//             18:51  no refusal since, across five builds
+//           The old bundle chained concurrent rotations, which produces the
+//           one state the grace window CANNOT rescue: the successor has
+//           genuinely been used, so the server is right to call it a replay.
+//           Server-side alone was never enough; both halves had to land, and
+//           they did not land at the same instant.
+//
+//           ⚠️ NOT a claim that the bug is fixed. It is a claim that nothing
+//           has been refused for three hours, which is the most the evidence
+//           supports. From here the line dates itself.
 
 // v0.81.0 - THE APP IS CALLED CYPHIX.
 //           ⚠️ REBUILD: app.json 0.44.0 -> 0.45.0 (0.43.0 was build 16,

@@ -50,6 +50,7 @@ import {
   getAccessToken,
   readPrincipal,
   readRefreshToken,
+  noteSessionEvent,
   refreshSession,
   storeSession,
 } from '@/services/api/tokenStore';
@@ -328,6 +329,12 @@ export class HttpAuthService implements MobileAuthService {
     if (!user?.id) return null;
 
     await remember(user);
+    /* Recorded like a real refresh, and named differently: a probe CONFIRMS
+       the session without rotating anything, and the whole point of
+       preferring it is that it happens far more often than a rotation. A
+       diagnostic that only showed rotations would go quiet for fifteen
+       minutes at a time and read as nothing happening. */
+    await noteSessionEvent('confirmed OK (no rotation)');
     return { kind: 'refreshed', user, refreshExpiresAt: principal.refreshExpiresAt };
   }
 
