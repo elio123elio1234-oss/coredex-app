@@ -46,6 +46,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import CyphixWordmark from '@/components/atoms/CyphixWordmark';
+import FailSoft from '@/components/atoms/FailSoft';
 import ThinkingOrb from '@/components/atoms/ThinkingOrb';
 import { APP_VERSION } from '@/config/version';
 import { authPalette } from '@/theme/authTheme';
@@ -117,14 +118,28 @@ export default function BootSplash() {
           package's grey — `ThinkingOrb` maps the depth language onto the
           two colours, so nearest still reads darkest. */}
       {waiting ? (
-        <FadeUpView duration={520} distance={8} style={styles.spinner}>
-          <ThinkingOrb
-            state="connecting"
-            size={ORB_SIZE}
-            ink={palette.navy}
-            paper={palette.page}
-          />
-        </FadeUpView>
+        /* ★ BOUNDED, and this is the one line that makes the orb safe to
+           have here at all. React has no partial failure: a throw unmounts
+           the tree from the nearest boundary upward, and this is the FIRST
+           screen — so without `FailSoft` a defect in an ornament is not a
+           missing animation, it is an app that does not start, with no
+           screen left to say so. The fallback is the ring that was here
+           before, so the worst case is the previous version of this file. */
+        <FailSoft
+          label="boot orb"
+          fallback={
+            <ActivityIndicator size="small" color={palette.navy} style={styles.spinner} />
+          }
+        >
+          <FadeUpView duration={520} distance={8} style={styles.spinner}>
+            <ThinkingOrb
+              state="connecting"
+              size={ORB_SIZE}
+              ink={palette.navy}
+              paper={palette.page}
+            />
+          </FadeUpView>
+        </FailSoft>
       ) : (
         <ActivityIndicator size="small" color={palette.navy} style={styles.spinner} />
       )}

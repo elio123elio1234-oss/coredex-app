@@ -1,5 +1,74 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.85.1 - 2026-09-21 - the boot orb is bounded, and the dependency is on the record
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+Asked, correctly, before v0.85.0 was allowed to stay:
+
+> *“תמשיך רק אם זה בטוח לשימוש 100% ברמת דרישות FDA ולא דורש שום הוצאת מידע או API
+> קבוע לשרת חיצוני”*
+
+### Egress: no — and now proven rather than asserted
+
+| checked | result |
+|---|---|
+| runtime dependencies | **none** |
+| install scripts | **none** |
+| `fetch` / `XMLHttpRequest` / `WebSocket` / `sendBeacon` | **0** |
+| `localStorage` / `indexedDB` | **0** |
+| `eval` / `new Function` / `import()` | **0** |
+| `process.env` / `require(` / `Date` / `crypto` | **0** |
+| **every global it references** | `Math` ×155, `Object` ×2, `Set`, `Map`, `Array` — **and nothing else** |
+
+It is compiled into the bundle: no CDN, no licence check, no telemetry, no
+runtime host — an aeroplane-mode device runs it identically. And it is
+*structurally incapable* of exposing patient data because it is never given
+any: its entire input is `(size, elapsed seconds, preset constants)` and its
+entire output is a list of circle centres and radii. Method in `SOUP.md` §1.1.
+
+### ★ But egress was not the real risk
+
+React has no partial failure: a throw unmounts the tree from the nearest
+boundary upward — and **the app had no error boundary at all**. On
+`BootSplash`, the *first* screen rendered, that made an ornament exactly as
+load-bearing as the ECG. A defect in it would not have been a missing
+animation; it would have been an app that does not start, with no screen left
+to report from and no way for the patient to get past it.
+
+**That was true of v0.85.0 as shipped.** It is the thing worth fixing, and it
+was not what the question was about.
+
+New atom `FailSoft`, and the orb is wrapped in it. The fallback is the
+`ActivityIndicator` that preceded it, so the worst case is now *exactly the
+previous release*. It is scoped to **decoration** and says so in its header:
+clinical content must never go behind it, because content that silently fails
+to draw cannot be told apart from content that was never there — and a missing
+finding reads as a normal one.
+
+### `SOUP.md` — new
+
+A third-party library in medical device software is **SOUP** (Software Of
+Unknown Provenance) under IEC 62304 whether or not anyone writes it down, and
+until now there was nowhere to write it. The register identifies all **41**
+direct dependencies per §8.1.2 (title, manufacturer, version, licence) and
+carries the full §7.1.2 evaluation for `thinking-orbs`.
+
+⚠️ **It is deliberately blunt about what it does not cover.** The other 40
+have had no risk evaluation — and several of them (`expo-secure-store`,
+`expo-local-authentication`, `expo-updates`, Skia, Reanimated) sit far closer
+to patient safety than the ornament that prompted the file. That gap is
+**pre-existing**; this only makes it visible.
+
+⚠️ It is also **not a regulatory submission**. Whether this product needs a
+510(k), its IEC 62304 software safety class, and whether a QMS is in place are
+determinations for a regulatory professional.
+
+Files: `SOUP.md` (new), `components/atoms/FailSoft.tsx` (new),
+`components/organisms/Auth/BootSplash.tsx`, `config/version.ts`.
+
+---
+
 ## v0.85.0 - 2026-09-21 - the splash says something while the server wakes
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** `thinking-orbs` is pure

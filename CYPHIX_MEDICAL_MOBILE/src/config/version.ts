@@ -1,7 +1,50 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.85.0';
-export const APP_BUILD_LABEL = 'the boot splash raises a thinking-orb while it waits for the server';
+export const APP_VERSION = '0.85.1';
+export const APP_BUILD_LABEL = 'the boot orb is bounded - a fault in it can no longer stop the app starting';
+
+// v0.85.1 - THE ORB CANNOT TAKE THE APP DOWN, AND THE DEPENDENCY IS ON THE
+//           RECORD. JS only - OTA onto runtime 0.45.0.
+//
+//           Asked, correctly, before v0.85.0 was allowed to stay: is this
+//           safe at FDA level, and does it need any data egress or a
+//           permanent external API?
+//
+//           EGRESS: NO, and it is now proven rather than asserted. The 19 KB
+//           engine has zero runtime dependencies, zero install scripts, and
+//           references exactly five globals - Math x155, Object x2, Set, Map,
+//           Array - AND NOTHING ELSE. No fetch/XHR/WebSocket/sendBeacon, no
+//           localStorage/indexedDB, no eval/new Function/import(), no
+//           process.env, no Date, no crypto. It is compiled into the bundle:
+//           no CDN, no licence check, no telemetry, no runtime host. It is
+//           structurally incapable of exposing patient data because it is
+//           never given any - its whole input is (size, elapsed seconds,
+//           preset constants). See SOUP.md 1.1 for the method.
+//
+//           BUT THE REAL RISK WAS NOT EGRESS. React has no partial failure:
+//           a throw unmounts the tree from the nearest boundary upward, and
+//           THE APP HAD NO ERROR BOUNDARY AT ALL. On BootSplash - the FIRST
+//           screen - that made an ornament as load-bearing as the ECG: a
+//           defect in it would not be a missing animation, it would be an app
+//           that does not start, with no screen left to report from. That was
+//           true of v0.85.0 as shipped.
+//           New atom FailSoft, and the orb is wrapped in it. The fallback is
+//           the ActivityIndicator that preceded it, so the worst case is now
+//           exactly the previous release. It is scoped to DECORATION and says
+//           so: clinical content must never go behind it, because content
+//           that silently fails to draw cannot be told apart from content
+//           that was not there, and a missing finding reads as a normal one.
+//
+//           SOUP.md (new): a third-party library in device software is SOUP
+//           under IEC 62304 whether or not anyone writes it down, and there
+//           was nowhere to write it. thinking-orbs is fully evaluated;
+//           all 41 direct dependencies are identified per 8.1.2.
+//           The file is deliberately blunt about what it does NOT cover: the
+//           other 40 have had no 7.1.2 risk evaluation, and several of them -
+//           expo-secure-store, expo-local-authentication, expo-updates, Skia,
+//           Reanimated - sit far closer to patient safety than the ornament
+//           that prompted the file. That gap is PRE-EXISTING; this only makes
+//           it visible.
 
 // v0.85.0 - THE SPLASH SAYS SOMETHING WHILE THE SERVER WAKES. JS only -
 //           OTA onto runtime 0.45.0. `thinking-orbs` is pure JS; Skia, which
