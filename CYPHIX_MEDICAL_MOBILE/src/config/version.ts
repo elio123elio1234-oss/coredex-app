@@ -1,7 +1,59 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.82.0';
-export const APP_BUILD_LABEL = 'Settings > About now records session SUCCESSES, not only failures';
+export const APP_VERSION = '0.83.0';
+export const APP_BUILD_LABEL = 'sheets can be HELD and dragged - the grabber was a picture of a handle';
+
+// v0.83.0 - THE SHEETS CAN BE HELD. JS only - OTA onto runtime 0.45.0.
+//
+//           Reported as two things:
+//             "kol ha-sliders she-olim mi-lmata le-mala olim be-ritsud
+//              ve-ein li yecholet le-hachzik et ha-pas le-mala ve-lehachlik
+//              le-at le-at - ze o niftach o nisgar, lo chalak ve-lo miktsoi"
+//
+//           ★ THE SECOND HALF IS THE DIAGNOSIS OF THE FIRST. There was no
+//           gesture. The grabber was a 36x5 rounded <View> - a PICTURE of a
+//           handle, drawn at the top of every sheet since BottomSheet v2.0.0,
+//           announcing an affordance nothing implemented. (ActionSheet's own
+//           header has claimed since v1 that a sheet "is dismissed by tapping
+//           away or dragging down". Half of that sentence was fiction.)
+//
+//           So a sheet had exactly TWO states and a 240 ms timeline between
+//           them, and an animation you cannot interrupt is the only thing on
+//           screen - every dropped frame in it IS the experience. That is
+//           also why shortening the durations in v0.18.1 changed nothing and
+//           was told so plainly: "it's not the speed, it just isn't smooth."
+//
+//           A real pan now drives the same value the animation does, on the
+//           UI thread. Drag and it follows the finger; release below 62 %
+//           and it falls; flick and it goes with the flick; catch it
+//           mid-rise and it is yours. The scrim dims with it, so the page
+//           behind comes BACK as you pull down instead of waiting.
+//
+//           Three structural fixes to the rise ride along, each measurable:
+//           1. Reanimated replaces Animated. A finger cannot take a JS round
+//              trip per frame, so a gesture-driven sheet cannot be built on
+//              Animated.Value + React state at all.
+//           2. ★ THE PANEL TRAVELS ITS OWN HEIGHT, NOT THE WINDOW'S. A
+//              380 pt sheet was flung 844 pt in 240 ms to cover 380 pt of
+//              visible distance - too fast to read as an arrival, and a
+//              full-width Liquid Glass surface composited off screen for most
+//              of those frames. The window height was CORRECT when written
+//              ("no layout pass needed before it can animate") and v1.2.0's
+//              layout gate silently expired the reason.
+//           3. ★ THE LAYOUT GATE IS A REF, NOT STATE. As state it rendered
+//              the layer, re-published into OverlayPortal and re-rendered the
+//              portal host on the EXACT frame the rise began: v1.2.0 moved
+//              view creation off that frame and put reconciliation back on it.
+//
+//           ⚠️ IN_MS 240 -> 330 is NOT a smoothness fix. It is the same
+//           perceived speed over half the distance.
+//
+//           The drag is on the HANDLE, not the whole panel: most callers put
+//           a ScrollView inside it, and a pan over the whole surface races
+//           every one of them for the same vertical finger.
+//
+//           🔬 Typechecks and bundles. The FEEL has to be judged by a
+//           thumb - that is the whole subject of the report.
 
 // v0.82.0 - THE SESSION DIAGNOSTIC RECORDS SUCCESSES. JS only - OTA onto
 //           runtime 0.45.0 (build 17).

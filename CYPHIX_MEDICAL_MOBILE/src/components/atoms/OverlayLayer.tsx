@@ -4,7 +4,7 @@
    ══════════════════════════════════════════════════════════════════
    ★ WHY THIS IS NOT `Modal`, AND WHY THAT WAS NOT A STYLE CHOICE
    ══════════════════════════════════════════════════════════════════
-   Both of the last round's sheet complaints came from the same import.
+   Both of the first round's sheet complaints came from the same import.
 
    1. **The blur could never have worked.** React Native's `Modal` is a
       SEPARATE WINDOW on iOS (its own `UIViewController`) and a `Dialog`
@@ -29,14 +29,79 @@
       `Modal` fixes both.)
 
    So overlays are rendered IN TREE: an absolutely-positioned layer
-   inside the screen's own hierarchy, above its content. The blur then
-   samples the real page — which is the entire point — and there is no
-   second window to disagree about orientation.
+   inside the app's own hierarchy, above the page. The blur then samples
+   the real page — which is the entire point — and there is no second
+   window to disagree about orientation.
+
+   ══════════════════════════════════════════════════════════════════
+   ★ v0.83.0 — THE SHEET IS A THING YOU HOLD, NOT AN ANIMATION YOU WATCH
+   ══════════════════════════════════════════════════════════════════
+   Reported together, and they are ONE defect wearing two faces:
+
+     "כל הסליידרים שעולים מלמטה למעלה עולים בריצוד ואין לי יכולת
+      להחזיק את הפס למעלה ולהחליק לאט לאט — זה או נפתח או נסגר."
+
+   The second half is the diagnosis of the first. **There was no
+   gesture.** The grabber was a 36×5 rounded `View` — a PICTURE of a
+   handle, drawn at the top of every sheet since v2.0.0, announcing an
+   affordance the code never implemented. A finger on it did nothing, so
+   the sheet could only ever be in one of two states, and the only thing
+   between them was a 240 ms timeline playing at you. That is what "או
+   נפתח או נסגר" means, and it is also why the rise was JUDGED so
+   harshly: an animation you cannot interrupt is the only thing on
+   screen, so every dropped frame in it is the whole experience.
+
+   A sheet on any current platform tracks the finger CONTINUOUSLY.
+   Sixty per cent of the way down and released, it falls; flicked, it
+   goes with the flick; dragged and held, it sits exactly where it is
+   put. None of that is decoration — it is what makes the panel read as
+   an object with a position rather than a slide with a duration.
+
+   So the drag is the headline change, and three structural fixes to the
+   rise ride along with it, each one a thing that was measurably wrong:
+
+   ── 1. Reanimated, not `Animated` ──
+   A gesture-driven sheet CANNOT be built on `Animated.Value` + React
+   state: the finger's position would take a JS round trip per frame.
+   The whole presentation therefore moves to a Reanimated shared value,
+   where the gesture handler and the animation write to the SAME value
+   on the UI thread. The drag has no JS in it at all.
+
+   ── 2. ★ THE PANEL TRAVELS ITS OWN HEIGHT, NOT THE WINDOW'S ──
+   `translateY` interpolated `[height, 0]` — the whole WINDOW's height.
+   A 380 pt sheet on an 844 pt phone was therefore flung 844 pt in
+   240 ms (3.5 pt/ms) to cover 380 pt of visible distance. Two costs:
+   the visible part of the rise is far too fast to read as an arrival,
+   and for most of those frames a full-width LIQUID GLASS surface is
+   being composited off screen for nothing.
+
+   That was correct when it was written — the comment said so: the
+   window's height guarantees the panel starts off screen "so no layout
+   pass is needed before it can animate". ★ But v1.2.0 then made the
+   rise WAIT FOR LAYOUT for an unrelated reason, and the justification
+   quietly expired. The measurement is now in hand before the animation
+   starts, so the panel moves exactly as far as it has to.
+
+   ── 3. ★ THE ANIMATION NO LONGER STARTS INSIDE A REACT RENDER ──
+   The layout gate was `setReady(true)` — React state. So the frame the
+   rise began was also a render of this component, a re-publish into
+   `OverlayPortal`, and a re-render of the portal host. v1.2.0 moved the
+   view-creation cost off the first frame and then put a reconciliation
+   pass back on it. The gate is now a ref, and `onLayout` starts the
+   animation by writing to a shared value: zero renders, zero publishes,
+   nothing for the UI thread to share that frame with.
+
+   ⚠️ The durations are NOT the fix and were not the bug. v0.18.1
+   shortened them on that assumption and was told plainly: "it's not the
+   speed, it just isn't smooth." `IN_MS` goes up here only because the
+   DISTANCE went down — same perceived speed over a shorter travel.
 
    ── WHAT THIS FILE OWNS ──
      • Mount / unmount around the animation, so a closed sheet costs
-       nothing and an closing one is still visible while it leaves.
-     • The blurred, tappable scrim.
+       nothing and a closing one is still visible while it leaves.
+     • The dim, tappable scrim — which now follows the finger too.
+     • The drag itself, published through `SheetDragContext` for the
+       panel's own handle to attach to (see `BottomSheet`).
      • Android's hardware back button (what `onRequestClose` used to do).
      • The keyboard. A bottom-anchored sheet in tree is NOT lifted by the
        OS, so this measures the keyboard and rides above it. That is why
@@ -58,11 +123,11 @@
        changes, so fading one in re-computes a full-screen blur every
        frame of the animation. That is the flicker, precisely.
 
-   So the scrim is a plain animated colour — free to fade, native
-   driver, no effect to re-compute — and the PANEL keeps the blur,
-   sampling the page straight through the dim. Which is also what the
-   platform itself does: an iOS sheet dims its backdrop and reserves the
-   material for the sheet. Nothing was lost; a blur was moved.
+   So the scrim is a plain animated colour — free to fade, UI thread, no
+   effect to re-compute — and the PANEL keeps the blur, sampling the page
+   straight through the dim. Which is also what the platform itself does:
+   an iOS sheet dims its backdrop and reserves the material for the
+   sheet. Nothing was lost; a blur was moved.
 
    ══════════════════════════════════════════════════════════════════
    ★ AND IT IS RENDERED AT THE APP ROOT, NOT WHERE IT IS WRITTEN
@@ -75,68 +140,93 @@
    different parents. So a bottom-anchored sheet's pinned footer landed
    underneath the dock, the scrim did not dim it, and it stayed tappable
    through the modal. `OverlayPortal` moves the elements to the root —
-   same window, so the material still samples the real page.
-
-   ══════════════════════════════════════════════════════════════════
-   ★ THE ANIMATION DOES NOT START UNTIL THE CONTENT HAS LAID OUT
-   ══════════════════════════════════════════════════════════════════
-   This is the third and last cause of "it comes up in frames", and the
-   only one that was never about the panel's height.
-
-   Opening used to start the slide in the same commit that MOUNTED the
-   content. A sheet with two dozen rows is a hundred-odd native views,
-   and views are created and laid out ON THE UI THREAD — the very thread
-   the native-driver animation runs on. So the first frames of the rise
-   were competing with the mount for that thread, and the panel arrived
-   in visible steps. `useNativeDriver: true` does not help here; it is
-   what puts the animation on the thread that is busy.
-
-   ★ So the panel is committed OFF SCREEN first (`progress` sits at 0,
-   which is a full window height down), and the rise begins only once the
-   content has reported a layout. By then the views exist, the thread is
-   idle, and the animation has nothing to share it with. Costs one frame
-   before the sheet moves; buys every frame after it.
-
-   ⚠️ Do not "optimise" this into starting on mount again. The judder it
-   removes is invisible on a two-row sheet and unmistakable on a long one.
+   same window, so the material still samples the real page, and inside
+   `GestureHandlerRootView`, so the drag above works from there.
 
    Callers own their own panel: this positions and animates it only.
    ================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated,
   BackHandler,
-  Easing,
   Keyboard,
   Platform,
   Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
 } from 'react-native';
+import { Gesture, type PanGesture } from 'react-native-gesture-handler';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useOverlayPortal } from '@/components/atoms/OverlayPortal';
 import { useIsDark } from '@/theme/useTheme';
 
-/** Rising is slower than leaving — a sheet should arrive, not appear.
-    ⚠️ These are NOT where the reported judder came from. v0.18.1 shortened them
-    on that assumption and was told plainly it made no difference: "it's not the
-    speed, it just isn't smooth." The cause was the JS thread rebuilding 24–48
-    SVG paths on the frame the sheet opened (see the palette memo in
-    StudyViewerScreen). Do not reach for these numbers again for a smoothness
-    complaint — find what is running on the same frame. */
-const IN_MS = 240;
-const OUT_MS = 160;
+/* Rising is slower than leaving — a sheet should arrive, not appear.
+   ⚠️ These are NOT where the reported judder came from, and reaching for them
+   is a known dead end: v0.18.1 shortened them on that assumption and was told
+   plainly it made no difference — "it's not the speed, it just isn't smooth."
+   `IN_MS` rose from 240 in v0.83.0 for one reason only: the panel now travels
+   its OWN height instead of the window's, so the same number would have read
+   as roughly twice as fast. Same perceived speed, shorter distance. */
+const IN_MS = 330;
+const OUT_MS = 210;
+
+/** Released below this share of the way open → it falls rather than returns. */
+const DISMISS_AT = 0.62;
+/** Downward px/s that dismisses from ANY position. A flick is an intention. */
+const FLING_CLOSE = 750;
+/** Upward px/s that re-opens from any position, for the same reason. */
+const FLING_OPEN = -420;
+
+/** Snapping back is a spring, because it is answering a finger. */
+const SNAP = {
+  damping: 26,
+  stiffness: 320,
+  mass: 0.85,
+  /* ⚠️ Load-bearing. The panel is anchored to the bottom EDGE, so an
+     overshoot past "open" is negative translateY — it lifts the sheet off
+     the bottom of the screen and shows a strip of page underneath it. */
+  overshootClamping: true,
+} as const;
 
 interface Props {
   visible: boolean;
-  /** Scrim tap, Android back. Callers should treat it as "cancel". */
+  /** Scrim tap, Android back, drag-to-dismiss. Callers treat it as "cancel". */
   onRequestClose: () => void;
   /** Accessible name for the scrim. */
   closeLabel: string;
-  /** `slide` anchors to the bottom edge; `fade` centres and scales. */
+  /** `slide` anchors to the bottom edge and can be dragged; `fade` centres. */
   enter: 'slide' | 'fade';
-  children: ReactNode;
+  /**
+   * The panel. As a FUNCTION it is handed this sheet's drag gesture, for its
+   * own handle to attach a `GestureDetector` to; `null` for `enter="fade"`,
+   * because a centred dialog has no edge to be dragged to.
+   *
+   * ── WHY A RENDER PROP AND NOT A CONTEXT ──
+   * A context was written first and was WRONG in a way that compiles and
+   * runs: the provider lives inside this component, so `BottomSheet` — which
+   * renders `<OverlayLayer>` — would have read it from ABOVE its own
+   * provider and got the default. `null`. A handle that silently does not
+   * drag, which is precisely the bug being fixed. Passing it down the one
+   * edge that exists cannot be positioned wrongly.
+   *
+   * ★ WHY THE HANDLE AND NOT THE WHOLE PANEL. Most sheets here put a
+   * `ScrollView` directly inside the panel. A pan over the whole surface
+   * races every one of them for the same vertical finger, and the
+   * arbitration has to be wired at BOTH ends (`simultaneousWithExternalGesture`
+   * needs the scroll view's ref) — twelve callers, for a gesture the user
+   * described by its handle: "להחזיק את הפס". It is also where the platform
+   * itself puts the drag once the content scrolls.
+   */
+  children: ReactNode | ((drag: PanGesture | null) => ReactNode);
 }
 
 export default function OverlayLayer({
@@ -149,10 +239,24 @@ export default function OverlayLayer({
   const dark = useIsDark();
   const { height } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
-  /** Has the content been through a layout pass? See the header. */
-  const [ready, setReady] = useState(visible);
   const [keyboard, setKeyboard] = useState(0);
-  const progress = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  const slide = enter === 'slide';
+
+  /** 0 = off screen, 1 = at rest. Written by the animation AND by the finger. */
+  const progress = useSharedValue(visible ? 1 : 0);
+  /** How far off screen "0" is: the panel's own measured height.
+      Seeded from the window so the first frame is off screen whatever the
+      panel turns out to measure — a sheet that flashes at its rest position
+      for one frame is worse than one that rises slightly too far. */
+  const travel = useSharedValue(height);
+  /** Where the finger took hold, so a drag resumes mid-animation. */
+  const grabbed = useSharedValue(0);
+
+  /* ★ A REF, NOT STATE. This is the layout gate, and it used to be
+     `setReady(true)` — which put a render of this component, a re-publish
+     into the portal and a re-render of the portal host on the exact frame
+     the rise began. See the header. */
+  const opened = useRef(visible);
 
   /* Live ref, so subscribing to the back button does not re-subscribe on
      every parent render just because the callback is a fresh arrow. Same
@@ -160,48 +264,89 @@ export default function OverlayLayer({
   const close = useRef(onRequestClose);
   close.current = onRequestClose;
 
-  useEffect(() => {
-    if (visible) setMounted(true);
-  }, [visible]);
-
-  useEffect(() => {
-    if (!mounted) return;
-    /* ★ Held off screen until the content has laid out. Starting here
-       would put the first frames of the rise on the same UI thread that
-       is still creating the panel's views — the judder. */
-    if (visible && !ready) return;
-
-    const animation = Animated.timing(progress, {
-      toValue: visible ? 1 : 0,
-      duration: visible ? IN_MS : OUT_MS,
-      easing: visible ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-      useNativeDriver: true,
+  const startOpen = useCallback(() => {
+    progress.value = withTiming(1, {
+      duration: IN_MS,
+      /* A long, soft tail. `Easing.out(Easing.cubic)` was fine over the old
+         (wrong) distance; over the real one it stops too abruptly. */
+      easing: Easing.bezier(0.22, 1, 0.36, 1),
     });
-    animation.start(({ finished }) => {
-      // Only unmount when the LEAVING animation actually finished — an
-      // interrupted one means it is being reopened.
-      if (finished && !visible) {
-        setMounted(false);
-        setReady(false);
-      }
-    });
-    return () => animation.stop();
-  }, [visible, ready, mounted, progress]);
+  }, [progress]);
 
-  /* Belt and braces. `onLayout` on a panel that always has a grabber
-     cannot realistically fail to fire — but if it ever did the sheet
-     would never rise at all, and a stuck-invisible modal is a dead app.
-     Late is recoverable; never is not. */
+  /** The leaving animation finished on its own — nothing left to show. */
+  const afterClose = useCallback(() => {
+    opened.current = false;
+    setMounted(false);
+  }, []);
+
+  /** The FINGER closed it: unmount, and tell the owner its sheet is gone. */
+  const afterDragClose = useCallback(() => {
+    opened.current = false;
+    setMounted(false);
+    close.current();
+  }, []);
+
+  /* ★ `visible && !mounted`, not just `visible`. A drag-dismiss unmounts
+     BEFORE the owner has flipped `visible`, and an owner is entitled to
+     refuse — a sheet with unsaved work, say. Keyed on `visible` alone, that
+     sheet would be unmounted with `visible` still true and no edge left to
+     re-trigger on: invisible forever. The invariant is "visible implies
+     mounted", and this restates it after every render. */
   useEffect(() => {
-    if (!mounted || ready) return;
-    const timer = setTimeout(() => setReady(true), 120);
+    if (visible && !mounted) setMounted(true);
+  }, [visible, mounted]);
+
+  /* Leaving. Opening is NOT here — it is started by `onContentLayout`, off
+     the React render path entirely. */
+  useEffect(() => {
+    if (!mounted || visible) return;
+    progress.value = withTiming(
+      0,
+      { duration: OUT_MS, easing: Easing.in(Easing.cubic) },
+      (finished) => {
+        'worklet';
+        // Only unmount when the LEAVING animation actually finished — an
+        // interrupted one means it is being reopened.
+        if (finished) runOnJS(afterClose)();
+      },
+    );
+  }, [visible, mounted, progress, afterClose]);
+
+  /* Belt and braces. `onLayout` on a panel that always has a grabber cannot
+     realistically fail to fire — but if it ever did the sheet would never
+     rise at all, and a stuck-invisible modal is a dead app. Late is
+     recoverable; never is not. The panel then travels the seeded window
+     height, which is too far but visible, rather than not moving. */
+  useEffect(() => {
+    if (!mounted || !visible || opened.current) return;
+    const timer = setTimeout(() => {
+      if (opened.current) return;
+      opened.current = true;
+      startOpen();
+    }, 140);
     return () => clearTimeout(timer);
-  }, [mounted, ready]);
+  }, [mounted, visible, startOpen]);
 
-  /* Fires on every layout; setting state to the value it already holds
-     is a no-op, so re-layouts (rotation, the keyboard) cost nothing
-     after the first. */
-  const onContentLayout = useCallback(() => setReady(true), []);
+  const onContentLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const h = e.nativeEvent.layout.height;
+      /* ★ Set on the FIRST measure, and afterwards only ever GROWN. This is
+         the hazard the change introduces and it has to be closed here: the
+         panel is content-driven, and `ActionSheet` and `CompareSheet` put an
+         unbounded `ScrollView` inside it (see BottomSheet's `scrollable`
+         note). If such a panel measures 300 pt and then commits to 600, a
+         travel frozen at 300 leaves it HALF ON SCREEN at progress 0 — it
+         would pop into view and then rise, which is worse than the judder.
+         Monotonic growth can only ever push it further off screen, which is
+         invisible by definition; the timing lands on 1 regardless. */
+      if (h > 0 && (!opened.current || h > travel.value)) travel.value = h;
+      if (!opened.current && visible) {
+        opened.current = true;
+        startOpen();
+      }
+    },
+    [visible, startOpen, travel, progress],
+  );
 
   /* Android's back button used to be `Modal.onRequestClose`. Without it the
      first thing an Android user tries leaves the app instead of the sheet. */
@@ -217,7 +362,7 @@ export default function OverlayLayer({
   /* The keyboard. `willChangeFrame` on iOS so the sheet moves WITH it rather
      than after it; Android has no will* events and reports height on show. */
   useEffect(() => {
-    if (enter !== 'slide') return;
+    if (!slide) return;
     const ios = Platform.OS === 'ios';
     const shown = Keyboard.addListener(ios ? 'keyboardWillChangeFrame' : 'keyboardDidShow', (e) =>
       setKeyboard(e.endCoordinates.height),
@@ -229,36 +374,90 @@ export default function OverlayLayer({
       shown.remove();
       hidden.remove();
     };
-  }, [enter]);
+  }, [slide]);
 
-  const slide = enter === 'slide';
+  /* ★ Built ONCE. A `Gesture` object rebuilt every render detaches and
+     re-attaches its native handler — mid-drag, that is a dropped finger.
+     Every dependency here is either a shared value (stable ref) or a
+     `useCallback` with no deps, so the memo genuinely never invalidates. */
+  const drag = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(slide)
+        /* Vertical only, and not until the finger has committed 6 pt. Below
+           that a touch on the handle is still a TAP, which matters because
+           the title sits inside the same draggable band. */
+        .activeOffsetY([-6, 6])
+        .failOffsetX([-20, 20])
+        .onStart(() => {
+          /* Reading the live value is what makes a drag able to CATCH a
+             sheet that is still rising, instead of snapping it to 1 first. */
+          grabbed.value = progress.value;
+        })
+        .onUpdate((e) => {
+          const t = travel.value || 1;
+          const next = grabbed.value - e.translationY / t;
+          /* Clamped at 1 rather than rubber-banded. Past "open" there is
+             nothing above to reveal and a gap opens under the panel. */
+          progress.value = next > 1 ? 1 : next < 0 ? 0 : next;
+        })
+        .onEnd((e) => {
+          const flungDown = e.velocityY > FLING_CLOSE;
+          const flungUp = e.velocityY < FLING_OPEN;
+          /* Position decides only when the finger did not. A slow drag to
+             70 % and release comes back; the same position released with a
+             downward flick goes. */
+          if (flungDown || (!flungUp && progress.value < DISMISS_AT)) {
+            progress.value = withTiming(
+              0,
+              { duration: OUT_MS, easing: Easing.out(Easing.quad) },
+              (finished) => {
+                'worklet';
+                if (finished) runOnJS(afterDragClose)();
+              },
+            );
+            return;
+          }
+          progress.value = withSpring(1, {
+            ...SNAP,
+            /* The spring inherits the finger's motion, in the value's own
+               units: translateY = (1 − p) · travel, so dp/dt = −vY / travel.
+               Without this the snap-back starts from rest and the release
+               reads as a cut. */
+            velocity: -e.velocityY / (travel.value || 1),
+          });
+        }),
+    [slide, progress, travel, grabbed, afterDragClose],
+  );
 
-  /* Built once per window height, not per render: an interpolation is a NATIVE
-     animated node, and re-creating it inline every render would detach and
-     re-attach it on the UI thread mid-gesture — exactly the mistake the drag
-     handles already paid for. */
-  const translateY = useMemo(
-    // The window's own height guarantees the panel starts off screen whatever
-    // it measures, so no layout pass is needed before it can animate.
-    () => progress.interpolate({ inputRange: [0, 1], outputRange: [height, 0] }),
-    [progress, height],
-  );
-  const scale = useMemo(
-    () => progress.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }),
-    [progress],
-  );
+  const scrimStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
+  /* The panel is dragged, so this is the one that must be cheap: a single
+     transform, no opacity (fading a Liquid Glass surface re-computes the
+     material every frame — the v1.1.0 lesson, which applies to the panel
+     exactly as it did to the scrim). */
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: (1 - progress.value) * travel.value }],
+  }));
+  const dialogStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: 0.94 + 0.06 * progress.value }],
+  }));
 
   const overlay = !mounted ? null : (
     <View
       style={[styles.host, slide ? styles.hostBottom : styles.hostCentre]}
       pointerEvents="box-none"
     >
-      {/* A plain colour: free to fade on the native driver, and it gives the
-          panel's own blur the contrast it needs over a white page. */}
+      {/* A plain colour: free to fade on the UI thread, and it gives the
+          panel's own blur the contrast it needs over a white page. Driven by
+          the same value as the panel, so dragging the sheet down lifts the
+          dim with it — which is the thing that makes the page behind feel
+          like it is coming back rather than waiting. */}
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
-          { opacity: progress, backgroundColor: dark ? 'rgba(0,0,0,0.46)' : 'rgba(15,23,42,0.30)' },
+          { backgroundColor: dark ? 'rgba(0,0,0,0.46)' : 'rgba(15,23,42,0.30)' },
+          scrimStyle,
         ]}
       >
         <Pressable
@@ -272,15 +471,9 @@ export default function OverlayLayer({
       <Animated.View
         pointerEvents="box-none"
         onLayout={onContentLayout}
-        style={[
-          slide && { marginBottom: keyboard },
-          {
-            opacity: slide ? 1 : progress,
-            transform: slide ? [{ translateY }] : [{ scale }],
-          },
-        ]}
+        style={[slide && { marginBottom: keyboard }, slide ? panelStyle : dialogStyle]}
       >
-        {children}
+        {typeof children === 'function' ? children(slide ? drag : null) : children}
       </Animated.View>
     </View>
   );
@@ -305,6 +498,28 @@ const styles = StyleSheet.create({
   hostCentre: { justifyContent: 'center', paddingHorizontal: 26 },
 });
 
+// v2.0.0 — ★ THE SHEET CAN BE HELD. The grabber was a PICTURE of a handle —
+//          drawn since v2.0.0 of BottomSheet, wired to nothing — so a sheet
+//          had exactly two states and a timeline between them: "או נפתח או
+//          נסגר". A real pan now drives the same value the animation does, on
+//          the UI thread, published through `SheetDragContext` for the panel's
+//          handle; release decides by position AND velocity, and the scrim
+//          follows the finger. Three structural fixes ride along:
+//          - Reanimated replaces `Animated`. A finger cannot take a JS round
+//            trip per frame, so a gesture-driven sheet cannot be built on
+//            `Animated.Value` + state at all.
+//          - ★ The panel travels ITS OWN height, not the window's. A 380 pt
+//            sheet was flung 844 pt in 240 ms to cover 380 pt of visible
+//            distance, compositing a full-width Liquid Glass surface off
+//            screen for most of them. The window height was right when it was
+//            written — and v1.2.0's layout gate silently expired the reason.
+//          - ★ The layout gate is a REF. As state it rendered this component,
+//            re-published into the portal and re-rendered the portal host on
+//            the very frame the rise began: v1.2.0 moved the view-creation
+//            cost off that frame and put reconciliation back on it.
+//          ⚠️ IN_MS 240 → 330 is NOT a smoothness fix (v0.18.1 tried that and
+//          was corrected). It is the same perceived speed over half the
+//          distance.
 // v1.2.0 — Two fixes, both about WHERE and WHEN, not about looks.
 //          - Portalled to the app root. A screen cannot paint above the dock:
 //            the dock is the navigator's tab bar, a sibling of the screen. So a

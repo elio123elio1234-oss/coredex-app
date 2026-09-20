@@ -17,9 +17,18 @@
    `OverlayLayer`, in tree, where the page is really there to blur. Read
    that file before changing anything here.
 
+   ★ v2.2.0: AND THE GRABBER NOW MEANS IT. It was a 36×5 rounded View —
+   a picture of a handle, promising a gesture that did not exist. (This
+   file's own sibling `ActionSheet` has said since v1 that a sheet "is
+   dismissed by tapping away or dragging down"; half of that sentence was
+   fiction.) `OverlayLayer` owns the sheet's position, so it hands down
+   the pan gesture and the handle band attaches it. Read that file for
+   how release decides between falling and springing back.
+
    What this owns:
      • 28 pt corners, a hairline edge, a shadow that lifts it off the page,
-       and a grabber that says "this can be dismissed".
+       and a grabber that says "this can be dismissed" — and is the thing
+       you dismiss it WITH.
      • `GlassSurface` — Apple's Liquid Glass on iOS 26+, a real
        `dimezisBlurView` blur on Android, never a translucent rectangle
        pretending to be one.
@@ -32,6 +41,7 @@
 
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlassSurface from '@/components/atoms/GlassSurface';
 import OverlayLayer from '@/components/atoms/OverlayLayer';
@@ -90,40 +100,57 @@ export default function BottomSheet({
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
 
-  return (
-    <OverlayLayer visible={visible} onRequestClose={onClose} closeLabel={closeLabel} enter="slide">
-      <GlassSurface
-        dark={dark}
-        tint={dark ? 'rgba(19, 27, 44, 0.80)' : 'rgba(255, 255, 255, 0.82)'}
-        style={[
-          styles.panel,
-          {
-            borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)',
-            paddingBottom: Math.max(insets.bottom, 14),
-            maxHeight: height * MAX_FRACTION,
-          },
-        ]}
-      >
+  /* ★ The grabber and the title, as ONE band — which is what the drag is
+     attached to. Grouping them is not cosmetic: on a titled sheet it makes
+     the draggable strip ~45 pt instead of the grabber's own 23, and a 5 pt
+     bar is not a target a thumb can find. The padding that used to live on
+     the panel (`paddingTop: 8`) moved in here for the same reason — the same
+     pixels, now inside the part that responds. */
+  const handle = (drag: PanGesture | null) => {
+    const band = (
+      <View style={styles.handle}>
         <View style={[styles.grabber, { backgroundColor: t.textTertiary }]} />
         {title && <Text style={[styles.title, { color: t.textTertiary }]}>{title}</Text>}
-        {scrollable ? (
-          /* `flexShrink` is what bounds it. A ScrollView inside a
-             max-height box with no shrink measures to its content and
-             overflows exactly as a plain View would — the scroll would be
-             there and have nothing to do. */
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator
-            keyboardShouldPersistTaps="handled"
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          children
-        )}
-        {footer}
-      </GlassSurface>
+      </View>
+    );
+    return drag ? <GestureDetector gesture={drag}>{band}</GestureDetector> : band;
+  };
+
+  return (
+    <OverlayLayer visible={visible} onRequestClose={onClose} closeLabel={closeLabel} enter="slide">
+      {(drag) => (
+        <GlassSurface
+          dark={dark}
+          tint={dark ? 'rgba(19, 27, 44, 0.80)' : 'rgba(255, 255, 255, 0.82)'}
+          style={[
+            styles.panel,
+            {
+              borderColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)',
+              paddingBottom: Math.max(insets.bottom, 14),
+              maxHeight: height * MAX_FRACTION,
+            },
+          ]}
+        >
+          {handle(drag)}
+          {scrollable ? (
+            /* `flexShrink` is what bounds it. A ScrollView inside a
+               max-height box with no shrink measures to its content and
+               overflows exactly as a plain View would — the scroll would be
+               there and have nothing to do. */
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator
+              keyboardShouldPersistTaps="handled"
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            children
+          )}
+          {footer}
+        </GlassSurface>
+      )}
     </OverlayLayer>
   );
 }
@@ -140,7 +167,9 @@ const styles = StyleSheet.create({
     borderRightWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     paddingHorizontal: 10,
-    paddingTop: 8,
+    /* ⚠️ No `paddingTop` — it belongs to `handle`, so that the strip the
+       finger has to find starts at the panel's real top edge rather than
+       8 pt below it. The rendered spacing is unchanged. */
     // Lifts the panel off the page. iOS reads shadow*, Android elevation.
     shadowColor: '#000',
     shadowOpacity: 0.22,
@@ -150,6 +179,9 @@ const styles = StyleSheet.create({
   },
   scroll: { flexShrink: 1 },
   scrollContent: { paddingBottom: 4 },
+  /* The draggable band. Full width, and it owns the panel's top padding so
+     the target begins at the very top edge of the sheet. */
+  handle: { paddingTop: 8 },
   grabber: {
     alignSelf: 'center',
     width: 36,
@@ -168,6 +200,15 @@ const styles = StyleSheet.create({
   },
 });
 
+// v2.2.0 — The grabber is a real handle. It was a 36×5 View drawing the SHAPE
+//          of an affordance with nothing behind it, so every sheet in the app
+//          had two states and a timeline between them — "או נפתח או נסגר".
+//          `OverlayLayer` owns the position and now passes its pan gesture in;
+//          the grabber and the title are grouped into one band so the target
+//          is ~45 pt of full-width sheet rather than a 5 pt bar, and the
+//          panel's `paddingTop` moved into that band so it starts at the real
+//          top edge. Rendered spacing is unchanged. The drag is on the HANDLE,
+//          not the panel, because most callers put a ScrollView inside it.
 // v2.1.0 — `scrollable`: content longer than the 82 % ceiling was CLIPPED, not
 //          scrolled — `overflow: hidden` on a content-driven panel. The card
 //          editor's Save button sat under 23 rows and never appeared on screen.

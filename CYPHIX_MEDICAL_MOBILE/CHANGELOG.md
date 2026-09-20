@@ -1,5 +1,98 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.83.0 - 2026-09-20 - the sheets can be held
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** One file does it for all
+twelve sheets in the app, because they all rise through `OverlayLayer`.
+
+Reported as two complaints:
+
+> “כל הסליידרים שעולים מלמטה למעלה עולים בריצוד ואין לי יכולת להחזיק את הפס
+> למעלה ולהחליק לאט לאט — זה או נפתח או נסגר, לא חלק ולא מקצועי.”
+
+### ★ The second half is the diagnosis of the first
+
+**There was no gesture.** The grabber was a 36×5 rounded `View` — a *picture*
+of a handle, drawn at the top of every sheet since `BottomSheet` v2.0.0,
+announcing an affordance that nothing implemented. `ActionSheet`'s own header
+has claimed since v1 that a sheet “is dismissed by tapping away or dragging
+down”; half of that sentence was fiction, and it survived four releases because
+the picture was convincing.
+
+So a sheet had exactly **two states** and a 240 ms timeline between them. An
+animation you cannot interrupt is the only thing on screen while it plays, so
+every dropped frame in it *is* the experience — which is also why v0.18.1's
+attempt to fix the smoothness by shortening the durations changed nothing, and
+was answered: *“it's not the speed, it just isn't smooth.”*
+
+A real pan now drives the same value the animation does, on the UI thread:
+
+| what you do | what happens |
+|---|---|
+| drag the handle | the panel tracks the finger, one to one |
+| release below 62 % open | it falls the rest of the way and closes |
+| flick down (> 750 px/s) | it goes, from wherever it is |
+| flick up (< −420 px/s) | it returns, from wherever it is |
+| release above 62 % | a spring carries it back, **inheriting the finger's velocity** |
+| grab it mid-rise | it is yours from that position — no snap to the top first |
+
+The scrim dims with the same value, so pulling the sheet down brings the page
+behind it **back** rather than leaving it waiting.
+
+### Three structural fixes to the rise, riding along
+
+1. **Reanimated replaces `Animated`.** Not a preference: a finger cannot take a
+   JS round trip per frame, so a gesture-driven sheet cannot be built on
+   `Animated.Value` + React state at all.
+2. **★ The panel travels its OWN height, not the window's.** `translateY`
+   interpolated `[windowHeight, 0]`, so a 380 pt sheet on an 844 pt phone was
+   flung **844 pt in 240 ms** to cover 380 pt of visible distance — far too
+   fast to read as an arrival, with a full-width Liquid Glass surface
+   composited off screen for most of those frames. The window height was
+   *correct* when it was written, and the comment said why: it guarantees the
+   panel starts off screen “so no layout pass is needed before it can
+   animate”. Then v1.2.0 made the rise **wait for layout** for an unrelated
+   reason and the justification quietly expired. The measurement has been in
+   hand ever since.
+3. **★ The layout gate is a ref, not state.** It was `setReady(true)` — so
+   the frame the rise began was also a render of the layer, a re-publish into
+   `OverlayPortal`, and a re-render of the portal host. v1.2.0 moved the
+   view-creation cost off the first frame and then put a reconciliation pass
+   back on it. `onLayout` now starts the animation by writing a shared value:
+   zero renders, zero publishes.
+
+⚠️ **`IN_MS` 240 → 330 is not a smoothness fix.** Reaching for the durations
+is a known dead end here. It rose because the distance halved — the same
+perceived speed over a shorter travel.
+
+### Two decisions worth recording
+
+**The drag is on the HANDLE, not the whole panel.** Most callers put a
+`ScrollView` directly inside the sheet; a pan over the whole surface races
+every one of them for the same vertical finger, and the arbitration has to be
+wired at *both* ends (`simultaneousWithExternalGesture` needs each scroll
+view's ref) — twelve callers, for a gesture the report described by its handle:
+“להחזיק את הפס”. It is also where the platform itself puts the drag once the
+content scrolls. The grabber and the title are grouped into one band so the
+target is ~45 pt of full-width sheet instead of a 5 pt bar, and the panel's
+`paddingTop` moved into that band so it starts at the real top edge. **Rendered
+spacing is unchanged.**
+
+**A context was written first and was wrong in a way that compiles.** The
+provider lives inside `OverlayLayer`; `BottomSheet` *renders* `<OverlayLayer>`,
+so it would have read the context from **above its own provider** and got the
+default — `null`, a handle that silently does not drag, which is precisely the
+bug being fixed. It is a render prop instead: one edge, impossible to position
+wrongly.
+
+🔬 **Typechecks and bundles.** The feel has to be judged by a thumb — that
+is the entire subject of the report.
+
+Files: `components/atoms/OverlayLayer.tsx`, `components/molecules/BottomSheet.tsx`,
+`config/version.ts`.
+
+---
+
 ## v0.82.0 - 2026-09-20 - the session diagnostic records successes, not only failures
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**
