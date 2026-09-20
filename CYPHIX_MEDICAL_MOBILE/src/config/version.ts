@@ -1,7 +1,55 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.76.0';
-export const APP_BUILD_LABEL = 'orientation, actually fixed: one authority, three writers removed';
+export const APP_VERSION = '0.77.0';
+export const APP_BUILD_LABEL = 'the new ECG card icon - NATIVE REBUILD (an icon lives in the binary)';
+
+// v0.77.0 - THE APP ICON IS THE ECG CARD (HR 72 / 25mm/s).
+//           ⚠️ REBUILD: app.json 0.39.0 -> 0.40.0. v0.76.0's orientation fix
+//           was published OTA to 0.39.0; its code is baked into this binary
+//           too, so nothing is lost. Every OTA from here targets 0.40.0.
+//
+//           ★ THE ARTWORK ARRIVED PRE-MASKED, and that is not a detail. It
+//           was a rounded card on a white page - how a designer PRESENTS an
+//           icon, and the opposite of what the platforms want. `icon.png` has
+//           to be FULL BLEED because iOS applies its own squircle on top, and
+//           the artwork's corner radius was 25.2 % against iOS's ~22.4 %: ship
+//           the presentation image and you get a rounded icon with white
+//           crescents bitten out of every corner.
+//
+//           New: `scripts/unmask-icon.js`, because this is the third pre-masked
+//           source in a row. It measures the card (edges from the CENTRE lines,
+//           so the corner arcs and the drop shadow cannot move them; the corner
+//           profile row by row, so no curve is assumed) and then picks the
+//           largest centred square the card NEARLY fills.
+//
+//           ★ THE THING THAT MADE IT EASY, AND THAT I MISSED FOR THREE
+//           ATTEMPTS: the OS masks the corners anyway. The first three tries
+//           mapped the card's whole bounding square and tried to INVENT the
+//           rounded corners back - ~420 px of made-up pixels each - and every
+//           method (clamp to a circle, clamp to the measured span) left a
+//           visible streak, because you cannot extend a gradient that far and
+//           have it still look like the gradient. Modelling the corner as a
+//           circular arc was wrong twice over: a modern card corner is a
+//           SQUIRCLE, so a circle cuts inside the real shape along part of the
+//           curve (page white showed through) and outside it along the rest
+//           (the rim smeared).
+//           Zooming to 88 % instead drops the worst uncovered corner from
+//           257 px to 21 px - the curve falls away steeply, so one step of
+//           zoom crosses it - and 21 px sits under the mask. The 12 % given up
+//           is all card margin: "HR 72", the nearest content to an edge, keeps
+//           47 px of clearance. Measured, not eyeballed.
+//
+//           ANDROID IS FULL-BLEED, deliberately, and it DOES crop: the
+//           launcher's 1.5x zoom takes "HR 72", "25mm/s" and the swoosh with
+//           it, leaving one bold beat. The alternative (fit the whole card
+//           inside the safe circle, 47 % of the frame) was built and rendered
+//           side by side, and it is worse: a small busy card on a pale field.
+//           At 48 dp those annotations are unreadable decoration and the trace
+//           is the mark, so the crop loses nothing real. Both were LOOKED AT.
+//
+//           `adaptiveIcon.backgroundColor` #D1C9CB -> #DBE5F5, sampled.
+//           The monochrome layer stays three traces - same reasoning as
+//           v0.75.0, and unchanged by the artwork swap.
 
 // v0.76.0 - ORIENTATION, ACTUALLY FIXED. JS ONLY - OTA, and it needs BUILD 12
 //           (runtime 0.39.0), because that is the binary that carries the

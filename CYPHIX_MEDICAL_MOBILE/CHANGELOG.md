@@ -1,5 +1,70 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.77.0 - 2026-09-20 - the new ECG card icon, and a script for pre-masked artwork
+
+⚠️ **NATIVE REBUILD.** `app.json` 0.39.0 → **0.40.0** — an icon is compiled into
+the binary. v0.76.0's orientation fix was published OTA to 0.39.0 and its code
+is baked into this binary too, so nothing is lost. Every OTA from here targets
+**0.40.0**.
+
+### ★ The artwork arrived pre-masked, and that is not a detail
+
+It was a rounded card floating on a white page — which is how a designer
+*presents* an icon and the opposite of what the platforms want. `icon.png` must
+be **full bleed**, because iOS applies its own squircle on top. The artwork's
+corner radius measured **25.2 %** against iOS's ~22.4 %, so shipping the
+presentation image gives a rounded icon with **white crescents bitten out of
+every corner**. It looks like a rendering fault, because it is one.
+
+New: **`scripts/unmask-icon.js`** — this is the third pre-masked source in a
+row, so it is a script rather than a one-off. It measures the card (edges from
+the **centre lines**, so neither the corner arcs nor the drop shadow can move
+them; the corner profile **row by row**, so no curve is assumed) and picks the
+largest centred square the card nearly fills.
+
+### The thing that made it easy, and that I missed for three attempts
+
+**The OS masks the corners anyway.**
+
+The first three attempts mapped the card's whole bounding square and tried to
+*invent* the rounded corners back — about **420 px of made-up pixels per
+corner**. Every method of inventing them left a visible streak, because you
+cannot extend a gradient that far and have it still look like the gradient.
+
+Modelling the corner as a circular **arc** was wrong twice over: a modern card
+corner is a **squircle**, so a circle cuts *inside* the real shape along part of
+the curve — page white showed through — and *outside* it along the rest, which
+smeared the card's rim into a visible outline.
+
+Zooming to **88 %** instead drops the worst uncovered corner from **257 px to
+21 px**. The corner curve falls away steeply, so a single step of zoom crosses
+it, and 21 px sits comfortably under the mask. The 12 % given up is all card
+margin: **"HR 72", the nearest content to an edge, keeps 47 px of clearance.**
+Measured, not eyeballed — the script prints every number it used.
+
+### Android is full-bleed, and it does crop
+
+The launcher's 1.5× zoom takes "HR 72", "25mm/s" and the swoosh with it, leaving
+one bold beat. The alternative — fitting the whole card inside the safe circle,
+47 % of the frame — was **built and rendered side by side**, and it is worse: a
+small busy card on a pale field. At 48 dp those annotations are unreadable
+decoration and the trace is the mark, so the crop loses nothing real. Both were
+looked at before choosing; `make-adaptive-foreground.js` stays for artwork whose
+edges carry meaning, as v0.72.0's did.
+
+`adaptiveIcon.backgroundColor` `#D1C9CB` → **`#DBE5F5`**, sampled. The
+monochrome layer stays three traces — same reasoning as v0.75.0, unchanged by
+the artwork swap.
+
+Both the original artwork (`assets/brand/app-icon-source.png`) and the
+un-masked square the pipeline consumes (`app-icon-fullbleed.png`) are
+committed, so the set can be regenerated rather than re-derived.
+
+Files: `scripts/unmask-icon.js` (new, v1.2.0), the two brand sources, the five
+generated assets, `app.json`, `config/version.ts`.
+
+---
+
 ## v0.76.0 - 2026-09-20 - orientation, actually fixed
 
 **JS only — OTA, and it needs build 12 (runtime 0.39.0),** because that is the
