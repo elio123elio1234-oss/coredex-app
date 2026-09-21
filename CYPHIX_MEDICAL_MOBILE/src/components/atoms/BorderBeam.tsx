@@ -83,9 +83,10 @@ import {
   SweepGradient,
   vec,
 } from '@shopify/react-native-skia';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, AppState, StyleSheet } from 'react-native';
 import {
+  runOnJS,
   useDerivedValue,
   useFrameCallback,
   useSharedValue,
@@ -196,6 +197,28 @@ export interface BorderBeamProps {
    * Owned by the caller because only the caller sees the keystrokes.
    */
   energy?: SharedValue<number>;
+  /**
+   * ★ When `active` goes false, COMPLETE THE LAP before going out — and
+   * at least one whole lap even if it was on for a moment.
+   *
+   * Asked for: *“when it is sending, the animation has to finish at least
+   * one full turn of the lights, for completeness and satisfaction”*. A
+   * light that dies a third of the way round reads as an interruption; one
+   * that travels all the way home reads as something finishing.
+   *
+   * ⚠️ NOT the default, on purpose. For a beam driven by `energy` the
+   * speed falls to 0.11 turns/s when the hands stop, so “finish the lap”
+   * there could hold a light on a blurred field for NINE SECONDS. It is
+   * right for a work indicator, whose speed is constant and whose lap is
+   * about two seconds, and wrong for ambient chrome.
+   */
+  finishLap?: boolean;
+  /**
+   * Fired once the beam is fully out — lap completed AND faded. A caller
+   * that unmounts this component must wait for it, or it will cut off the
+   * very lap it asked to be completed.
+   */
+  onSettled?: () => void;
   variant?: BeamVariant;
   /** Which set of band opacities to use. */
   theme: 'dark' | 'light';
@@ -207,10 +230,23 @@ export default function BorderBeam({
   radius,
   active,
   energy,
+  finishLap = false,
+  onSettled,
   variant = 'ocean',
   theme,
 }: BorderBeamProps) {
-  const spin = useSharedValue(0);
+  /**
+   * ★ TOTAL turns since the beam came on — monotonic, NOT wrapped.
+   *
+   * That is the whole trick behind finishing a lap: a wrapped angle cannot
+   * tell “back where it started” from “never moved”, but on a monotonic
+   * count every whole number IS the starting angle, so the landing point
+   * is just the next integer. The drawn angle is this modulo 1.
+   */
+  const turns = useSharedValue(0);
+  /** > 0 while finishing: the turn count to land on, then stop. */
+  const landAt = useSharedValue(0);
+  const spin = useDerivedValue(() => turns.value % 1, []);
   const level = useSharedValue(active ? 1 : REST_OPACITY);
   /* ★ A private fallback so `energy` can be optional without the worklets
      having to test for it on every frame — and it sits at 1, NOT 0.
@@ -244,29 +280,107 @@ export default function BorderBeam({
     };
   }, []);
 
+  /* `onSettled` through a ref: the frame callback and the AppState listener
+     both reach it, and neither should be rebuilt because the caller passed a
+     new closure. */
+  const settledRef = useRef(onSettled);
+  settledRef.current = onSettled;
+  const notifySettled = useCallback(() => settledRef.current?.(), []);
+
+  /* The frame handle, reached from callbacks that are themselves reached
+     from the frame callback — a ref breaks that cycle. */
+  const frameRef = useRef<{ setActive: (on: boolean) => void } | null>(null);
+  /** Whether the beam WANTS to be running, independent of backgrounding. */
+  const wantFrame = useRef(false);
+  /** So releasing a beam that was never on cannot fire `onSettled`. */
+  const wasActive = useRef(false);
+
+  const applyFrame = useCallback(() => {
+    frameRef.current?.setActive(wantFrame.current && AppState.currentState === 'active');
+  }, []);
+
+  /** Put the light out and tell the caller once it is actually gone. */
+  const stop = useCallback(() => {
+    wantFrame.current = false;
+    applyFrame();
+    level.value = withTiming(REST_OPACITY, { duration: FADE_MS }, (done) => {
+      'worklet';
+      /* ⚠️ AFTER the fade, not at the lap boundary. The caller unmounts on
+         this, and firing it early would cut off the fade — the light would
+         complete its lap and then vanish on one frame, which is the abrupt
+         ending the lap was completed to avoid. */
+      if (done) runOnJS(notifySettled)();
+    });
+  }, [applyFrame, level, notifySettled]);
+
   /* ★ The angle is advanced per FRAME rather than by `withRepeat`, because
      the speed has to change continuously with `energy` and a repeating
      timing animation has its duration baked in at the moment it starts. */
   const frame = useFrameCallback((info) => {
     const dt = Math.min(0.05, (info.timeSincePreviousFrame ?? 16) / 1000);
-    spin.value = (spin.value + dt * (BASE_TURNS + TYPING_TURNS * heat.value)) % 1;
+    const next = turns.value + dt * (BASE_TURNS + TYPING_TURNS * heat.value);
+    if (landAt.value > 0 && next >= landAt.value) {
+      /* Land EXACTLY on the boundary rather than wherever the frame fell.
+         Overshoot is up to 50 ms of travel, and stopping short of home by a
+         few degrees is visible on a ring this size. */
+      turns.value = landAt.value;
+      landAt.value = 0;
+      runOnJS(stop)();
+      return;
+    }
+    turns.value = next;
   }, false);
 
   useEffect(() => {
-    const moving = active && !reduceMotion;
-    frame.setActive(moving);
-    level.value = withTiming(active ? 1 : REST_OPACITY, { duration: FADE_MS });
+    frameRef.current = frame;
 
     /* Backgrounded, nothing here is on screen and the frame callback would
-       keep being run for a view nobody can see. */
+       keep being run for a view nobody can see. ⚠️ And a beam that was
+       finishing its lap must be released rather than left mid-lap forever:
+       the frame stops, so nothing would ever reach the landing point, and a
+       caller waiting on `onSettled` would wait for good. */
     const sub = AppState.addEventListener('change', (state) => {
-      frame.setActive(moving && state === 'active');
+      if (state !== 'active' && landAt.value > 0) {
+        landAt.value = 0;
+        stop();
+        return;
+      }
+      applyFrame();
     });
     return () => {
       sub.remove();
+      wantFrame.current = false;
       frame.setActive(false);
     };
-  }, [active, reduceMotion, frame, level]);
+  }, [frame, applyFrame, stop, landAt]);
+
+  useEffect(() => {
+    if (active) {
+      /* Start from home, so “one whole lap” is measured from where the
+         light actually appears. */
+      turns.value = 0;
+      landAt.value = 0;
+      wasActive.current = true;
+      wantFrame.current = !reduceMotion;
+      applyFrame();
+      level.value = withTiming(1, { duration: FADE_MS });
+      return;
+    }
+
+    if (!wasActive.current) return;
+    wasActive.current = false;
+
+    /* ⚠️ `Math.max(1, …)`: at least ONE whole lap even if the work
+       finished in 200 ms. Without it a fast success would light the ring
+       and drop it a fifth of the way round — which is the case this was
+       asked for. `Math.ceil` covers the slow one: after four and a bit
+       laps it finishes the fifth, not a fifth more. */
+    if (finishLap && !reduceMotion) {
+      landAt.value = Math.max(1, Math.ceil(turns.value));
+      return;
+    }
+    stop();
+  }, [active, reduceMotion, finishLap, applyFrame, level, stop, turns, landAt]);
 
   const cx = BLOOM_PAD + width / 2;
   const cy = BLOOM_PAD + height / 2;
@@ -347,6 +461,18 @@ const styles = StyleSheet.create({
   canvas: { position: 'absolute' },
 });
 
+// v3.2.0 — ★ `finishLap`: when the caller switches it off, the light COMPLETES
+//          ITS LAP — and at least one whole lap even if it was on for a moment
+//          — before fading out. Asked for as "the animation has to finish at
+//          least one full turn, for completeness and satisfaction", and it is
+//          right: a light that dies a third of the way round reads as an
+//          interruption. The angle is counted MONOTONICALLY now, because a
+//          wrapped angle cannot tell "back where it started" from "never
+//          moved", while on a running total every whole number is home.
+//          `onSettled` fires after the FADE, not at the boundary, so a caller
+//          that unmounts on it cannot cut off the ending. Opt-in, not default:
+//          an `energy`-driven beam slows to 0.11 turns/s when the hands stop,
+//          so finishing a lap there could hold a light for nine seconds.
 // v3.1.0 — `energy` is optional, and WITHOUT it the beam now runs at FULL
 //          strength instead of at the hands-still floor. A caller that passes no
 //          energy (the send button) is not saying "nobody is typing", it is

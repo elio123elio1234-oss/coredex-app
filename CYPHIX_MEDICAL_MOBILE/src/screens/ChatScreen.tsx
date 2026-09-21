@@ -103,6 +103,8 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const detailsRef = useRef<TextInput>(null);
+  /** What the send came back with, held until the beam has finished. */
+  const outcome = useRef<string | null>(null);
 
   const align = rtl ? ('right' as const) : ('left' as const);
 
@@ -163,9 +165,21 @@ export default function ChatScreen() {
     /* ⚠️ NOT a simulated success. The sending state is real — it is what
        the button's beam is for — and what follows is the truth. */
     setTimeout(() => {
+      /* ★ The outcome is PARKED, not shown. The button reports `onSettled`
+         once its light has travelled home, and the answer appears then —
+         so the result and the button's own state change together instead
+         of "not sent" landing under a button still reading "Sending…".
+         The wait is bounded by one lap (~2 s) and it never changes WHAT is
+         reported, only when. */
+      outcome.current = tr('reqNotConnected');
       setSending(false);
-      setNotice(tr('reqNotConnected'));
     }, FAKE_SEND_MS);
+  };
+
+  const settled = () => {
+    if (outcome.current === null) return;
+    setNotice(outcome.current);
+    outcome.current = null;
   };
 
   return (
@@ -180,7 +194,13 @@ export default function ChatScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <Text style={[styles.title, { color: t.textPrimary }]}>{tr('reqTitle')}</Text>
+          {/* ⚠️ Aligned to the side, not centred — every other screen's title
+              is (`PageTitle` on Insights and History, Settings, Personal
+              details), and a centred one here read as a different app. It
+              follows the writing direction, so it sits right in Hebrew. */}
+          <Text style={[styles.title, { color: t.textPrimary, textAlign: align }]}>
+            {tr('reqTitle')}
+          </Text>
           <Text style={[styles.intro, { color: t.textSecondary, textAlign: align }]}>
             {tr('reqIntro')}
           </Text>
@@ -243,6 +263,7 @@ export default function ChatScreen() {
             sendingLabel={tr('reqSending')}
             disabled={!canSend}
             sending={sending}
+            onSettled={settled}
             onPress={submit}
           />
 
@@ -284,7 +305,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { gap: 12, paddingBottom: 8 },
-  title: { fontSize: 28, fontWeight: '800', textAlign: 'center' },
+  title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.4 },
   intro: { fontSize: 14.5, lineHeight: 21, marginBottom: 2 },
   /* One surface holding the three rows, with hairlines between them —
      the native form idiom, and the reason the rows can be different kinds
@@ -307,6 +328,10 @@ const styles = StyleSheet.create({
   empty: { fontSize: 13.5, lineHeight: 19 },
 });
 
+// v2.1.0 — Two things that grated: the title sits to the SIDE like every other
+//          screen's (a centred one read as a different app), and the outcome now
+//          waits for the send button's light to finish its lap, so the answer
+//          and the button's own state change together.
 // v2.0.1 — Three fixes from driving it on the emulator: the recording labels
 //          carry the TIME (three studies from one afternoon were three identical
 //          rows), the chosen recording keeps its SIMULATION badge on the form,

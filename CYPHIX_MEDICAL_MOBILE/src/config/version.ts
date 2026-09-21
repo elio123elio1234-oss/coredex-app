@@ -1,8 +1,49 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.92.0';
-export const APP_BUILD_LABEL = 'the Chat tab is a request form now, not a chat: pick a recording, pick a reason, send';
+export const APP_VERSION = '0.93.0';
+export const APP_BUILD_LABEL = 'the request title sits to the side, and the sending light finishes its lap before it goes out';
 
+// v0.93.0 - TWO THINGS THAT GRATED. JS only - OTA.
+//
+//           1. "the title is centred but it should be to the SIDE like the
+//              rest of the titles." It was, and it read as a different app
+//              next to Insights and History. It follows the writing
+//              direction now, so it sits right in Hebrew.
+//
+//           2. ★ "when it is sending, the animation has to finish at least
+//              ONE FULL TURN of the lights, for completeness and
+//              satisfaction." Right, and it was not: the send resolved in
+//              1.1 s and the beam was cut down wherever it happened to be -
+//              about half a lap - which reads as an interruption rather
+//              than as something finishing.
+//
+//              The fix is in the angle, not in a timer. `BorderBeam` counts
+//              turns MONOTONICALLY now, because a wrapped angle cannot tell
+//              "back where it started" from "never moved", while on a
+//              running total every whole number IS home. When the caller
+//              switches it off it sets a landing point at
+//              `max(1, ceil(turns))` - the next whole lap, and at least one
+//              whole lap however fast the work was - runs on to it, lands
+//              exactly there rather than wherever the frame fell, and then
+//              fades.
+//
+//              ⚠️ Opt-in (`finishLap`), NOT the default: a beam driven by
+//              typing slows to 0.11 turns/s when the hands stop, so
+//              finishing a lap there could hold a light on a blurred field
+//              for nine seconds.
+//
+//              ⚠️ And the RESULT now waits for it. The button keeps saying
+//              "Sending..." and stays disabled until the light is home, and
+//              the outcome appears at that moment - "Not sent" under a
+//              button still reading "Sending..." is two answers on screen at
+//              once. The wait is bounded by one lap and it never changes
+//              WHAT is reported, only when.
+//
+//           Measured on a Pixel 7 emulator from a screen recording: the
+//           button is busy for 2.67 s (it was 1.10 s), and the beam crosses
+//           the top halo at 2.71 s and the bottom at 3.71 s - one complete
+//           revolution - before it fades.
+//
 // v0.92.0 - THE TAB IS NOT A CHAT ANY MORE. JS only - OTA.
 //
 //           Said plainly, and it is the right call: "nobody chats with their

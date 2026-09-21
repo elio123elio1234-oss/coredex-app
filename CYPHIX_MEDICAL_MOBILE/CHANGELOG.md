@@ -1,5 +1,65 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.93.0 - 2026-09-21 - the light finishes its lap
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+Two things reported as grating, from v0.92.0.
+
+### 1. *“הכותרת ממורכזת אבל היא צריכה להיות בצד כמו שאר הכותרות”*
+
+It was centred, and every other title in the app is not — `PageTitle` on
+Insights and History, and the plain ones on Settings, Personal details and
+Reminders. Next to those tabs it read as a different app. It is aligned to the
+side now and follows the writing direction, so it sits right in Hebrew.
+
+### 2. ★ *“when it is sending, the animation has to finish at least one full turn of the lights, for completeness and satisfaction”*
+
+Right, and it was not doing that. The send resolved in 1.1 s and the beam was
+cut off wherever it had got to — roughly half a lap — which reads as an
+interruption rather than as something finishing.
+
+**The fix is in the angle, not in a timer.** `BorderBeam` counts turns
+**monotonically** now instead of wrapping them, because a wrapped angle cannot
+tell “back where it started” from “never moved”, while on a running total
+every whole number *is* home. When the caller switches it off:
+
+```
+landAt = max(1, ceil(turns))      // the next whole lap,
+                                  // and at least one however fast the work was
+```
+
+it runs on to that point, lands **exactly** on it rather than wherever the
+frame happened to fall (overshoot is up to 50 ms of travel, and stopping a few
+degrees short of home is visible on a ring this size), and only then fades.
+
+⚠️ **Opt-in, not the default.** A beam driven by `energy` slows to 0.11
+turns/s when the hands stop, so “finish the lap” there could hold a light on a
+blurred field for **nine seconds**. It is right for a work indicator, whose
+speed is constant and whose lap is about two seconds, and wrong for ambient
+chrome.
+
+⚠️ **The result waits for it.** The button keeps saying “Sending…” and stays
+disabled until the light is home, and the outcome appears at that moment.
+“Not sent” under a button still reading “Sending…” is two answers on screen at
+once, which is worse than the ≤ 2 s wait. The wait never changes **what** is
+reported — only when.
+
+### Measured, not assumed
+
+From a screen recording of the emulator, frame by frame:
+
+| | v0.92.0 | v0.93.0 |
+|---|---|---|
+| Button busy (“Sending…”) | 1.10 s | **2.67 s** |
+| Beam crossings of the halo strips | — | **2** — top at 2.71 s, bottom at 3.71 s |
+
+Two crossings of the top and bottom strips is one complete revolution. The
+2.67 s is longer than the 2.3 s the constants predict because the emulator
+renders below 60 fps and the per-frame `dt` is clamped at 50 ms; on a phone it
+will be closer to 2.3 s.
+
+
 ## v0.92.0 - 2026-09-21 - the Chat tab is a request form, not a chat
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

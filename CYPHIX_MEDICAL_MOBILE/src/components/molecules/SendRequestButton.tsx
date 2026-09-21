@@ -30,7 +30,7 @@
    ================================================================== */
 
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import BorderBeam from '@/components/atoms/BorderBeam';
 import FailSoft from '@/components/atoms/FailSoft';
@@ -46,6 +46,16 @@ export interface SendRequestButtonProps {
   onPress: () => void;
   disabled?: boolean;
   sending?: boolean;
+  /**
+   * ★ Fired when the beam has finished its lap and gone out — NOT when
+   * the work finished.
+   *
+   * The screen shows its result here rather than the moment the request
+   * resolves, so the outcome and the button's own state change together.
+   * Announcing "not sent" while the button still reads "Sending…" is two
+   * answers on screen at once, which is worse than the ≤ 2 s wait.
+   */
+  onSettled?: () => void;
 }
 
 export default function SendRequestButton({
@@ -54,10 +64,21 @@ export default function SendRequestButton({
   onPress,
   disabled = false,
   sending = false,
+  onSettled,
 }: SendRequestButtonProps) {
   const t = useTheme();
   const dark = useIsDark();
   const [box, setBox] = useState({ w: 0, h: 0 });
+
+  /* ★ The beam OUTLIVES the send, by up to one lap plus the fade.
+     `sending` says whether work is in flight; `settling` keeps the canvas
+     mounted while the light travels home. Unmounting on `sending` alone
+     would cut off the very lap `finishLap` exists to complete. */
+  const [settling, setSettling] = useState(false);
+  useEffect(() => {
+    if (sending) setSettling(true);
+  }, [sending]);
+  const busy = sending || settling;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -66,15 +87,19 @@ export default function SendRequestButton({
     if (width > 0 && height > 0) setBox({ w: width, h: height });
   };
 
-  const live = !disabled && !sending;
+  /* ⚠️ `busy`, not `sending`: the button stays disabled and keeps saying
+     "Sending…" for as long as the light is on. A control that goes live
+     again underneath a running animation invites a second submission of
+     the same request. */
+  const live = !disabled && !busy;
 
   return (
     <View style={styles.wrap} onLayout={onLayout}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={sending ? sendingLabel : label}
-        accessibilityState={{ disabled: disabled || sending, busy: sending }}
-        disabled={disabled || sending}
+        accessibilityLabel={busy ? sendingLabel : label}
+        accessibilityState={{ disabled: disabled || busy, busy }}
+        disabled={disabled || busy}
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onPress();
@@ -95,7 +120,7 @@ export default function SendRequestButton({
           style={[styles.text, { color: live ? t.surface : t.textTertiary }]}
           numberOfLines={1}
         >
-          {sending ? sendingLabel : label}
+          {busy ? sendingLabel : label}
         </Text>
       </Pressable>
 
@@ -113,13 +138,21 @@ export default function SendRequestButton({
           the `Pressable` beneath it is already `disabled`, so there is no
           tap for it to steal; the moment the button is pressable again,
           the canvas is gone. */}
-      {sending && (
+      {busy && (
         <FailSoft label="send beam" fallback={null}>
           <BorderBeam
             width={box.w}
             height={box.h}
             radius={RADIUS}
-            active
+            active={sending}
+            /* ★ Finish the lap. The light travels all the way home before
+               it goes out, which is what makes the send feel completed
+               rather than interrupted. */
+            finishLap
+            onSettled={() => {
+              setSettling(false);
+              onSettled?.();
+            }}
             /* No `energy` — there is nobody typing to react to. The beam
                means "work is in flight", so it runs at full strength; see
                `BorderBeam`'s `ownEnergy`. */
@@ -147,6 +180,12 @@ const styles = StyleSheet.create({
   text: { fontSize: 16.5, fontWeight: '700' },
 });
 
+// v1.2.0 — ★ The beam now OUTLIVES the send: `settling` keeps the canvas
+//          mounted while the light finishes its lap and fades, and the button
+//          stays disabled and keeps saying "Sending…" for exactly that long.
+//          The screen shows its result on `onSettled` rather than when the work
+//          resolved, so the outcome and the button change together — "not sent"
+//          under a button still reading "Sending…" is two answers at once.
 // v1.1.0 — The beam moved ON TOP of the pill and is now mounted only while
 //          sending. Underneath, the pill's opaque fill covered the crisp ring
 //          and the inner glow and left only a faint outer halo — it ran, and it
