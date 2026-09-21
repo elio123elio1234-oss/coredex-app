@@ -1,8 +1,68 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.91.0';
-export const APP_BUILD_LABEL = 'the composer answers back: it grows with the text, the light follows your typing, and you can put the keyboard away';
+export const APP_VERSION = '0.92.0';
+export const APP_BUILD_LABEL = 'the Chat tab is a request form now, not a chat: pick a recording, pick a reason, send';
 
+// v0.92.0 - THE TAB IS NOT A CHAT ANY MORE. JS only - OTA.
+//
+//           Said plainly, and it is the right call: "nobody chats with their
+//           doctor like it is WhatsApp - it should really be opening a
+//           REQUEST, for a review of a recording." So the composer is gone
+//           and the tab is a form:
+//
+//               Recording   Jul 30, 5:21 PM · 6 Limb Leads   >
+//                           SIMULATION
+//               Reason      Question about my results        >
+//               Details     (optional)
+//                                      [  Send request  ]
+//
+//           That is also what the platform ALREADY models - the server turns
+//           a message into `kind: 'request'` the moment it carries a coded
+//           reason, and takes a recording as its attachment - so this is the
+//           app catching up with its own API rather than a new idea.
+//
+//           The other three reports, answered:
+//
+//           - "I press on it and nothing happens." The composer put the
+//             touchable on the `TextInput` alone, so the generous padding
+//             around it - which is most of what the eye reads as the control
+//             - swallowed every tap. Every row's padding is now INSIDE its
+//             pressable. A hit area has to be the thing that LOOKS like the
+//             control.
+//           - "the box is still very thick." There is no box. The details
+//             field is one line of text on the card and grows only if you
+//             write more than one line.
+//           - "something there is unprofessional, not smooth." A bubble
+//             thread with no one at the other end was the unprofessional
+//             part. A request has a state - sent, seen, answered - and
+//             saying that is more honest than a chat that sits unanswered.
+//
+//           ★ THE BEAM MOVED, TWICE. It is on the SEND BUTTON and only
+//           while the send is in flight - asked for directly, and it is the
+//           one place on this screen where the animation means something
+//           ("work is in flight") instead of decorating a field somebody is
+//           trying to type into. Then, on the emulator, it turned out to be
+//           invisible for two compounding reasons, both fixed:
+//             (a) it was drawn UNDER the pill, whose opaque fill covered the
+//                 crisp ring and the inner glow and left only a faint halo;
+//             (b) with no `energy` source its strength collapsed to ~6 %
+//                 alpha, because "no one is typing" was being read as "keep
+//                 quiet" when it should mean "run at full".
+//           It is now mounted only while sending, above the pill - which is
+//           what makes drawing over a control safe: the button underneath is
+//           disabled for exactly as long as the canvas exists.
+//
+//           ⚠️ DELIVERY IS STILL NOT WIRED, ON PURPOSE. This app has no
+//           `messageApi`. Pressing Send runs the real sending state and then
+//           says, in words, that nothing was sent. It must never be made to
+//           look successful: a patient who believes they have asked a
+//           clinician to look at their heart, and has not, is the worst
+//           thing this screen can produce.
+//
+//           ⚠️ STILL MISSING: a general file attachment. The recording IS
+//           the attachment the server's request model takes, but "there is no
+//           option to add files at all" is only half answered. Next change.
+//
 // v0.91.0 - FIVE REPORTS FROM THE PHONE, ANSWERED. JS only - OTA.
 //
 //           1. "you can never get out of typing mode" - and that was

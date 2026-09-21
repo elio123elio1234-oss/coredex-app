@@ -912,6 +912,7 @@ export const en = {
   testsScheduledBadge: 'Scheduled',
   testsSoonBadge: 'Coming soon',
   measureLimbTitle: '6 Limb Leads',
+  measureChestTitle: '6 Chest Leads',
   measure12Title: 'Full 12 Leads',
   testsLimbSub: '6 leads · arms & legs',
   tests12Sub: '12 leads · full',
@@ -935,6 +936,36 @@ export const en = {
   chatPlaceholder: 'Write a message\u2026',
   chatSend: 'Send',
   chatAttach: 'Attach an ECG',
+  /* ══ THE REQUEST ══════════════════════════════════════════════════
+     ⚠️ This tab is NOT a chat, and the copy is what makes that true.
+     "Nobody chats with their doctor like it is WhatsApp" — it is a
+     REQUEST for a clinician to look at something, with a study attached
+     and a coded reason. Wording that invites conversation ("Message your
+     doctor", "Reply") would promise a back-and-forth nobody staffs. */
+  reqTitle: 'New request',
+  reqIntro: 'Ask your care team to look at one of your recordings.',
+  reqStudyLabel: 'Recording',
+  reqStudyPlaceholder: 'Choose a recording…',
+  reqStudyNone: 'No recordings yet — take one first.',
+  reqDetailsLabel: 'Details',
+  reqOptional: 'optional',
+  reqDetailsPlaceholder: 'What would you like them to look at?',
+  reqSend: 'Send request',
+  reqSending: 'Sending…',
+  reqYours: 'Your requests',
+  reqYoursEmpty: 'Requests you send will be listed here with their status.',
+  /* Said plainly rather than dressed up: the form is real, the delivery
+     is not wired on this device yet, and a fake "sent" would be worse
+     than an honest "not sent". */
+  reqNotConnected: 'Not sent — messaging is not connected on this device yet.',
+  consultReasonLabel: 'Reason',
+  consultReasonPlaceholder: 'Choose a reason…',
+  reasonPalpitations: 'Palpitations',
+  reasonChest: 'Chest discomfort',
+  reasonBreathless: 'Shortness of breath',
+  reasonResults: 'Question about my results',
+  reasonMedication: 'Medication question',
+  reasonAppointment: 'Appointment request',
 
   /* ══ Onboarding: splash, sign-in, registration ══════════════════
      Keys match the web's `auth*` names wherever the two apps say the
@@ -1537,6 +1568,9 @@ export type TranslationKey = keyof typeof en;
 // v1.3.0 — Adds the Values screen's copy (`val*`): a sentence per measurement
 //          saying what it IS, and never whether it is good. Plus `dockInsights`
 //          for the dock slot that used to say "My Tests".
+// v1.3.0 — The request form's copy: `req*`, `consultReason*` and the six coded
+//          `reason*` labels (mirrored from the web), plus `measureChestTitle` for
+//          naming a recording in the picker. The composer's keys are gone with it.
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.

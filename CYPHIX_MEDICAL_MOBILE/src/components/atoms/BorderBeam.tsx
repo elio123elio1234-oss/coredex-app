@@ -212,9 +212,18 @@ export default function BorderBeam({
 }: BorderBeamProps) {
   const spin = useSharedValue(0);
   const level = useSharedValue(active ? 1 : REST_OPACITY);
-  /* A private fallback so `energy` can be optional without the worklets
-     having to test for it on every frame. */
-  const ownEnergy = useSharedValue(0);
+  /* ★ A private fallback so `energy` can be optional without the worklets
+     having to test for it on every frame — and it sits at 1, NOT 0.
+
+     ⚠️ That is the difference between the two things this component is
+     asked to say. With an `energy` source it is reacting to a person, and
+     0 (hands still) must be quiet. With no source there is nothing to
+     react to: the caller turned it on because WORK IS IN FLIGHT, and work
+     in flight is not "quiet" — it is the full beam at the full speed.
+     Defaulting to 0 made the send button's beam `1 × (0.26) × 0.5` of the
+     band opacity, which on a navy pill is nothing at all: the animation
+     ran perfectly and could not be seen. */
+  const ownEnergy = useSharedValue(1);
   const heat = energy ?? ownEnergy;
 
   /* ⚠️ REACT STATE, not a shared value. The effect below has to RE-RUN
@@ -338,6 +347,11 @@ const styles = StyleSheet.create({
   canvas: { position: 'absolute' },
 });
 
+// v3.1.0 — `energy` is optional, and WITHOUT it the beam now runs at FULL
+//          strength instead of at the hands-still floor. A caller that passes no
+//          energy (the send button) is not saying "nobody is typing", it is
+//          saying "work is in flight" — and the old 0 default multiplied the
+//          brightness down to ~6 % alpha, which drew a beam nobody could see.
 // v3.0.0 — Answers five reports from a phone. ★ DRIVEN BY TYPING: `energy`
 //          moves both the brightness and the speed, so the border reacts to the
 //          person instead of running on its own clock ("it has nothing to do

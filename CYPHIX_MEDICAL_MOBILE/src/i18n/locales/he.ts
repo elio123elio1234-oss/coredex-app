@@ -812,6 +812,7 @@ export const he: Record<TranslationKey, string> = {
   testsScheduledBadge: 'נקבע לך',
   testsSoonBadge: 'בקרוב',
   measureLimbTitle: '6 לידים של גפיים',
+  measureChestTitle: '6 לידים של חזה',
   measure12Title: '12 לידים מלא',
   testsLimbSub: '6 לידים · ידיים ורגליים',
   tests12Sub: '12 לידים · מלא',
@@ -830,6 +831,29 @@ export const he: Record<TranslationKey, string> = {
   chatPlaceholder: 'כתוב הודעה\u2026',
   chatSend: 'שליחה',
   chatAttach: 'צירוף אק"ג',
+  /* ══ פנייה ═══════════════════════════════════════════════════════
+     ⚠️ הטאב הזה אינו צ׳אט, והניסוח הוא מה שהופך את זה לנכון. */
+  reqTitle: 'פנייה חדשה',
+  reqIntro: 'בקשו מהצוות המטפל להסתכל על אחת ההקלטות שלכם.',
+  reqStudyLabel: 'הקלטה',
+  reqStudyPlaceholder: 'בחרו הקלטה…',
+  reqStudyNone: 'אין עדיין הקלטות — בצעו בדיקה קודם.',
+  reqDetailsLabel: 'פרטים',
+  reqOptional: 'רשות',
+  reqDetailsPlaceholder: 'על מה תרצו שיסתכלו?',
+  reqSend: 'שליחת פנייה',
+  reqSending: 'שולח…',
+  reqYours: 'הפניות שלכם',
+  reqYoursEmpty: 'פניות שתשלחו יופיעו כאן עם הסטטוס שלהן.',
+  reqNotConnected: 'לא נשלח — ההודעות עדיין לא מחוברות במכשיר הזה.',
+  consultReasonLabel: 'סיבה',
+  consultReasonPlaceholder: 'בחרו סיבה…',
+  reasonPalpitations: 'דפיקות לב',
+  reasonChest: 'אי-נוחות בחזה',
+  reasonBreathless: 'קוצר נשימה',
+  reasonResults: 'שאלה על התוצאות שלי',
+  reasonMedication: 'שאלה על תרופה',
+  reasonAppointment: 'בקשת תור',
 
   /* ══ הרשמה והתחברות ═════════════════════════════════════════════ */
 
@@ -1346,6 +1370,10 @@ export const he: Record<TranslationKey, string> = {
 //          would cut the report loose from a hospital's.
 // v1.4.0 — Adds the printed measurements page's copy (`pdf*`).
 // v1.3.0 — Adds the Values screen's copy (`val*`) and `dockInsights`.
+// v1.3.0 — The request form's copy in Hebrew, including the honest “not sent”
+//          notice — which has to read as plainly in Hebrew as in English, because
+//          it is the sentence standing between a patient and a false belief that
+//          somebody has been asked to look at their heart.
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.

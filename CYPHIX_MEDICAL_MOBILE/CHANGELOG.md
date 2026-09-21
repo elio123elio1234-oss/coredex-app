@@ -1,5 +1,114 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.92.0 - 2026-09-21 - the Chat tab is a request form, not a chat
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+### Why this deletes the thing v0.90.0 and v0.91.0 built
+
+> *“תעשה את זה כמו פתיחת פניה — אף אחד לא מצטאטט עם הרופא שלו כאילו זה ווצאפ,
+> זה צריך להיות ממש פתיחת פניה לreview של בדיקה נגיד׳*
+
+That is right, and the two previous versions were polishing the wrong object.
+A WhatsApp-shaped thread promises a back-and-forth that nobody staffs; the
+previous entry in this file spent most of its length making a message box
+prettier, which was work aimed at a thing that should not have been there.
+
+It is also what the **platform already models**. The server turns a message
+into `kind: 'request'` the moment it carries a coded `reason`, takes an
+`attachment: { recordingId, label }`, and tracks `requestStatus`. The web has
+carried `CONSULT_REASONS` with SNOMED codes for the same purpose. So this is
+the app catching up with its own API, not a new idea.
+
+The tab is now a form:
+
+```
+Recording   Jul 30, 5:21 PM · 6 Limb Leads      ›
+            SIMULATION
+Reason      Question about my results          ›
+Details     optional
+            …………………………………………
+
+                       [  Send request  ]
+
+Your requests
+Requests you send will be listed here with their status.
+```
+
+`ChatComposer.tsx` is deleted. New: `FieldRow`, `ChoiceSheet`,
+`SendRequestButton`, `config/consultReasons.ts` (copied from the web verbatim,
+codes included).
+
+### The three other reports
+
+**“אני לוחץ עליו וכלום לא קורה”** — the composer put the touchable on the
+`TextInput` alone, so the generous padding around it, which is most of what the
+eye reads as the control, swallowed every tap. Every row’s padding is now
+*inside* its pressable. A hit area has to be the thing that **looks** like the
+control.
+
+**“המלבן עדיין עבה מאוד”** — there is no box. Details is one line of text on
+the card and grows only if you write more than one line.
+
+**“משהו שם לא מקצועי לא חלק”** — the unprofessional part was a bubble thread
+with nobody at the other end. A request has a state — sent, seen, answered —
+and showing that is more honest than a chat that may sit unanswered for a day.
+
+### ★ The beam moved twice, and the second move is the interesting one
+
+Asked for: *“only on the send button, while sending”*. That is also the one
+place on this screen where the animation **means** something — work is in
+flight — rather than decorating a field somebody is trying to type into.
+
+Then, driving it on the emulator, the beam was invisible. Two compounding
+causes, and neither would have shown up in a typecheck, a bundle or a review:
+
+1. **It was drawn under the pill.** The button’s fill is opaque, so the crisp
+   ring and the inner glow — the whole effect — were painted and then covered,
+   leaving only the faint outer halo. It is now mounted **above** the pill, and
+   **only while `sending`**, which is what makes drawing over a control safe:
+   the `Pressable` underneath is `disabled` for exactly as long as the canvas
+   exists, so there is no tap for a native view to steal.
+2. **Its strength had collapsed to about 6 % alpha.** `BorderBeam` multiplies
+   brightness by `energy`, and with no energy source that defaulted to 0 — i.e.
+   “nobody is typing, keep quiet”. But a caller with no energy source is not
+   saying that; it is saying *work is in flight*, which is not quiet. The
+   default is now 1.
+
+### Three things the emulator found that nothing else would have
+
+- **Three recordings from one afternoon were three identical rows** (“Jul 30 ·
+  6 Limb Leads” × 3), with no way to say which one you meant. The time is part
+  of the label now. Naming the recording is the one thing this form has to get
+  right, because the whole request is about that recording.
+- **The chosen recording lost its `SIMULATION` badge** once the sheet closed.
+  A request to review synthetic data has to be recognisable as one *on the
+  form*, not only inside the picker it was chosen from (mobile CLAUDE.md §4).
+  `FieldRow` gained a `note` line.
+- **Android gives a `multiline` TextInput its own horizontal padding**, which
+  set the details text a few points in from every label above it. Small, and
+  exactly the kind of misalignment that reads as “not clean”.
+
+### ⚠️ What is still not real
+
+**Delivery.** This app has no `messageApi` — `services/api/endpoints/` holds
+photo, profile, recording and sync and nothing else — and this round was asked
+for as appearance first. Pressing **Send request** runs the real sending state
+and then says, in words: *“Not sent — messaging is not connected on this device
+yet.”*
+
+It must never be made to look successful. A patient who believes they have
+asked a clinician to look at their heart, and has not, is the worst thing this
+screen can produce — worse than one that plainly says it is not connected.
+
+**A general file attachment.** *“אין בכלל אופציה להוספת קבצים”* is only half
+answered. The **recording** is the attachment the server’s request model takes,
+and that is now pickable. A photo or a document is not, and it is a separate
+change: `expo-image-picker`’s permission strings in `app.json` currently promise
+the photo library is used **only** for a profile picture, so widening that is a
+native rebuild, not an OTA — and there is no endpoint to receive a file either.
+
+
 ## v0.91.0 - 2026-09-21 - the composer answers back
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**
