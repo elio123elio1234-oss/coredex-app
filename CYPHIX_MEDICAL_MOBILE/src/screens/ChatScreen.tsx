@@ -28,7 +28,7 @@
    ================================================================== */
 
 import { useState } from 'react';
-import { KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Pressable, StyleSheet, Text } from 'react-native';
 import ChatComposer from '@/components/molecules/ChatComposer';
 import PatientShell from '@/components/templates/PatientShell';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -53,14 +53,28 @@ export default function ChatScreen() {
       <KeyboardAvoidingView style={styles.root} behavior="padding">
         <Text style={[styles.title, { color: t.textPrimary }]}>{tr('chatTitle')}</Text>
 
-        {/* The thread's place. One centred line today, a list tomorrow. */}
-        <View style={styles.thread}>
+        {/* ★ THE THREAD IS THE WAY OUT OF THE KEYBOARD.
+            Reported as *"you can never get out of typing mode"* — and that
+            was exactly true: the field is multiline so Return makes a new
+            line, and nothing else blurred it. Tapping the conversation is
+            what every messaging app means by "I am done writing", so the
+            whole thread area is the dismiss target.
+
+            ⚠️ `accessible={false}`: this is a gesture on a region, not a
+            button. Announced as one it would put "double-tap to activate"
+            in front of the empty-state sentence a screen reader is here to
+            read. The keyboard has its own dismiss for that reader. */}
+        <Pressable
+          style={styles.thread}
+          onPress={Keyboard.dismiss}
+          accessible={false}
+        >
           <Text
             style={[styles.empty, { color: t.textSecondary, textAlign: rtl ? 'right' : 'left' }]}
           >
             {tr('chatEmptyBody')}
           </Text>
-        </View>
+        </Pressable>
 
         <ChatComposer
           placeholder={tr('chatPlaceholder')}
@@ -91,6 +105,10 @@ const styles = StyleSheet.create({
   empty: { fontSize: 14.5, lineHeight: 21 },
 });
 
+// v1.1.0 — Tapping the thread dismisses the keyboard. "You can never get out
+//          of typing mode" was literally true: a multiline field ignores
+//          Return and nothing else blurred it, so the only way out was to
+//          leave the tab. Sending dismisses it too (ChatComposer v2.0.0).
 // v1.0.1 — `KeyboardAvoidingView` is `padding` on BOTH platforms. Leaving
 //          Android to `adjustResize` is the usual advice and is wrong here: the
 //          app is edge-to-edge, so the window does not resize and the composer

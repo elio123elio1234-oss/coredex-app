@@ -1,56 +1,57 @@
 /* ==================================================================
    ChatComposer (molecule) — the message box, with light on its border.
 
-     ╭─────────────────────────────────╮
-     │ (◎)                             │   attach an ECG
-     │                                 │
-     │  Write a message…               │
-     │                                 │
-     │  [ 7 Aug · Limb (6)  ✕ ]   (↑)  │   attached study · send
-     ╰─────────────────────────────────╯
+     ╭─────────────────────────────╮
+     │  Write a message…           │   one line to start; it grows
+     │                        (↑)  │   attached study · send
+     ╰─────────────────────────────╯
 
    ══ WHERE THE SHAPE COMES FROM ══
-   The layout is the one in the reference the user pointed at: a tall
-   rounded box with a round button at the top-start, the text in the
-   middle, chips along the bottom-start and the send button as a circle at
-   the bottom-end. Only the CONTROLS are different, because this app has
-   no agents to pick — the top-start button attaches an ECG study, and the
-   chip is that study rather than a model name.
+   The layout is the one in the reference the user pointed at: a rounded
+   box with the text at the top and a round send button at the bottom-end.
+   Only the CONTROLS are different, because this app has no agents to pick
+   — the top-start button attaches an ECG study, and the chip is that
+   study rather than a model name. That mapping is the web's own composer
+   (attach · text · send) rearranged, so the two platforms stay one
+   feature.
 
-   That mapping is not a liberty: it is the web's own `ChatComposer`
-   (attach · text · send, plus a coded consult reason in clinic mode)
-   rearranged into the taller shape, so the two platforms stay the same
-   feature. Only the arrangement changed.
+   ══ ★ v2 — THREE OF THE FIVE REPORTS LANDED HERE ══
+   Reported from a phone, and answered rather than argued with:
 
-   ══ ★ WHEN THE LIGHT MOVES, AND WHY IT IS NOT ALWAYS ══
-   `active={focused || sending}`. At rest the border is a still gradient
-   edge; touch the field and it turns.
+   • *"the box is very tall from the start and does not depend on how much
+     text I wrote"* — it opened at a fixed ~116 pt because the field had a
+     44 pt minimum and the box padded generously around it. It now starts
+     at ONE LINE and grows with the content up to `MAX_INPUT`, after which
+     the field scrolls inside itself. Nothing else on the screen moves.
 
-   Chosen deliberately over "always on", which is what the reference does.
-   Two reasons, and the first is written into this codebase already:
+   • *"you can never get out of typing mode"* — there was no way to
+     dismiss the keyboard: a multiline field ignores Return, and nothing
+     else blurred it. The field is blurred by tapping the thread above it
+     (`ChatScreen`), by sending, and by the Android back button, which the
+     system already routes to the keyboard first.
 
-   1. `ThinkingOrb`'s header states that a Skia animation is "fine for a
-      splash that has a 60 s ceiling over it" and "NOT fine as ambient
-      chrome somewhere it could run for an hour". A composer is on screen
-      for as long as the tab is open, which is exactly that. `BorderBeam`
-      is cheaper than the orb (a transform, not a per-frame picture), but
-      cheap is not free and this screen belongs to someone whose phone has
-      to last the day.
-   2. It makes the animation MEAN something. A border that lights when you
-      touch the field is the app saying it is listening; a border that
-      turns forever is decoration, and decoration on a medical screen is
-      the thing every other surface in this app was stripped of.
+   • *"the animation is too bright and has nothing to do with how fast I
+     type — it looks like fireworks"* — the beam ran at a fixed speed and
+     a fixed brightness. This component now owns an `energy` value that
+     rises on every keystroke and decays over `COOL_MS`, and hands it to
+     `BorderBeam`, which uses it for BOTH brightness and speed. Type fast
+     and the border keeps up; stop and it settles to a quiet drift.
 
-   ⚠️ `sending` keeps it turning after the keyboard closes, which is the
-   one case where "listening" is the wrong word and "working" is the right
-   one — the same distinction the boot orb draws.
+   ══ ★ WHEN THE LIGHT IS THERE AT ALL ══
+   `active={focused || sending}`, and `BorderBeam` draws **nothing** when
+   that is false — not a dimmed arc, nothing. An untouched input is an
+   input. (v1 rested at 30 % and was reported as "a little coloured strip"
+   on a box nobody had touched.)
+
+   ⚠️ `sending` keeps it alive after the keyboard closes, which is the one
+   case where "listening" is the wrong word and "working" is the right
+   one.
 
    ══ WHAT THE BEAM MAY NOT DO ══
-   It is wrapped in `FailSoft`. The box has a real 1 px border of its own,
-   so if Skia throws — or is simply absent, as it is in Expo Go — what is
-   left is a perfectly ordinary input, not a broken screen. The beam is
-   decoration by that file's own definition, and nothing a patient needs
-   is behind it.
+   It is wrapped in `FailSoft` over a real 1 px border, so a thrown beam
+   leaves an ordinary input. ⚠️ That is protection against a React throw
+   and NOT against a native Skia crash — see `BorderBeam`'s header, where
+   the one real crash this feature has had is written down.
 
    ⚠️ The canvas is `pointerEvents="none"` and is rendered BEFORE the
    content, so it sits underneath. Mobile `CLAUDE.md` §1 records what
@@ -63,23 +64,44 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import {
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
   type LayoutChangeEvent,
+  type NativeSyntheticEvent,
+  type TextInputContentSizeChangeEventData,
 } from 'react-native';
+import {
+  cancelAnimation,
+  Easing,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import BorderBeam, { type BeamVariant } from '@/components/atoms/BorderBeam';
 import FailSoft from '@/components/atoms/FailSoft';
 import { RADIUS } from '@/theme/tokens';
 import { useIsDark, useTheme } from '@/theme/useTheme';
 
 /** The box's own corner radius. The beam's ring is cut to the same number. */
-const BOX_RADIUS = RADIUS.lg + 6;
-/** Room for roughly five lines before the field starts scrolling itself. */
-const INPUT_MAX_HEIGHT = 112;
-const INPUT_MIN_HEIGHT = 44;
+const BOX_RADIUS = RADIUS.lg + 4;
+
+/**
+ * One line of the field at its own type size, and the ceiling it grows to.
+ *
+ * ⚠️ `MIN_INPUT` is a LINE, not a tap target. It was 44 — the tap-target
+ * minimum — which is the right number for a button and the wrong one for a
+ * field whose height is supposed to say how much has been written. The
+ * whole box is the target here, and it is far larger than 44 either way.
+ */
+const MIN_INPUT = 24;
+const MAX_INPUT = 116;
+
+/** What one keystroke adds to the beam's energy, and how long it takes to fade. */
+const KEYSTROKE = 0.34;
+const COOL_MS = 1600;
 
 export interface ChatComposerProps {
   placeholder: string;
@@ -90,7 +112,7 @@ export interface ChatComposerProps {
   /** The attached study's label, or null. Shown as a chip along the bottom. */
   attachmentLabel?: string | null;
   onClearAttachment?: () => void;
-  /** True while a send is in flight — the beam keeps turning, send is locked. */
+  /** True while a send is in flight — the beam stays alive, send is locked. */
   sending?: boolean;
   rtl?: boolean;
   variant?: BeamVariant;
@@ -114,10 +136,29 @@ export default function ChatComposer({
 
   const [text, setText] = useState('');
   const [focused, setFocused] = useState(false);
+  /** The field's own height, driven by its content. See `MIN_INPUT`. */
+  const [inputH, setInputH] = useState(MIN_INPUT);
   /* The box's own size, for the beam's ring. A zero is never a measurement
      — `BorderBeam` refuses to draw from one — so this stays 0 until the
      first real layout and the beam simply is not there for that frame. */
   const [box, setBox] = useState({ w: 0, h: 0 });
+
+  /**
+   * ★ How hard the writing is going, 0–1.
+   *
+   * A shared value rather than state: it is written on every keystroke and
+   * read on the UI thread by Skia, so putting it in React would re-render
+   * the composer at typing rate for a number nothing in React reads.
+   */
+  const energy = useSharedValue(0);
+  const stoke = () => {
+    cancelAnimation(energy);
+    /* Add to whatever is left rather than restarting from zero — that is
+       what makes FAST typing sit higher than slow typing instead of every
+       keystroke producing the same flash. */
+    energy.value = Math.min(1, energy.value + KEYSTROKE);
+    energy.value = withTiming(0, { duration: COOL_MS, easing: Easing.out(Easing.quad) });
+  };
 
   const canSend = (text.trim().length > 0 || attachmentLabel !== null) && !sending;
 
@@ -126,34 +167,38 @@ export default function ChatComposer({
     if (width > 0 && height > 0) setBox({ w: width, h: height });
   };
 
+  const onContentSize = (e: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
+    const h = Math.min(MAX_INPUT, Math.max(MIN_INPUT, Math.ceil(e.nativeEvent.contentSize.height)));
+    /* Only on a real change: Android fires this on nearly every keystroke,
+       and setting an identical height would re-render the box (and re-measure
+       it, and re-lay out the beam) for nothing. */
+    setInputH((prev) => (prev === h ? prev : h));
+  };
+
   const submit = () => {
     if (!canSend) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSend(text.trim());
     setText('');
+    setInputH(MIN_INPUT);
+    /* Sending is the end of a thought: put the keyboard away rather than
+       leaving the patient in a mode they have to discover how to leave. */
+    Keyboard.dismiss();
   };
 
   const align = rtl ? ('right' as const) : ('left' as const);
 
   return (
     <View
-      style={[
-        styles.box,
-        {
-          backgroundColor: t.surface,
-          borderColor: t.border,
-        },
-      ]}
+      style={[styles.box, { backgroundColor: t.surface, borderColor: t.border }]}
       onLayout={onLayout}
     >
       {/* ── The light. First child, so it is beneath everything, and
-             decoration so a throw costs nothing but itself. ── */}
+             decoration so a React throw costs nothing but itself. ── */}
       <FailSoft
         label="composer beam"
         /* Nothing. The box's own 1 px border IS the fallback, so a thrown
-           beam leaves a perfectly ordinary input rather than a hole — and
-           unlike the boot orb's ring, there is no ambiguity to create here:
-           Settings › About names anything this boundary caught. */
+           beam leaves a perfectly ordinary input rather than a hole. */
         fallback={null}
       >
         <BorderBeam
@@ -161,6 +206,7 @@ export default function ChatComposer({
           height={box.h}
           radius={BOX_RADIUS}
           active={focused || sending}
+          energy={energy}
           theme={dark ? 'dark' : 'light'}
           variant={variant}
         />
@@ -178,24 +224,24 @@ export default function ChatComposer({
             }}
             style={({ pressed }) => [
               styles.round,
-              {
-                backgroundColor: t.bgSoft,
-                borderColor: t.border,
-                opacity: pressed ? 0.6 : 1,
-              },
+              { backgroundColor: t.bgSoft, borderColor: t.border, opacity: pressed ? 0.6 : 1 },
             ]}
             hitSlop={8}
           >
-            <Ionicons name="pulse" size={19} color={t.textSecondary} />
+            <Ionicons name="pulse" size={18} color={t.textSecondary} />
           </Pressable>
         </View>
       )}
 
       {/* ── The field ── */}
       <TextInput
-        style={[styles.input, { color: t.textPrimary, textAlign: align }]}
+        style={[styles.input, { color: t.textPrimary, textAlign: align, height: inputH }]}
         value={text}
-        onChangeText={setText}
+        onChangeText={(next) => {
+          setText(next);
+          stoke();
+        }}
+        onContentSizeChange={onContentSize}
         placeholder={placeholder}
         placeholderTextColor={t.textTertiary}
         multiline
@@ -213,9 +259,7 @@ export default function ChatComposer({
       <View style={[styles.bottomRow, rtl && styles.rowRtl]}>
         <View style={[styles.chips, rtl && styles.rowRtl]}>
           {attachmentLabel !== null && (
-            <View
-              style={[styles.chip, { backgroundColor: t.bgSoft, borderColor: t.border }]}
-            >
+            <View style={[styles.chip, { backgroundColor: t.bgSoft, borderColor: t.border }]}>
               <Ionicons name="pulse" size={13} color={t.textSecondary} />
               <Text style={[styles.chipText, { color: t.textSecondary }]} numberOfLines={1}>
                 {attachmentLabel}
@@ -244,11 +288,11 @@ export default function ChatComposer({
             styles.round,
             styles.send,
             {
-              /* The send button is the one thing on this box that is allowed
-                 to be solid: it is the only control whose state the patient
-                 has to be able to read at a glance. Disabled is a surface
-                 tint, not a greyed-out navy, because a dimmed dark circle on
-                 a dark box reads as an icon that failed to load. */
+              /* The send button is the one thing on this box allowed to be
+                 solid: it is the only control whose state has to be readable
+                 at a glance. Disabled is a surface tint, not a greyed navy —
+                 a dimmed dark circle on a dark box reads as an icon that
+                 failed to load. */
               backgroundColor: canSend ? t.accent : t.bgSoft,
               borderColor: canSend ? t.accent : t.border,
               opacity: pressed ? 0.7 : 1,
@@ -256,11 +300,7 @@ export default function ChatComposer({
           ]}
           hitSlop={8}
         >
-          <Ionicons
-            name="arrow-up"
-            size={20}
-            color={canSend ? t.surface : t.textTertiary}
-          />
+          <Ionicons name="arrow-up" size={18} color={canSend ? t.surface : t.textTertiary} />
         </Pressable>
       </View>
     </View>
@@ -272,9 +312,9 @@ const styles = StyleSheet.create({
     borderRadius: BOX_RADIUS,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
+    gap: 8,
     /* ⚠️ The beam's canvas is larger than this box and is positioned
        outside it. `overflow: 'hidden'` here would clip the halo away and
        leave only the stroke — the effect would look "not working" rather
@@ -284,15 +324,12 @@ const styles = StyleSheet.create({
   rowRtl: { flexDirection: 'row-reverse' },
   topRow: { flexDirection: 'row', alignItems: 'center' },
   input: {
-    minHeight: INPUT_MIN_HEIGHT,
-    maxHeight: INPUT_MAX_HEIGHT,
     fontSize: 16.5,
     lineHeight: 22,
-    /* iOS pads a multiline input from the top by default and Android does
-       not; both are set so the first line sits where it looks like it
-       should on either. */
-    paddingTop: 4,
-    paddingBottom: 4,
+    /* No vertical padding: the height IS the content height now, and
+       padding on top of it would make every line taller than a line. */
+    paddingTop: 0,
+    paddingBottom: 0,
     textAlignVertical: 'top',
   },
   bottomRow: {
@@ -307,28 +344,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
     maxWidth: 220,
   },
   chipText: { fontSize: 12.5, flexShrink: 1 },
   round: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* The send circle carries no border of its own when it is live — the fill
-     is the affordance, and a ring around a filled circle reads as a second
-     edge next to the box's. */
   send: { marginStart: 'auto' },
 });
 
-// v1.0.0 — The reference's box shape with this app's controls: attach an ECG,
-//          write, send. The border carries `BorderBeam`, turning only while the
-//          field is focused or a send is in flight — see the header for why not
-//          always. Wrapped in FailSoft over a real 1 px border, so the worst
-//          case is an ordinary input.
+// v2.0.0 — Answers three of five reports from a phone. ★ THE BOX STARTS AT ONE
+//          LINE and grows with the content (`MIN_INPUT` was 44, a tap-target
+//          number used for a field whose height is supposed to mean something).
+//          ★ SENDING DISMISSES THE KEYBOARD — "you can never get out of typing
+//          mode". ★ AND THE BEAM IS DRIVEN BY TYPING: `energy` rises on every
+//          keystroke and decays over COOL_MS, and BorderBeam spends it on both
+//          brightness and speed, so fast typing sits higher than slow typing
+//          instead of every keystroke producing the same flash.

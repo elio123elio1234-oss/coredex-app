@@ -1,8 +1,52 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.90.0';
-export const APP_BUILD_LABEL = 'the Chat tab has a real composer, with light on its border';
+export const APP_VERSION = '0.91.0';
+export const APP_BUILD_LABEL = 'the composer answers back: it grows with the text, the light follows your typing, and you can put the keyboard away';
 
+// v0.91.0 - FIVE REPORTS FROM THE PHONE, ANSWERED. JS only - OTA.
+//
+//           1. "you can never get out of typing mode" - and that was
+//              literally true. The field is multiline so Return makes a new
+//              line, and NOTHING else blurred it: the only way out was to
+//              leave the tab. Tapping the thread now dismisses the keyboard,
+//              and so does sending.
+//
+//           2. "the animation is too bright and has nothing to do with how
+//              fast I type - it looks like fireworks." It ran at a fixed
+//              speed and a fixed brightness, so it was decoration playing
+//              over the top of someone's writing. It is now DRIVEN BY THE
+//              TYPING: every keystroke adds to an `energy` value that decays
+//              over 1.6 s, and that value moves BOTH the brightness and the
+//              speed. Type fast and the border keeps up; stop and it settles.
+//              Peak brightness is also about half what it was, and the lit
+//              arc is longer and softer - a short bright arc reads as a
+//              flash going past, a long gentle one reads as light moving.
+//
+//           3. "when you just open the tab, before typing at all, there is a
+//              little coloured strip on the box." v0.90.0 rested at 30%
+//              opacity, which is a coloured arc parked on an untouched
+//              input. It now draws NOTHING at rest. An input is an input.
+//
+//           4. "the box is very tall from the start and does not depend on
+//              how much text I wrote." The field had a 44 pt minimum - the
+//              TAP-TARGET number - used for something whose height is
+//              supposed to mean how much has been written. It starts at ONE
+//              LINE and grows with the content to a ceiling, then scrolls.
+//
+//           5. "the app crashed." ⚠️ The likeliest cause is deleted:
+//              `BorderBeam` built its ring with `Skia.Path.Make()` inside a
+//              `useMemo` keyed on the measured size - handing React a NATIVE
+//              object whose lifetime it does not manage and rebuilding it on
+//              every layout pass. It is a declarative `<RoundedRect
+//              style="stroke">` now, with no manual Skia object at all.
+//              ⚠️ And `FailSoft` was never the protection it sounded like:
+//              it catches a React render, not a native crash.
+//
+//           Verified on an Android emulator, not just typechecked: the box
+//           grows to two lines and holds, `mInputShown=false` after tapping
+//           the thread, no colour at rest, and the glow visibly fades and
+//           drifts once the typing stops.
+//
 // v0.90.0 - THE CHAT TAB GETS A COMPOSER, AND IT GLOWS. JS only - OTA.
 //
 //           The tab was a title and an empty card. It now has the message box

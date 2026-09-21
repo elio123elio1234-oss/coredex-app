@@ -1,5 +1,75 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.91.0 - 2026-09-21 - the composer answers back
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+Five things reported from the phone about v0.90.0. All five are answered
+rather than argued with, and the fifth is a crash.
+
+### 1. *“אי אפשר לצאת ממוד של הקלדה לנצח”*
+
+Literally true. The field is multiline, so Return makes a new line; nothing
+else blurred it. The only way out of the keyboard was to leave the tab.
+
+Tapping the thread now dismisses it — which is what every messaging app means
+by “I am done writing” — and so does sending.
+
+### 2. *“the animation is too bright and has nothing to do with how fast I type — it looks like fireworks”*
+
+It ran at a fixed speed and a fixed brightness: decoration playing over the
+top of somebody's writing.
+
+It is now **driven by the typing**. Every keystroke adds to an `energy` value
+that decays over 1.6 s, and that value moves **both the brightness and the
+speed** — 0.11 turns/s when the hands stop, up to about 0.5 when they are
+going. Fast typing sits higher than slow typing because the keystroke ADDS to
+what is left rather than restarting it.
+
+Peak brightness is also about half what it was, and the lit arc is longer and
+softer. A short bright arc on a dark screen reads as a flash going past; a
+long gentle one reads as light moving.
+
+### 3. *“כשרק נכנסים לטאב … יש פס קטן צבעוני על המלבן”*
+
+v0.90.0 rested at 30 % opacity, which is a coloured arc parked on an input
+nobody has touched. **It now draws nothing at rest.** `REST_OPACITY` is 0.
+
+### 4. *“המלבן גבוה מאוד על ההתחלה ולא תלוי בכמה טקסט כתבתי”*
+
+The field carried a 44 pt minimum — the **tap-target** number — on something
+whose height is supposed to say how much has been written. The whole box is
+the target anyway, and it is far larger than 44 either way.
+
+It starts at **one line** and grows with the content to `MAX_INPUT`, after
+which the field scrolls inside itself. Verified on a device: two lines of text
+make a two-line box.
+
+### 5. ⚠️ *“the app crashed”*
+
+The likeliest cause is deleted. `BorderBeam` built its ring with
+`Skia.Path.Make()` inside a `useMemo` keyed on the measured size — which hands
+React a **native object whose lifetime it does not manage** and rebuilds it on
+every layout pass. That is a use-after-free waiting for a measurement, and it
+takes the whole app down rather than throwing somewhere catchable.
+
+There is no manual Skia object left: the ring is a declarative `<RoundedRect
+style="stroke">` and every value it needs is computed after the zero-size
+guard. **Do not reintroduce `Skia.Path.Make()` for a shape a primitive already
+draws.**
+
+⚠️ And the wrapper was never the protection it sounded like: **`FailSoft`
+catches a React render, not a native crash.** Saying “it is wrapped in
+FailSoft” was true and irrelevant.
+
+### How it was verified
+
+On an Android emulator, driven through sign-in to the tab, not just
+typechecked: the box grows to two lines and holds; `dumpsys input_method`
+reports `mInputShown=false` after tapping the thread; there is no colour on
+the box at rest; the glow visibly fades and drifts once typing stops; and
+`logcat` shows no crash.
+
 ## v0.90.0 - 2026-09-21 - the Chat tab gets a composer, and it glows
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**
