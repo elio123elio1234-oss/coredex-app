@@ -930,6 +930,11 @@ export const en = {
   chatTitle: 'Chat',
   chatEmptyBody:
     'Messages with your care team will appear here, on the same thread you see on the web.',
+  /* The composer. Copied from the web's locale rather than re-worded, so
+     the same control says the same thing on both platforms. */
+  chatPlaceholder: 'Write a message\u2026',
+  chatSend: 'Send',
+  chatAttach: 'Attach an ECG',
 
   /* ══ Onboarding: splash, sign-in, registration ══════════════════
      Keys match the web's `auth*` names wherever the two apps say the

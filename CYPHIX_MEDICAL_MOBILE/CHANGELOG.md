@@ -1,5 +1,95 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.90.0 - 2026-09-21 - the Chat tab gets a composer, and it glows
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“בוא ננסה לבנות רק את הנראות של הטאב של chats … אני רוצה שתיבת ההקלדה תהיה עם
+> האפקט כמו כאן”*
+
+The tab was a title and an empty card — no input at all. It now has the box
+from the reference: tall, rounded, placeholder at the top, a round send button
+at the bottom-end, with a coloured light running around its border.
+
+### `npm install border-beam` was not possible
+
+The package is by the same author as `thinking-orbs`, and that one was split
+into a portable `engine` precisely so the React Native port could share its
+maths. This one was not: it is CSS all the way down — 21 `@keyframes`,
+`conic-gradient`, `radial-gradient`, `filter: blur()/hue-rotate()`,
+`window.matchMedia`. React Native has none of them. So this is a **port of the
+design**, read out of the published bundle rather than eyeballed off a
+screenshot, and **the package is not a dependency and is not in `SOUP.md`**.
+
+Taken from it: the `ocean` and `colorful` palettes, the sweep's ramp
+(transparent to 54 %, up through .1 / .3 / .6 to a .75 peak at 66 %, gone by
+78 %), and 360° linear per 1.96 s — its own `duration` default.
+
+### ★ It does not run all the time
+
+`active = focused || sending`. At rest the border is a still gradient edge.
+
+Deliberately not the reference's always-on, for a reason already written in
+this repo: `ThinkingOrb`'s header states that a Skia animation is *“fine for a
+splash that has a 60 s ceiling over it”* and *“NOT fine as ambient chrome
+somewhere it could run for an hour”*. A composer is exactly that. It also
+makes the animation mean something — a border that lights when you touch the
+field is the app saying it is listening. Reduce Motion (live, not read once)
+and backgrounding stop it as well.
+
+### ⚠️ Two things found only by running it on a device
+
+Both passed `tsc`, both `expo export`s and `expo-doctor` without a word.
+
+1. **The composer was completely hidden behind the keyboard on Android.** The
+   usual advice is to let Android's `adjustResize` handle it and only give iOS
+   a `behavior`. This app is **edge-to-edge** (Android 15 makes that
+   mandatory), so the window does not resize and nothing moved — you could
+   type into a box you could not see. `behavior="padding"` on both platforms.
+2. **Three earlier builds of the beam drew nothing at all.** The CSS original
+   is a *fixed* cloud of nine radial blobs with a conic **window** sweeping
+   over it — which is why its light changes colour at each corner. Rebuilding
+   that needs `ring ∩ window` as a mask, and in Skia:
+   - a `DiffRect` carrying a shader child yields no alpha for a `<Mask>`
+     (the same `DiffRect` with `color="white"` masks perfectly);
+   - a nested `<Mask>` over a rotating square did not draw either;
+   - a gradient `transform` + `origin` rotates about (0,0), which swings the
+     sweep's centre off the box entirely.
+
+   `strength={4}` against all of them changed nothing, which is what ruled out
+   “too faint” and pointed at the shape rather than the numbers.
+
+### What it is now, and what that trade costs
+
+One rounded-rectangle `Path` stroked with a `SweepGradient`, drawn three times
+at different widths and blurs for the bloom, the inner glow and the crisp
+edge. No masks, one primitive, and every part of it is something Skia is
+obviously good at.
+
+**The cost, stated rather than hidden:** the beam carries its own blue→purple
+gradient instead of picking up a different hue at each corner the way the CSS
+original does. The colour belongs to the light, not to the corner.
+
+### Also
+
+- `ChatComposer` is the web's own composer (attach · text · send) rearranged
+  into the taller shape, so the two platforms stay one feature.
+- The beam is wrapped in `FailSoft` over a real 1 px border: if Skia throws,
+  what is left is an ordinary input.
+- The canvas is `pointerEvents="none"` and rendered first — mobile
+  `CLAUDE.md` §1 records what happens otherwise.
+- `chatPlaceholder` / `chatSend` / `chatAttach` copied from the web locale in
+  both languages.
+
+### ⚠️ The screen is still appearance only
+
+This app has **no `messageApi`** — `services/api/endpoints/` holds photo,
+profile, recording and sync and nothing else. There is no thread to load and
+no send to make, so the thread area keeps its empty-state line and `onSend`
+drops the draft. **It must not be echoed into the thread to make the screen
+look finished:** a message that appears in a care-team thread and was never
+sent to anybody is the worst thing this screen could do.
+
 ## v0.89.1 - 2026-09-21 - the Profile orb sits above the name
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

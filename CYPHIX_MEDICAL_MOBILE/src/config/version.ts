@@ -1,8 +1,45 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.89.1';
-export const APP_BUILD_LABEL = 'the Profile orb sits ABOVE the name, not beside it';
+export const APP_VERSION = '0.90.0';
+export const APP_BUILD_LABEL = 'the Chat tab has a real composer, with light on its border';
 
+// v0.90.0 - THE CHAT TAB GETS A COMPOSER, AND IT GLOWS. JS only - OTA.
+//
+//           The tab was a title and an empty card. It now has the message box
+//           from the reference that was asked for: tall, rounded, placeholder
+//           at the top, a round send button at the bottom-end - with a
+//           coloured light that runs around its border while the field is
+//           focused or a send is in flight, and rests as a still gradient edge
+//           otherwise.
+//
+//           ★ `npm install border-beam` WAS NOT POSSIBLE, and that is not a
+//           preference. Unlike `thinking-orbs` - same author, and split into a
+//           portable `engine` precisely so a React Native port could share it
+//           - `border-beam` is CSS all the way down: 21 `@keyframes`,
+//           `conic-gradient`, `filter: blur()/hue-rotate()`, `matchMedia`.
+//           None of those exist in RN. So it is a PORT of the design read out
+//           of the published bundle, and the package is NOT a dependency and
+//           is NOT in SOUP.md.
+//
+//           ⚠️ IT DOES NOT RUN ALL THE TIME, and the reason is written in this
+//           repo already: `ThinkingOrb`'s header says a Skia animation is
+//           "fine for a splash that has a 60 s ceiling over it" and "NOT fine
+//           as ambient chrome somewhere it could run for an hour". A composer
+//           is exactly that. It also makes the animation MEAN something - a
+//           border that lights when you touch the field is the app saying it
+//           is listening. Reduce Motion and backgrounding stop it too.
+//
+//           ⚠️ TWO THINGS FOUND ONLY BY RUNNING IT ON A DEVICE, both of which
+//           a typecheck and both `expo export`s waved straight through:
+//             - the composer was COMPLETELY HIDDEN behind the keyboard on
+//               Android. The usual advice is to leave Android to
+//               `adjustResize`; this app is edge-to-edge, so the window does
+//               not resize and nothing moved. `padding` on both platforms.
+//             - three earlier builds of the beam drew NOTHING (a `DiffRect`
+//               with a shader child yields no alpha for a `<Mask>`; a nested
+//               mask; a gradient `transform` + `origin`). It is now one
+//               stroked `Path` with a `SweepGradient`, no masks at all.
+//
 // v0.89.1 - THE PROFILE ORB MOVES ABOVE THE IDENTITY. JS only - OTA.
 //
 //           "It should be above the name, not next to it." v0.89.0 put it
