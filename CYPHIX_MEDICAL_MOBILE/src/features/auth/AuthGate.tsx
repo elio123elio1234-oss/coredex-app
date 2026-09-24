@@ -47,6 +47,7 @@ import AppLockScreen from '@/components/organisms/Auth/AppLockScreen';
 import BootSplash from '@/components/organisms/Auth/BootSplash';
 import { useBootWarmup } from '@/features/boot/useBootWarmup';
 import OnboardingScreen from '@/screens/OnboardingScreen';
+import { markBoot } from '@/services/boot/bootTimeline';
 import { claimCacheFor } from '@/services/db/cacheOwner';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { appRelocked, appUnlocked, logoutUser, restoreSession, revalidateSession } from './authSlice';
@@ -184,7 +185,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (!user) return;
     let cancelled = false;
     void claimCacheFor(user.id).then(() => {
-      if (!cancelled) setCacheOwner(user.id);
+      if (!cancelled) {
+        /* ★ Here, not on `restoreSession.fulfilled`. This is the last of
+           the DISK work — the enclave read and the ownership claim — and
+           the first moment nothing but a network call is left. Stamping
+           it earlier would hide the claim inside the next stage. */
+        markBoot('session');
+        setCacheOwner(user.id);
+      }
     });
     return () => {
       cancelled = true;
@@ -334,9 +342,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
      the splash is still up and we would be back to four of them. */
   if (signedIn && !warmUpReady) return <BootSplash />;
 
+  if (signedIn) markBoot('app');
   return signedIn ? <>{children}</> : <OnboardingScreen />;
 }
 
+// v2.4.0 — Stamps the `session` and `app` boot marks. v2.3.0 made the splash
+//          hold for work nobody can see, so "why is it still slow" needed an
+//          answer the phone could give; there is no console on a TestFlight
+//          build. Settings › About prints the breakdown.
 // v2.3.0 — Holds the splash until the SERVER has answered and the first sync
 //          has landed (`useBootWarmup`, 15 s ceiling → offline). A cold start
 //          used to show four loading states in a row — the splash, then a

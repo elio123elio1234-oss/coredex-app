@@ -13,6 +13,7 @@
    ================================================================== */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { markBoot } from '@/services/boot/bootTimeline';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { hydrate, readPreferences, writePreferences } from './preferencesSlice';
 
@@ -32,6 +33,7 @@ export function PreferencesGate({ children }: { children: ReactNode }) {
       if (cancelled || hydrated.current) return;
       hydrated.current = true;
       if (saved) dispatch(hydrate(saved));
+      markBoot('prefs');
       setReady(true);
     };
 
@@ -55,4 +57,6 @@ export function PreferencesGate({ children }: { children: ReactNode }) {
   return ready ? <>{children}</> : null;
 }
 
+// v1.1.0 — Stamps the `prefs` boot mark, so a slow launch can say whether it
+//           was this disk read or something after it.
 // v1.0.0 — Hydrates preferences before first paint; persists every change.

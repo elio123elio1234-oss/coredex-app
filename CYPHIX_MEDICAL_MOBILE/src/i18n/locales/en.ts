@@ -386,6 +386,7 @@ export const en = {
   setAboutVersion: 'App version',
   setAboutBuild: 'This build',
   setAboutMaterial: 'Surface material',
+  setAboutBootTime: 'Last launch',
   setAboutRender: 'Render fallback',
   setAboutCompliance: 'Compliance',
   setAboutComplianceValue: 'HIPAA · GDPR · Israeli Privacy Law',
@@ -1554,6 +1555,9 @@ export type TranslationKey = keyof typeof en;
 //           the two apps say the same sentence. `testsEmptyTitle`/`Body` are
 //           GONE: the tab is no longer a results list (History is), so a key
 //           saying "no tests yet" had nothing left to describe.
+// v1.13.0 — setAboutBootTime: the label for the launch-breakdown diagnostic.
+//            Its VALUE stays English and un-localised, like the material and
+//            the build label, so a bug report quotes a greppable string.
 // v1.12.0 — setAboutMaterial: the label for the resolved-glass diagnostic. Its
 //           VALUE stays English, like the build label — a bug report should
 //           quote the same string the changelog does.

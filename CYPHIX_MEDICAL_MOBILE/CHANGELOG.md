@@ -1,5 +1,75 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.95.0 - 2026-09-24 - the launch stops waiting for things nobody can see
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“now it's great. but even after the server is already up, on the 5th launch
+> it still takes 5-6 seconds — why?”*
+
+Fair question, and most of the answer was mine from an hour earlier.
+
+### 1. ★ The sync was on the critical path and did not need to be
+
+v0.94.0 held the splash for two things: the server answering, and the first
+`runSync`. The second one costs a round trip for the recordings delta and two
+more for the card and the portrait — **after** the revalidation, so they are
+sequential with it, not parallel. On a device that already has a mirror, not
+one of them changes a pixel of what is about to be drawn.
+
+It was put there for a reason that **died in the same release that wrote it.**
+The wait existed to stop History spinning on arrival; the RefreshControl fix
+in §2 of v0.94.0 made a background sync silent on both screens. It was buying
+something already paid for, at the cost of the thing being complained about.
+
+The wait now happens in exactly one case: `getCursor('recordings')` is null,
+meaning this device has never synced, so the app would otherwise open on an
+empty History with a skeleton in it. That is the one launch where holding buys
+something real — and it happens once per install. Every other launch reads the
+list off the disk and lets the delta land behind the rendered app, where
+nobody is looking at it. `SyncProvider`'s trigger ① still runs it, a few
+milliseconds later, exactly as it always did.
+
+### 2. And the rest of the launch now says where it went
+
+Settings › About has a **Last launch** row: deltas per stage — `prefs`,
+`session`, `server`, `data`, `app`.
+
+This was not a nice-to-have. The build on the phone is a release build over
+TestFlight: no Metro, no console, no profiler, and a developer machine running
+Windows. “Why is it still slow” was a question **nobody could answer without
+guessing**, which is the same predicament that put `GLASS_MATERIAL` on that
+screen — three indistinguishable causes, and only the phone could say which.
+Measure on the device, print it where it can be read and quoted.
+
+#### ⚠️ What the number does and does not include
+
+`T0` is stamped when the timeline module is evaluated, and `index.ts` imports
+it on its first line — as close to “JavaScript started” as the app can get
+from inside itself. It therefore **excludes the process launch, the native
+splash, and Hermes evaluating 4.4 MB of bytecode.**
+
+That is said in the value itself (“from JS start”) rather than buried in a
+comment nobody on a phone can read, because the gap between *3 s here* and
+*6 s in the hand* is the actual finding: it tells us which half of the launch
+to work on next, and those halves have completely different fixes.
+
+### What is ruled out already
+
+`expo-updates` is **not** blocking the launch. `launchWaitMs` has no value in
+`app.json` and the native default is `0`, so the manifest check never holds
+the splash — it downloads in the background and applies on the next launch,
+which is exactly what the ship script says on every publish. And
+`preloadAppImages()` is a no-op in a release build, where the assets are
+already local files.
+
+### What this does not prove
+
+`tsc` is clean and both bundles build. Neither has any opinion about how long
+a launch takes on an iPhone. The row stays `🔬 needs-iOS-verify` — and
+unusually, this time the verification is the feature: **open Settings › About
+after a cold launch and read the line.**
+
 ## v0.94.0 - 2026-09-24 - one loading screen, and no page that moves on its own
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

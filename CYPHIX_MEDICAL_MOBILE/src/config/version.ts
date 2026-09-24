@@ -1,8 +1,46 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.94.0';
-export const APP_BUILD_LABEL = 'one loading screen at launch, and no page that moves on its own';
+export const APP_VERSION = '0.95.0';
+export const APP_BUILD_LABEL = 'the launch stops waiting for things nobody can see, and now it says where it went';
 
+// v0.95.0 - THE LAUNCH IS SHORTER, AND IT REPORTS ITSELF. JS only - OTA.
+//
+//           "the server is already up and on the 5th launch it still takes
+//           5-6 seconds - why?"
+//
+//           1. ** THE SYNC WAS ON THE CRITICAL PATH AND DID NOT NEED TO BE. **
+//              v0.94.0 held the splash for the server AND for the first
+//              `runSync`. That is a round trip for the recordings delta plus
+//              two more for the card and the portrait, all of them AFTER the
+//              revalidation, and on a device that already has a mirror NONE of
+//              them change a pixel of what is about to be drawn.
+//
+//              It was put there to stop History spinning on arrival - and that
+//              reason died in the same release that wrote it, because the
+//              RefreshControl fix made a background sync SILENT on both
+//              screens. It was buying something already paid for.
+//
+//              The wait now happens in exactly one case: `getCursor` says this
+//              device has NEVER synced, so the app would open on an empty
+//              History with a skeleton in it. Otherwise the list is read off
+//              the disk and the delta lands behind the rendered app, where
+//              nobody is looking at it. SyncProvider's trigger (1) still runs
+//              it, a few milliseconds later, exactly as it always did.
+//
+//           2. ** AND THE REST OF THE LAUNCH NOW SAYS WHERE IT WENT. **
+//              Settings > About has a LAST LAUNCH row: deltas per stage -
+//              prefs, session, server, data, app. This was not guessable from
+//              Windows: the build on the phone is a release build over
+//              TestFlight, so there is no Metro, no console and no profiler,
+//              and the same predicament produced GLASS_MATERIAL on that screen
+//              for the same reason.
+//
+//              ** It measures from JS START, not from the tap. ** The process
+//              launch and the Hermes bundle evaluation (4.4 MB of bytecode)
+//              happen BEFORE T0 and are not in the number. That is said in the
+//              value itself, because the gap between "3 s here" and "6 s in
+//              the hand" is the finding, not a caveat.
+//
 // v0.94.0 - THE LOADING STATES. JS only - OTA.
 //
 //           Reported with three screenshots: "small glitches, but they make

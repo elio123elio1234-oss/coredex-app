@@ -27,11 +27,26 @@
         rather than a guess. The revalidation that produces it is
         dispatched by `AuthGate`; this hook only watches for the result.
 
-     2. **The first delta landed.** `runSync` once, awaited. Without it
-        the app opens on the device's mirror and History fills in a moment
-        later — which is ③ again, just moved. The engine is single-flight
-        and throttled, so `SyncProvider`'s own boot run (mounted a moment
-        after this releases) joins nothing and asks nothing.
+     2. **The first delta landed — ONLY on a device that has nothing.**
+        ⚠️ v1.0.0 waited for this on EVERY launch, and that was wrong.
+        Reported immediately: *"the server is already up and on the fifth
+        launch it still takes 5-6 seconds."* It did, and this was most of
+        it — a sync is a round trip for the delta and two more for the
+        card and the portrait, all of them AFTER the revalidation, none
+        of them changing a single pixel of what was about to be drawn.
+
+        It was put there to stop History spinning on arrival. That reason
+        died in the same release it was written in: the RefreshControl fix
+        made a background sync SILENT on both screens, so the delta can
+        land behind a rendered app with nothing to see. Waiting for it was
+        buying something already paid for.
+
+        So it is waited for in exactly one case: `getCursor('recordings')`
+        is null, i.e. this device has never synced, and the app would
+        otherwise open on an empty History with a skeleton in it. Once
+        there is a mirror, the list is on disk and the delta is somebody
+        else's job — `SyncProvider`'s ①, which runs a few milliseconds
+        after this releases.
 
    ══ AND WHAT MAKES IT GIVE UP ══
    • **15 s**, the number asked for. A free-tier container takes ~50 s to
@@ -56,7 +71,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ENV } from '@/config/env';
 import { useActivePatientId } from '@/features/auth/useActivePatientId';
+import { markBoot } from '@/services/boot/bootTimeline';
 import { runSync } from '@/services/sync/syncEngine';
+import { getCursor } from '@/services/sync/syncState';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 /**
@@ -97,6 +114,33 @@ export function useBootWarmup(active: boolean): boolean {
     setReady(true);
   }, []);
 
+  /**
+   * Has this device ever synced? `null` until the answer is back.
+   *
+   * One AsyncStorage read, started on mount rather than when it is
+   * needed, so it is already resolved by the time the server answers and
+   * adds nothing to the launch. It is the same cursor `syncRecordings`
+   * reads to decide snapshot-vs-merge, so the two cannot disagree about
+   * what "this device has nothing" means.
+   */
+  const [hasMirror, setHasMirror] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void getCursor('recordings')
+      .then((cursor) => {
+        if (!cancelled) setHasMirror(cursor !== null);
+      })
+      .catch(() => {
+        /* A storage read that fails is not a reason to hold a splash.
+           Treat it as "has a mirror": the worst case is History showing
+           its skeleton for a moment, which is a state it is built for. */
+        if (!cancelled) setHasMirror(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /* The ceiling. Armed once, when the wait actually begins. */
   useEffect(() => {
     if (!active || done.current) return;
@@ -110,28 +154,52 @@ export function useBootWarmup(active: boolean): boolean {
     if (sessionMode !== 'live') {
       /* Asked and answered, and the answer was not a server. Come up now
          rather than at the ceiling. */
-      if (revalidatedOnce) finish();
+      if (revalidatedOnce) {
+        markBoot('server');
+        finish();
+      }
+      return;
+    }
+    markBoot('server');
+
+    /* ★ The device already has a list. Go — the delta lands behind the
+       rendered app, silently, and nothing on screen is waiting for it.
+       This branch is the whole difference between v1.0.0's launch and
+       this one; see the header. */
+    if (hasMirror === null) return; // one storage read, milliseconds
+    if (hasMirror) {
+      finish();
       return;
     }
 
-    /* Live. One delta before the app draws, so History opens on the same
-       list it would have shown a second later anyway. `finally`, not
-       `then`: a sync that fails must not hold the splash — the whole
-       design of the engine is that a failed run changes nothing. */
+    /* Never synced. The app would open on an empty History with a
+       skeleton in it, which is the one case where holding buys something
+       real. `finally`, not `then`: a sync that fails must not hold the
+       splash — the whole design of the engine is that a failed run
+       changes nothing. */
     let cancelled = false;
     void runSync({ dispatch, userId, patientId }).finally(() => {
-      if (!cancelled) finish();
+      if (!cancelled) {
+        markBoot('data');
+        finish();
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [active, sessionMode, revalidatedOnce, userId, patientId, dispatch, finish]);
+  }, [active, sessionMode, revalidatedOnce, hasMirror, userId, patientId, dispatch, finish]);
 
   /* `|| !active` so the signed-out world is never gated by this — and
      `ready` latching is what stops it re-gating a running app. */
   return ready || !active;
 }
 
+// v1.1.0 — Waits for the first sync ONLY on a device that has never synced.
+//           v1.0.0 waited on every launch and that was most of the "still 5-6
+//           seconds with the server already up": three round trips after the
+//           revalidation, none of which changed a pixel of what was about to be
+//           drawn. The reason for waiting — History spinning on arrival — was
+//           removed by the RefreshControl fix in the same release.
 // v1.0.0 — Holds the boot splash until the server has answered and the first
 //          delta has landed, with a 15 s ceiling that drops the app into
 //          offline mode. Replaces three loading states that used to appear

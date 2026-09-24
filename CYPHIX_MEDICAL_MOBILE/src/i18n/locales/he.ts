@@ -353,6 +353,7 @@ export const he: Record<TranslationKey, string> = {
   setAboutVersion: 'גרסת אפליקציה',
   setAboutBuild: 'הגרסה הזו',
   setAboutMaterial: 'חומר המשטחים',
+  setAboutBootTime: 'ההפעלה האחרונה',
   setAboutRender: 'נפילת רינדור',
   setAboutCompliance: 'תאימות רגולטורית',
   setAboutComplianceValue: 'HIPAA · GDPR · חוק הגנת הפרטיות',
@@ -1363,6 +1364,8 @@ export const he: Record<TranslationKey, string> = {
 // v1.13.0 — Tests-tab picker copy, matching en.ts key for key. The 12-lead
 //           "coming soon" line is written as a place the test DOES work, not
 //           as an apology.
+// v1.13.0 — setAboutBootTime, matching en.ts key for key. The value it labels
+//            is English on purpose (see en.ts).
 // v1.12.0 — setAboutMaterial, matching en.ts key for key.
 // v1.11.0 — Profile-photo sheet copy, matching en.ts key for key.
 // v1.3.0 — The SCREENING block, matching en.ts key for key. The measurement

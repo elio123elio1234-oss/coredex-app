@@ -36,6 +36,7 @@ import { Pressable } from 'react-native';
 import FadeUpView from '@/components/atoms/Auth/FadeUpView';
 import { failSoftReport } from '@/components/atoms/FailSoft';
 import { GLASS_MATERIAL } from '@/components/atoms/GlassSurface';
+import { bootTimelineLabel } from '@/services/boot/bootTimeline';
 import HeroBackdrop from '@/components/atoms/HeroBackdrop';
 import SettingsChip from '@/components/atoms/SettingsChip';
 import {
@@ -144,6 +145,11 @@ export default function SettingsScreen() {
      boundary in the app is on a screen that is long gone by the time
      anybody opens Settings looking for the answer. */
   const renderFallback = failSoftReport();
+  /* Read at render, like the line above and for the same reason: the
+     launch is long over by the time anybody opens Settings, and nothing
+     re-renders when a stage is stamped. Null before the app has handed
+     over — which on this screen cannot happen, but the type says so. */
+  const bootTiming = bootTimelineLabel();
   useEffect(() => {
     let cancelled = false;
     void canUseAppLock().then((ok) => {
@@ -616,6 +622,20 @@ export default function SettingsScreen() {
               for the same reason as the build label: a bug report should quote
               the string the changelog uses. */}
           <SettingsRow label={tr('setAboutMaterial')} value={GLASS_MATERIAL} />
+          {/* ★ Where THIS launch went, in deltas. Same reason as the row
+              above it: the build on the phone is a release build over
+              TestFlight, so there is no console and no profiler, and "the
+              server is up and it still takes five seconds" is otherwise a
+              question nobody on a Windows machine can answer. English and
+              greppable, like the material and the build label.
+              ⚠️ It measures from JS START, not from the tap — the process
+              launch and the bundle evaluation are BEFORE it. That is stated
+              in the value itself rather than in a comment nobody on the
+              phone can read, because the difference between "3 s here" and
+              "6 s felt" is the actual finding. */}
+          {bootTiming && (
+            <SettingsRow label={tr('setAboutBootTime')} value={bootTiming} layout="stack" />
+          )}
           {/* ★ Only when something actually fell back. `FailSoft` replaces a
               decorative element with a quiet substitute, which is right for
               the patient and useless for a bug report: the boot orb's
@@ -681,6 +701,10 @@ const styles = StyleSheet.create({
 
 // v3.2.0 — ECG Device gains a TEMPORARY "Lead debug" row (behind
 //          LEAD_DEBUG_SCREEN_ENABLED) that pushes the bring-up screen.
+// v3.2.0 — About carries a LAST LAUNCH row: where the boot actually went, in
+//           deltas, measured on the device. A release build over TestFlight has
+//           no console to ask, and "the server is up and it still takes 5-6
+//           seconds" cannot be answered by guessing from a Windows machine.
 // v3.1.0 — About carries an APP UPDATE row. expo-updates was installed,
 //          configured and delivering, and nothing in this app ever called
 //          it, so its defaults ran the show: check on a cold launch, apply
