@@ -94,6 +94,23 @@ export interface AuthState {
   /** A revalidation is in flight. Drives the "connecting…" strip. */
   revalidating: boolean;
   /**
+   * A revalidation has SETTLED at least once this app run — whatever it
+   * said.
+   *
+   * ★ Not the same fact as `revalidating === false`, and the difference is
+   * the whole reason it exists. `revalidating` is false both BEFORE the
+   * question is asked and AFTER it is answered, so anything waiting on the
+   * server cannot tell "we have not asked yet" from "we asked and there is
+   * no server". The boot warm-up (`useBootWarmup`) holds the splash on
+   * exactly that distinction: it waits while the answer is outstanding and
+   * gives up the moment one arrives, rather than burning its whole ceiling
+   * on a phone that is plainly in airplane mode.
+   *
+   * A duplicate dispatch cannot set it: the thunk's `condition` aborts
+   * those before they reach a reducer.
+   */
+  revalidatedOnce: boolean;
+  /**
    * The session was restored from the enclave and the patient has not
    * passed the app lock yet.
    *
@@ -144,6 +161,7 @@ const initialState: AuthState = {
      has answered is the lie the strip exists to prevent. */
   sessionMode: 'offline',
   revalidating: false,
+  revalidatedOnce: false,
   locked: false,
   appLockEnabled: false,
   recovering: false,
@@ -357,6 +375,7 @@ const authSlice = createSlice({
       })
       .addCase(revalidateSession.fulfilled, (state, action) => {
         state.revalidating = false;
+        state.revalidatedOnce = true;
         /* Whatever the answer, the question has been asked. `offline`
            clears it too: we cannot learn who this is without a server, so
            holding the splash any longer would be holding it forever. */
@@ -390,6 +409,10 @@ const authSlice = createSlice({
       })
       .addCase(revalidateSession.rejected, (state) => {
         state.recovering = false;
+        /* A throw is still an ANSWER as far as anyone waiting is concerned:
+           the request is over and no server confirmed anything. Leaving this
+           false would hold the boot splash for its full ceiling on a bug. */
+        state.revalidatedOnce = true;
         /* The thunk itself threw — a bug, not an answer from a server. It
            is emphatically not grounds to end a session: an exception in
            our own code must never be able to sign a patient out. */
@@ -497,6 +520,11 @@ export const { appRelocked, appUnlocked, clearAuthError, debugRoleSet, welcomeAc
   authSlice.actions;
 export default authSlice.reducer;
 
+// v2.5.0 — Adds `revalidatedOnce`: has the server been ASKED and answered, as
+//          distinct from "no request is in flight", which is also true before
+//          the first one. The boot warm-up waits on that distinction so a
+//          phone with no signal drops to offline at once instead of holding
+//          the splash for the whole ceiling.
 // v2.4.0 — `debugRole` boots at DEFAULT_PREVIEW_ROLE ('admin') instead of null,
 //          and the two paths that used to reset it to null now reset it to that
 //          same default. Asked for because the alternative was opening Settings

@@ -292,9 +292,39 @@ export default function HistoryScreen() {
   /** Where the title block starts: the safe area, which the shell no longer
       applies (`bleedTop`) because the title now owns it. */
   const contentTop = insets.top + 6;
-  /* One expression for the state, read by the RefreshControl (which owns
-     the gesture) and by the badge (which is what anyone actually sees). */
-  const refreshing = sync.phase === 'syncing' || (list.isFetching && !list.isLoading);
+  /* ══ TWO DIFFERENT FACTS, AND CONFLATING THEM WAS THE BUG ══
+     "Work is happening" and "the patient ASKED for work to happen, with
+     their finger, just now" used to be one expression, handed to both the
+     RefreshControl and the badge. That is what put a gap at the top of
+     this screen, and it is why only one of them survives.
+
+     Why it matters so much on iOS: setting `refreshing` on a
+     UIRefreshControl is not a request to draw a spinner, it is a request
+     to ENTER the refreshing state — the scroll view's top inset grows by
+     ~80 pt and the control draws its own indicator in the space that
+     opens. During a real pull that is exactly right; the content is
+     already held down by the finger. Off the back of a BACKGROUND sync it
+     is a page that shoves itself down for no reason anyone can see, the
+     title ends up 80 pt lower than it was, and it does not always come
+     back — all three of which are in the report, with screenshots.
+
+     So the control is driven by the gesture ALONE, and background work is
+     silent on this screen. Silent is not unreported: the boot sync now
+     runs inside the splash (`useBootWarmup`) where it is the thing the
+     orb is for, and `ConnectionStrip` covers a session that cannot reach
+     the server. What is gone is only the announcement of routine work
+     over a page the patient is already reading. */
+  const [pulling, setPulling] = useState(false);
+  const onPull = useCallback(() => {
+    setPulling(true);
+    /* `Promise.resolve` because the two branches do not agree on a type:
+       `sync.refresh()` is a promise and `list.refetch()` is a QueryAction
+       thenable. Wrapping is what lets the badge end when the WORK ends
+       rather than on a timer. */
+    void Promise.resolve(sync.enabled ? sync.refresh() : list.refetch()).finally(() =>
+      setPulling(false),
+    );
+  }, [sync, list]);
   /* The padding the shell would have applied, now applied here — one
      number, from one function, so the header and the scroll content can
      never disagree about where the margin is. */
@@ -585,13 +615,24 @@ export default function HistoryScreen() {
                    the tag — so this list updates as a consequence. When
                    there is no backend there is nothing to sync and the
                    old refetch is still the honest gesture. */
-                refreshing={refreshing}
-                onRefresh={() => void (sync.enabled ? sync.refresh() : list.refetch())}
-                /* ⚠️ THE NATIVE INDICATOR IS LEFT WHERE IT IS — BEHIND THE
-                   GLASS — AND A VISIBLE ONE IS DRAWN OURSELVES.
+                /* ⚠️ THE GESTURE, NEVER A BACKGROUND SYNC — see above.
+                   A programmatic `refreshing` grows the scroll view's top
+                   inset, which is a page that moves on its own. */
+                refreshing={pulling}
+                onRefresh={onPull}
+                /* ⚠️ THE NATIVE INDICATOR IS SUPPRESSED, AND A VISIBLE ONE
+                   IS DRAWN OURSELVES.
                    A refresh indicator is positioned at the top of the
-                   SCROLL VIEW, and since v0.58.0 that is behind a frosted
-                   header ~180 pt tall, so it span there invisibly.
+                   SCROLL VIEW — not at the top of the CONTENT, which on
+                   this screen starts a safe area lower because the title
+                   is the list's first row. So it draws under the notch.
+                   ⚠️ This paragraph used to say the ring "spun there
+                   invisibly, behind a frosted header ~180 pt tall". That
+                   stopped being true in v0.70.0, when the header stopped
+                   being a bar, and the note outlived it by a dozen
+                   releases: the ring has been perfectly visible since,
+                   half-clipped by the status bar, which is why the report
+                   says it is only ever caught in a screenshot.
                    `progressViewOffset` was the obvious fix and it is NOT
                    dependable on iOS: RN implements it by rewriting the
                    UIRefreshControl's frame from `layoutSubviews`, through
@@ -604,6 +645,12 @@ export default function HistoryScreen() {
                    the reader actually looks at is `styles.refreshBadge`
                    below, at a position this screen owns. One indicator,
                    both platforms, no native quirk in the path. */
+                tintColor="transparent"
+                colors={['transparent']}
+                /* Android draws a white DISC behind the arrow, so colouring
+                   the arrow alone leaves an empty plate hanging off the top
+                   of the page. iOS has no equivalent and ignores it. */
+                progressBackgroundColor="transparent"
               />
             }
           />
@@ -615,14 +662,23 @@ export default function HistoryScreen() {
             top of the scroll view" is involved. Non-interactive: it reports,
             it is not a button.
 
-            ★ It sits level with the title row and CENTRED, which is the one
-            place on that line nothing else occupies: the heading is 30 pt of
-            text hugging the leading edge and Import is a 44 pt square on the
-            trailing one, so the middle is empty in both directions.
-            `refreshing` is also true during a background sync, when the page
-            is at rest and nothing has been pulled down — so a position that
-            relied on the content having moved would be wrong exactly then. */}
-        {refreshing && (
+            ★ WHY IT IS SAFE TO PUT IT AT THE VERY TOP NOW, AND WAS NOT
+            BEFORE. The previous version sat level with the title row and
+            centred, on the argument that the middle of that line is empty
+            — the heading hugs the leading edge, Import is a square on the
+            trailing one. The argument was wrong on the phone: "Scan
+            History" is a 30 pt heading and it runs straight through the
+            middle, so the badge landed on the word. It is in the report,
+            and it is in the screenshot.
+            It sat there because it had to hold for a badge shown while
+            the page was AT REST — a background sync had not moved the
+            content, so there was no revealed strip to sit in. That is no
+            longer a case this draws: it is shown only while `pulling`,
+            and a pull is precisely when the content IS held down, by the
+            refresh inset, leaving the top strip empty. So the indicator
+            goes where a refresh indicator belongs — above the content it
+            is refreshing — and nothing is ever drawn over the title. */}
+        {pulling && (
           <View
             pointerEvents="none"
             style={[styles.refreshBadgeRow, { top: contentTop }]}
@@ -712,6 +768,13 @@ const styles = StyleSheet.create({
   listContent: { gap: 10, paddingBottom: 8 },
 });
 
+// v2.3.0 — The refresh state is the GESTURE, not the work. Feeding a background
+//           sync into `refreshing` made iOS enter its refreshing state — top
+//           inset +80 pt — so the list dropped away from the title on its own
+//           and did not reliably come back. The native ring is suppressed on
+//           both platforms (it draws under the notch now that the header is not
+//           a bar), and the orb is shown only during a pull, at the top, where
+//           the pull has cleared room — it used to land on the heading.
 // v2.2.0 — The skeleton, the error card and the empty card rise in the same
 //          way the rows and the Insights body do, so the screen has one
 //          entrance rather than three arrivals.

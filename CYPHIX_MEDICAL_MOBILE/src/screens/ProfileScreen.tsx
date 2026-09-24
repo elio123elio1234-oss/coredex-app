@@ -11,7 +11,7 @@
    document, and the web's profile scrolls too.
    ================================================================== */
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -249,6 +249,12 @@ export default function ProfileScreen() {
      refresh after it. */
   const { card, photo, isFetching, isError, isDemo, patientId, refetch } =
     usePatientCard();
+  /** The GESTURE, kept apart from the fetching (see the RefreshControl). */
+  const [pulling, setPulling] = useState(false);
+  const onPull = useCallback(() => {
+    setPulling(true);
+    void refetch().finally(() => setPulling(false));
+  }, [refetch]);
   const portrait = usePortrait(patientId);
   const [portraitSheet, setPortraitSheet] = useState(false);
   /** Which list is being edited, or null. */
@@ -349,8 +355,25 @@ export default function ProfileScreen() {
         refreshControl={
           isDemo ? undefined : (
             <RefreshControl
-              refreshing={isFetching}
-              onRefresh={refetch}
+              /* ⚠️ `pulling`, NOT `isFetching` — AND THIS WAS A REAL
+                 DEFECT, reported as "sometimes the Profile tab just
+                 starts with a crazy gap, not from the top".
+                 Setting `refreshing` on a UIRefreshControl does not draw
+                 a spinner, it ENTERS the refreshing state: the scroll
+                 view's top inset grows by ~80 pt and the content moves
+                 down with it. During a pull that is correct — the finger
+                 put it there. But the comment below already said that on
+                 this screen `isFetching` goes true on every ARRIVAL at
+                 the tab, and on every background sync (the engine force-
+                 refetches the card and the portrait). So the page shoved
+                 itself down, on its own, at the exact moment somebody
+                 opened it — and the native ring appeared under the notch,
+                 which is why it was only ever caught in a screenshot.
+                 The reserved slot below still reports `isFetching`. That
+                 is the difference: a fixed slot can report anything it
+                 likes, because it cannot move the page. */
+              refreshing={pulling}
+              onRefresh={onPull}
               /* ⚠️ INVISIBLE ON PURPOSE — the control keeps the pull gesture
                  and the refreshing state, and the header row draws the thing
                  anyone looks at. See the orb in the header for why: this
@@ -359,6 +382,9 @@ export default function ProfileScreen() {
                  because iOS reads `tintColor` and Android `colors`. */
               tintColor="transparent"
               colors={['transparent']}
+              /* The disc behind Android's arrow, which `colors` does not
+                 reach — without it a blank white plate hangs off the top. */
+              progressBackgroundColor="transparent"
             />
           )
         }
@@ -945,6 +971,12 @@ const styles = StyleSheet.create({
   signOutDesc: { fontSize: 12.5 },
 });
 
+// v3.1.0 — The pull-to-refresh is driven by the PULL. It read `isFetching`,
+//           which is also true on arrival at the tab and on every background
+//           sync — and a programmatic `refreshing` grows an iOS scroll view's
+//           top inset, so the page shoved itself down ~80 pt the moment it was
+//           opened. That is the "crazy gap out of nowhere". The reserved slot
+//           still reports `isFetching`; a fixed slot cannot move the page.
 // v3.0.0 — The card's numbers are the patient's to correct: Details and
 //          Emergency contact push the new PersonalDetails editor (the PATCH
 //          endpoint existed all along; only the UI was missing). Two fixes

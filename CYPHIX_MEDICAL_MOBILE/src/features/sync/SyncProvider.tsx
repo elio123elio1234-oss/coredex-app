@@ -2,11 +2,12 @@
    SyncProvider — when the device asks the server what changed.
 
    The engine knows HOW to sync. This decides WHEN, and there are exactly
-   three moments:
+   four moments:
 
      ① the account resolves (boot, or a sign-in)
      ② the app returns to the foreground
      ③ someone pulls to refresh
+     ④ the session goes LIVE after having been offline
 
    No timer, no polling. A phone that is in a pocket has nothing to learn
    and every wake-up costs battery and a radio cycle; the moment the screen
@@ -27,7 +28,15 @@
    tokens — the part that actually grants access — are cleared either way.
    ================================================================== */
 
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { ENV } from '@/config/env';
 import { useActivePatientId } from '@/features/auth/useActivePatientId';
@@ -38,7 +47,7 @@ import {
   subscribeToSync,
   type SyncStatus,
 } from '@/services/sync/syncEngine';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export interface SyncContextValue extends SyncStatus {
   /** Ask now, ignoring the throttle. For pull-to-refresh. */
@@ -54,6 +63,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const user = useCurrentUser();
   const patientId = useActivePatientId();
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus);
+  /* The transport moves this in both directions on every request, which is
+     what makes it usable as a reconnection edge (`ConnectionStrip` v1.2.0
+     has the post-mortem on why the sync engine's own phase is not). */
+  const sessionMode = useAppSelector((s) => s.auth.sessionMode);
 
   const enabled = ENV.hasBackend && !!user;
   const userId = user?.id ?? null;
@@ -78,6 +91,32 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [dispatch, enabled, userId, patientId]);
 
+  /* ④ the server came back.
+     ★ Added with the boot warm-up, and it is the other half of it. The
+     warm-up holds the splash for at most 15 s; a free-tier container that
+     takes ~50 s to wake therefore loses that race, and the app opens
+     offline by design. `AuthGate`'s backoff keeps knocking and eventually
+     lands — and before this, NOTHING followed that up. The session went
+     live, the connection strip went quiet, and the device kept showing a
+     mirror it had not been able to refresh, until the throttle expired or
+     somebody backgrounded the app. An app that has just been told it can
+     reach the server and does not ask it anything is the offline bug
+     wearing a different hat.
+
+     EDGE-triggered, on the transition only, so a live session that stays
+     live schedules nothing. `manual` to skip the throttle: the failed
+     attempt a moment ago is what set `lastAttemptAt`, and honouring a
+     throttle armed by a failure would mean waiting out a minute for
+     nothing. One reconnection, one sync. */
+  const wasLive = useRef(sessionMode === 'live');
+  useEffect(() => {
+    const live = sessionMode === 'live';
+    const reconnected = live && !wasLive.current;
+    wasLive.current = live;
+    if (!reconnected || !enabled || !userId) return;
+    void runSync({ dispatch, userId, patientId, manual: true });
+  }, [sessionMode, dispatch, enabled, userId, patientId]);
+
   // ③ pull-to-refresh
   const refresh = useCallback(async () => {
     if (!enabled || !userId) return;
@@ -92,4 +131,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
 }
 
+// v1.1.0 — Adds a fourth trigger: the session going LIVE after being offline.
+//          The boot warm-up gives the server 15 s and then opens the app
+//          offline on purpose, so the reconnection that follows is now the
+//          normal case — and nothing used to act on it.
 // v1.0.0 — Runs the sync engine on sign-in, on foreground, and on demand.

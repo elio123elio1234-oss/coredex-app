@@ -45,9 +45,19 @@ export interface PatientCardView {
   isDemo: boolean;
   /** Whose record it is — null offline or for a clinician. */
   patientId: string | null;
-  /** Try again. The screen offers this as pull-to-refresh — which is why
-      the failure message is allowed to say "pull to try again". */
-  refetch: () => void;
+  /**
+   * Try again. The screen offers this as pull-to-refresh — which is why
+   * the failure message is allowed to say "pull to try again".
+   *
+   * ★ Returns a promise, and that is load-bearing rather than tidiness:
+   * the Profile screen's RefreshControl now ends its own pull when the
+   * WORK ends. Fire-and-forget left it with nothing to wait on, so it
+   * read `isFetching` instead — which is also true for background work
+   * nobody asked for, and a programmatic `refreshing` on iOS grows the
+   * scroll view's top inset. That is the "crazy gap at the top of
+   * Profile, out of nowhere" in the report.
+   */
+  refetch: () => Promise<void>;
 }
 
 /** A card with nothing in it but the person's own name. Used while the
@@ -73,10 +83,14 @@ export function usePatientCard(): PatientCardView {
   const { refetch: refetchCard } = cardQuery;
   const { refetch: refetchPhoto } = photoQuery;
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback(async () => {
     if (!connected) return;
-    void refetchCard();
-    void refetchPhoto();
+    /* Both, together: the card and the portrait are one thing to the
+       person looking at the page, so a pull that ended when the faster of
+       them landed would put the page back at rest with half of it still
+       arriving. `allSettled` — a portrait that will not load is not a
+       failed refresh (see `photo` below). */
+    await Promise.allSettled([refetchCard(), refetchPhoto()]);
   }, [connected, refetchCard, refetchPhoto]);
 
   return useMemo(() => {
@@ -120,5 +134,9 @@ export function usePatientCard(): PatientCardView {
   ]);
 }
 
+// v1.1.0 — `refetch` returns a promise, so a pull-to-refresh can end when the
+//          work ends. Without one the screen had to watch `isFetching`, which
+//          is also true for background work — and a programmatic `refreshing`
+//          pushes an iOS scroll view's content down. That was the phantom gap.
 // v1.0.0 — Resolves the Profile screen's record: the server's card for a real
 //          account, the demo card offline, and a name-only card when it fails.

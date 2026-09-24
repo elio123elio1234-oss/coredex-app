@@ -1,8 +1,52 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.93.0';
-export const APP_BUILD_LABEL = 'the request title sits to the side, and the sending light finishes its lap before it goes out';
+export const APP_VERSION = '0.94.0';
+export const APP_BUILD_LABEL = 'one loading screen at launch, and no page that moves on its own';
 
+// v0.94.0 - THE LOADING STATES. JS only - OTA.
+//
+//           Reported with three screenshots: "small glitches, but they make
+//           my app look unprofessional." They were, and they had two causes
+//           between them.
+//
+//           1. ONE LOADING SCREEN, NOT FOUR. A cold start used to show the
+//              splash, then open the app, then report "connecting" under
+//              the status bar while the server woke, then spin at the top
+//              of History, then leave a gap at the top of Profile. Each was
+//              defensible alone; together they read as an app that could
+//              not tell whether it had finished opening.
+//
+//              The splash now HOLDS until the server has answered and the
+//              first delta has landed (`useBootWarmup`). Everything that
+//              used to happen in front of the patient happens behind the
+//              orb instead.
+//
+//              ** 15 s, and then it opens anyway, offline. ** Asked for in
+//              those words. The free tier takes ~50 s to wake from cold, so
+//              that ceiling WILL be hit on the first launch of the day and
+//              is meant to be: the app comes up on the device's own copy,
+//              the strip says offline, and the backoff keeps knocking.
+//              SyncProvider now has a fourth trigger for when that knock
+//              lands - before this, nothing acted on a reconnection.
+//
+//           2. ** THE PAGES THAT MOVED ON THEIR OWN. ** History and Profile
+//              both handed a BACKGROUND fetch to a RefreshControl. On iOS
+//              `refreshing` is not "draw a spinner", it is "enter the
+//              refreshing state": the scroll view's top inset grows ~80 pt
+//              and the content goes down with it. So the list dropped away
+//              from its title with nobody touching it, did not reliably
+//              come back, and Profile opened from halfway down the screen.
+//              The native ring drew under the notch, which is why it was
+//              only ever caught in a screenshot - and why the note in
+//              History claiming it "spun invisibly behind a frosted header"
+//              was wrong: that header stopped being a bar in v0.70.0.
+//
+//              Both controls are driven by the GESTURE now. Background work
+//              is silent on both screens. History's orb is drawn only while
+//              pulling, and moved to the top of the screen - the pull has
+//              cleared room there, and it used to land on the word
+//              "History" itself.
+//
 // v0.93.0 - TWO THINGS THAT GRATED. JS only - OTA.
 //
 //           1. "the title is centred but it should be to the SIDE like the

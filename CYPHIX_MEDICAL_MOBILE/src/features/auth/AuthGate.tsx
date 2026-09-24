@@ -45,6 +45,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { AppState, type AppStateStatus } from 'react-native';
 import AppLockScreen from '@/components/organisms/Auth/AppLockScreen';
 import BootSplash from '@/components/organisms/Auth/BootSplash';
+import { useBootWarmup } from '@/features/boot/useBootWarmup';
 import OnboardingScreen from '@/screens/OnboardingScreen';
 import { claimCacheFor } from '@/services/db/cacheOwner';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -272,6 +273,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [recovering]);
 
+  /* ══ THE LAST THING THE SPLASH WAITS FOR ══
+     Somebody is signed in and the cache is theirs; this is the wait for
+     the SERVER, so that the app opens finished instead of opening and
+     then reporting three more times that it was not. All of its reasoning
+     — including why 15 s here and 60 s above — is in `useBootWarmup`.
+
+     ★ Not armed while the lock is up. The warm-up needs the revalidation,
+     and the effect above deliberately does not ask the server anything
+     from behind a screen the patient has not passed — so arming it there
+     would guarantee a stall until the ceiling. `lockSeen` then keeps it
+     disarmed for the rest of the run: after somebody has proved who they
+     are, a splash is a second door, and the lock screen already covered
+     whatever wait there was. */
+  const lockSeen = useRef(false);
+  if (locked) lockSeen.current = true;
+  const warmUpReady = useBootWarmup(
+    !!user && !justRegistered && !locked && !lockSeen.current && cacheOwner === user.id,
+  );
+
   const unlock = useCallback(() => dispatch(appUnlocked()), [dispatch]);
   const signOutFromLock = useCallback(() => {
     void dispatch(logoutUser());
@@ -309,9 +329,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
+  /* ★ AFTER the lock and BEFORE `children` — the app must not mount
+     behind this, or the screens would run their own loading states while
+     the splash is still up and we would be back to four of them. */
+  if (signedIn && !warmUpReady) return <BootSplash />;
+
   return signedIn ? <>{children}</> : <OnboardingScreen />;
 }
 
+// v2.3.0 — Holds the splash until the SERVER has answered and the first sync
+//          has landed (`useBootWarmup`, 15 s ceiling → offline). A cold start
+//          used to show four loading states in a row — the splash, then a
+//          "connecting" line over an app that had already opened, then a
+//          spinner on History, then a gap on Profile. Now there is one.
 // v2.2.0 — Holds the splash while a stored credential's owner is being looked
 //          up (`auth.recovering`), on its own 20 s ceiling. The 4 s restore
 //          ceiling bounds a DISK READ; against a cold server it is a guaranteed

@@ -1,5 +1,120 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.94.0 - 2026-09-24 - one loading screen, and no page that moves on its own
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+Three screenshots and one sentence: *“these are small glitches, but they make
+my app look unprofessional.”* They were, and there were two causes under them.
+
+### 1. The app used to open four times
+
+A cold start showed, in order: the splash with the orb → the app → a
+“connecting…” line under the status bar while the server woke up → a spinner at
+the top of History, with nobody having pulled anything → a gap at the top of
+Profile. Every one of those was defensible on its own, which is exactly how
+four of them got shipped. Together they read as an app that could not tell
+whether it had finished opening.
+
+Asked for plainly: **hold the first loading screen, let all of that happen
+behind it, and bring the app up when the server is up.**
+
+`useBootWarmup` now holds the splash until two things are true:
+
+1. **The server answered.** `auth.sessionMode === 'live'`, which
+   `httpBaseQuery` sets from a request that actually succeeded — evidence,
+   not a guess.
+2. **The first delta landed.** One `runSync`, awaited. Without it the app
+   opens on the device's mirror and History fills in a moment later, which is
+   the third loading state again, just moved.
+
+#### ★ And after 15 seconds it opens anyway, offline
+
+Also asked for in those words, and it is not a detail. A Render free-tier
+container takes ~50 s to wake from cold, so **this ceiling will be hit on the
+first launch of the day** and it is meant to be: the app comes up on the
+device's own copy, the connection strip says `offline`, and `AuthGate`'s
+backoff keeps knocking. Offline here is not an error, it is the documented
+second-best outcome.
+
+It gives up early on an answer, too. If the revalidation settles and we are
+still not live — airplane mode, a tunnel, a 500 — waiting out the remaining
+thirteen seconds for a question that has already been answered is the opposite
+of responsive. That needed a new fact in the auth slice: `revalidatedOnce`,
+because `revalidating === false` is true *both* before the question is asked
+and after it is answered, and nothing waiting on a server can work with that.
+
+Deliberately **not** the 60 s `RECOVERY_TIMEOUT_MS` sitting right beside it.
+That minute buys something expensive — not putting a sign-in door in front of
+somebody who is already signed in — and is worth paying once per install. This
+one buys a nicer first paint, and its fallback is the app itself, working, on
+data it already has. Fifteen seconds is the most that is worth paying for
+polish.
+
+#### The other half: nothing used to act on the reconnection
+
+If the warm-up loses the race and the server wakes at 50 s, the knock lands,
+the strip goes quiet — and before this release the device went on showing a
+mirror it had never managed to refresh, until the sync throttle expired or
+somebody backgrounded the app. `SyncProvider` has a fourth trigger now, on the
+`offline → live` edge. An app that has just been told it can reach the server
+and then asks it nothing is the offline bug wearing a different hat.
+
+### 2. ★ The pages that moved on their own
+
+This is the one that produced the screenshots, and it is a single mistake made
+twice.
+
+History and Profile both handed a **background** fetch to a `RefreshControl`
+— History `sync.phase === 'syncing' || list.isFetching`, Profile plain
+`isFetching`, which the file's own comment already noted *“goes true on every
+arrival at the tab”*.
+
+On iOS, setting `refreshing` is not a request to draw a spinner. It is a
+request to **enter the refreshing state**: `UIRefreshControl` grows the scroll
+view's top inset by ~80 pt and the content goes down with it. During a real
+pull that is correct — the finger put it there. Off the back of a sync nobody
+asked for, it is a page that shoves itself down on its own. All three reported
+symptoms fall out of that one line:
+
+* History's list dropped away from its title and *“did not come back up”* —
+  the gap in the screenshot, measured at about 80 pt.
+* Profile *“just starts with a crazy gap, not from the top”*, at the exact
+  moment somebody opens the tab.
+* *“the loading at the top is only visible when I take a screenshot”* — the
+  native ring draws at the top of the SCROLL VIEW, which on both screens is
+  the strip under the notch.
+
+Both controls are driven by the **gesture** now: a `pulling` flag set in
+`onRefresh` and cleared when the work's own promise settles. (`usePatientCard.refetch`
+returns a promise for that reason — fire-and-forget left the screen with
+nothing to wait on, which is why it reached for `isFetching` in the first
+place.) Background work is silent on both screens; it is reported by the boot
+splash and by the connection strip, which is where it belongs.
+
+History's native ring is suppressed on both platforms, and its orb is drawn
+only while pulling and moved to the top of the screen — a pull has cleared
+room there, and the old position, centred on the title row, landed the badge
+on the word “History” itself. That is in the first screenshot.
+
+#### ⚠️ A comment that had been wrong for a dozen releases
+
+History's `RefreshControl` block explained at length that the native ring
+*“spun there invisibly”* behind a frosted header ~180 pt tall. That was true
+when it was written in v0.58.x. It stopped being true in **v0.70.0**, when the
+header stopped being a bar and became the list's first row — and the note
+outlived the thing it described. The ring has been in plain sight,
+half-clipped by the status bar, ever since. It is corrected in place rather
+than left to mislead the next reader.
+
+### What this does not prove
+
+`tsc` is clean and both bundles build. Neither says anything about a scroll
+view's content inset, about how long a cold container actually takes, or about
+what a 15-second splash feels like in the hand. Both rows stay
+`🔬 needs-iOS-verify` in `PARITY.md` until this has been opened on the phone —
+twice: once cold, once warm.
+
 ## v0.93.0 - 2026-09-21 - the light finishes its lap
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**
