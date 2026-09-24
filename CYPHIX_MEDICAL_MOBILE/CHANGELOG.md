@@ -1,5 +1,73 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.97.0 - 2026-09-24 - the zoom-out wall is the full screen
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“the minimum zoom allowed is too small — it should be at most the full
+> screen. A zoom of 7.5/10 s is no good, but 5.3/10 s is spot on, because that
+> is exactly the threshold.”*
+
+5.3 s is this recording's `fitMm` to within a rounding: the window at which six
+bands exactly fill the height of the sheet. Past it the leads sit in a pool of
+white, which is what the 7.5 s screenshot shows.
+
+### The comment was right and the code did the opposite
+
+```js
+const maxUsefulMm = () => Math.min(MAX_WINDOW_MM, Math.max(traceMm, fitMm));
+```
+
+… sitting directly under a paragraph that reads *“past the point where
+**either** the whole recording is on screen **or** all six leads fit the
+height, zooming out adds blank paper, and a control that responds by showing
+more nothing reads as broken.”*
+
+That sentence is correct. `max` then sails straight past the **first** of those
+two walls to the second — through exactly the interval the sentence describes
+as broken. It is `min` now: the **nearer** wall, because hitting either one is
+enough.
+
+* **`fitMm`** — past it the bands stop filling the height, so the sheet floats
+  in white (the 7.5 s screenshot).
+* **`traceMm`** — past it the window is wider than the recording, so the paper
+  runs out sideways.
+
+At that value nothing is blank in either direction. That is what makes it the
+right place for the **−** button to stop, for **Fit** to land, and for the
+pinch to meet its wall.
+
+### Fit and the zoom-out wall are the same number now
+
+They were two ideas — *“six leads fill the height”* and *“as far out as is
+useful”* — that turn out to name one place for any recording long enough to
+fill the width. Keeping them apart is what let **Fit** reach somewhere the
+**−** button refused to go; and on a recording shorter than the viewport it let
+Fit land past the end of the paper. One number, one place: pinching out to the
+wall and pressing Fit now agree by construction, and the Fit button correctly
+disappears when you are already there.
+
+### ★ And the ceiling moves, so the zoom is pulled back when it does
+
+`fitMm` is computed from the lead **count** and the band height. Tapping a lead
+to focus it — six 30 mm bands become one 60 mm band — drops the wall by about a
+factor of three, and rotating the phone drops it again.
+
+Without a clamp the reader is left stranded *above* a ceiling the **−** button
+already refuses to move them off: looking at the exact pool of white this
+release exists to remove, with no control that can fix it. A small effect pulls
+the zoom down to the ceiling whenever the ceiling moves under it. It only ever
+moves the zoom down, and a value already at the ceiling fails its test, so it
+cannot loop.
+
+### What this does not prove
+
+`tsc` clean, iOS bundle builds. Neither can see a pool of white. Worth a look:
+pinch out until it stops (it should land where the six leads exactly fill the
+sheet, with the horizontal scrollbar still there), press **Fit** and confirm
+nothing moves, then tap a lead to focus it and confirm the zoom follows the new
+ceiling instead of stranding.
+
 ## v0.96.2 - 2026-09-24 - zooming out reveals the recording, not white
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

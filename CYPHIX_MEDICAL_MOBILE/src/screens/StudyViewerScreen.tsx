@@ -352,6 +352,47 @@ export default function StudyViewerScreen() {
   const windowMm = settings.windowMm;
   const fitMm = fitWindowMm(sheetBox.width, sheetBox.height, leads.length, stripHeightMm);
 
+  /**
+   * How far out zooming is allowed to go: **the nearer of the two walls.**
+   *
+   * ⚠️ THIS USED TO TAKE THE FURTHER ONE (`max(traceMm, fitMm)`) and the
+   * comment above it argued for that at length — *“past the point where
+   * EITHER the whole recording is on screen OR all six leads fit the height,
+   * zooming out adds blank paper”*. The sentence is right and the code did
+   * the opposite of what it says: `max` sails straight past the first wall
+   * to the second, which is exactly the interval in which blank paper is
+   * being added. Reported with two screenshots — *“7.5/10 s is no good,
+   * 5.3/10 s is spot on, because that is exactly the threshold”* — and 5.3 s
+   * is this recording's `fitMm` to within a rounding.
+   *
+   * There are two walls because there are two ways to run out of paper, and
+   * hitting either one is enough:
+   *   • `fitMm`   — past it the bands no longer fill the HEIGHT, so the
+   *                  sheet sits in a pool of white (the 7.5 s screenshot).
+   *   • `traceMm` — past it the window is wider than the recording, so the
+   *                  paper runs out sideways.
+   * `MIN_WINDOW_MM` at the bottom because a recording shorter than ~1.2 s
+   * would otherwise push the ceiling below the floor.
+   *
+   * ★ At this value NOTHING is blank, in either direction, which is what
+   * makes it the right place for the − button to stop, for Fit to land, and
+   * for the pinch to meet a wall.
+   */
+  const maxUsefulMm = () =>
+    Math.max(MIN_WINDOW_MM, Math.min(MAX_WINDOW_MM, traceMm, fitMm));
+
+  /**
+   * Where "Fit" goes — and deliberately the SAME number as the zoom-out wall.
+   *
+   * They were two ideas (`fitMm` = six leads fill the height; `maxUsefulMm` =
+   * as far out as is useful) that turn out to describe one place for any
+   * recording long enough to fill the width. Keeping them separate is what
+   * let Fit land somewhere the − button could not reach, and on a SHORT
+   * recording it let Fit land past the end of the paper. One number, one
+   * place: pinch out to the wall and Fit agree by construction.
+   */
+  const fitTargetMm = maxUsefulMm();
+
   /* Entering full screen re-fits ONCE, after the rotated layout has been
      measured — computing it from the pre-rotation box would size the sheet to
      a portrait width and leave it there. The ref is what makes it once:
@@ -364,8 +405,29 @@ export default function StudyViewerScreen() {
     }
     if (refitRef.current || sheetBox.width === 0) return;
     refitRef.current = true;
-    setSettings((s) => ({ ...s, windowMm: fitMm }));
-  }, [fullscreen, sheetBox.width, sheetBox.height, fitMm]);
+    setSettings((s) => ({ ...s, windowMm: fitTargetMm }));
+  }, [fullscreen, sheetBox.width, sheetBox.height, fitTargetMm]);
+
+  /**
+   * The ceiling MOVES, so a zoom that was legal a moment ago may not be.
+   *
+   * `fitMm` is computed from the lead COUNT and the band height, so tapping
+   * a lead to focus it (six 30 mm bands → one 60 mm band) drops the wall by
+   * about a factor of three, and rotating does it again. Without this, the
+   * reader is left above a ceiling the − button already refuses to move them
+   * off — looking at exactly the pool of white this release exists to
+   * remove, with no control that can fix it.
+   *
+   * Converges by construction: it only ever moves the zoom DOWN to the
+   * ceiling, and a value at the ceiling fails the test.
+   */
+  useEffect(() => {
+    /* Before the sheet has been measured `fitWindowMm` returns its default,
+       which is a guess, not a ceiling — clamping to a guess would drag the
+       reader's zoom for one frame on every open. */
+    if (sheetBox.width === 0) return;
+    setSettings((s) => (s.windowMm > fitTargetMm + 0.5 ? { ...s, windowMm: fitTargetMm } : s));
+  }, [fitTargetMm, sheetBox.width]);
 
   const calipers = useCalipers(
     {
@@ -399,15 +461,6 @@ export default function StudyViewerScreen() {
   };
 
   const patch = (p: Partial<ViewerSettings>) => setSettings((s) => ({ ...s, ...p }));
-
-  /**
-   * How far out zooming is allowed to go. NOT `MAX_WINDOW_MM` — that is only
-   * the ceiling the fit calculation needs. Past the point where either the
-   * whole recording is on screen OR all six leads fit the height, zooming out
-   * adds blank paper, and a control that responds by showing more nothing
-   * reads as broken.
-   */
-  const maxUsefulMm = () => Math.min(MAX_WINDOW_MM, Math.max(traceMm, fitMm));
 
   const zoom = (factor: number) =>
     setSettings((s) => ({
@@ -714,7 +767,7 @@ export default function StudyViewerScreen() {
   );
   const canZoomOut = windowMm < maxUsefulMm() - 0.5;
   const canZoomIn = windowMm > MIN_WINDOW_MM + 0.5;
-  const offFit = Math.abs(windowMm - fitMm) > 1;
+  const offFit = Math.abs(windowMm - fitTargetMm) > 1;
 
   const hintKey: TranslationKey | null =
     mode === 'mark' ? 'annHintTouch' : mode === 'cursor' ? 'curHintTouch' : null;
@@ -860,7 +913,7 @@ export default function StudyViewerScreen() {
           accessibilityRole="button"
           accessibilityLabel={tr('vtFit')}
           hitSlop={6}
-          onPress={() => patch({ windowMm: fitMm, layout: 'all' })}
+          onPress={() => patch({ windowMm: fitTargetMm, layout: 'all' })}
           style={({ pressed }) => [styles.fitBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
           <Text
@@ -1712,6 +1765,13 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.5.0 - The zoom-out wall is `min(traceMm, fitMm)`, not `max`. The comment
+//           above it already said that past EITHER wall zooming out adds blank
+//           paper, and then took the further of the two - sailing through
+//           exactly the interval it called broken. Fit lands on the same number
+//           now (they described one place for any recording long enough to fill
+//           the width), and a zoom left above the ceiling by a layout change -
+//           focusing a lead drops it ~3x - is pulled back to it.
 // v5.4.0 - `commitZoom` is a STABLE useCallback, and that is a bug fix rather
 //           than tidiness: the sheet memoises its pinch gesture on it, so the
 //           fresh arrow v0.96.0 passed rebuilt that gesture on every render -

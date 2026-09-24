@@ -1,8 +1,45 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.96.2';
-export const APP_BUILD_LABEL = 'zooming out on the ECG reveals more of the recording instead of white';
+export const APP_VERSION = '0.97.0';
+export const APP_BUILD_LABEL = 'zooming out stops where the sheet fills the screen, not past it';
 
+// v0.97.0 - THE ZOOM-OUT WALL IS THE FULL SCREEN. JS only - OTA.
+//
+//           "the minimum zoom is too small - it should be at most the full
+//           screen. 7.5/10 s is no good, 5.3/10 s is spot on, because that is
+//           exactly the threshold."
+//
+//           5.3 s is this recording's `fitMm` to within a rounding: the window
+//           at which six bands exactly fill the height. Past it the sheet sits
+//           in a pool of white, which is the 7.5 s screenshot.
+//
+//           ** THE COMMENT WAS RIGHT AND THE CODE DID THE OPPOSITE. ** The
+//           ceiling read `min(MAX, max(traceMm, fitMm))` under a paragraph
+//           saying "past the point where EITHER the whole recording is on
+//           screen OR all six leads fit the height, zooming out adds blank
+//           paper". `max` sails straight past the FIRST of those walls to the
+//           second - i.e. through exactly the interval the sentence describes
+//           as broken. It is `min` now: the nearer wall, because hitting
+//           either one is enough.
+//
+//             * fitMm   - past it the bands stop filling the HEIGHT
+//             * traceMm - past it the window is wider than the recording
+//
+//           At that value nothing is blank in either direction, which is what
+//           makes it the right place for the - button to stop, for Fit to
+//           land, and for the pinch to meet its wall. ** Fit and the zoom-out
+//           wall are now the same number ** - keeping them apart is what let
+//           Fit reach somewhere the - button could not, and on a SHORT
+//           recording it let Fit land past the end of the paper.
+//
+//           ** And the ceiling MOVES, so the zoom is pulled back when it
+//           does. ** `fitMm` is computed from the lead COUNT: tapping a lead
+//           to focus it (six 30 mm bands -> one 60 mm band) drops the wall by
+//           about a factor of three, and rotating drops it again. Without
+//           that clamp the reader is left stranded above a ceiling the -
+//           button already refuses to move them off, looking at the very pool
+//           of white this release removes, with no control that can fix it.
+//
 // v0.96.2 - ZOOM OUT REVEALS THE RECORDING, NOT WHITE. JS only - OTA.
 //
 //           "when I zoom out it puts white where there IS data, instead of
