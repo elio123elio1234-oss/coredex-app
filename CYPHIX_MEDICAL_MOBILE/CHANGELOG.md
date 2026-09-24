@@ -1,5 +1,75 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.98.0 - 2026-09-24 - full screen follows the phone, and a limit gives
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+Two questions: *“why isn't [the zoom] there when you enter full screen?”* and
+*“why does it necessarily give only landscape?”*
+
+### ① The pinch was not broken — it was sitting on the wall
+
+Entering full screen re-fits to `fitTargetMm`, and since v0.97.0 that **is** the
+zoom-out wall. So the very first thing anybody does there — pinch out — is
+clamped to exactly where it already is, and nothing moves. From the outside
+that is indistinguishable from a dead control, and it was reported as one. The
+gesture was fine; the feedback was missing.
+
+A gesture pushing against a wall the zoom is **already on** now gives: 35 % of
+the excess is admitted, capped at 16 % past the limit, and it springs back
+through `liveMm` when the fingers lift — the transform is a pure function of
+that value, so walking it home walks the scale home. It is the answer every
+scroll view on the platform gives to the same question.
+
+⚠️ **Only at a wall already reached.** A gesture with room left is still
+clamped hard, because that is what keeps the committed zoom equal to the zoom
+the fingers asked for — and therefore `k` exactly 1 on the landing render,
+which is the property that stops the sheet jumping when the new layout and the
+new scroll arrive. Rubber-banding a gesture that *can* commit would trade a
+dead-feeling limit for a flicker on every single pinch.
+
+### ② Full screen no longer forces landscape
+
+It was a real decision with a real argument, written at the top of the file: a
+six-lead ECG is 259 × 180 mm, a landscape shape, so portrait can never give it
+90 % of the display. That much is true. What it got wrong is that it answered
+*“show me more”* with *“and turn your phone”*, every time, whatever the reader
+had opened it for.
+
+**And it worked against the zoom.** A wide, short sheet puts the zoom-out wall
+on `traceMm` rather than `fitMm`:
+
+| held | sheet | wall | six leads at once? |
+|---|---|---|---|
+| upright | ~370 × 490 | `fitMm` ≈ 136 mm | **yes** — they fill the sheet |
+| sideways | ~850 × 360 | `traceMm` = 261 mm | no — aVR/aVL/aVF below the fold |
+
+So the forced rotation was pushing full screen *away* from the behaviour asked
+for two releases ago. Upright, all six fill the sheet; rotate, and the wide
+view is still there. Both reachable, neither imposed.
+
+⚠️ `OrientationLock.DEFAULT`, not `ALL` — `ALL` admits upside-down, which is a
+way to hand somebody an unreadable screen they did not ask for. The exit path
+(`useFocusEffect`) still restores the portrait lock on the way out, so leaving
+a study while full screen cannot leave the whole app rotating, which is the bug
+v0.76.0 was written to close.
+
+### And the bar has to survive a narrow screen
+
+`exit + six tools + the zoom controls` fits along 850 pt of landscape and does
+not fit across 390 pt of portrait. The full-screen bar wraps now: one extra
+line of chrome in portrait, nothing at all in landscape. The alternative is a
+bar that silently squeezes its buttons under the 44 pt touch minimum — which
+typechecks, bundles, and is unusable.
+
+### What this does not prove
+
+`tsc` clean, iOS bundle builds, `expo-doctor` 18/18. None of them can feel a
+rubber band or hold a phone sideways. Worth checking: enter full screen upright
+(all six leads should fill the sheet), pinch out against the limit (it should
+give a little and spring back, not ignore you), then rotate and confirm the
+wide view still works and that backing out leaves the rest of the app upright.
+
 ## v0.97.0 - 2026-09-24 - the zoom-out wall is the full screen
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

@@ -135,6 +135,32 @@ import {
 /** Below this, a commit would change nothing anybody could see. */
 const MM_EPSILON = 0.25;
 
+/**
+ * ★ THE RUBBER BAND, AND WHY A LIMIT MUST NOT FEEL LIKE A DEAD GESTURE.
+ *
+ * Reported as *"the pinch does not respond in full screen"*, and the gesture
+ * was fine — entering full screen re-fits to `fitTargetMm`, which IS the
+ * zoom-out wall, so the first thing anybody does there (pinch out) is
+ * clamped to exactly where it already is. Nothing moves. From the outside
+ * that is indistinguishable from a broken control, and it was reported as
+ * one.
+ *
+ * So a gesture pushing against a wall it is ALREADY sitting on is admitted,
+ * resisted and sprung back — the answer every scroll view on the platform
+ * gives to the same question. `RESIST` is how much of the excess gets
+ * through; `MAX_OVERSHOOT` caps it so it can never run away or invert.
+ *
+ * ⚠️ ONLY at a wall the zoom is already on. A gesture that still has room
+ * is clamped hard, exactly as before, because that is what keeps the
+ * committed zoom equal to the zoom the fingers asked for — and therefore
+ * `k` exactly 1 on the landing render, which is the property that stops the
+ * sheet jumping when the layout and the scroll land. Rubber-banding a
+ * gesture that can commit would trade a dead-feeling limit for a flicker on
+ * every pinch.
+ */
+const RESIST = 0.35;
+const MAX_OVERSHOOT = 0.16;
+
 export interface SheetPinchArgs {
   /** Viewport, in points. Zero before the first layout. */
   box: { width: number; height: number };
@@ -239,6 +265,25 @@ export function useSheetPinch({
   }, [active]);
 
   /**
+   * Spring `liveMm` back to `target` and let go when it arrives.
+   *
+   * The only path that needs it is the rubber band: the transform is a pure
+   * function of `k = windowMm / liveMm`, so walking `liveMm` home walks the
+   * scale home with it, and dropping `active` from the animation's own
+   * completion callback means the sheet is already at identity by the time
+   * the transform stops being drawn. Releasing first would snap.
+   */
+  const settleBack = useCallback(
+    (target: number) => {
+      liveMm.value = withTiming(target, { duration: 190 }, (finished) => {
+        'worklet';
+        if (finished) active.value = 0;
+      });
+    },
+    [liveMm, active],
+  );
+
+  /**
    * Every gesture ends here, successful or not.
    *
    * ★ ONE exit, and it asks the only question that matters: is a commit
@@ -256,8 +301,10 @@ export function useSheetPinch({
    */
   const finalize = useCallback(() => {
     if (pending.current) return;
-    release();
-  }, [release]);
+    /* Spring rather than snap: a cancelled pinch may have been holding a
+       rubber-banded overshoot, and there is no commit coming to absorb it. */
+    settleBack(geo.current.windowMm);
+  }, [settleBack]);
 
   /* ⚠️ Everything `commit` reads is boxed in a ref, so the callback itself
      never changes identity and the gesture below can be memoised for real.
@@ -277,7 +324,9 @@ export function useSheetPinch({
          go from here or it would stay applied over a sheet nobody is
          pinching. Not hypothetical: it is what pinching past MIN does. */
       if (Math.abs(target - g.windowMm) < MM_EPSILON || g.box.width <= 0) {
-        release();
+        /* Nothing to commit — which is exactly the case the rubber band
+           exists for, so spring the overshoot out rather than dropping it. */
+        settleBack(g.windowMm);
         return;
       }
 
@@ -309,7 +358,7 @@ export function useSheetPinch({
         }),
       );
     },
-    [release],
+    [release, settleBack],
   );
 
   /**
@@ -388,7 +437,22 @@ export function useSheetPinch({
              the landing render. */
           const min = minMmSv.value;
           const max = maxMmSv.value;
-          liveMm.value = Math.min(max, Math.max(min, windowMmSv.value / e.scale));
+          const at = windowMmSv.value;
+          const raw = at / e.scale;
+          /* ★ See RESIST. Past a wall the zoom is ALREADY on, a fraction of
+             the excess is admitted and capped, so the sheet visibly gives and
+             springs back instead of ignoring the fingers. Anywhere else the
+             clamp is hard, which is what keeps the commit equal to the
+             gesture. */
+          if (raw > max) {
+            liveMm.value =
+              at >= max - 0.5 ? max + Math.min((raw - max) * RESIST, max * MAX_OVERSHOOT) : max;
+          } else if (raw < min) {
+            liveMm.value =
+              at <= min + 0.5 ? min - Math.min((min - raw) * RESIST, min * MAX_OVERSHOOT) : min;
+          } else {
+            liveMm.value = raw;
+          }
         })
         .onEnd((_e, success) => {
           if (!success || active.value === 0) return;
@@ -448,6 +512,17 @@ export function useSheetPinch({
   };
 }
 
+// v3.1.0 — A limit rubber-bands instead of going dead. Reported as "the pinch
+//          does not respond in full screen", and the gesture was fine: entering
+//          full screen re-fits to the zoom-out WALL, so the first pinch-out
+//          there is clamped to exactly where it already is and nothing moves —
+//          indistinguishable from a broken control. Pushing against a wall the
+//          zoom is already on now gives, resisted and capped, and springs back
+//          through `liveMm` (the transform is a pure function of it, so walking
+//          it home walks the scale home). ⚠️ ONLY at a wall already reached:
+//          a gesture with room left is still clamped hard, because that is what
+//          keeps the committed zoom equal to the gesture's and `k` exactly 1 on
+//          the landing render.
 // v3.0.0 — THE TRANSFORM MOVED FROM THE ROW TO THE PAPER, because "zoom out
 //          puts white where there is data" was not a bug in the maths — it was
 //          the wrong node. The row HOLDS the horizontal scroller, and scaling a

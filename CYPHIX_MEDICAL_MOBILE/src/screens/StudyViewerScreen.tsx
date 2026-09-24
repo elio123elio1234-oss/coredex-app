@@ -20,15 +20,25 @@
       made this read as a form from 2004; a header that is opaque and static
       just eats the trace. Neither was necessary.
 
-   2. FULL SCREEN is landscape, and it is the real answer. A six-lead ECG is
-      259 × 180 mm — a landscape shape — so portrait can never give it 90 %
-      of the display however hard the chrome is squeezed.
+   2. FULL SCREEN gives the sheet the whole display, and — since v0.98.0 —
+      leaves the ORIENTATION to the reader. It used to force landscape, on
+      the argument that a six-lead ECG is 259 × 180 mm and portrait can never
+      give that shape 90 % of the display. The argument is sound and the
+      decision was not the reader's to have made for them: it answered "show
+      me more" with "and turn your phone", every time.
 
-      ★ In full screen the bar is IN FLOW above the sheet, not floating over
-      it, and the whole screen is inset for the safe area. In landscape the
-      notch/Dynamic Island is on a SIDE, and a full-bleed sheet puts the
-      first ~50 pt of every trace underneath it. A cut-off ECG is not a
-      cosmetic problem.
+      ⚠️ It also worked against the zoom. A wide, short sheet puts the
+      zoom-out wall on `traceMm` rather than `fitMm`, so the six leads stop
+      fitting the height and aVR/aVL/aVF go below the fold — which is the
+      opposite of the point. Upright, all six fill the sheet; rotate and you
+      get the wide view. Both are now reachable, neither is imposed.
+
+      ★ The bar is IN FLOW above the sheet, not floating over it, and the
+      whole screen is inset for the safe area. In landscape the notch is on a
+      SIDE, and a full-bleed sheet puts the first ~50 pt of every trace
+      underneath it. A cut-off ECG is not a cosmetic problem. The bar WRAPS,
+      because the row that fits along 850 pt of landscape does not fit across
+      390 pt of portrait.
 
    ⚠️ Orientation is `ScreenOrientation.lockAsync`, and it USED to be
    `navigation.setOptions({ orientation })` with a comment claiming that
@@ -267,14 +277,31 @@ export default function StudyViewerScreen() {
     setGhostOffsetMm(0);
   }, [settings.overlayId, alignMode]);
 
-  /* ── Full screen is a ROTATION ──
-     Through the one API iOS honours; see the header. Leaving this screen
-     while full screen is handled by the focus effect below rather than by
-     this one, because unmounting does not re-run an effect's deps. */
+  /* ── Full screen RELEASES the orientation; it does not impose one ──
+     ★ v0.98.0, at the user's instruction: *"let it follow the phone."*
+
+     It used to force LANDSCAPE, on the argument in the header — a six-lead
+     ECG is a landscape shape, so portrait can never give it 90 % of the
+     display. True as far as it goes, and it made two decisions where the
+     reader only asked for one: "show me more" also meant "and turn your
+     phone sideways", every time, including for the many things people open
+     full screen to do that are not reading six leads at 25 mm/s.
+
+     It also cost more than it looked. A forced landscape drops the zoom-out
+     wall onto `traceMm` (the sheet becomes wide and short), so the six leads
+     no longer fit the height and the reader must scroll for aVR/aVL/aVF —
+     the opposite of what full screen was for. Held upright, the wall is
+     `fitMm` and all six fill the sheet, which is the behaviour asked for two
+     releases ago. Rotating still gives the wide view to anyone who wants it.
+
+     ⚠️ `DEFAULT`, not `ALL`: `ALL` admits upside-down, which on a phone is
+     a way to hand somebody an unreadable screen they did not ask for.
+     Leaving this screen while still full screen is handled by the focus
+     effect below, because unmounting does not re-run an effect's deps. */
   useEffect(() => {
     void ScreenOrientation.lockAsync(
       fullscreen
-        ? ScreenOrientation.OrientationLock.LANDSCAPE
+        ? ScreenOrientation.OrientationLock.DEFAULT
         : ScreenOrientation.OrientationLock.PORTRAIT_UP,
     );
   }, [fullscreen]);
@@ -1736,6 +1763,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
     paddingBottom: 5,
+    /* ★ v0.98.0 — full screen is no longer landscape-only, and this row
+       (exit + six tools + the zoom controls) fits along 850 pt and does not
+       fit across 390. Wrapping costs one extra line of chrome in portrait
+       and nothing at all in landscape; the alternative is a bar that
+       silently squeezes its buttons under the 44 pt touch minimum. */
+    flexWrap: 'wrap',
+    rowGap: 6,
   },
   fsExit: {
     flexDirection: 'row',
@@ -1765,6 +1799,13 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.6.0 - Full screen RELEASES the orientation instead of imposing landscape
+//           (`OrientationLock.DEFAULT`), at the user's instruction. The forced
+//           rotation answered "show me more" with "and turn your phone", and it
+//           worked against the zoom: a wide, short sheet puts the zoom-out wall
+//           on `traceMm` rather than `fitMm`, so the six leads stop filling the
+//           height. The full-screen bar wraps, because the row that fits along
+//           850 pt of landscape does not fit across 390 pt of portrait.
 // v5.5.0 - The zoom-out wall is `min(traceMm, fitMm)`, not `max`. The comment
 //           above it already said that past EITHER wall zooming out adds blank
 //           paper, and then took the further of the two - sailing through

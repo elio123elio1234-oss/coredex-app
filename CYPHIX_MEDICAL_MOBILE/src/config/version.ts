@@ -1,8 +1,52 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.97.0';
-export const APP_BUILD_LABEL = 'zooming out stops where the sheet fills the screen, not past it';
+export const APP_VERSION = '0.98.0';
+export const APP_BUILD_LABEL = 'full screen follows the phone, and a zoom that hits its limit gives instead of going dead';
 
+// v0.98.0 - FULL SCREEN FOLLOWS THE PHONE, AND A LIMIT GIVES. JS only - OTA.
+//
+//           Two questions: "why isn't [the zoom] there when you enter full
+//           screen?" and "why does it necessarily give only landscape?"
+//
+//           1. ** THE PINCH WAS NOT BROKEN - IT WAS ON THE WALL. ** Entering
+//              full screen re-fits to `fitTargetMm`, and since v0.97.0 that IS
+//              the zoom-out wall. So the first thing anybody does there - pinch
+//              out - is clamped to exactly where it already is, and nothing
+//              moves. From the outside that is indistinguishable from a dead
+//              control, and it was reported as one.
+//
+//              A gesture pushing against a wall it is ALREADY on now gives:
+//              35 % of the excess is admitted, capped at 16 %, and it springs
+//              back through `liveMm` when the fingers lift. The answer every
+//              scroll view on the platform gives to the same question.
+//
+//              ⚠️ ONLY at a wall already reached. A gesture with room left is
+//              still clamped hard, because that is what keeps the committed
+//              zoom equal to the gesture's - and therefore `k` exactly 1 on
+//              the landing render, which is what stops the sheet jumping when
+//              the new layout and the new scroll arrive.
+//
+//           2. ** FULL SCREEN NO LONGER FORCES LANDSCAPE. ** It was a real
+//              decision with a real argument - a six-lead ECG is 259 x 180 mm,
+//              so portrait can never give that shape 90 % of the display - and
+//              it answered "show me more" with "and turn your phone", every
+//              time, whatever the reader had opened it for.
+//
+//              It also worked against the zoom. A wide, short sheet puts the
+//              zoom-out wall on `traceMm` instead of `fitMm`, so the six leads
+//              stop filling the height and aVR/aVL/aVF go below the fold -
+//              which is the opposite of what full screen is for. Held upright
+//              all six fill the sheet, which is exactly the behaviour asked
+//              for in v0.97.0; rotate and the wide view is still there.
+//
+//              `OrientationLock.DEFAULT`, not `ALL`: ALL admits upside-down,
+//              which is a way to hand somebody an unreadable screen they did
+//              not ask for. And the full-screen bar WRAPS now - exit + six
+//              tools + the zoom controls fit along 850 pt of landscape and do
+//              not fit across 390 pt of portrait, and a bar that squeezes its
+//              buttons under the 44 pt touch minimum is worse than one that
+//              takes a second line.
+//
 // v0.97.0 - THE ZOOM-OUT WALL IS THE FULL SCREEN. JS only - OTA.
 //
 //           "the minimum zoom is too small - it should be at most the full
