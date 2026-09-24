@@ -415,6 +415,24 @@ export default function StudyViewerScreen() {
       windowMm: Math.min(maxUsefulMm(), Math.max(MIN_WINDOW_MM, s.windowMm * factor)),
     }));
 
+  /**
+   * What a finished pinch commits.
+   *
+   * ⚠️ `useCallback` WITH AN EMPTY LIST, AND IT IS NOT A MICRO-OPTIMISATION.
+   * The sheet memoises its pinch gesture on this callback, so a fresh arrow
+   * here — which is what v0.96.0 passed — rebuilt the gesture on every
+   * render, INCLUDING the one the gesture itself causes when it freezes the
+   * scrolls. Handing `GestureDetector` a new gesture in the middle of a live
+   * pinch is the same trap `EcgReviewSheet`'s header has recorded for
+   * `PanResponder` since v0.16.0, and it is half of why the sheet was
+   * reported as unstable. The setter form takes no dependencies, so this one
+   * genuinely never has to change.
+   */
+  const commitZoom = useCallback(
+    (mm: number) => setSettings((s) => ({ ...s, windowMm: mm })),
+    [setSettings],
+  );
+
   const dropCursor = (timeSec: number) =>
     setLockedCursorsSec((prev) => {
       const hit = prev.findIndex(
@@ -969,7 +987,7 @@ export default function StudyViewerScreen() {
            ignored it would produce a view the buttons could not restore. */
         zoomMinMm={MIN_WINDOW_MM}
         zoomMaxMm={maxUsefulMm()}
-        onZoomCommit={(mm) => patch({ windowMm: mm })}
+        onZoomCommit={commitZoom}
       />
     ) : null;
 
@@ -1694,6 +1712,12 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.4.0 - `commitZoom` is a STABLE useCallback, and that is a bug fix rather
+//           than tidiness: the sheet memoises its pinch gesture on it, so the
+//           fresh arrow v0.96.0 passed rebuilt that gesture on every render -
+//           including the one the gesture itself causes when it freezes the
+//           scrolls. A gesture handed to GestureDetector mid-pinch is the trap
+//           EcgReviewSheet has documented since v0.16.0.
 // v5.3.0 - Hands the review sheet the zoom bounds and a commit callback, so a
 //           pinch and the +/- buttons drive ONE quantity through one clamp.
 //           `maxUsefulMm()` is where "zooming out past here only adds blank

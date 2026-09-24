@@ -1,8 +1,53 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.96.0';
-export const APP_BUILD_LABEL = 'two fingers zoom the ECG sheet, the way two fingers zoom a photograph';
+export const APP_VERSION = '0.96.1';
+export const APP_BUILD_LABEL = 'the pinch holds still: the transform now scales about the origin it actually has';
 
+// v0.96.1 - THE PINCH HOLDS STILL. JS only - OTA.
+//
+//           Reported with four screenshots: "it is not stable at all, not
+//           smooth at all, there are glitches." It was not. Three causes,
+//           none of them the maths, and the first one is embarrassing.
+//
+//           (1) ** `transformOrigin` NEVER APPLIED. ** v0.96.0 set
+//               `transformOrigin: 'left top'` in a StyleSheet and wrote every
+//               equation for a top-left origin. Reanimated honours that
+//               property only on its CSS engine (`src/css/`), NOT on the
+//               `useAnimatedStyle` path - so the row scaled about its CENTRE
+//               the entire time, against algebra that assumed a corner. That
+//               is the screenshot of the whole sheet shrunk into the middle
+//               of the card, and the one with the paper shoved right leaving
+//               a white column under the lead labels.
+//
+//               The fix is NOT to make the property work. It is to stop
+//               depending on it: the centre is React Native's own default and
+//               the one behaviour guaranteed everywhere, so the centre is
+//               folded into the equations and the style is gone.
+//
+//           (2) ** THE GESTURE WAS REBUILT ON EVERY RENDER. ** It WAS
+//               memoised - on `commit`, which depended on `onCommit`, which
+//               the screen passed as a fresh arrow. So the memo never hit,
+//               and `onBegin` -> freeze the scrolls -> re-render handed
+//               GestureDetector a brand-new gesture IN THE MIDDLE OF A LIVE
+//               PINCH. EcgReviewSheet has carried a warning about exactly
+//               this since v0.16.0 and I wrote a comment citing it directly
+//               above the bug. The screen memoises the callback now, and the
+//               hook captures nothing that changes per render.
+//
+//           (3) ** A STALE liveMm LEFT A TRANSFORM BEHIND. ** The scale was
+//               `windowMm / liveMm`, and liveMm only moves during a pinch -
+//               so pressing + or Fit afterwards made the two disagree and the
+//               sheet was drawn scaled with nobody touching it. There is an
+//               explicit `active` flag now: zero means identity, full stop.
+//
+//           ** THE SHAPE OF THE REWRITE: EVERYTHING IS A CONSTANT. ** The
+//           transform is a pure function of the live scale and of values
+//           captured ONCE at onStart. It reads no scroll offset and no layout
+//           while it runs, so there is nothing left for it to drift against -
+//           which is what "not stable" actually was. Plus a backstop: if
+//           anything ever swallows a commit, two frames later the transform
+//           lets go by itself rather than stranding the sheet at 0.4x.
+//
 // v0.96.0 - PINCH TO ZOOM ON THE ECG SHEET. JS only - OTA.
 //
 //           "can pinching with two fingers zoom like on a picture, and be

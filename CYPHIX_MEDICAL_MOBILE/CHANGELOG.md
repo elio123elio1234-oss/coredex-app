@@ -1,5 +1,92 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.96.1 - 2026-09-24 - the pinch holds still
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“it is not stable at all, not smooth at all, there are glitches, it is not
+> professional.”* — four screenshots
+
+It was not, and it shipped that way. Three causes, none of them the geometry,
+and the first is embarrassing.
+
+### ① `transformOrigin` never applied
+
+v0.96.0 put `transformOrigin: 'left top'` in a StyleSheet and wrote every
+equation in the pinch for a top-left origin. **Reanimated honours that property
+only on its CSS engine (`src/css/`), not on the `useAnimatedStyle` path** — so
+the row scaled about its **centre** the whole time, against algebra that
+assumed a corner.
+
+That is precisely what the screenshots show: the whole six-lead sheet shrunk
+into the middle of the card with white all round it, and the one where the
+paper is shoved right leaving a white column under the lead labels.
+
+**The fix is not to make the property work.** It is to stop depending on it.
+React Native's own default origin is the centre, and that is the one behaviour
+guaranteed on every version and both platforms — so the centre is folded into
+the equations and the style property is gone. The hook now carries a warning
+that putting it back inverts every sign in it.
+
+### ② The gesture was rebuilt on every render — including mid-pinch
+
+It *was* memoised. On `commit`, which depends on `onCommit`, which the screen
+passed as a fresh arrow (`onZoomCommit={(mm) => …}`). So the memo never hit
+once, and the sequence was:
+
+```
+onBegin → setPinching(true) → re-render → new gesture object
+        → GestureDetector re-attaches — during a live pinch
+```
+
+`EcgReviewSheet`'s header has carried a warning about exactly this class of bug
+since v0.16.0, for `PanResponder`. I wrote a comment citing it **directly above
+the code that had it**. The screen memoises the callback now
+(`useCallback([setSettings])`, which never changes), and the hook captures
+nothing per-render: everything the commit needs is read from a ref at call
+time.
+
+### ③ A stale `liveMm` left a transform behind
+
+The scale was `windowMm / liveMm`, and `liveMm` only moves during a pinch. So
+pressing **+** or **Fit** afterwards made the two disagree, and the sheet was
+drawn scaled with nobody touching it. There is an explicit `active` flag now,
+and it is the first thing the worklet reads: zero means identity, full stop.
+
+### The shape of the rewrite: everything is a constant
+
+The transform is now a pure function of the live scale and of values captured
+**once**, at `onStart`:
+
+```
+tx = (1 − k) · (fx0 − rowW/2)
+ty = (1 − k) · (fy0 + scrollY0 − rowH/2)
+```
+
+It reads no scroll offset and no layout while it runs — so there is nothing
+left for it to drift *against*, which is what “not stable” actually was. The
+row's real size is measured with `onLayout` rather than guessed from the
+viewport, because the equations need its centre and the sheet is taller than
+the screen at most zoom levels.
+
+On release the committed zoom is exactly the zoom the fingers asked for (both
+clamp to the same bounds, so the clamp cannot introduce a difference), which
+makes `k` exactly 1 on the landing render — the transform resolves to identity
+in the *same* React commit that re-lays out the tiles.
+
+And a backstop, because two of the three bugs above stranded the sheet with no
+way back but leaving the study: if anything ever swallows a commit, two frames
+later the transform lets go by itself. A zoom that did not take is a
+disappointment; a sheet stuck at 0.4× is a broken screen.
+
+### What this does not prove
+
+`tsc` is clean and the iOS bundle builds. Neither has an opinion about what a
+gesture feels like — which is the whole lesson of v0.96.0, where all three
+gates passed on a feature that did not work. Please try: pinch in, pinch out,
+pinch against both limits, pinch while scrolled into the middle of the
+recording, then press **+** and **Fit** immediately after a pinch (that is ③).
+
 ## v0.96.0 - 2026-09-24 - two fingers on the ECG sheet
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

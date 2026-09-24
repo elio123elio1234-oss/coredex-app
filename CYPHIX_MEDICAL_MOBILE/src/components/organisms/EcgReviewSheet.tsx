@@ -241,9 +241,6 @@ export default function EcgReviewSheet({
   const [box, setBox] = useState({ width: 0, height: 0 });
   /** True while ANY handle owns the gesture. Freezes both scrolls. */
   const [dragging, setDragging] = useState(false);
-  /** Live scroll offsets in points — read by gestures, never rendered from. */
-  const scrollXRef = useRef(0);
-  const scrollYRef = useRef(0);
 
   const traceMm = CAL_WIDTH_MM + view.durationSec * STANDARD_MM_PER_SEC;
   /* Blank paper past the end of the recording when the window is wider than
@@ -275,9 +272,14 @@ export default function EcgReviewSheet({
   /* ⚠️ LAYOUT effect, not a plain one, and keyed on `windowMm` — it runs on
      the render the pinch's commit caused, after the tiles have their new
      sizes, which is the earliest moment a `scrollTo` can land where it is
-     asked to rather than be clamped against the old content width. */
+     asked to rather than be clamped against the old content width.
+
+     ★ It runs on EVERY zoom change, including the +/− buttons' and Fit's,
+     and that is deliberate: releasing the transform here is what makes it
+     impossible for a button press to be drawn through something left over
+     from an earlier pinch. That was a real defect in v0.96.0. */
   useLayoutEffect(() => {
-    pinch.applyPending();
+    pinch.onZoomChanged();
   }, [windowMm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -298,7 +300,7 @@ export default function EcgReviewSheet({
   const { a: caliperA, place: placeCalipers, nudge: nudgeCaliper } = calipers;
   useEffect(() => {
     if (mode !== 'calipers' || caliperA || ptPerMm === 0) return;
-    placeCalipers(leads[0], scrollXRef.current / ptPerMm, windowMm, stripHeightMm);
+    placeCalipers(leads[0], pinch.scrollXRef.current / ptPerMm, windowMm, stripHeightMm);
   }, [mode, caliperA, placeCalipers, leads, windowMm, stripHeightMm, ptPerMm]);
 
   const caliperBandIndex = Math.max(0, leads.indexOf(activeLead as LimbLeadName));
@@ -376,15 +378,22 @@ export default function EcgReviewSheet({
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={(e) => {
-            scrollYRef.current = e.nativeEvent.contentOffset.y;
             pinch.noteScrollY(e.nativeEvent.contentOffset.y);
           }}
         >
-          {/* ⚠️ `transformOrigin` top-left, and the hook's algebra assumes it.
-              The default origin is the CENTRE, which for a row that is often
-              several times wider than the screen would throw the anchor off by
-              half the paper. */}
-          <Animated.View style={[styles.row, styles.rowOrigin, pinch.rowStyle]}>
+          {/* ⚠️ NO `transformOrigin` HERE, AND THAT IS THE FIX, NOT AN
+              OMISSION. v0.96.0 set it to `left top` and wrote the pinch's
+              algebra for a corner — but Reanimated honours that property only
+              on its CSS engine, not on the `useAnimatedStyle` path, so the row
+              scaled about its CENTRE the whole time. The hook now solves for
+              the centre, which is React Native's guaranteed default. Putting
+              this back would invert every sign in it.
+              `onLayout` feeds the hook that centre: it needs the row's real
+              height, and the row is taller than the screen at most zooms. */}
+          <Animated.View
+            style={[styles.row, pinch.rowStyle]}
+            onLayout={pinch.onRowLayout}
+          >
             <ScrollView
               ref={pinch.hScrollRef}
               horizontal
@@ -401,7 +410,9 @@ export default function EcgReviewSheet({
                  the sheet lagging the fingers. */
               scrollEventThrottle={16}
               onScroll={(e) => {
-                scrollXRef.current = e.nativeEvent.contentOffset.x;
+                /* ★ ONE owner for this number. The pinch needs it and so do
+                   the calipers, and two copies drifting apart is how a
+                   measurement ends up placed off screen. */
                 pinch.noteScrollX(e.nativeEvent.contentOffset.x);
               }}
             >
@@ -779,9 +790,6 @@ const styles = StyleSheet.create({
      viewport on every zoom-in, and without a clip here the magnified paper
      would be drawn over the toolbar and the header. */
   root: { flex: 1, overflow: 'hidden' },
-  /* See the row's comment — the hook's anchor algebra is written for a
-     top-left origin, not React Native's default centre. */
-  rowOrigin: { transformOrigin: 'left top' },
   /* A stationary coordinate space for the pinch to report focal points in.
      See the comment at its JSX — this View exists for that and nothing
      else, which is why it is `flex: 1` and carries no other style. */
@@ -860,6 +868,17 @@ const styles = StyleSheet.create({
   ghostHandleText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '700', maxWidth: 200 },
 });
 
+// v3.4.0 — The pinch was reported as unstable and two of the three causes were
+//          in this file. `transformOrigin: 'left top'` is GONE — Reanimated
+//          honours it only on its CSS engine, so the row was scaling about its
+//          centre against algebra written for a corner; the hook solves for the
+//          centre now and putting the property back would invert every sign in
+//          it. The row reports its real size (`onLayout`), because those
+//          equations need its centre and it is taller than the screen at most
+//          zooms. The zoom layout effect releases the transform on EVERY change
+//          — a + or a Fit could otherwise be drawn through a leftover one. And
+//          the scroll offsets have ONE owner again (the hook), since the pinch
+//          and the calipers both read them.
 // v3.3.0 — PINCH TO ZOOM (`useSheetPinch`). A UI-thread transform on the row
 //          while two fingers are down, one committed `windowMm` when they
 //          lift — driving the zoom live would re-rasterise 24 `<Svg>` tiles a
