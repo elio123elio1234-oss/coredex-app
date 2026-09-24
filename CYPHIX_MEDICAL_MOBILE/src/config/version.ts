@@ -1,8 +1,54 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.95.0';
-export const APP_BUILD_LABEL = 'the launch stops waiting for things nobody can see, and now it says where it went';
+export const APP_VERSION = '0.96.0';
+export const APP_BUILD_LABEL = 'two fingers zoom the ECG sheet, the way two fingers zoom a photograph';
 
+// v0.96.0 - PINCH TO ZOOM ON THE ECG SHEET. JS only - OTA.
+//
+//           "can pinching with two fingers zoom like on a picture, and be
+//           smooth?" Yes - and SMOOTH is the whole engineering problem, not a
+//           nicety at the end of the sentence.
+//
+//           ** WHY IT IS NOT JUST THE BUTTONS ON A GESTURE. ** Zoom here is a
+//           LAYOUT quantity: ptPerMm = viewport / windowMm sets the width of
+//           every tile and the height of every band, so moving it re-lays out
+//           and re-rasterises 24 <Svg> views. The path STRINGS are already
+//           memoised on geometry that excludes the zoom (EcgReviewStrip did
+//           that for the ghost drag), so nothing is rebuilt in JS - but
+//           react-native-svg still redraws each tile when its size changes,
+//           and sixty times a second is not what that library is for.
+//
+//           So: a Reanimated transform on the UI thread while the fingers are
+//           down, and ONE committed windowMm when they lift. Nothing renders
+//           mid-gesture; the tiles redraw once, crisp, at the new scale.
+//
+//           ** THE ANCHOR IS KEPT IN PAPER MILLIMETRES. ** The hard part of a
+//           pinch inside a ScrollView is the hand-off: the transform is ours
+//           and lives on the UI thread, the scroll offset is the platform's
+//           and can only be set from JS after a layout. Anything that assumes
+//           both land in the same frame flashes. Millimetres are the one
+//           coordinate the zoom does not change, so the transform can be
+//           written as "put paper-mm X under the finger GIVEN wherever the
+//           scroll actually is" - which resolves to zero by itself, whenever
+//           the scroll arrives. A 160 ms settle covers the one case the
+//           formula cannot: a scroll clamped at the end of the paper, where
+//           the anchor is genuinely unreachable.
+//
+//           ** Two traps paid for by reading rather than by shipping. **
+//           (1) The detector hangs on a plain View of its own. A scrolled
+//           UIScrollView reports a recogniser's focal point in CONTENT
+//           coordinates, so attaching it there would have put the anchor off
+//           by exactly how far down the sheet the reader had scrolled.
+//           (2) The gesture is memoised and NOT on `pinching`. onBegin sets
+//           React state; an un-memoised builder would hand GestureDetector a
+//           new gesture mid-pinch - the same trap EcgReviewSheet's header
+//           already records for PanResponder, from a different direction.
+//
+//           ** Known and deliberate: ** pinching OUT does not reveal more
+//           paper until you let go. There is nothing more inside the
+//           transform to show, so the strip shrinks with blank around it and
+//           the extra seconds appear on release. A photo behaves the same.
+//
 // v0.95.0 - THE LAUNCH IS SHORTER, AND IT REPORTS ITSELF. JS only - OTA.
 //
 //           "the server is already up and on the 5th launch it still takes

@@ -61,7 +61,7 @@
    the hand positioning it.
    ================================================================== */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
   PanResponder,
@@ -73,6 +73,8 @@ import {
   type GestureResponderHandlers,
   type LayoutChangeEvent,
 } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 import { STANDARD_MM_PER_SEC, type LimbLeadName, type RecordingAnnotation } from '@cyphix/shared';
 import EcgReviewStrip, {
   CAL_WIDTH_MM,
@@ -80,6 +82,7 @@ import EcgReviewStrip, {
 } from '@/components/molecules/EcgReviewStrip';
 import { tagTone } from '@/features/history/annotationTags';
 import type { UseCalipersResult } from '@/features/history/hooks/useCalipers';
+import { useSheetPinch } from '@/features/history/hooks/useSheetPinch';
 import type { RecordingView } from '@/features/history/hooks/useRecordingView';
 import type { OverlayView } from '@/features/history/hooks/useOverlayRecording';
 import { useTheme } from '@/theme/useTheme';
@@ -122,6 +125,13 @@ interface Props {
   onGhostDrag: (dxMm: number, dyMm: number) => void;
   /** Reported so the screen's Fit button can size the window to the height. */
   onLayoutBox?: (box: { width: number; height: number }) => void;
+  /** How far the pinch may travel, in mm of paper across the viewport. The
+      screen owns these because it owns the "zooming out past this only adds
+      blank paper" judgement (`maxUsefulMm`). */
+  zoomMinMm: number;
+  zoomMaxMm: number;
+  /** A pinch finished. Fired ONCE per gesture, never per frame. */
+  onZoomCommit: (windowMm: number) => void;
 }
 
 /** Half-width of the invisible pad around a draggable thing, in points. */
@@ -223,13 +233,17 @@ export default function EcgReviewSheet({
   onMoveAnnotation,
   onGhostDrag,
   onLayoutBox,
+  zoomMinMm,
+  zoomMaxMm,
+  onZoomCommit,
 }: Props) {
   const t = useTheme();
   const [box, setBox] = useState({ width: 0, height: 0 });
   /** True while ANY handle owns the gesture. Freezes both scrolls. */
   const [dragging, setDragging] = useState(false);
-  /** Live scroll offset in points — read by gestures, never rendered from. */
+  /** Live scroll offsets in points — read by gestures, never rendered from. */
   const scrollXRef = useRef(0);
+  const scrollYRef = useRef(0);
 
   const traceMm = CAL_WIDTH_MM + view.durationSec * STANDARD_MM_PER_SEC;
   /* Blank paper past the end of the recording when the window is wider than
@@ -240,6 +254,31 @@ export default function EcgReviewSheet({
   const bandH = stripHeightMm * ptPerMm;
   const contentW = paperMm * ptPerMm;
   const mmPerSample = STANDARD_MM_PER_SEC / view.sampleRate;
+
+  /* ══ TWO FINGERS ══
+     Everything about why this is a transform rather than a live `windowMm`
+     — and why the anchor is kept in millimetres — is in the hook. What
+     matters here: it freezes both scrolls for the duration, and it needs to
+     be told where they are. */
+  const pinch = useSheetPinch({
+    box,
+    windowMm,
+    ptPerMm,
+    paperMm,
+    stripHeightMm,
+    leadCount: leads.length,
+    minMm: zoomMinMm,
+    maxMm: zoomMaxMm,
+    onCommit: onZoomCommit,
+  });
+
+  /* ⚠️ LAYOUT effect, not a plain one, and keyed on `windowMm` — it runs on
+     the render the pinch's commit caused, after the tiles have their new
+     sizes, which is the earliest moment a `scrollTo` can land where it is
+     asked to rather than be clamped against the old content width. */
+  useLayoutEffect(() => {
+    pinch.applyPending();
+  }, [windowMm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -316,24 +355,54 @@ export default function EcgReviewSheet({
   return (
     <View style={styles.root} onLayout={onLayout}>
       {box.width > 0 && (
+        /* ══ WHY THE DETECTOR HANGS ON A PLAIN VIEW OF ITS OWN ══
+           ★ NOT the row: the row is the thing being transformed, so its
+           coordinate space moves as it zooms and the focal point would chase
+           itself — a feedback loop.
+           ★ NOT the ScrollView either, and this one is less obvious. A
+           gesture recogniser reports its focal point in its VIEW's coordinate
+           space, and a scrolled `UIScrollView`'s space is its CONTENT, not its
+           visible box — so the focal y would silently arrive with the scroll
+           offset already added to it, and the anchor would be wrong by exactly
+           however far down the sheet the reader had travelled. A plain View
+           does not move, which is the entire requirement. */
+        <GestureDetector gesture={pinch.gesture}>
+        <View style={styles.gestureHost}>
         <ScrollView
+          ref={pinch.vScrollRef}
           style={styles.vScroll}
           contentContainerStyle={styles.vContent}
-          scrollEnabled={!dragging}
+          scrollEnabled={!dragging && !pinch.pinching}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            scrollYRef.current = e.nativeEvent.contentOffset.y;
+            pinch.noteScrollY(e.nativeEvent.contentOffset.y);
+          }}
         >
-          <View style={styles.row}>
+          {/* ⚠️ `transformOrigin` top-left, and the hook's algebra assumes it.
+              The default origin is the CENTRE, which for a row that is often
+              several times wider than the screen would throw the anchor off by
+              half the paper. */}
+          <Animated.View style={[styles.row, styles.rowOrigin, pinch.rowStyle]}>
             <ScrollView
+              ref={pinch.hScrollRef}
               horizontal
               directionalLockEnabled
-              /* Frozen while a handle is held, and while the ghost is being
-                 nudged. This is the fix for "the waves move when I grab the
-                 marker" — see trap 1 in the header. */
-              scrollEnabled={!(mode === 'ghost' && ghost) && !dragging}
+              /* Frozen while a handle is held, while the ghost is being
+                 nudged, and while two fingers are down. The first is the fix
+                 for "the waves move when I grab the marker" (trap 1 in the
+                 header); the last stops the scroll view's own pan recogniser
+                 from tracking the pinch alongside us. */
+              scrollEnabled={!(mode === 'ghost' && ghost) && !dragging && !pinch.pinching}
               showsHorizontalScrollIndicator
-              scrollEventThrottle={32}
+              /* 16, not 32: this offset is now read by the pinch's transform
+                 as well as by the calipers, and a stale one there shows up as
+                 the sheet lagging the fingers. */
+              scrollEventThrottle={16}
               onScroll={(e) => {
                 scrollXRef.current = e.nativeEvent.contentOffset.x;
+                pinch.noteScrollX(e.nativeEvent.contentOffset.x);
               }}
             >
               <View style={{ width: contentW }}>
@@ -462,8 +531,11 @@ export default function EcgReviewSheet({
               </View>
             </ScrollView>
 
-            {/* Pinned lead labels. Outside the scroll, backed with the paper
-                colour so the millimetre grid does not run through them. */}
+            {/* Pinned lead labels. Outside the horizontal scroll, backed with
+                the paper colour so the millimetre grid does not run through
+                them. INSIDE the pinched row on purpose: during a pinch they
+                are part of the picture being zoomed, and a label that stayed
+                put while its band grew under it would read as a bug. */}
             <View pointerEvents="none" style={styles.gutter}>
               {leads.map((lead) => (
                 <View key={lead} style={{ height: bandH }}>
@@ -478,8 +550,10 @@ export default function EcgReviewSheet({
                 </View>
               ))}
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
+        </View>
+        </GestureDetector>
       )}
 
       {/* ══ MOVING THE GHOST: THE WHOLE SHEET, PLUS A HANDLE ══
@@ -701,7 +775,17 @@ function AnnotationPin({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  /* `overflow: hidden` is not decoration: a pinch scales the row past the
+     viewport on every zoom-in, and without a clip here the magnified paper
+     would be drawn over the toolbar and the header. */
+  root: { flex: 1, overflow: 'hidden' },
+  /* See the row's comment — the hook's anchor algebra is written for a
+     top-left origin, not React Native's default centre. */
+  rowOrigin: { transformOrigin: 'left top' },
+  /* A stationary coordinate space for the pinch to report focal points in.
+     See the comment at its JSX — this View exists for that and nothing
+     else, which is why it is `flex: 1` and carries no other style. */
+  gestureHost: { flex: 1 },
   vScroll: { flex: 1 },
   vContent: { flexGrow: 1 },
   row: { flexDirection: 'row' },
@@ -776,6 +860,14 @@ const styles = StyleSheet.create({
   ghostHandleText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '700', maxWidth: 200 },
 });
 
+// v3.3.0 — PINCH TO ZOOM (`useSheetPinch`). A UI-thread transform on the row
+//          while two fingers are down, one committed `windowMm` when they
+//          lift — driving the zoom live would re-rasterise 24 `<Svg>` tiles a
+//          frame. The detector hangs on a plain View of its own: a scrolled
+//          UIScrollView reports focal points in CONTENT coordinates, which
+//          would have put the anchor off by the scroll offset. Both scrolls
+//          freeze for the duration, and the lead chips ride inside the pinched
+//          row so the labels zoom with the bands they name.
 // v3.2.0 — The ghost capsule and its full-sheet drag surface now require a
 //          ghost to EXIST, not just the mode: clearing the comparison left both
 //          on screen, and the invisible surface swallowed every touch. The

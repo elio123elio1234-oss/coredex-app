@@ -962,6 +962,14 @@ export default function StudyViewerScreen() {
         }
         onGhostDrag={onGhostDrag}
         onLayoutBox={onSheetLayout}
+        /* ★ The SAME bounds the +/− buttons obey, from the same expression.
+           Two fingers and two buttons driving one quantity must not be able
+           to reach different places — `maxUsefulMm` is where "zooming out
+           past here only adds blank paper" is decided, and a pinch that
+           ignored it would produce a view the buttons could not restore. */
+        zoomMinMm={MIN_WINDOW_MM}
+        zoomMaxMm={maxUsefulMm()}
+        onZoomCommit={(mm) => patch({ windowMm: mm })}
       />
     ) : null;
 
@@ -1686,6 +1694,11 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.3.0 - Hands the review sheet the zoom bounds and a commit callback, so a
+//           pinch and the +/- buttons drive ONE quantity through one clamp.
+//           `maxUsefulMm()` is where "zooming out past here only adds blank
+//           paper" is decided; a pinch that ignored it could reach a view the
+//           buttons were unable to restore.
 // v5.2.0 - The report export finally carries the patient (name + sex/age,
 //          under the Findings tab's own "provably theirs" guard — the paper
 //          could disagree with the screen before), shows an honest blocking

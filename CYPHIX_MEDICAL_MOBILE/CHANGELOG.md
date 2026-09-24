@@ -1,5 +1,96 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.96.0 - 2026-09-24 - two fingers on the ECG sheet
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“when I'm looking at an ECG report, can pinching with two fingers zoom like
+> on a picture, and be smooth?”*
+
+Yes. And **smooth** is the whole engineering problem here, not a nicety tacked
+onto the end of the sentence.
+
+### Why this is not simply “the +/− buttons, on a gesture”
+
+Zoom on this sheet is a **layout** quantity. `ptPerMm = viewport / windowMm`
+decides the width of every tile and the height of every band, so moving it
+re-lays out and re-rasterises **24 `<Svg>` views** — six leads × four tiles,
+each carrying a millimetre grid and a decimated trace.
+
+The path *strings* are already memoised on geometry that deliberately excludes
+the zoom — `EcgReviewStrip` did that in v0.83.0 so dragging the ghost would
+stop being a slideshow — so nothing is rebuilt in JavaScript. But
+react-native-svg still redraws every tile when its size changes, and doing that
+sixty times a second is not what that library is for.
+
+So: **a Reanimated transform on the UI thread while the fingers are down, and
+one committed `windowMm` when they lift.** Nothing renders mid-gesture; the
+tiles redraw once, at the new scale, crisp — they are vectors, not a stretched
+bitmap.
+
+### ★ The anchor is kept in paper millimetres, and that is the whole trick
+
+The hard part of a pinch inside a `ScrollView` is not the scaling. It is the
+**hand-off**: the transform is ours and lives on the UI thread; the scroll
+offset is the platform's and can only be set from JS, after a layout. Anything
+that assumes both land in the same frame will flash on every release.
+
+Nothing here assumes it. The point under the fingers is remembered as a
+position on the **paper, in millimetres** — the one coordinate the zoom does
+not change. The live transform is then written as *“put paper-mm X under the
+finger, given whatever offset the scroll view currently has”*:
+
+```
+tx = focalX − k · (anchorMm · ptPerMm − scrollX)
+```
+
+Feed that the committed `ptPerMm` and the real `scrollX` and it **lands on zero
+by itself**, at the exact moment the scroll actually arrives — this frame or
+three frames later. There is no window in which the sheet is drawn in the wrong
+place, because the formula never describes a place the sheet is not.
+
+A 160 ms settle then eases the transform out, which covers the one case the
+formula genuinely cannot fix: a scroll **clamped** at the end of the paper,
+where the anchored point is unreachable and the residual is real. In the common
+case it animates from zero to zero and nobody sees it.
+
+### Two traps paid for by reading rather than by shipping
+
+1. **The detector hangs on a plain `View` of its own**, not on the ScrollView.
+   A gesture recogniser reports its focal point in its view's coordinate space,
+   and a scrolled `UIScrollView`'s space is its **content**, not its visible
+   box — so the focal y would have arrived with the scroll offset silently
+   added, putting the anchor out by exactly how far down the sheet the reader
+   had travelled.
+2. **The gesture is memoised, and not on `pinching`.** `onBegin` sets React
+   state to freeze the scrolls; an un-memoised builder would then hand
+   `GestureDetector` a brand-new gesture in the middle of a live pinch. That is
+   the same trap this file's header already records for `PanResponder`,
+   approached from a different direction. Everything the gesture mutates lives
+   in shared values, which survive a rebuild; everything it reads is a prop
+   that cannot change while two fingers are down.
+
+### Known, deliberate, and standard
+
+**Pinching out does not reveal more paper until you let go.** There is nothing
+more inside the transform to show, so the strip shrinks with blank around it
+and the extra seconds appear on release. A photograph behaves the same way, and
+the alternative is the slideshow described at the top.
+
+The pinch obeys the **same bounds as the buttons**, from the same expression
+(`MIN_WINDOW_MM` … `maxUsefulMm()`), and meets them as a wall rather than
+committing to a value the buttons could not restore. It works in the normal
+viewer and in full screen — both render the same sheet. The lead chips ride
+*inside* the pinched row, so a label never sits still while the band it names
+grows underneath it.
+
+### What this does not prove
+
+`tsc` is clean and the iOS bundle builds at 6.73 MB. Neither has an opinion
+about what a gesture feels like. `🔬 needs-iOS-verify` — and specifically:
+pinch in, pinch out, pinch against both limits, pinch while scrolled to the
+middle of a long recording, and pinch with the calipers open.
+
 ## v0.95.0 - 2026-09-24 - the launch stops waiting for things nobody can see
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**
