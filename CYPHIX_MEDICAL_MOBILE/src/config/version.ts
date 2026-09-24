@@ -1,8 +1,56 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.96.1';
-export const APP_BUILD_LABEL = 'the pinch holds still: the transform now scales about the origin it actually has';
+export const APP_VERSION = '0.96.2';
+export const APP_BUILD_LABEL = 'zooming out on the ECG reveals more of the recording instead of white';
 
+// v0.96.2 - ZOOM OUT REVEALS THE RECORDING, NOT WHITE. JS only - OTA.
+//
+//           "when I zoom out it puts white where there IS data, instead of
+//           actually zooming out on everything."
+//
+//           Right, and this one was not a bug in the maths - it was the WRONG
+//           NODE, and v0.96.0 talked itself out of noticing.
+//
+//           ** SCALING A SCROLLER CANNOT REVEAL ANYTHING. ** The transform sat
+//           on the row that HOLDS the horizontal scroller, and a scroller
+//           clips its content at its own frame. So shrinking it shrank the
+//           visible crop into the middle of the card while the other 6.7
+//           seconds of the recording stayed outside the clip - unreachable,
+//           and drawn as white.
+//
+//           v0.96.0 wrote that off in a comment as "how a photograph behaves".
+//           That was a bad analogy dressed up as a design decision: a
+//           photograph has nothing outside its frame, and this has most of the
+//           recording out there. Zooming out on an ECG exists for exactly one
+//           reason - to see more of the trace - so a zoom-out that cannot show
+//           more of it is not a compromise, it is the feature not working.
+//
+//           The transform is on the PAPER now: the content view INSIDE the
+//           scroller, several times the viewport wide. The scroller's frame
+//           stays put and goes on being the window; shrinking the paper walks
+//           the far end of the recording into it.
+//
+//           ** And the limit falls out for free. ** maxMm is
+//           max(traceMm, fitMm), so the smallest scale the gesture can reach
+//           is windowMm/traceMm - at which the paper is EXACTLY the viewport
+//           wide. Zooming out to the wall lands on the whole recording filling
+//           the screen, with no white, and no special case for it.
+//
+//           Two more things this shook out. (1) The row carries a minHeight of
+//           the viewport, because a scroller clips VERTICALLY at its frame too
+//           - without it, a sheet whose bands already fit would cut them off
+//           mid-pinch when they grew. (2) The gesture's single exit now asks
+//           "is a commit coming?" instead of "did the gesture succeed?" - a
+//           gesture can succeed and commit nothing, which was the last path by
+//           which a transform could outlive its pinch.
+//
+//           ** Cost, stated plainly: ** the pinned lead labels fade while a
+//           pinch is running. They live outside the scroller by design - that
+//           is what keeps them pinned while the paper slides under them - so
+//           they cannot track a band whose height is changing. A label parked
+//           beside a band it no longer marks is worse than no label for the
+//           second a pinch lasts.
+//
 // v0.96.1 - THE PINCH HOLDS STILL. JS only - OTA.
 //
 //           Reported with four screenshots: "it is not stable at all, not

@@ -64,14 +64,14 @@
    layout, nothing that can move underneath it. A gesture cannot drift,
    because there is nothing left for it to drift against.
 
-       tx = (1 − k) · (fx0 − rowW/2)
-       ty = (1 − k) · (fy0 + scrollY0 − rowH/2)
+       tx = (1 − k) · (fx0 + scrollX0 − paperW/2)
+       ty = (1 − k) · (fy0 + scrollY0 − paperH/2)
 
-   Both are the same statement — *hold the point that was under the
-   fingers still while everything scales about the view's centre* — solved
-   once for a row whose horizontal scroll is INSIDE it and whose vertical
-   scroll is OUTSIDE it. That asymmetry is the only reason the two lines
-   differ, and it is why `scrollY0` appears in one and not the other.
+   One statement, twice — *hold the point that was under the fingers still
+   while everything scales about the view's centre*. They are symmetrical
+   because as of v3.0.0 BOTH scroll offsets sit outside the transformed
+   node; in v2 the horizontal one was inside it and the two lines did not
+   match, which was the tell that the wrong thing was being scaled.
 
    ══ AND WHY IT LANDS WITHOUT A SNAP ══
    On release the committed zoom is exactly the zoom the fingers asked for
@@ -82,17 +82,55 @@
    than one frame later. `[windowMm]` on the worklet is what makes that
    true; drop it and the sheet is drawn double-scaled for a frame.
 
-   ⚠️ One consequence of the two-phase design, and it is the standard one:
-   **pinching OUT does not reveal more paper until you let go.** There is
-   no more content inside a transform to show, so the strip shrinks with
-   blank around it and the extra seconds appear on release. A photograph
-   behaves the same way; the alternative is the slideshow at the top.
+   ═════════════════════════════════════════════════════════════════
+   ★ v3.0.0 — WHAT GETS TRANSFORMED, AND WHY THE FIRST ANSWER WAS WRONG
+   ═════════════════════════════════════════════════════════════════
+   Reported after v0.96.1: *"when I zoom OUT it puts white where there IS
+   data, instead of actually zooming out on everything."*
+
+   Correct, and it was not a bug in the maths — it was the wrong node.
+   v0.96.x transformed the ROW, which is the thing that HOLDS the
+   horizontal scroller. **Scaling a scroller cannot reveal anything.** Its
+   content is clipped at its own frame, so shrinking it just shrank the
+   crop into the middle of the card while the other 6.7 seconds of the
+   recording stayed outside the clip, unreachable.
+
+   v0.96.0 wrote that off as *"how a photograph behaves"*. That was a bad
+   analogy dressed up as a design decision: a photograph has nothing
+   outside its frame, and this has most of the recording out there. Zoom
+   out on an ECG exists for exactly one reason — to see more of the trace
+   — so a zoom-out that cannot show more of it is not a compromise, it is
+   the feature not working.
+
+   The transform is on the PAPER now: the content view inside the
+   horizontal scroller, which is `contentW` wide — several times the
+   viewport. The scroller's frame stays where it is and goes on being the
+   window; shrinking the paper inside it walks the far end of the
+   recording INTO that window. Nothing is clipped that should not be.
+
+   ★ And the limit falls out for free. `maxMm` is `max(traceMm, fitMm)`,
+   so when the whole recording is the ceiling, the smallest scale the
+   gesture can reach is `windowMm / traceMm` — and at that scale the paper
+   is exactly `viewport` wide. Zooming out to the wall lands on the whole
+   recording filling the screen, with no white, without a special case.
+
+   ⚠️ THE ONE COST: the pinned lead labels fade for the duration. They
+   live OUTSIDE the horizontal scroller — that is what keeps them pinned
+   while the paper slides under them — so they are not inside the
+   transformed node and cannot follow a band whose height is changing. A
+   label parked beside a band it no longer marks is worse than no label
+   for the second a pinch lasts.
    ================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, ScrollView } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
-import { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 /** Below this, a commit would change nothing anybody could see. */
 const MM_EPSILON = 0.25;
@@ -148,12 +186,11 @@ export function useSheetPinch({
   const scrollX = useSharedValue(0);
   const scrollY = useSharedValue(0);
 
-  /* The transformed row's own layout size. Measured rather than inferred:
-     the equations need its CENTRE, and guessing it from the viewport is
-     right for the width and wrong for the height the moment the sheet is
-     taller than the screen — which is most zoom levels. */
-  const rowW = useSharedValue(0);
-  const rowH = useSharedValue(0);
+  /* The PAPER's own layout size — the whole sheet, not the window onto it.
+     Measured rather than inferred: the equations need its centre, and it is
+     several times the viewport in both directions at most zoom levels. */
+  const paperW = useSharedValue(0);
+  const paperH = useSharedValue(0);
 
   /* ── Captured at `onStart`, constant for the gesture ── */
   const fx0 = useSharedValue(0);
@@ -187,19 +224,40 @@ export function useSheetPinch({
      the render the COMMIT causes. */
   const pending = useRef<{ x: number; y: number } | null>(null);
 
-  const onRowLayout = useCallback(
+  const onPaperLayout = useCallback(
     (e: LayoutChangeEvent) => {
       /* The LAYOUT size, which is what `onLayout` reports — a transform does
          not change it. That is exactly what the centre-origin maths wants. */
-      rowW.value = e.nativeEvent.layout.width;
-      rowH.value = e.nativeEvent.layout.height;
+      paperW.value = e.nativeEvent.layout.width;
+      paperH.value = e.nativeEvent.layout.height;
     },
-    [rowW, rowH],
+    [paperW, paperH],
   );
 
   const release = useCallback(() => {
     active.value = 0;
   }, [active]);
+
+  /**
+   * Every gesture ends here, successful or not.
+   *
+   * ★ ONE exit, and it asks the only question that matters: is a commit
+   * on its way? If it is, the transform must stay — it is what holds the
+   * sheet in the right place until the new layout and the new scroll land.
+   * If it is not (a cancel, a nudge too small to commit, a gesture that
+   * spent its whole life against a limit), let go NOW.
+   *
+   * v2 asked `success` instead, which is the gesture handler's question,
+   * not this one: a gesture can succeed and still produce no commit. That
+   * left the only path by which a transform could outlive its pinch, and
+   * a sheet stranded at 0.4× is a screen with no way back but leaving the
+   * study. `onEnd` runs before `onFinalize` and both hop to JS in order,
+   * so `pending` is already set by the time this reads it.
+   */
+  const finalize = useCallback(() => {
+    if (pending.current) return;
+    release();
+  }, [release]);
 
   /* ⚠️ Everything `commit` reads is boxed in a ref, so the callback itself
      never changes identity and the gesture below can be memoised for real.
@@ -336,23 +394,22 @@ export function useSheetPinch({
           if (!success || active.value === 0) return;
           runOnJS(commit)(liveMm.value, fx0.value, fy0.value, sx0.value, sy0.value);
         })
-        .onFinalize((_e, success) => {
+        .onFinalize(() => {
           runOnJS(setPinching)(false);
-          /* Cancelled — an interrupting touch, a navigation away. Put the
-             sheet back rather than leaving it half-zoomed with no commit
-             coming to release it. A successful end is released by the commit
-             (or by its backstop). */
-          if (!success) runOnJS(release)();
+          /* See `finalize`: it releases unless a commit is on its way, which
+             covers the cancel AND the succeeded-but-committed-nothing case
+             that v2's `success` check let through. */
+          runOnJS(finalize)();
         }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [commit, release],
+    [commit, finalize],
   );
 
   /* ⚠️ `[windowMm]` is load-bearing. The worklet CAPTURES it, so the commit's
      re-render rebuilds this with the new zoom in the same React commit that
      re-lays out the tiles — which is what makes `k` exactly 1 at that instant
      instead of one frame later. */
-  const rowStyle = useAnimatedStyle(() => {
+  const paperStyle = useAnimatedStyle(() => {
     /* ① The unconditional escape. Anything that is not a live pinch is
        identity, whatever the other values happen to hold. */
     if (active.value === 0) {
@@ -361,15 +418,24 @@ export function useSheetPinch({
     const k = windowMm / liveMm.value;
     /* ② React Native's DEFAULT transform origin is the view's centre, and
        these two lines are written for it. See ① in the header for what
-       assuming a corner cost. */
-    const tx = (1 - k) * (fx0.value - rowW.value / 2);
-    const ty = (1 - k) * (fy0.value + sy0.value - rowH.value / 2);
+       assuming a corner cost. Both scroll offsets are outside this node, so
+       the two axes are the same expression — see v3.0.0 in the header. */
+    const tx = (1 - k) * (fx0.value + sx0.value - paperW.value / 2);
+    const ty = (1 - k) * (fy0.value + sy0.value - paperH.value / 2);
     return { transform: [{ translateX: tx }, { translateY: ty }, { scale: k }] };
   }, [windowMm]);
 
+  /* The pinned lead labels, which cannot follow the paper — see the ⚠️ in
+     the header. Fast enough not to read as a transition, slow enough not to
+     read as a flicker. */
+  const gutterStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(active.value === 1 ? 0 : 1, { duration: 110 }),
+  }));
+
   return {
     gesture,
-    rowStyle,
+    paperStyle,
+    gutterStyle,
     pinching,
     hScrollRef,
     vScrollRef,
@@ -377,11 +443,25 @@ export function useSheetPinch({
     scrollYRef,
     noteScrollX,
     noteScrollY,
-    onRowLayout,
+    onPaperLayout,
     onZoomChanged,
   };
 }
 
+// v3.0.0 — THE TRANSFORM MOVED FROM THE ROW TO THE PAPER, because "zoom out
+//          puts white where there is data" was not a bug in the maths — it was
+//          the wrong node. The row HOLDS the horizontal scroller, and scaling a
+//          scroller cannot reveal anything: its content is clipped at its own
+//          frame, so the visible crop shrank into the middle of the card while
+//          the rest of the recording stayed outside it. v0.96.0 called that
+//          "how a photograph behaves"; a photograph has nothing outside the
+//          frame and this has most of the recording out there. Scaling the
+//          CONTENT walks the far end of the trace into the window instead, and
+//          the zoom-out limit lands on exactly viewport-wide paper for free.
+//          Both axes are symmetrical now — both scrolls are outside the
+//          transformed node — which is the tell that this is the right node.
+//          Cost: the pinned lead labels fade for the duration, because they
+//          live outside the scroller by design and cannot track a moving band.
 // v2.0.0 — Reported as unstable, with screenshots, and all three causes were
 //          here. (1) `transformOrigin: 'left top'` never applied — Reanimated
 //          honours it only on its CSS engine, not on `useAnimatedStyle` — so

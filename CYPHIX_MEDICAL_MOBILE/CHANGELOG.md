@@ -1,5 +1,84 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.96.2 - 2026-09-24 - zooming out reveals the recording, not white
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+> *“when I zoom out it puts white where there IS data, instead of actually
+> zooming out on everything.”*
+
+Right — and this one was not a bug in the geometry. It was the **wrong node**,
+and v0.96.0 talked itself out of noticing.
+
+### Scaling a scroller cannot reveal anything
+
+The pinch transform sat on the **row**, which is the thing that *holds* the
+horizontal scroller. A scroller clips its content at its own frame. So
+shrinking it shrank the visible crop into the middle of the card, while the
+other 6.7 seconds of the recording stayed outside the clip — unreachable, and
+drawn as white.
+
+v0.96.0 wrote that off in a comment as *“how a photograph behaves”*. That was a
+bad analogy dressed up as a design decision. **A photograph has nothing outside
+its frame; this has most of the recording out there.** Zooming out on an ECG
+exists for exactly one reason — to see more of the trace — so a zoom-out that
+cannot show more of it is not a compromise, it is the feature not working.
+
+The transform is on the **paper** now: the content view *inside* the scroller,
+which is several times the viewport wide. The scroller's frame stays where it
+is and goes on being the window; shrinking the paper inside it walks the far
+end of the recording into that window.
+
+### ★ And the zoom-out limit lands exactly right, for free
+
+`maxMm` is `max(traceMm, fitMm)`, so when the whole recording is the ceiling
+the smallest scale the gesture can reach is `windowMm / traceMm` — at which the
+paper is **exactly the viewport wide**. Pinching out to the wall lands on the
+whole recording filling the screen, with no white, and with no special case
+written for it.
+
+### The tell I should have read the first time
+
+Both scroll offsets now sit *outside* the transformed node, so the two axes
+became the same expression:
+
+```
+tx = (1 − k) · (fx0 + scrollX0 − paperW/2)
+ty = (1 − k) · (fy0 + scrollY0 − paperH/2)
+```
+
+In v0.96.1 those two lines did **not** match — the horizontal scroll was inside
+the transformed node and the vertical one outside it — and I wrote a paragraph
+explaining the asymmetry instead of asking why it existed. It existed because
+the transform was on the wrong view.
+
+### Two more things this shook out
+
+1. **The row carries a `minHeight` of the viewport.** A scroller clips
+   *vertically* at its frame too, and that frame is only as tall as its
+   content. A sheet whose six bands already fit the screen would therefore
+   have had them cut off mid-pinch, the moment they grew.
+2. **The gesture's single exit asks “is a commit coming?”, not “did the gesture
+   succeed?”** A pinch can succeed and commit nothing — a nudge, or a gesture
+   that spent its whole life against a limit — and that was the last path by
+   which a transform could outlive its pinch. It cannot now.
+
+### The cost, stated plainly
+
+**The pinned lead labels fade while a pinch is running.** They live outside the
+scroller by design — that is what keeps them pinned while the paper slides
+under them — so they are not inside the transformed node and cannot follow a
+band whose height is changing. A label parked beside a band it no longer marks
+is worse than no label for the second a pinch lasts. They come back as the
+fingers lift.
+
+### What this does not prove
+
+`tsc` clean, iOS bundle builds, `expo-doctor` 18/18 — all three of which have
+now passed on two broken versions of this same feature. Please try: **pinch out
+and watch whether more of the trace arrives**, pinch out all the way to the
+wall, pinch in, then press **+** and **Fit** straight after a pinch.
+
 ## v0.96.1 - 2026-09-24 - the pinch holds still
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

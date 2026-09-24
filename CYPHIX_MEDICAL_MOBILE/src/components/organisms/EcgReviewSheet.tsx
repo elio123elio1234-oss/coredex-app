@@ -381,19 +381,13 @@ export default function EcgReviewSheet({
             pinch.noteScrollY(e.nativeEvent.contentOffset.y);
           }}
         >
-          {/* ⚠️ NO `transformOrigin` HERE, AND THAT IS THE FIX, NOT AN
-              OMISSION. v0.96.0 set it to `left top` and wrote the pinch's
-              algebra for a corner — but Reanimated honours that property only
-              on its CSS engine, not on the `useAnimatedStyle` path, so the row
-              scaled about its CENTRE the whole time. The hook now solves for
-              the centre, which is React Native's guaranteed default. Putting
-              this back would invert every sign in it.
-              `onLayout` feeds the hook that centre: it needs the row's real
-              height, and the row is taller than the screen at most zooms. */}
-          <Animated.View
-            style={[styles.row, pinch.rowStyle]}
-            onLayout={pinch.onRowLayout}
-          >
+          {/* `minHeight`: the horizontal scroller stretches to this row, and a
+              scroller clips VERTICALLY at its own frame too. Without it, a
+              sheet whose six bands already fit the screen would have a frame
+              only as tall as those bands — and a pinch that grows them would
+              be cut off at the old height mid-gesture. One number, and the
+              clip is never inside anything the reader can see. */}
+          <View style={[styles.row, { minHeight: box.height }]}>
             <ScrollView
               ref={pinch.hScrollRef}
               horizontal
@@ -416,7 +410,29 @@ export default function EcgReviewSheet({
                 pinch.noteScrollX(e.nativeEvent.contentOffset.x);
               }}
             >
-              <View style={{ width: contentW }}>
+              {/* ══ ★ THE PINCH SCALES THE PAPER, NOT THE VIEWPORT ══
+                  v0.96.x transformed the ROW — the thing that holds this
+                  scroller — and that is why zooming out drew white where
+                  there was data. Scaling a scroller cannot reveal anything:
+                  its content is clipped at its own frame, so the visible crop
+                  just shrank into the middle of the card while the other
+                  6.7 seconds of recording stayed outside the clip. Reported
+                  exactly that way, and calling it "how a photo behaves" in
+                  v0.96.0 was wrong — a photo has nothing outside the frame,
+                  this has most of the recording out there.
+                  Transforming the CONTENT instead fixes it by construction:
+                  this view is the whole paper (`contentW` ≫ the viewport),
+                  the scroller's frame stays put as the window, and shrinking
+                  the paper inside it brings the far end of the recording INTO
+                  that window. Zoom out now reveals seconds, which is the only
+                  thing zooming out on an ECG is for.
+                  ⚠️ It also makes the two axes symmetrical — both scroll
+                  offsets are now OUTSIDE the transformed node — which is why
+                  the hook's `tx` and `ty` are finally the same expression. */}
+              <Animated.View
+                style={[{ width: contentW }, pinch.paperStyle]}
+                onLayout={pinch.onPaperLayout}
+              >
                 {leads.map((lead) => (
                   <View key={lead}>
                     <EcgReviewStrip
@@ -539,15 +555,21 @@ export default function EcgReviewSheet({
                     />
                   </>
                 )}
-              </View>
+              </Animated.View>
             </ScrollView>
 
             {/* Pinned lead labels. Outside the horizontal scroll, backed with
                 the paper colour so the millimetre grid does not run through
-                them. INSIDE the pinched row on purpose: during a pinch they
-                are part of the picture being zoomed, and a label that stayed
-                put while its band grew under it would read as a bug. */}
-            <View pointerEvents="none" style={styles.gutter}>
+                them.
+                ⚠️ IT FADES OUT FOR THE DURATION OF A PINCH, and that is the
+                one cost of transforming the paper rather than the row. This
+                sits OUTSIDE the horizontal scroll — that is the whole reason
+                the labels stay pinned while the paper slides under them — so
+                it is not inside the transformed node and cannot track a band
+                whose height is changing. A label parked at a band it no
+                longer marks is worse than no label for the second a pinch
+                lasts, and it comes back the moment the fingers lift. */}
+            <Animated.View pointerEvents="none" style={[styles.gutter, pinch.gutterStyle]}>
               {leads.map((lead) => (
                 <View key={lead} style={{ height: bandH }}>
                   <View style={[styles.leadChip, { backgroundColor: palette.paper }]}>
@@ -560,8 +582,8 @@ export default function EcgReviewSheet({
                   </View>
                 </View>
               ))}
-            </View>
-          </Animated.View>
+            </Animated.View>
+          </View>
         </ScrollView>
         </View>
         </GestureDetector>
@@ -868,6 +890,16 @@ const styles = StyleSheet.create({
   ghostHandleText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '700', maxWidth: 200 },
 });
 
+// v3.5.0 — The pinch transform moved from the ROW to the PAPER. Scaling the row
+//          scaled the thing that HOLDS the horizontal scroller, and a scroller
+//          clips at its own frame — so zooming out shrank the visible crop into
+//          the middle of the card and drew white where the rest of the
+//          recording actually was. The content view inside the scroller is
+//          transformed instead, so shrinking it walks the far end of the trace
+//          into the window. The row also carries a `minHeight` of the viewport,
+//          because a scroller clips vertically at its frame too. Cost: the
+//          pinned lead labels fade for the duration — they sit outside the
+//          scroller by design and cannot track a band that is changing height.
 // v3.4.0 — The pinch was reported as unstable and two of the three causes were
 //          in this file. `transformOrigin: 'left top'` is GONE — Reanimated
 //          honours it only on its CSS engine, so the row was scaling about its
