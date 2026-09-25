@@ -47,6 +47,12 @@ export * from './ecg/measurement.constants';
 export * from './ecg/reportFilter';
 export * from './ecg/ecgAnalysis';
 
+/* The hexaxial geometry of the six limb leads — where each lead looks
+   from, and which electrodes it is read from. Domain fact, not a drawing
+   parameter: `ecgAnalysis` already depends on I and aVF being 90° apart,
+   and the 3-D heart on Insights turns to face the same angles. */
+export * from './ecg/leadAxes';
+
 /* ── Dual Lead II (firmware v3+) ──────────────────────────────────
    NOT part of the frozen chain above, and deliberately upstream of it: two
    raw copies of Lead II go in, one raw Lead II comes out, and `deriveLeads`
@@ -132,6 +138,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.16.0 — Exports `ecg/leadAxes`: the hexaxial angle, unit vector and
+//           electrode pair of each limb lead, with the sign convention and
+//           anatomical frame stated. The web's 3-D heart reads it, and so
+//           will the phone's port — one table, not two.
 // v1.15.0 — Adds the SCREENING layer (types/ecgScreening + ecg/ecgScreening):
 //           43 published-threshold rules that read the measurements and name
 //           patterns, with an urgency, an evidence trail and a confidence per
