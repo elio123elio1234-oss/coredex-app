@@ -1,58 +1,94 @@
 /**
- * Build the Vercel-ready deck from the single-file offline export.
+ * Build the Vercel deployment from the deck's export folder.
  *
- * The offline export is one 48 MB file because it carries both videos (42 MB of
- * base64 in <script type="application/octet-stream"> blocks) and the 3D strap mesh
- * (3.25 MB of JSON) inline, so it can run from file://. On the web that shape is the
- * worst case: nothing paints until the last byte lands, and decoding a 23 MB data:
- * URL on iOS Safari is a memory risk. This build:
+ * As of the 2026-10-04 re-export the authoring tool emits its own web build under
+ * `Website-Vercel/cyphix-tinvent/` — videos as files, no base64 blobs. That is the input
+ * now, and the editorial patches this script used to carry (the demo clip, the business
+ * slide, moving a slide to the appendix) are gone: the deck itself was re-authored, so
+ * applying them again would be fighting the source.
  *
- *   1. streams the videos from /media instead of embedding them,
- *   2. moves the mesh to /model.json, preloaded in parallel and consumed when ready,
- *   3. shows a branded boot screen while the remaining ~2 MB arrives,
- *   4. asks phones held in portrait to rotate — a 1920x1080 stage letterboxes to
- *      ~220 px tall in portrait, which no amount of scaling can make readable.
+ * What the tool still does not do, and this script does:
  *
- * Usage: node tools/build.mjs <source.html> <outDir> [origin]
+ *   1. The 3D strap mesh is 3.1 MB of JSON inlined in a 5.8 MB document, and a browser
+ *      paints nothing until a document's last byte lands. It moves to /model.json,
+ *      preloaded in parallel and consumed when it arrives.
+ *   2. A branded boot screen covers the ~1.3 MB that still has to download first.
+ *   3. Phones held in portrait are asked to rotate: the stage is a fixed 1920x1080
+ *      scaled to fit, which in portrait on a 390 px phone is 390x219.
+ *   4. A link preview with an image, and absolute og: URLs — the tool emits og:title and
+ *      og:description but no picture and no URL, so the link arrives as a bare line.
+ *   5. The Cyphix wordmark as the favicon, in place of an emoji.
+ *   6. Video-failure copy that doesn't tell a web reader to open an offline file.
+ *
+ * It also copies the media and the PDF out of the export, so one command updates
+ * everything after a re-export.
+ *
+ * Usage: node tools/build.mjs <exportRoot> <outDir> [origin]
+ *   exportRoot = ...\Downloads\Cyphix-tinvent\Cyphix-tinvent
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
-const [srcPath, outDir, originArg] = process.argv.slice(2);
-if (!srcPath || !outDir) { console.error('usage: build.mjs <source.html> <outDir> [origin]'); process.exit(1); }
+const [exportRoot, outDir, originArg] = process.argv.slice(2);
+if (!exportRoot || !outDir) { console.error('usage: build.mjs <exportRoot> <outDir> [origin]'); process.exit(1); }
 const ORIGIN = (originArg || 'https://cyphix-tinvent.vercel.app').replace(/[/]+$/, '');
+
+const webDir = path.join(exportRoot, 'Website-Vercel', 'cyphix-tinvent');
+const srcHtml = path.join(webDir, 'index.html');
+const srcMedia = path.join(webDir, 'media');
+const srcPdf = path.join(exportRoot, 'PDF', 'Cyphix-tinvent.pdf');
 const outPath = path.join(outDir, 'index.html');
 
-let html = fs.readFileSync(srcPath, 'utf8');
-const before = Buffer.byteLength(html);
-fs.mkdirSync(outDir, { recursive: true });
 const report = [];
 const must = (label, ok) => { report.push([label, ok]); if (!ok) process.exitCode = 1; };
 
-/* ---------- 1. videos: embedded base64 -> streamed /media files ---------- */
-let dropped = 0;
-html = html.replace(/<script type="application\/octet-stream" id="vid-[^"]*">[\s\S]*?<\/script>\s*/g,
-  m => { dropped += Buffer.byteLength(m); return ''; });
-const embeds = (html.match(/ data-embed="[^"]*"/g) || []).length;
-html = html.replace(/ data-embed="[^"]*"/g, '');          // makes the player use src="media/*.mp4"
-must('2 video payloads removed', dropped > 40e6);
-must('2 players switched to /media', embeds === 2);
-must('no octet-stream blobs left', !html.includes('application/octet-stream'));
+must('export has a Website-Vercel build', fs.existsSync(srcHtml));
+if (!fs.existsSync(srcHtml)) {
+  console.error('\nNot found: ' + srcHtml);
+  console.error('The export used to be a single self-contained HTML file. If the tool has gone');
+  console.error('back to that shape, this script needs its old base64-stripping path back —');
+  console.error('see CHANGELOG v1.0.0. Do not deploy a half-built folder.');
+  process.exit(1);
+}
 
-/* ---------- 2. the 3D mesh moves out of the document ---------- */
+let html = fs.readFileSync(srcHtml, 'utf8');
+const before = Buffer.byteLength(html);
+fs.mkdirSync(outDir, { recursive: true });
+
+/* ---------- 1. the export must already stream its media ---------- */
+must('no embedded video blobs', !html.includes('application/octet-stream'));
+must('no data-embed players', !/ data-embed="/.test(html));
+const vids = [...html.matchAll(/<video[^>]*src="media\/([^"]+)"/g)].map(m => m[1]);
+must('every <video> points at media/', vids.length > 0 && vids.length === (html.match(/<video/g) || []).length);
+
+/* ---------- 2. media + PDF, copied out of the export ---------- */
+const mediaOut = path.join(outDir, 'media');
+fs.mkdirSync(mediaOut, { recursive: true });
+const wanted = fs.readdirSync(srcMedia);
+for (const f of wanted) fs.copyFileSync(path.join(srcMedia, f), path.join(mediaOut, f));
+// a video dropped from the deck must not linger in the deployment
+const stale = fs.readdirSync(mediaOut).filter(f => !wanted.includes(f));
+stale.forEach(f => fs.rmSync(path.join(mediaOut, f)));
+must('every referenced video was copied', vids.every(v => wanted.includes(v)));
+
+fs.mkdirSync(path.join(outDir, 'download'), { recursive: true });
+must('PDF present in the export', fs.existsSync(srcPdf));
+if (fs.existsSync(srcPdf)) fs.copyFileSync(srcPdf, path.join(outDir, 'download', 'Cyphix-tinvent.pdf'));
+
+/* ---------- 3. the 3D mesh moves out of the document ---------- */
 const mesh = html.match(/<script type="application\/json" id="model-data">([\s\S]*?)<\/script>\s*/);
 must('model-data found', !!mesh);
 if (mesh) {
   fs.writeFileSync(path.join(outDir, 'model.json'), mesh[1].trim());
   html = html.replace(mesh[0], '');
   // getModel() was a synchronous read of that <script>; now it reads whatever the
-  // preload delivered. Everything that needs it runs on slide 4 at the earliest.
+  // preload delivered. Nothing needs it before slide 4 at the earliest.
   const oldGet = `function getModel(){ if(modelData) return modelData; const node=document.getElementById('model-data'); if(!node) return null; modelData=JSON.parse(node.textContent); return modelData; }`;
   must('getModel() matched', html.includes(oldGet));
   html = html.replace(oldGet, `function getModel(){ return modelData||(modelData=window.__cyModel||null); }`);
 
   // ...and a 3D slide reached before the mesh lands must not cache the failure:
-  // init3D() memoises per kind, so one early miss would kill that viewer for good.
+  // init3D() memoises per viewer kind, so one early miss would be permanent.
   const oldInit = `const kind=sl.dataset['3d']; if(kind in viewers) return viewers[kind]; viewers[kind]=null;`;
   must('init3D() guard matched', html.includes(oldInit));
   html = html.replace(oldInit, `const kind=sl.dataset['3d']; if(kind in viewers) return viewers[kind];
@@ -68,118 +104,41 @@ if (mesh) {
     viewers[kind]=null;`);
 }
 
-/* ---------- 2.5 editorial changes requested after the export ----------
-   These belong here, not in the exported HTML: that file is the authoring tool's
-   output and gets overwritten on every re-export. Each patch asserts its match. */
-
-/* (a) slide 6 — the demo video was replaced by the 31 s prototype clip */
-const newPoster = path.join(path.dirname(new URL(import.meta.url).pathname.slice(1)), 'assets', 'demo-poster.webp');
-if (fs.existsSync(newPoster)) {
-  const uri = 'data:image/webp;base64,' + fs.readFileSync(newPoster).toString('base64');
-  const posterRe = /(src="media\/demo\.mp4"[^>]*><\/video>\s*<img class="poster" src=")data:image\/webp;base64,[A-Za-z0-9+/=]+(")/;
-  must('demo poster matched', posterRe.test(html));
-  html = html.replace(posterRe, (_m, a, b) => a + uri + b);
-} else { must('demo poster asset present', false); }
-const durRe = /(<span>סרטון הדגמה<\/span><bdi class="n">)1:06(<\/bdi>)/;
-must('demo duration label matched', durRe.test(html));
-html = html.replace(durRe, '$10:31$2');
-
-/* (b) slide 9 — drop "הדרך להסכם רחב"; only the business model stays, centred.
-   Every piece of it sits on its own line in the export, so remove whole lines. */
-const bizCuts = [
-  ['bm-road heading', /^[ \t]*<h3 class="abs bm-road"[^\n]*\n/gm, 1],
-  ['bm-step columns', /^[ \t]*<div class="abs bm-step"[^\n]*\n/gm, 3],
-  ['roadmap arrows',  /^[ \t]*<path d="M(?:1230 672 H1120|800 672 H690)"[^\n]*\n/gm, 2],
-];
-for (const [label, re, expect] of bizCuts) {
-  const hits = (html.match(re) || []).length;
-  must(label + ' removed (' + expect + ')', hits === expect);
-  html = html.replace(re, '');
-}
-// the two surviving arrows sit on the icon centreline, which moves down with the columns
-must('business arrow 1', html.includes('d="M1250 276 H1180"'));
-must('business arrow 2', html.includes('d="M710 276 H640"'));
-html = html.replace('d="M1250 276 H1180"', 'd="M1250 450 H1180"')
-           .replace('d="M710 276 H640"', 'd="M710 450 H640"');
-// the closing line waited 2.6 s for a roadmap that no longer builds in front of it
-const bizEnd = /(<p class="statement" data-a="focus" style="--d:)2600(">המודל מחבר)/;
-must('business closing line matched', bizEnd.test(html));
-html = html.replace(bizEnd, '$11450$2');
-
-/* (c) "רצועה אחת. כל שעון." moves from the main deck to the appendix */
-const prodRe = /<!-- 07 · product -->\r?\n(<section class="slide dark" id="product"[\s\S]*?\r?\n<\/section>)\r?\n\r?\n/;
-const prod = html.match(prodRe);
-must('product slide found', !!prod);
-if (prod) {
-  html = html.replace(prodRe, '');
-  const moved = prod[1].replace('id="product" data-title=', 'id="product" data-appendix="4" data-title=');
-  must('product tagged as appendix 4', moved.includes('data-appendix="4"'));
-  const anchor = '  <div id="sweep" aria-hidden="true"></div>';
-  must('sweep anchor found', html.includes(anchor));
-  html = html.replace(anchor, '\n<!-- Appendix 4 · product (moved out of the main deck) -->\n' + moved + '\n\n' + anchor);
-
-  // a card for it on the appendix divider, and the web-app link becomes 5
-  const linkCard = '<a class="ap-card ap-link"';
-  must('appendix link card found', html.includes(linkCard));
-  const card = '<button class="ap-card" data-goto="product" data-a="focus" style="--d:520">'
-    + '<span class="ap-n"><bdi>4</bdi></span>'
-    + '<span class="ap-ico"><svg viewBox="0 0 24 24" aria-hidden="true">'
-    + '<rect x="7" y="6" width="10" height="12" rx="2.6"/><path d="M9.5 6V3.6h5V6M9.5 18v2.4h5V18"/>'
-    + '<path class="acc" d="M9.2 12h1.6l.9-2.1 1.4 4.2 1-2.1h1.7"/></svg></span>'
-    + '<span class="ap-t">רצועה אחת. כל שעון.</span><span class="ap-s">קונספט עיצובי בתלת-ממד</span></button>\n    ';
-  html = html.replace(linkCard, card + linkCard);
-  html = html.replace(/(<a class="ap-card ap-link"[^>]*style="--d:520">)<span class="ap-n"><bdi>4<\/bdi>/,
-    (_m, a) => a.replace('--d:520', '--d:600') + '<span class="ap-n"><bdi>5</bdi>');
-  must('web-app card renumbered to 5', /ap-link[^>]*><span class="ap-n"><bdi>5<\/bdi>/.test(html));
-}
-
-/* ---------- 3. web-appropriate failure copy ---------- */
+/* ---------- 4. web-appropriate failure copy ---------- */
 const oldFail = 'הסרטון לא נטען בדפדפן הזה. נסו שוב, או פתחו את הגרסה ללא אינטרנט ב-Chrome.';
 must('video failure copy matched', html.includes(oldFail));
 html = html.split(oldFail).join('הסרטון לא נטען. בדקו את החיבור לאינטרנט ונסו שוב.');
 
-/* ---------- 4. the wordmark, as a favicon and for the boot screen ---------- */
+/* ---------- 5. the wordmark, as favicon and for the boot screen ---------- */
 const mark = html.match(/<img class="mark white" src="(data:image\/webp;base64,([A-Za-z0-9+/=]+))"/);
 must('wordmark found', !!mark);
 if (mark) fs.writeFileSync(path.join(outDir, 'favicon.webp'), Buffer.from(mark[2], 'base64'));
 const markUri = mark ? mark[1] : '';
+// the export ships an emoji favicon; use the brand instead
+const emojiIcon = /<link rel="icon" href="data:image\/svg\+xml,[^"]*">/;
+must('emoji favicon matched', emojiIcon.test(html));
+html = html.replace(emojiIcon, '<link rel="icon" type="image/webp" href="favicon.webp">');
 
-/* ---------- 5. head: link preview, mesh preload, mobile CSS ---------- */
+/* ---------- 6. head: the half of the link preview the export omits, + mobile CSS ---------- */
+must('og:title already present', html.includes('og:title'));     // we only add what is missing
 const head = `
 <link rel="canonical" href="${ORIGIN}/">
-<link rel="icon" type="image/webp" href="favicon.webp">
 <link rel="preload" href="model.json" as="fetch" type="application/json">
-<meta name="theme-color" content="#050D1B">
-<meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="he_IL">
 <meta property="og:site_name" content="Cyphix">
 <meta property="og:url" content="${ORIGIN}/">
-<meta property="og:title" content="Cyphix — t:invent">
-<meta property="og:description" content="ECG רב-לידי ברצועה לבישה. מצגת לתוכנית t:invent, הטכניון.">
 <meta property="og:image" content="${ORIGIN}/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="675">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Cyphix — t:invent">
-<meta name="twitter:description" content="ECG רב-לידי ברצועה לבישה. מצגת לתוכנית t:invent, הטכניון.">
+<meta name="twitter:title" content="Cyphix — ECG רב-לידי ברצועה לבישה">
+<meta name="twitter:description" content="מצגת לתוכנית t:invent, מרכז מהודר לממציאים, הטכניון">
 <meta name="twitter:image" content="${ORIGIN}/og.png">
 <script>/* start the mesh download while the rest of the document is still streaming */
 window.__cyModelReady=fetch('model.json').then(function(r){return r.ok?r.json():null;})
   .then(function(d){ window.__cyModel=d; return d; }).catch(function(){ return null; });</script>
 <style>
-/* ===== post-export editorial changes (see section 2.5) ===== */
-/* the business model is alone on its slide now, so it sits in the middle of it */
-#business .bm-col{top:370px}
-/* the appendix gained a fifth card */
-#appendix .ap-grid{grid-template-columns:repeat(5,1fr);gap:18px}
-#appendix .ap-card{padding:28px 26px 30px}
-#appendix .ap-t{font-size:31px;margin-top:20px}
-#appendix .ap-s{font-size:21px}
-#appendix .ap-n{top:24px;left:24px;font-size:20px}
-#appendix .ap-ico{width:64px;height:64px;border-radius:17px}
-#appendix .ap-ico svg{width:34px!important;height:34px!important}
-
 /* ===== boot screen: the document is one file, so the first slide cannot paint early ===== */
 #boot{position:fixed;inset:0;z-index:300;display:grid;place-items:center;
   background:radial-gradient(1200px 800px at 50% 25%,#15305A 0%,#0B1A30 48%,#050D1B 100%)}
@@ -220,12 +179,12 @@ body.ask-rotate #viewport,body.ask-rotate #ui,body.ask-rotate #hint{visibility:h
 must('head close tag present', html.includes('</head>'));
 html = html.replace('</head>', head + '</head>');
 
-/* ---------- 6. boot screen markup, as early in the body as possible ---------- */
+/* ---------- 7. boot screen markup, as early in the body as possible ---------- */
 must('body open tag present', html.includes('<body>'));
 html = html.replace('<body>', `<body>
 <div id="boot" aria-hidden="true"><div class="in"><img src="${markUri}" alt="Cyphix"><div class="bar"><i></i></div></div></div>`);
 
-/* ---------- 7. portrait guard + mobile behaviour, after the deck's own scripts ---------- */
+/* ---------- 8. portrait guard + mobile behaviour, after the deck's own scripts ---------- */
 const tail = `
 <div id="rotate" role="dialog" aria-label="סובבו את המכשיר">
   <div class="box">
@@ -273,17 +232,23 @@ const tail = `
 must('body close tag present', html.includes('</body>'));
 html = html.replace('</body>', tail + '</body>');
 
-html = html.replace(/<\/html>\s*$/, '</html>\n<!-- v1.1.0 - Cyphix t:invent deck, web build: streamed media, external mesh, portrait guard -->\n');
+html = html.replace(/<\/html>\s*$/, '</html>\n<!-- v2.0.0 - Cyphix t:invent deck, web build: external mesh, boot screen, portrait guard, link preview -->\n');
 
 fs.writeFileSync(outPath, html);
-const after = Buffer.byteLength(html);
+
+/* ---------- report ---------- */
 const mb = n => (n / 1048576).toFixed(2) + ' MB';
-console.log('source        ' + mb(before));
-console.log('video embeds  -' + mb(dropped));
+const slides = [...html.matchAll(/<section class="slide[^>]*id="([^"]+)"[^>]*>/g)].map(m => m[1]);
+const appx = [...html.matchAll(/id="([^"]+)" data-appendix="([^"]+)"/g)].map(m => m[1] + '=' + m[2]);
+console.log('export        ' + exportRoot);
+console.log('source html   ' + mb(before));
 console.log('mesh          ' + (mesh ? '-' + mb(mesh[1].length) + ' -> model.json' : 'n/a'));
-console.log('index.html    ' + mb(after));
+console.log('index.html    ' + mb(Buffer.byteLength(html)));
+console.log('videos        ' + vids.join(', ') + (stale.length ? '   (removed stale: ' + stale.join(', ') + ')' : ''));
+console.log('slides        ' + slides.length + ': ' + slides.join(' '));
+console.log('appendices    ' + appx.join(' '));
 console.log('origin        ' + ORIGIN);
 console.log('checks        ' + report.filter(r => r[1]).length + '/' + report.length + ' passed');
 report.filter(r => !r[1]).forEach(r => console.log('   FAIL: ' + r[0]));
 
-// v1.1.0 - builds the deployable deck out of the offline single-file export
+// v2.0.0 - builds the deployable deck from the export's own Website-Vercel folder

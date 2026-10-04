@@ -3,98 +3,96 @@
 The Cyphix pitch deck for the **t:invent** programme (Technion), deployed as a static
 site on Vercel so it can be sent as a link and opened on any phone, tablet or laptop.
 
-This folder is **build output + the script that produces it**. The deck itself is
-authored elsewhere; here it is only reshaped for the web.
+**Live: https://cyphix-tinvent.vercel.app** — `/pdf` on the same domain serves the flat PDF.
+
+This folder is **build output + the script that produces it**. The deck is authored
+elsewhere; here it is only finished for the web.
 
 ```
 CYPHIX_TINVENT_DECK/
-├── index.html                  ← generated. 17 slides, RTL, 1920×1080 stage
+├── index.html                  ← generated. 18 slides (11 main + divider + 6 appendices)
 ├── model.json                  ← generated. the 3D strap mesh, lifted out of index.html
 ├── favicon.webp                ← generated. the wordmark, extracted from the deck
 ├── og.png                      ← the cover slide, rendered at 1200×675 for link previews
-├── media/demo.mp4              ← 11.9 MB · prototype demo, 0:31 (re-encoded, see CHANGELOG v1.1.0)
-├── media/whiteboard.mp4        ← 16.7 MB · explainer, 2:22
-├── download/Cyphix-tinvent.pdf ← 7 MB · flat fallback, served at /pdf
+├── media/demo-short.mp4        ← 8.8 MB · prototype demo, 0:32 — main deck
+├── media/demo.mp4              ← 15.2 MB · full demo, 1:06 — appendix 3
+├── media/whiteboard.mp4        ← 16.7 MB · explainer, 2:22 — appendix 6
+├── download/Cyphix-tinvent.pdf ← 7.3 MB · flat fallback, served at /pdf
 ├── vercel.json                 ← caching, /pdf rewrite, noindex
-├── tools/build.mjs             ← the only thing here written by hand
-└── tools/assets/               ← inputs the build injects (the demo poster frame)
+└── tools/build.mjs             ← the only thing here written by hand
 ```
 
-## Source of truth
+## Updating after a re-export
 
-The deck is exported from its authoring tool as a **single self-contained HTML file**:
-
-```
-C:\Users\elio1\Downloads\Cyphix-tinvent\Cyphix-tinvent\
-├── Cyphix-tinvent.html   ← 48 MB, everything inlined (this is the input)
-├── media/*.mp4           ← the same two videos, as files
-├── PDF/Cyphix-tinvent.pdf
-└── PowerPoint/Cyphix-tinvent.pptx
-```
-
-That file is built to run from `file://` with no network at all, which is exactly the
-wrong shape for the web — 42 MB of it is the two videos as base64, and another 3.1 MB
-is the 3D mesh. Nothing paints until the last byte arrives.
-
-## Rebuilding
+One command. It reads the export's own web build, copies the media and the PDF out of
+it, and applies everything below:
 
 ```bash
-node tools/build.mjs "<path to>/Cyphix-tinvent.html" .
+node tools/build.mjs "C:/Users/elio1/Downloads/Cyphix-tinvent/Cyphix-tinvent" .
+vercel --prod
 ```
 
-The script prints a check table and exits non-zero if any of its 24 assumptions about
-the source file stop holding (the video blobs, `getModel()`, the `init3D()` guard, the
-wordmark, the failure copy, and every editorial patch in section 2.5). **If the deck is re-exported and the build reports a FAIL,
-fix the script — do not deploy the output.** A failed check means the patch it was
-supposed to apply silently did nothing.
+The export folder looks like this:
 
-What it does:
+```
+Downloads/Cyphix-tinvent/Cyphix-tinvent/
+├── Website-Vercel/cyphix-tinvent/   ← THE INPUT: index.html + media/*.mp4
+├── Cyphix-tinvent.html              ← 62 MB self-contained offline copy (not used)
+├── PDF/Cyphix-tinvent.pdf           ← copied to download/
+├── media/                           ← the same videos again
+└── PowerPoint/
+```
 
-1. **Videos stream from `/media`** instead of being decoded out of base64. Removes
-   42 MB and, on iOS, the memory spike of turning a 23 MB data: URL into a Blob.
-2. **The mesh moves to `model.json`**, preloaded in parallel while the document is
-   still streaming. `getModel()` reads the fetched copy; `init3D()` gained a retry so a
-   3D slide reached before the mesh lands recovers instead of caching the failure
-   forever (it memoises per viewer kind — one early miss would have been permanent).
-3. **A boot screen** — wordmark + progress bar — covers the ~1.4 MB the browser still
-   has to download before the first slide can exist.
-4. **Portrait on a phone asks the reader to rotate.** The stage is a fixed 1920×1080
+Since 2026-10-04 the authoring tool emits `Website-Vercel/` itself, with the videos
+already as files. Before that there was only the single self-contained HTML, and this
+script had to strip 42 MB of base64 video out of it (see CHANGELOG v1.0.0). It now
+**refuses to build** if `Website-Vercel/` is missing, rather than producing half a folder.
+
+## What the build adds
+
+The tool's web build is good but not finished for the web. This script:
+
+1. **Moves the 3D mesh to `model.json`** (3.1 MB of a 5.5 MB document) and preloads it in
+   parallel. A browser paints nothing until a document's last byte lands, so inlining it
+   delays the first slide by its whole size. `getModel()` reads the fetched copy, and
+   `init3D()` gained a retry — it memoises per viewer kind, so a 3D slide reached before
+   the mesh arrived would otherwise cache that failure for the rest of the session. If
+   the mesh never arrives, both 3D slides fall back to their still image.
+2. **A boot screen** — wordmark and progress bar — over the ~1.3 MB that still has to
+   download before the first slide can exist.
+3. **Portrait on a phone asks the reader to rotate.** The stage is a fixed 1920×1080
    scaled to fit; in portrait on a 390 px phone that is 390×219, and 25 px body text
    lands at about 5 px. There is a "show anyway" escape hatch.
-5. Link-preview metadata, a favicon, and copy that no longer tells the reader to open
-   an offline file in Chrome.
-6. **Editorial changes made after the export** (section 2.5): the slide 6 poster and
-   duration, the business slide with its roadmap removed and re-centred, and moving
-   "רצועה אחת. כל שעון." into the appendix. These live in the build script because
-   `index.html` is generated — editing it by hand would not survive the next build.
-   The deck's own source file in Downloads is never modified.
+4. **The other half of the link preview**: `og:image` (og.png), `og:url`, `og:type` and
+   the twitter tags. The export has `og:title` and `og:description` but no picture, so
+   the link would arrive as a bare line in WhatsApp or Slack.
+5. **The Cyphix wordmark as the favicon**, in place of the export's emoji data-URI.
+6. **Video-failure copy** that doesn't tell a web reader to open an offline file in Chrome.
 
-Result: `index.html` 48 MB → 2.3 MB (≈1.4 MB gzipped), first slide in well under a
-second on the test machine, videos streamed on demand with range requests.
+Every one of those is asserted. The script prints a check table and **exits non-zero if
+any assumption about the export stops holding** — a FAIL means a patch silently did
+nothing, so fix the script rather than deploying the output.
 
-## Deploying
+`og.png` is not regenerated by the build. If the cover slide changes, re-render it:
+screenshot the live deck at 1200×675 with `#hint,#ui` hidden.
 
-```bash
-vercel --prod        # from this folder
-```
-
-`.vercelignore` keeps `tools/` and the docs out of the deployment. `vercel.json` sets
-`X-Robots-Tag: noindex` — this is a deck sent to a named reader, not a public page.
-Remove that header if it should be indexable.
-
-If the production domain ever changes, pass it to the build so the `og:` tags point at
-the right origin — they must be absolute or WhatsApp/Slack previews break:
+If the production domain changes, pass it so the `og:` URLs stay absolute — relative
+ones break every link preview:
 
 ```bash
-node tools/build.mjs "<source>.html" . https://your-domain.example
+node tools/build.mjs "<export root>" . https://your-domain.example
 ```
 
 ## Verification
 
-`tsc` has no opinion here and a clean build proves nothing, so the deck is driven in a
-real browser before every deploy: all 17 slides walked at 1440×900, 390×844, 844×390
-and 1024×768, plus a touch pass on an iPhone user agent covering swipe, tap, the
-toolbar, the slide index, video playback and the 3D product slide. See CHANGELOG.md for
-what that run found.
+A clean build proves nothing here — dead tap targets, off-screen elements and broken
+layouts all pass it. The deck is driven in a real browser before every deploy: every
+slide walked at 1440×900, 390×844, 844×390 and 1024×768, **every video in the deck
+played**, both 3D viewers checked, plus a touch pass under an iPhone user agent covering
+swipe, tap, the toolbar, the slide index, video-from-tap and the portrait card. See
+CHANGELOG.md for what those runs have caught.
 
-// v1.1.0 — how the deployable deck is produced and what the build actually changes
+Chrome with an iPhone user agent is **not** Safari — different video stack, different
+memory limits, different fullscreen. Open the link once on a real phone before sending it.
+
+// v2.0.0 — how the deployable deck is produced and what the build adds to the export

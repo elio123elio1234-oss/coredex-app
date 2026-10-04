@@ -1,5 +1,50 @@
 # Changelog — CYPHIX_TINVENT_DECK
 
+## v2.0.0 — 2026-10-04
+
+Rebuilt from a new export. The deck was re-authored and the export itself changed shape,
+so the build script changed with it.
+
+**The export now ships its own web build.** `Website-Vercel/cyphix-tinvent/` contains an
+index.html with the videos already as files — no base64 blobs. That folder is the input
+now, instead of the 62 MB single-file `Cyphix-tinvent.html`. The script asserts this on
+every run and refuses to build, with an explanation, if a future export goes back to the
+self-contained shape — rather than quietly producing a broken folder.
+
+**All three editorial patches from v1.1.0 are gone.** The new deck already has them, made
+properly in the authoring tool: the short demo clip on the prototype slide, the business
+slide without "הדרך להסכם רחב", and "רצועה אחת. כל שעון." in the appendix. Re-applying
+them would have been fighting the source. The hand-encoded 12.5 MB video is dropped in
+favour of the export's own 8.8 MB cut of the same footage, which is better compressed
+(2.3 Mbps, 30 fps) and already faststart.
+
+**The deck itself:** 11 main slides (was 12) and 6 appendices (was 4). New appendices
+`how` ("איך זה עובד?") and `demofull` ("הדגמה מלאה", the full 1:06 demo), with the 0:32
+short cut now on the main prototype slide. Three videos instead of two.
+
+**What this script still adds,** since the tool's build does not:
+
+- the 3.1 MB mesh out of the document into `model.json`, preloaded in parallel — the
+  tool's index.html is 5.5 MB and nothing paints until its last byte lands;
+- the boot screen over the ~1.3 MB that still has to arrive first;
+- the portrait rotate prompt;
+- `og:image`, `og:url` and the twitter tags — the export has `og:title` and
+  `og:description` but no picture, so the link would arrive as a bare line;
+- the Cyphix wordmark as the favicon, replacing an emoji (🫀) data-URI;
+- video-failure copy that does not tell a web reader to open an offline file in Chrome.
+
+It also copies the media and the PDF out of the export and deletes any video left in the
+deployment that the new deck no longer references, so one command updates everything.
+
+**Verified** on the live site: 18 slides walked at 1440×900, 390×844, 844×390 and
+1024×768 with no console errors and no failed requests; **all three videos played** on
+every viewport (0:32, 1:06, 2:22 — the check now exercises every video in the deck
+instead of only the first); both 3D viewers initialised from the external mesh. Plus the
+touch pass under an iPhone UA: swipe, tap, toolbar, index, video-from-tap, the 3D slide,
+and the portrait card with its escape hatch.
+
+**Not verified:** still nothing on a physical iPhone or Android handset.
+
 ## v1.1.0 — 2026-10-04
 
 Three editorial changes, requested after the first deploy. All three are implemented as
