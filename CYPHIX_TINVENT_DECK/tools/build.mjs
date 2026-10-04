@@ -68,6 +68,71 @@ if (mesh) {
     viewers[kind]=null;`);
 }
 
+/* ---------- 2.5 editorial changes requested after the export ----------
+   These belong here, not in the exported HTML: that file is the authoring tool's
+   output and gets overwritten on every re-export. Each patch asserts its match. */
+
+/* (a) slide 6 — the demo video was replaced by the 31 s prototype clip */
+const newPoster = path.join(path.dirname(new URL(import.meta.url).pathname.slice(1)), 'assets', 'demo-poster.webp');
+if (fs.existsSync(newPoster)) {
+  const uri = 'data:image/webp;base64,' + fs.readFileSync(newPoster).toString('base64');
+  const posterRe = /(src="media\/demo\.mp4"[^>]*><\/video>\s*<img class="poster" src=")data:image\/webp;base64,[A-Za-z0-9+/=]+(")/;
+  must('demo poster matched', posterRe.test(html));
+  html = html.replace(posterRe, (_m, a, b) => a + uri + b);
+} else { must('demo poster asset present', false); }
+const durRe = /(<span>סרטון הדגמה<\/span><bdi class="n">)1:06(<\/bdi>)/;
+must('demo duration label matched', durRe.test(html));
+html = html.replace(durRe, '$10:31$2');
+
+/* (b) slide 9 — drop "הדרך להסכם רחב"; only the business model stays, centred.
+   Every piece of it sits on its own line in the export, so remove whole lines. */
+const bizCuts = [
+  ['bm-road heading', /^[ \t]*<h3 class="abs bm-road"[^\n]*\n/gm, 1],
+  ['bm-step columns', /^[ \t]*<div class="abs bm-step"[^\n]*\n/gm, 3],
+  ['roadmap arrows',  /^[ \t]*<path d="M(?:1230 672 H1120|800 672 H690)"[^\n]*\n/gm, 2],
+];
+for (const [label, re, expect] of bizCuts) {
+  const hits = (html.match(re) || []).length;
+  must(label + ' removed (' + expect + ')', hits === expect);
+  html = html.replace(re, '');
+}
+// the two surviving arrows sit on the icon centreline, which moves down with the columns
+must('business arrow 1', html.includes('d="M1250 276 H1180"'));
+must('business arrow 2', html.includes('d="M710 276 H640"'));
+html = html.replace('d="M1250 276 H1180"', 'd="M1250 450 H1180"')
+           .replace('d="M710 276 H640"', 'd="M710 450 H640"');
+// the closing line waited 2.6 s for a roadmap that no longer builds in front of it
+const bizEnd = /(<p class="statement" data-a="focus" style="--d:)2600(">המודל מחבר)/;
+must('business closing line matched', bizEnd.test(html));
+html = html.replace(bizEnd, '$11450$2');
+
+/* (c) "רצועה אחת. כל שעון." moves from the main deck to the appendix */
+const prodRe = /<!-- 07 · product -->\r?\n(<section class="slide dark" id="product"[\s\S]*?\r?\n<\/section>)\r?\n\r?\n/;
+const prod = html.match(prodRe);
+must('product slide found', !!prod);
+if (prod) {
+  html = html.replace(prodRe, '');
+  const moved = prod[1].replace('id="product" data-title=', 'id="product" data-appendix="4" data-title=');
+  must('product tagged as appendix 4', moved.includes('data-appendix="4"'));
+  const anchor = '  <div id="sweep" aria-hidden="true"></div>';
+  must('sweep anchor found', html.includes(anchor));
+  html = html.replace(anchor, '\n<!-- Appendix 4 · product (moved out of the main deck) -->\n' + moved + '\n\n' + anchor);
+
+  // a card for it on the appendix divider, and the web-app link becomes 5
+  const linkCard = '<a class="ap-card ap-link"';
+  must('appendix link card found', html.includes(linkCard));
+  const card = '<button class="ap-card" data-goto="product" data-a="focus" style="--d:520">'
+    + '<span class="ap-n"><bdi>4</bdi></span>'
+    + '<span class="ap-ico"><svg viewBox="0 0 24 24" aria-hidden="true">'
+    + '<rect x="7" y="6" width="10" height="12" rx="2.6"/><path d="M9.5 6V3.6h5V6M9.5 18v2.4h5V18"/>'
+    + '<path class="acc" d="M9.2 12h1.6l.9-2.1 1.4 4.2 1-2.1h1.7"/></svg></span>'
+    + '<span class="ap-t">רצועה אחת. כל שעון.</span><span class="ap-s">קונספט עיצובי בתלת-ממד</span></button>\n    ';
+  html = html.replace(linkCard, card + linkCard);
+  html = html.replace(/(<a class="ap-card ap-link"[^>]*style="--d:520">)<span class="ap-n"><bdi>4<\/bdi>/,
+    (_m, a) => a.replace('--d:520', '--d:600') + '<span class="ap-n"><bdi>5</bdi>');
+  must('web-app card renumbered to 5', /ap-link[^>]*><span class="ap-n"><bdi>5<\/bdi>/.test(html));
+}
+
 /* ---------- 3. web-appropriate failure copy ---------- */
 const oldFail = 'הסרטון לא נטען בדפדפן הזה. נסו שוב, או פתחו את הגרסה ללא אינטרנט ב-Chrome.';
 must('video failure copy matched', html.includes(oldFail));
@@ -103,6 +168,18 @@ const head = `
 window.__cyModelReady=fetch('model.json').then(function(r){return r.ok?r.json():null;})
   .then(function(d){ window.__cyModel=d; return d; }).catch(function(){ return null; });</script>
 <style>
+/* ===== post-export editorial changes (see section 2.5) ===== */
+/* the business model is alone on its slide now, so it sits in the middle of it */
+#business .bm-col{top:370px}
+/* the appendix gained a fifth card */
+#appendix .ap-grid{grid-template-columns:repeat(5,1fr);gap:18px}
+#appendix .ap-card{padding:28px 26px 30px}
+#appendix .ap-t{font-size:31px;margin-top:20px}
+#appendix .ap-s{font-size:21px}
+#appendix .ap-n{top:24px;left:24px;font-size:20px}
+#appendix .ap-ico{width:64px;height:64px;border-radius:17px}
+#appendix .ap-ico svg{width:34px!important;height:34px!important}
+
 /* ===== boot screen: the document is one file, so the first slide cannot paint early ===== */
 #boot{position:fixed;inset:0;z-index:300;display:grid;place-items:center;
   background:radial-gradient(1200px 800px at 50% 25%,#15305A 0%,#0B1A30 48%,#050D1B 100%)}
@@ -196,7 +273,7 @@ const tail = `
 must('body close tag present', html.includes('</body>'));
 html = html.replace('</body>', tail + '</body>');
 
-html = html.replace(/<\/html>\s*$/, '</html>\n<!-- v1.0.0 - Cyphix t:invent deck, web build: streamed media, external mesh, portrait guard -->\n');
+html = html.replace(/<\/html>\s*$/, '</html>\n<!-- v1.1.0 - Cyphix t:invent deck, web build: streamed media, external mesh, portrait guard -->\n');
 
 fs.writeFileSync(outPath, html);
 const after = Buffer.byteLength(html);
@@ -209,4 +286,4 @@ console.log('origin        ' + ORIGIN);
 console.log('checks        ' + report.filter(r => r[1]).length + '/' + report.length + ' passed');
 report.filter(r => !r[1]).forEach(r => console.log('   FAIL: ' + r[0]));
 
-// v1.0.0 - builds the deployable deck out of the offline single-file export
+// v1.1.0 - builds the deployable deck out of the offline single-file export

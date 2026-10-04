@@ -12,11 +12,12 @@ CYPHIX_TINVENT_DECK/
 ├── model.json                  ← generated. the 3D strap mesh, lifted out of index.html
 ├── favicon.webp                ← generated. the wordmark, extracted from the deck
 ├── og.png                      ← the cover slide, rendered at 1200×675 for link previews
-├── media/demo.mp4              ← 15.2 MB · prototype demo, 1:06
+├── media/demo.mp4              ← 11.9 MB · prototype demo, 0:31 (re-encoded, see CHANGELOG v1.1.0)
 ├── media/whiteboard.mp4        ← 16.7 MB · explainer, 2:22
 ├── download/Cyphix-tinvent.pdf ← 7 MB · flat fallback, served at /pdf
 ├── vercel.json                 ← caching, /pdf rewrite, noindex
-└── tools/build.mjs             ← the only thing here written by hand
+├── tools/build.mjs             ← the only thing here written by hand
+└── tools/assets/               ← inputs the build injects (the demo poster frame)
 ```
 
 ## Source of truth
@@ -41,9 +42,9 @@ is the 3D mesh. Nothing paints until the last byte arrives.
 node tools/build.mjs "<path to>/Cyphix-tinvent.html" .
 ```
 
-The script prints a check table and exits non-zero if any of its 11 assumptions about
+The script prints a check table and exits non-zero if any of its 24 assumptions about
 the source file stop holding (the video blobs, `getModel()`, the `init3D()` guard, the
-wordmark, the failure copy). **If the deck is re-exported and the build reports a FAIL,
+wordmark, the failure copy, and every editorial patch in section 2.5). **If the deck is re-exported and the build reports a FAIL,
 fix the script — do not deploy the output.** A failed check means the patch it was
 supposed to apply silently did nothing.
 
@@ -62,8 +63,13 @@ What it does:
    lands at about 5 px. There is a "show anyway" escape hatch.
 5. Link-preview metadata, a favicon, and copy that no longer tells the reader to open
    an offline file in Chrome.
+6. **Editorial changes made after the export** (section 2.5): the slide 6 poster and
+   duration, the business slide with its roadmap removed and re-centred, and moving
+   "רצועה אחת. כל שעון." into the appendix. These live in the build script because
+   `index.html` is generated — editing it by hand would not survive the next build.
+   The deck's own source file in Downloads is never modified.
 
-Result: `index.html` 48 MB → 2.35 MB (≈1.4 MB gzipped), first slide in well under a
+Result: `index.html` 48 MB → 2.3 MB (≈1.4 MB gzipped), first slide in well under a
 second on the test machine, videos streamed on demand with range requests.
 
 ## Deploying
@@ -91,4 +97,4 @@ and 1024×768, plus a touch pass on an iPhone user agent covering swipe, tap, th
 toolbar, the slide index, video playback and the 3D product slide. See CHANGELOG.md for
 what that run found.
 
-// v1.0.0 — how the deployable deck is produced and what the build actually changes
+// v1.1.0 — how the deployable deck is produced and what the build actually changes

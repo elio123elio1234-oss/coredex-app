@@ -1,5 +1,35 @@
 # Changelog — CYPHIX_TINVENT_DECK
 
+## v1.1.0 — 2026-10-04
+
+Three editorial changes, requested after the first deploy. All three are implemented as
+patches inside `tools/build.mjs`, not as edits to `index.html` — that file is generated,
+so a hand-edit would vanish on the next build. Each patch asserts the text it expects to
+find and the build now runs 24 checks instead of 11.
+
+- **Slide 6 — new demo video.** `ECG_How_It_Works_31s_1080p60.mp4` replaces the old
+  1:06 clip. The source was 26.5 MB for 31 s (6.8 Mbps, 1080p60); re-encoded with x264
+  CRF 23, preset slow, faststart, original AAC copied — **12.5 MB**, still smaller than
+  the 15.9 MB file it replaces. The duration label follows it from 1:06 to 0:31, and the
+  poster is a new frame (7.2 s, the "close the circuit" shot). The video's own title card
+  was tried as the poster first and rejected: the play button lands in the middle of
+  "Wearable 6-Lead ECG".
+- **Slide 9 — the business model stands alone.** "הדרך להסכם רחב" is gone: its heading,
+  its three steps and the two arrows that fed them. The three remaining columns are
+  centred in the space that opened up (`.bm-col` top 196 → 370, arrows 276 → 450). The
+  closing line had a 2.6 s entrance delay timed to land after a roadmap that no longer
+  builds in front of it — retimed to 1.45 s, so it arrives just after the last column.
+- **"רצועה אחת. כל שעון." moved to the appendix.** It is appendix 4 now, after the
+  explainer, with its 3D viewer intact. The main deck is 12 slides instead of 13 and the
+  counters follow. The appendix divider gained a fifth card for it, and the web-app link
+  renumbered from 4 to 5; the grid went from four columns to five with slightly tighter
+  cards.
+
+**Verified** on the live site: slide order and appendix numbering read back from the DOM,
+all 17 slides walked at 1440×900, 390×844, 844×390 and 1024×768 with no console errors
+and no failed requests, the new video playing from /media with `duration: 31.3` on every
+viewport. The three changed slides were looked at, not just counted.
+
 ## v1.0.0 — 2026-10-04
 
 First web build of the t:invent deck, for sending to the programme manager as a link.
