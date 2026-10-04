@@ -1,0 +1,7 @@
+# Vercel project link + local build cache
+.vercel/
+node_modules/
+
+.vercel
+
+# v1.0.0 - keeps the Vercel project link out of git

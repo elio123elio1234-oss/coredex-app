@@ -1,0 +1,7 @@
+tools/
+README.md
+CHANGELOG.md
+node_modules/
+.DS_Store
+
+# v1.0.0 - keeps the build script and docs out of the deployment
