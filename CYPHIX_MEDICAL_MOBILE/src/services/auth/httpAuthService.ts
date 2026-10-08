@@ -37,15 +37,24 @@ import {
   type AuthSession,
   type AuthTokens,
   type Credentials,
+  type EmailChangeConfirmInput,
+  type EmailChangeConfirmResult,
+  type EmailChangeInput,
+  type EmailChangeRequestResult,
   type EmailVerifyInput,
   type EmailVerifyRequestResult,
   type EmailVerifyResult,
+  type PasswordChangeInput,
+  type PasswordChangeResult,
   type PasswordForgotInput,
   type PasswordForgotResult,
   type PasswordResetInput,
   type RefreshOutcome,
   type RegistrationInput,
+  type SessionsResult,
+  type SessionsRevokedResult,
   type SessionUser,
+  type SessionView,
 } from '@cyphix/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { toPortraitDataUrl } from '@/services/media/photoPicker';
@@ -73,24 +82,25 @@ interface ServerErrorBody {
   error?: { code?: string; message?: string };
 }
 
-interface PostOptions {
+interface RequestOptions {
   /** Attach the bearer token; on a 401, refresh ONCE and retry ONCE — the
       same policy httpBaseQuery applies to every data call. */
   auth?: boolean;
+  method?: 'POST' | 'GET' | 'DELETE';
 }
 
-/** POST json → json. Empty bodies (204) resolve to undefined. */
-async function post<T>(path: string, body: unknown, opts: PostOptions = {}): Promise<T> {
+/** json → json. Empty bodies (204) resolve to undefined. */
+async function request<T>(path: string, body: unknown, opts: RequestOptions = {}): Promise<T> {
   const send = async (): Promise<Response> => {
     const bearer = opts.auth ? getAccessToken() : null;
     try {
       return await fetch(`${apiRoot()}${path}`, {
-        method: 'POST',
+        method: opts.method ?? 'POST',
         headers: {
-          'content-type': 'application/json',
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
           ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
         },
-        body: JSON.stringify(body),
+        body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch {
       /* A phone is offline far more often than a laptop, and "no signal" is
@@ -119,6 +129,9 @@ async function post<T>(path: string, body: unknown, opts: PostOptions = {}): Pro
     else if (res.status === 409) code = 'email-taken';
     else if (res.status === 429) code = 'rate-limited';
     else if (res.status === 400 && serverCode === 'invalid_token') code = 'invalid-link';
+    /* Before the message heuristic: "the current password is incorrect"
+       contains the word too, and is not a weak password. */
+    else if (res.status === 400 && serverCode === 'wrong_password') code = 'wrong-password';
     else if (res.status === 400 && message?.toLowerCase().includes('password')) {
       code = 'weak-password';
     }
@@ -128,6 +141,10 @@ async function post<T>(path: string, body: unknown, opts: PostOptions = {}): Pro
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
 }
+
+/** POST json → json (the historical name; everything auth posts). */
+const post = <T,>(path: string, body: unknown, opts: RequestOptions = {}): Promise<T> =>
+  request<T>(path, body, opts);
 
 /**
  * Upload the portrait the wizard collected, once the account exists.
@@ -492,6 +509,46 @@ export class HttpAuthService implements MobileAuthService {
     return post<EmailVerifyRequestResult>(AUTH_ROUTES.verifyEmailRequest, {}, { auth: true });
   }
 
+  /* ── Account self-service (server v0.12.0, shared AUTH_ROUTES) ── */
+
+  /** The server keeps THIS session (the access token names it) and ends
+      every other one; the enclave's tokens stay valid. */
+  async changePassword(input: PasswordChangeInput): Promise<PasswordChangeResult> {
+    return post<PasswordChangeResult>(AUTH_ROUTES.changePassword, input, { auth: true });
+  }
+
+  async requestEmailChange(input: EmailChangeInput): Promise<void> {
+    await post<EmailChangeRequestResult>(
+      AUTH_ROUTES.changeEmail,
+      { newEmail: input.newEmail.trim().toLowerCase(), password: input.password },
+      { auth: true },
+    );
+  }
+
+  async confirmEmailChange(input: EmailChangeConfirmInput): Promise<EmailChangeConfirmResult> {
+    return post<EmailChangeConfirmResult>(AUTH_ROUTES.changeEmailConfirm, input);
+  }
+
+  async listSessions(): Promise<SessionView[]> {
+    const r = await request<SessionsResult>(AUTH_ROUTES.sessions, undefined, {
+      auth: true,
+      method: 'GET',
+    });
+    return r.sessions;
+  }
+
+  async revokeSession(id: string): Promise<void> {
+    await request<void>(AUTH_ROUTES.session(id), undefined, { auth: true, method: 'DELETE' });
+  }
+
+  async revokeOtherSessions(): Promise<number> {
+    const r = await request<SessionsRevokedResult>(AUTH_ROUTES.sessions, undefined, {
+      auth: true,
+      method: 'DELETE',
+    });
+    return r.revoked;
+  }
+
   /** No SMS gateway on either side. The code is FIXED and shown on the
       step, exactly as in the mock: a hidden random code would make the
       step impossible to finish, and a real-looking one would let a patient
@@ -543,3 +600,7 @@ export class HttpAuthService implements MobileAuthService {
 // v2.5.0 — Account recovery against server v0.11.0: forgot / reset / verify-email /
 //          request-verification. `post` can carry the bearer (refresh once, retry
 //          once), maps 429 → rate-limited and `invalid_token` → invalid-link.
+// v2.6.0 — Account self-service against server v0.12.0: change password, change
+//          e-mail (+ confirm), list / revoke sessions. `post` is a thin name over
+//          `request` (GET / DELETE too); `wrong_password` → wrong-password ahead of
+//          the "password" message heuristic.

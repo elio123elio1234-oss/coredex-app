@@ -50,6 +50,9 @@ import {
 } from '@/components/atoms/Illustration';
 import BackgroundSelectRow from '@/components/molecules/BackgroundSelectRow';
 import ConfirmDialog from '@/components/molecules/ConfirmDialog';
+import ChangeEmailSheet from '@/components/organisms/Account/ChangeEmailSheet';
+import ChangePasswordSheet from '@/components/organisms/Account/ChangePasswordSheet';
+import SessionsSheet from '@/components/organisms/Account/SessionsSheet';
 import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
@@ -135,6 +138,10 @@ export default function SettingsScreen() {
      spinner over the whole Settings screen would be the wrong signal. */
   const [verifyState, setVerifyState] = useState<'idle' | 'sending' | 'sent' | 'already'>(
     'idle',
+  );
+  /* Which Account sheet is up (server v0.12.0). One at a time. */
+  const [accountSheet, setAccountSheet] = useState<'password' | 'email' | 'sessions' | null>(
+    null,
   );
   const appLockEnabled = useAppSelector((st) => st.auth.appLockEnabled);
   /* Whether the OS can honour a lock at all — asked once, on mount, and
@@ -516,6 +523,24 @@ export default function SettingsScreen() {
               }
             />
           ) : null}
+          {/* Account self-service (server v0.12.0, LAUNCH_PLAN 1.4b). Each row
+              raises a sheet; the work and its outcome stay inside it. Same
+              three rows, same copy as the web. */}
+          <SettingsRow
+            label={tr('setAccountChangePassword')}
+            description={tr('setAccountChangePasswordDesc')}
+            onPress={() => setAccountSheet('password')}
+          />
+          <SettingsRow
+            label={tr('setAccountChangeEmail')}
+            description={tr('setAccountChangeEmailDesc')}
+            onPress={() => setAccountSheet('email')}
+          />
+          <SettingsRow
+            label={tr('setAccountSessions')}
+            description={tr('setAccountSessionsDesc')}
+            onPress={() => setAccountSheet('sessions')}
+          />
           <SettingsRow
             label={tr('setAccountRole')}
             value={<SettingsChip label={tr(ROLE_LABEL_KEY[user?.role ?? 'patient'])} />}
@@ -738,6 +763,12 @@ export default function SettingsScreen() {
         }}
         onCancel={() => setConfirmSignOut(false)}
       />
+      <ChangePasswordSheet
+        visible={accountSheet === 'password'}
+        onClose={() => setAccountSheet(null)}
+      />
+      <ChangeEmailSheet visible={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
+      <SessionsSheet visible={accountSheet === 'sessions'} onClose={() => setAccountSheet(null)} />
     </View>
   );
 }
@@ -763,6 +794,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.3.0 — Account: "Change password", "Change e-mail" and "Devices & sessions"
+//          rows, each raising its sheet (server v0.12.0, LAUNCH_PLAN 1.4b).
 // v3.2.0 — ECG Device gains a TEMPORARY "Lead debug" row (behind
 //          LEAD_DEBUG_SCREEN_ENABLED) that pushes the bring-up screen.
 // v3.2.0 — About carries a LAST LAUNCH row: where the boot actually went, in

@@ -11,16 +11,22 @@
 import { useCallback, useMemo } from 'react';
 import type {
   Credentials,
+  EmailChangeConfirmInput,
+  EmailChangeInput,
   EmailVerifyInput,
+  PasswordChangeInput,
   PasswordResetInput,
   RegistrationInput,
 } from '@cyphix/shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
+  changePassword as changePasswordThunk,
   clearAuthError,
+  confirmEmailChange as confirmEmailChangeThunk,
   loginUser,
   logoutUser,
   registerUser,
+  requestEmailChange as requestEmailChangeThunk,
   requestEmailVerification as requestEmailVerificationThunk,
   resetPassword as resetPasswordThunk,
   verifyEmail as verifyEmailThunk,
@@ -61,6 +67,21 @@ export function useAuth() {
     [dispatch],
   );
 
+  /* Account self-service (server v0.12.0). Sessions are not here: they
+     are a list with its own loading state — see useSessions. */
+  const changePassword = useCallback(
+    (input: PasswordChangeInput) => dispatch(changePasswordThunk(input)).unwrap(),
+    [dispatch],
+  );
+  const requestEmailChange = useCallback(
+    (input: EmailChangeInput) => dispatch(requestEmailChangeThunk(input)).unwrap(),
+    [dispatch],
+  );
+  const confirmEmailChange = useCallback(
+    (input: EmailChangeConfirmInput) => dispatch(confirmEmailChangeThunk(input)).unwrap(),
+    [dispatch],
+  );
+
   return useMemo(
     () => ({
       user,
@@ -76,6 +97,9 @@ export function useAuth() {
       resetPassword,
       verifyEmail,
       requestEmailVerification,
+      changePassword,
+      requestEmailChange,
+      confirmEmailChange,
     }),
     [
       user,
@@ -89,9 +113,13 @@ export function useAuth() {
       resetPassword,
       verifyEmail,
       requestEmailVerification,
+      changePassword,
+      requestEmailChange,
+      confirmEmailChange,
     ],
   );
 }
 
+// v1.2.0 — changePassword / requestEmailChange / confirmEmailChange (account self-service).
 // v1.1.0 — resetPassword / verifyEmail / requestEmailVerification (account recovery).
 // v1.0.0 — Sign-in/registration hook (the only auth surface a screen sees).

@@ -1,5 +1,54 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.102.0 - 2026-10-09 - change your password, change your e-mail, see your devices
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package, no
+native change: the sheets are the app's own `BottomSheet`, the fields are
+the sign-up's `AuthField`, and the third link rides the `cyphix://` scheme
+that build 17 already registers.
+
+**Why.** LAUNCH_PLAN step 1.4b (hole M7, the first three of its five).
+After v0.101.0 a patient could recover an account they were locked out
+of, but not look after one they were in: no way to change the password
+without pretending to forget it, no way to fix a sign-up address, and no
+way to know — let alone end — which devices were signed in. Server
+v0.12.0 and web v1.64.0 (same day) carry the other halves.
+
+**What — Settings → Account, three new rows, each a sheet.**
+- **Change password** (`ChangePasswordSheet`): current + new, with the
+  sign-up's strength meter. The server proves the current one — a miss
+  is "the current password is incorrect", its own code
+  (`wrong-password`), because nothing is wrong with the account — and on
+  success ends every OTHER device. This phone stays, and the sheet says
+  whether anything was signed out.
+- **Change e-mail** (`ChangeEmailSheet`): new address + password. On
+  success a link went to the NEW inbox and a notice to the old one, and
+  nothing has changed yet — the sheet says so, with the address. "That is
+  already your address" is caught before the password is sent.
+- **Devices & sessions** (`SessionsSheet`, `useSessions`): every signed-in
+  device, newest activity first — what it is (the server's user-agent
+  through shared `describeUserAgent`, never the raw string; the device
+  mock names this phone from `Platform.OS`), signed in since, last used,
+  address — with "Sign out" per device and "Sign out of all other
+  devices", both confirmed by the platform alert first because they are
+  remote. This phone's row is marked and is not revocable from the list.
+
+**What — the third link.** `cyphix://change-email?token=` (or the web URL
+pasted into a dev client) is spent by `AuthLinkListener` wherever the app
+is — signed in, out, mid-wizard — and answered with an alert that NAMES
+the address now on the account; expired / taken by another account /
+something went wrong are three different sentences. A phone signed in as
+that person sees the Account row move without a refetch.
+
+**Mock.** The device mock implements the same contract to the server's
+rules: the current password is proven, a change ends every other
+"device", the link is printed to the console as a `cyphix://` URL and
+moves the account only when spent, and the devices list has one real row
+per sign-in on this phone — nothing invented.
+
+**Verified.** `tsc --noEmit` + parent CI (mobile + shared typecheck).
+🔬 Not yet touched on a device — all four PARITY rows say so.
+
 ## v0.101.1 - 2026-10-09 - words for the new failure code (shared v1.20.0)
 
 **Why.** `@cyphix/shared` v1.20.0 adds the account self-service contract

@@ -28,7 +28,12 @@
 import { useEffect, useRef } from 'react';
 import { Alert, Linking } from 'react-native';
 import { parseAuthLinkUrl } from '@cyphix/shared';
-import { authLinkConsumed, authLinkReceived, verifyEmail } from '@/features/auth/authSlice';
+import {
+  authLinkConsumed,
+  authLinkReceived,
+  confirmEmailChange,
+  verifyEmail,
+} from '@/features/auth/authSlice';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
@@ -79,6 +84,33 @@ export default function AuthLinkListener() {
       return;
     }
 
+    /* The new-address link (server v0.12.0): spent like a verification
+       link, wherever the app is. The outcome names the address, because
+       "updated" alone would not say WHICH one the account is on now. */
+    if (pending.kind === 'change-email') {
+      handling.current = true;
+      const { token } = pending;
+      dispatch(authLinkConsumed());
+      dispatch(confirmEmailChange({ token }))
+        .unwrap()
+        .then((r) =>
+          Alert.alert(tr('authEmailChangedTitle'), tr('authEmailChangedBody', { email: r.email })),
+        )
+        .catch((code: unknown) => {
+          if (code === 'invalid-link') {
+            Alert.alert(tr('authEmailChangeFailedTitle'), tr('authEmailChangeFailedBody'));
+          } else if (code === 'email-taken') {
+            Alert.alert(tr('authEmailChangeFailedTitle'), tr('authEmailChangeTakenBody'));
+          } else {
+            Alert.alert(tr('authErrUnknown'));
+          }
+        })
+        .finally(() => {
+          handling.current = false;
+        });
+      return;
+    }
+
     if (pending.kind === 'reset' && user) {
       dispatch(authLinkConsumed());
       Alert.alert(tr('authResetSignedInTitle'), tr('authResetSignedInBody'));
@@ -89,4 +121,5 @@ export default function AuthLinkListener() {
   return null;
 }
 
+// v1.1.0 — Spends the third link, cyphix://change-email?token= (server v0.12.0).
 // v1.0.0 — Deep-link intake for the reset and verification links (server v0.11.0).

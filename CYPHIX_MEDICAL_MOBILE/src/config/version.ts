@@ -1,8 +1,13 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.101.1';
-export const APP_BUILD_LABEL = 'words for the new wrong-password failure code (shared v1.20.0); no behaviour change';
+export const APP_VERSION = '0.102.0';
+export const APP_BUILD_LABEL = 'Settings -> Account can change your password (every other device signs out), change your e-mail (a link to the new address confirms it, and opens the app) and list your devices & sessions with remote sign-out';
 
+// v0.102.0 - ACCOUNT SELF-SERVICE (server v0.12.0, LAUNCH_PLAN 1.4b). JS only - OTA.
+//            Three Account rows raise three sheets: change password, change
+//            e-mail, devices & sessions. The new-address link
+//            (cyphix://change-email?token=) is spent by AuthLinkListener
+//            wherever the app is and answered with an alert naming the address.
 // v0.101.1 - The exhaustive error-code map gains 'wrong-password' (shared
 //            v1.20.0, the account self-service contract). Compile fix only;
 //            the phone's own change password / e-mail / sessions screens

@@ -21,8 +21,13 @@ import {
   type AuthErrorCode,
   type AuthLink,
   type Credentials,
+  type EmailChangeConfirmInput,
+  type EmailChangeConfirmResult,
+  type EmailChangeInput,
   type EmailVerifyInput,
   type EmailVerifyRequestResult,
+  type PasswordChangeInput,
+  type PasswordChangeResult,
   type PasswordResetInput,
   type RegistrationInput,
   type RegistrationProfile,
@@ -329,6 +334,52 @@ export const requestEmailVerification = createAsyncThunk<
   }
 });
 
+/* ── Account self-service (server v0.12.0) ─────────────────────────── */
+
+/** Settings → Account → "Change password". Touches no `status`: the sheet
+    keeps its own busy/error state, and the session stays — the server
+    ends every OTHER device, not this one. */
+export const changePassword = createAsyncThunk<
+  PasswordChangeResult,
+  PasswordChangeInput,
+  { rejectValue: AuthErrorCode }
+>('auth/changePassword', async (input, { rejectWithValue }) => {
+  try {
+    return await authService.changePassword(input);
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+/** Settings → Account → "Change e-mail". Nothing changes on the principal
+    here: the address moves only when the link in the NEW inbox is spent. */
+export const requestEmailChange = createAsyncThunk<
+  void,
+  EmailChangeInput,
+  { rejectValue: AuthErrorCode }
+>('auth/requestEmailChange', async (input, { rejectWithValue }) => {
+  try {
+    await authService.requestEmailChange(input);
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+/** The e-mailed link (cyphix://change-email?token=), spent by
+    AuthLinkListener wherever the app is. The signed-in principal learns
+    the new address without a refetch. */
+export const confirmEmailChange = createAsyncThunk<
+  EmailChangeConfirmResult,
+  EmailChangeConfirmInput,
+  { rejectValue: AuthErrorCode }
+>('auth/confirmEmailChange', async (input, { rejectWithValue }) => {
+  try {
+    return await authService.confirmEmailChange(input);
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
 export const logoutUser = createAsyncThunk('auth/logout', async (_arg, { getState }) => {
   const current = (getState() as { auth: AuthState }).auth.user;
   await authService.logout();
@@ -572,6 +623,14 @@ const authSlice = createSlice({
            person; the principal learns the fact without a refetch. */
         if (state.user) state.user.emailVerified = true;
       })
+      .addCase(confirmEmailChange.fulfilled, (state, action) => {
+        /* Same reasoning: the new address is the account's now, and the
+           click proved the mailbox. */
+        if (state.user) {
+          state.user.email = action.payload.email;
+          state.user.emailVerified = true;
+        }
+      })
       /* Sign-in and registration land the same way — except that
          registration also latches `justRegistered`, so they cannot share
          one matcher. RTK requires every addCase BEFORE any addMatcher. */
@@ -654,6 +713,8 @@ export default authSlice.reducer;
 //          latch. Before this, "offline" and "revoked" were the same value and
 //          the app took the harsher reading, which revoked nothing and cost the
 //          patient their session on every lift, tunnel and cold start.
+// v1.3.0 — Account self-service thunks (changePassword, requestEmailChange,
+//          confirmEmailChange); a confirmed e-mail change updates the principal.
 // v1.2.0 — Account recovery: resetPassword (lands like a sign-in), verifyEmail,
 //          requestEmailVerification, and `pendingLink` — the e-mailed link the OS
 //          handed the app, waiting for whichever flow handles its kind.

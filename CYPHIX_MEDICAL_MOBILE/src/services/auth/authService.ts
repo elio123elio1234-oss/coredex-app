@@ -39,14 +39,20 @@ import {
   MIN_PASSWORD_LENGTH,
   type AuthSession,
   type Credentials,
+  type EmailChangeConfirmInput,
+  type EmailChangeConfirmResult,
+  type EmailChangeInput,
   type EmailVerifyInput,
   type EmailVerifyRequestResult,
+  type PasswordChangeInput,
+  type PasswordChangeResult,
   type PasswordForgotInput,
   type PasswordResetInput,
   type RefreshOutcome,
   type RegistrationInput,
   type RegistrationProfile,
   type SessionUser,
+  type SessionView,
 } from '@cyphix/shared';
 import { ENV } from '@/config/env';
 import { setAccessToken } from '@/services/api/tokenStore';
@@ -77,16 +83,32 @@ interface StoredAccount {
     The link is printed to the console, which is the offline build's mailbox,
     as `cyphix://…` — paste it into the dev client's URL field to open it. */
 interface MockLink {
-  purpose: 'reset' | 'verify';
+  purpose: 'reset' | 'verify' | 'change-email';
   userId: string;
   expiresAt: number;
+  /** For 'change-email': the address the link was "sent" to. */
+  newEmail?: string;
 }
 const mockLinks = new Map<string, MockLink>();
 const MOCK_LINK_TTL_MS = 30 * 60 * 1000;
 
+/** The mock's "devices": one entry per sign-in on this phone, so the
+    Devices & sessions list is real for what the mock can know. Nothing is
+    invented — a second row appears only after a second sign-in. */
+interface MockSession {
+  id: string;
+  userId: string;
+  createdAt: string;
+  lastSeenAt: string;
+}
+const MOCK_SESSIONS_KEY = 'cyphix:auth:mock-sessions';
+const MOCK_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 /** Which account is signed in. The token itself lives in the enclave. */
 interface StoredSessionPointer {
   userId: string;
+  /** Which MockSession this sign-in is (absent before v2.3.0). */
+  sessionId?: string;
 }
 
 function delay(ms: number): Promise<void> {
@@ -119,6 +141,25 @@ async function writeJson(key: string, value: unknown): Promise<void> {
 
 function newToken(): string {
   return `mock-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** Sign this phone in as `userId`: an access token, the session pointer,
+    and a row in the mock's devices list (what a refresh-token family is
+    on the real server). The remembered pointer is NOT touched here. */
+async function openMockSession(userId: string): Promise<string> {
+  const token = newToken();
+  setAccessToken(token);
+  const now = new Date().toISOString();
+  const session: MockSession = {
+    id: `sess-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    userId,
+    createdAt: now,
+    lastSeenAt: now,
+  };
+  const all = (await readJson<MockSession[]>(MOCK_SESSIONS_KEY)) ?? [];
+  await writeJson(MOCK_SESSIONS_KEY, [...all, session]);
+  await writeJson(SESSION_KEY, { userId, sessionId: session.id } satisfies StoredSessionPointer);
+  return token;
 }
 
 /** Project a stored account down to the minimal principal the app holds
@@ -190,9 +231,7 @@ class MockAuthService implements MobileAuthService {
     if ((await hashPassword(password)) !== account.passwordHash) {
       throw new AuthError('invalid-credentials');
     }
-    const token = newToken();
-    setAccessToken(token);
-    await writeJson(SESSION_KEY, { userId: account.id } satisfies StoredSessionPointer);
+    const token = await openMockSession(account.id);
     await writeJson(REMEMBERED_KEY, { userId: account.id } satisfies StoredSessionPointer);
     return toSession(account, token);
   }
@@ -219,15 +258,18 @@ class MockAuthService implements MobileAuthService {
     accounts.push(account);
     await writeJson(ACCOUNTS_KEY, accounts);
 
-    const token = newToken();
-    setAccessToken(token);
-    await writeJson(SESSION_KEY, { userId: account.id } satisfies StoredSessionPointer);
+    const token = await openMockSession(account.id);
     await writeJson(REMEMBERED_KEY, { userId: account.id } satisfies StoredSessionPointer);
     return toSession(account, token);
   }
 
   async logout(): Promise<void> {
     setAccessToken(null);
+    const pointer = await readJson<StoredSessionPointer>(SESSION_KEY);
+    if (pointer?.sessionId) {
+      const all = (await readJson<MockSession[]>(MOCK_SESSIONS_KEY)) ?? [];
+      await writeJson(MOCK_SESSIONS_KEY, all.filter((s) => s.id !== pointer.sessionId));
+    }
     await writeJson(SESSION_KEY, null);
     /* The remembered pointer is deliberately KEPT: signing out is not
        forgetting the device, and biometric unlock is the reason the next
@@ -258,9 +300,7 @@ class MockAuthService implements MobileAuthService {
     if (!pointer) return null;
     const account = (await this.accounts()).find((a) => a.id === pointer.userId);
     if (!account) return null;
-    const token = newToken();
-    setAccessToken(token);
-    await writeJson(SESSION_KEY, { userId: account.id } satisfies StoredSessionPointer);
+    const token = await openMockSession(account.id);
     return toSession(account, token);
   }
 
@@ -277,23 +317,36 @@ class MockAuthService implements MobileAuthService {
      the forgot request says the same thing for every address, a reset
      signs the device in and proves the address. */
 
-  private issueLink(purpose: MockLink['purpose'], userId: string, path: string): void {
+  private issueLink(
+    purpose: MockLink['purpose'],
+    userId: string,
+    path: string,
+    newEmail?: string,
+  ): void {
     const token = newToken();
-    mockLinks.set(token, { purpose, userId, expiresAt: Date.now() + MOCK_LINK_TTL_MS });
+    mockLinks.set(token, { purpose, userId, expiresAt: Date.now() + MOCK_LINK_TTL_MS, newEmail });
     if (__DEV__) {
       console.log(
-        `[auth] mock ${purpose} link (no mail server in the offline build): cyphix://${path.slice(1)}?${AUTH_LINK_TOKEN_PARAM}=${token}`,
+        `[auth] mock ${purpose} link (no mail server in the offline build)${newEmail ? ` to ${newEmail}` : ''}: cyphix://${path.slice(1)}?${AUTH_LINK_TOKEN_PARAM}=${token}`,
       );
     }
   }
 
   /** Spends the link if it is of this purpose and unexpired; null otherwise. */
-  private spendLink(purpose: MockLink['purpose'], token: string): string | null {
+  private spendLink(purpose: MockLink['purpose'], token: string): MockLink | null {
     const link = mockLinks.get(token);
     if (!link) return null;
     mockLinks.delete(token);
     if (link.purpose !== purpose || link.expiresAt < Date.now()) return null;
-    return link.userId;
+    return link;
+  }
+
+  /** The signed-in account and its pointer, or null. */
+  private async current(): Promise<{ account: StoredAccount; pointer: StoredSessionPointer } | null> {
+    const pointer = await readJson<StoredSessionPointer>(SESSION_KEY);
+    if (!pointer) return null;
+    const account = (await this.accounts()).find((a) => a.id === pointer.userId);
+    return account ? { account, pointer } : null;
   }
 
   async requestPasswordReset({ email }: PasswordForgotInput): Promise<void> {
@@ -306,27 +359,28 @@ class MockAuthService implements MobileAuthService {
   async resetPassword({ token, password }: PasswordResetInput): Promise<AuthSession> {
     await this.settle();
     if (!password || password.length < MIN_PASSWORD_LENGTH) throw new AuthError('weak-password');
-    const userId = this.spendLink('reset', token);
-    if (!userId) throw new AuthError('invalid-link');
+    const link = this.spendLink('reset', token);
+    if (!link) throw new AuthError('invalid-link');
     const accounts = await this.accounts();
-    const account = accounts.find((a) => a.id === userId);
+    const account = accounts.find((a) => a.id === link.userId);
     if (!account) throw new AuthError('invalid-link');
     account.passwordHash = await hashPassword(password);
     account.emailVerified = true; // proving the mailbox proves the address
     await writeJson(ACCOUNTS_KEY, accounts);
-    const sessionToken = newToken();
-    setAccessToken(sessionToken);
-    await writeJson(SESSION_KEY, { userId: account.id } satisfies StoredSessionPointer);
+    /* Every other device goes, as on the server. */
+    const all = (await readJson<MockSession[]>(MOCK_SESSIONS_KEY)) ?? [];
+    await writeJson(MOCK_SESSIONS_KEY, all.filter((s) => s.userId !== account.id));
+    const sessionToken = await openMockSession(account.id);
     await writeJson(REMEMBERED_KEY, { userId: account.id } satisfies StoredSessionPointer);
     return toSession(account, sessionToken);
   }
 
   async verifyEmail({ token }: EmailVerifyInput): Promise<void> {
     await this.settle();
-    const userId = this.spendLink('verify', token);
-    if (!userId) throw new AuthError('invalid-link');
+    const link = this.spendLink('verify', token);
+    if (!link) throw new AuthError('invalid-link');
     const accounts = await this.accounts();
-    const account = accounts.find((a) => a.id === userId);
+    const account = accounts.find((a) => a.id === link.userId);
     if (!account) throw new AuthError('invalid-link');
     account.emailVerified = true;
     await writeJson(ACCOUNTS_KEY, accounts);
@@ -340,6 +394,112 @@ class MockAuthService implements MobileAuthService {
     if (account.emailVerified) return { status: 'already_verified' };
     this.issueLink('verify', account.id, AUTH_LINK_PATHS.verifyEmail);
     return { status: 'sent' };
+  }
+
+  /* ── Account self-service, mocked to the server's rules (v0.12.0) ──
+     The current password is proven first; a password change ends every
+     other device; an e-mail change is a link to the NEW address and
+     nothing moves until it is spent. */
+
+  async changePassword({ currentPassword, newPassword }: PasswordChangeInput): Promise<PasswordChangeResult> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    if ((await hashPassword(currentPassword)) !== cur.account.passwordHash) {
+      throw new AuthError('wrong-password');
+    }
+    if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) throw new AuthError('weak-password');
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === cur.account.id);
+    if (!account) throw new AuthError('unknown');
+    account.passwordHash = await hashPassword(newPassword);
+    await writeJson(ACCOUNTS_KEY, accounts);
+    const revokedSessions = await this.revokeOtherSessions();
+    /* A pending e-mail change dies with the old password. */
+    for (const [k, l] of mockLinks) {
+      if (l.purpose === 'change-email' && l.userId === account.id) mockLinks.delete(k);
+    }
+    return { changed: true, revokedSessions };
+  }
+
+  async requestEmailChange({ newEmail, password }: EmailChangeInput): Promise<void> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    if ((await hashPassword(password)) !== cur.account.passwordHash) {
+      throw new AuthError('wrong-password');
+    }
+    const email = normalizeEmail(newEmail);
+    if (email === cur.account.email) throw new AuthError('unknown', 'same address');
+    if ((await this.accounts()).some((a) => a.email === email && a.id !== cur.account.id)) {
+      throw new AuthError('email-taken');
+    }
+    this.issueLink('change-email', cur.account.id, AUTH_LINK_PATHS.changeEmail, email);
+  }
+
+  async confirmEmailChange({ token }: EmailChangeConfirmInput): Promise<EmailChangeConfirmResult> {
+    await this.settle();
+    const link = this.spendLink('change-email', token);
+    if (!link?.newEmail) throw new AuthError('invalid-link');
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === link.userId);
+    if (!account) throw new AuthError('invalid-link');
+    if (accounts.some((a) => a.email === link.newEmail && a.id !== account.id)) {
+      throw new AuthError('email-taken');
+    }
+    account.email = link.newEmail;
+    account.emailVerified = true;
+    await writeJson(ACCOUNTS_KEY, accounts);
+    return { changed: true, email: account.email };
+  }
+
+  async listSessions(): Promise<SessionView[]> {
+    await this.settle();
+    const pointer = await readJson<StoredSessionPointer>(SESSION_KEY);
+    if (!pointer) return [];
+    const all = (await readJson<MockSession[]>(MOCK_SESSIONS_KEY)) ?? [];
+    const me = all.find((s) => s.id === pointer.sessionId);
+    if (me) {
+      /* Listing IS using this device: "last seen" moves, as a rotation
+         would move it on the server. */
+      me.lastSeenAt = new Date().toISOString();
+      await writeJson(MOCK_SESSIONS_KEY, all);
+    }
+    return all
+      .filter((s) => s.userId === pointer.userId)
+      .map((s) => ({
+        id: s.id,
+        createdAt: s.createdAt,
+        lastSeenAt: s.lastSeenAt,
+        expiresAt: new Date(new Date(s.lastSeenAt).getTime() + MOCK_SESSION_TTL_MS).toISOString(),
+        ip: null,
+        /* The mock has no request to read a user-agent off; the real
+           server reads the one React Native sends. */
+        userAgent: null,
+        current: s.id === pointer.sessionId,
+      }))
+      .sort((a, b) => (a.lastSeenAt < b.lastSeenAt ? 1 : -1));
+  }
+
+  async revokeSession(id: string): Promise<void> {
+    await this.settle();
+    const pointer = await readJson<StoredSessionPointer>(SESSION_KEY);
+    if (!pointer) return;
+    const all = (await readJson<MockSession[]>(MOCK_SESSIONS_KEY)) ?? [];
+    await writeJson(MOCK_SESSIONS_KEY, all.filter((s) => !(s.id === id && s.userId === pointer.userId)));
+    if (pointer.sessionId === id) {
+      setAccessToken(null);
+      await writeJson(SESSION_KEY, null);
+    }
+  }
+
+  async revokeOtherSessions(): Promise<number> {
+    const pointer = await readJson<StoredSessionPointer>(SESSION_KEY);
+    if (!pointer) return 0;
+    const all = (await readJson<MockSession[]>(MOCK_SESSIONS_KEY)) ?? [];
+    const others = all.filter((s) => s.userId === pointer.userId && s.id !== pointer.sessionId);
+    await writeJson(MOCK_SESSIONS_KEY, all.filter((s) => !others.includes(s)));
+    return others.length;
   }
 
   /** Phone verification, mocked. The code is FIXED and shown in the UI
@@ -373,6 +533,11 @@ export const authService: MobileAuthService = ENV.hasBackend
   ? new HttpAuthService()
   : new MockAuthService();
 
+// v2.3.0 — The mock implements AuthAccountContract to the server's rules: proves the
+//          current password, a password change ends every other device, an e-mail
+//          change is a cyphix:// link to the NEW address (console) that moves the
+//          account only when spent, and a devices list with one real row per
+//          sign-in on this phone (nothing invented). Every sign-in opens a MockSession.
 // v2.2.0 — The mock implements AuthRecoveryContract honestly: one-time 30-minute
 //          links printed to the console as cyphix:// URLs, a reset that signs in,
 //          accounts that remember whether the address was verified; the principal
