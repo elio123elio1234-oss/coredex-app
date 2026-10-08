@@ -205,8 +205,8 @@ invoice_lines        (invoice_id, description, qty, unit_minor, total_minor)
 | S6 | **אי-התאמת מדיניות סיסמה**: הווב מציג "At least 6 characters" (`authPasswordHint`, `authErrWeakPassword`) בעוד השרת וה-`MIN_PASSWORD_LENGTH` דורשים 10 + אות + ספרה. משתמש מקבל שגיאה בלי להבין למה | ווב | ✅ **נסגר 2026-10-08** (change-set 0.2, D14): המדיניות היא 6 תווים בכל מקום — שרת v0.8.0, shared v1.17.0, ווב v1.60.0, מובייל v0.99.0 |
 | S7 | אין אימות מייל ⇒ אפשר להירשם עם מייל של מישהו אחר | שרת+ווב+מובייל | `email_verified_at`, קוד/קישור, חסימת פניות עד אימות |
 | S8 | אין הגנה על `/auth/register` מפני בוטים (רק rate-limit 10/דקה/IP) | שרת | CAPTCHA (hCaptcha/Turnstile) או לפחות honeypot + rate per-email |
-| S9 | אין כותרות אבטחה (HSTS, CSP, X-Frame-Options, Referrer-Policy) לא בשרת (`@fastify/helmet` חסר) ולא ב-`vercel.json` | שרת + ווב | הוספה |
-| S10 | 🔁 `user-scalable=no` ב-`index.html` של הווב — הפרת WCAG 1.4.4 (זום) וגם Apple דוחים כאלה ב-WebView | ווב | להסיר ולטפל בזום פנימית (כבר יש Text-size) |
+| S9 | אין כותרות אבטחה (HSTS, CSP, X-Frame-Options, Referrer-Policy) לא בשרת (`@fastify/helmet` חסר) ולא ב-`vercel.json` | שרת + ווב | 🟡 **נסגר ברובו 2026-10-08** (שרת v0.10.0 helmet, ווב v1.62.0 headers). **פתוח: CSP לווב** — אחרי מדידת כל המקורות החיצוניים (fonts, Gemini WS, ONNX worker/WASM, API) |
+| S10 | 🔁 `user-scalable=no` ב-`index.html` של הווב — הפרת WCAG 1.4.4 (זום) וגם Apple דוחים כאלה ב-WebView | ווב | ✅ **נסגר 2026-10-08** (ווב v1.62.0) |
 | S11 | סודות: `MASTER_KEY` רק ב-`.env` מקומי + Render. אין נוהל rotation, אין עותק משני מתועד | תפעול | נוהל כתוב + גיבוי ב-password manager + בדיקת שחזור |
 | S12 | אין מנגנון "התנתק מכל המכשירים" / רשימת sessions | שרת+UI | `GET/DELETE /auth/sessions` (refresh_tokens כבר מחזיק ip/user_agent) |
 | S13 | אין שינוי סיסמה / שינוי מייל בתוך החשבון | שרת+UI | `POST /auth/password` (עם הסיסמה הישנה), `POST /auth/email/change` (אימות לשני הצדדים) |
@@ -256,7 +256,7 @@ invoice_lines        (invoice_id, description, qty, unit_minor, total_minor)
 | W7 | שינוי סיסמה / מייל / sessions / מחיקת חשבון / ייצוא נתונים ב-Settings → Account | היום: שם, תפקיד, "view as role", sign out |
 | W8 | דפים סטטיים: `/about`, `/privacy`, `/terms`, `/accessibility`, `/contact`, `/help` — נגישים **גם ללא כניסה** (היום הכול מאחורי `AuthGate`) | 🔁 `AuthGate` צריך לאפשר נתיבים ציבוריים |
 | W9 | `404` אמיתי (היום redirect שקט ל-`/measure`) | |
-| W10 | `index.html`: `<meta name="description">`, favicon (אין `<link rel="icon">` — הדפדפן מציג ריק), `manifest.json` + `apple-touch-icon`, `theme-color`, `lang` דינמי (קיים דרך `I18nProvider` ✅) | |
+| W10 | `index.html`: `<meta name="description">`, favicon (אין `<link rel="icon">` — הדפדפן מציג ריק), `manifest.json` + `apple-touch-icon`, `theme-color`, `lang` דינמי (קיים דרך `I18nProvider` ✅) | 🟡 description, favicon, theme-color, noindex ✅ 2026-10-08 (v1.62.0); manifest + apple-touch-icon → 8.2 |
 | W11 | הצהרת נגישות (חוק שוויון זכויות לאנשים עם מוגבלות — חובה לאתר ישראלי) + סריקת axe + ניווט מקלדת מלא + focus-visible + `prefers-reduced-motion` | 148 `aria-*` קיימים — בסיס טוב, לא נבדק |
 | W12 | Admin area (סעיף 2) | |
 | W13 | Lead/Contact form (אם דף הנחיתה והווב יתאחדו — ראו 4.6) | |
@@ -380,8 +380,8 @@ Sentry · Uptime · סליקה (מאוחר).
 - 0.2 ✅ **2026-10-08** — מדיניות סיסמה = **6 תווים ותו לא**, בכל מקום (D14): שרת v0.8.0 (`policy/password.ts`), shared v1.17.0, ווב v1.60.0, מובייל v0.99.0 (OTA). הטקסט "לפחות 6" היה נכון כל הזמן; השרת וה-constants תוקנו אליו. נפרס שרת-קודם כדי שאף לקוח לא יקדים אותו.
 - 0.3 ✅ **2026-10-08** — ווב v1.61.0 + מובייל v0.100.0: "View as role" (מוצג בדמו / dev / אדמין אמיתי), `LEAD_DEBUG_SCREEN_ENABLED`, `DEFAULT_PREVIEW_ROLE`, כפתורי Apple/Google (`SHOW_SOCIAL_SIGN_IN`), שלב ה-OTP (`PHONE_VERIFICATION_STEP`) — כולם נגזרים מקבוע `DEMO_MODE` אחד ב-`featureFlags` של כל אפליקציה. נוספה שורה גלויה Settings → About → "מצב: הדגמה" בשני האפים. בדמו הכול נשאר בדיוק כמו היום.
 - 0.4 ✅ **2026-10-08** — מובייל v0.100.0: בדמו שלב ה-OTP נשאר עם ההודעה הקיימת "גרסת הדגמה — לא נשלחת הודעת SMS"; מחוץ לדמו השלב מדולג (טלפון → פרופיל, וחזרה אחורה בהתאם) והטלפון נשמר כלא-מאומת (D2).
-- 0.5 שרת: `@fastify/helmet`; ווב: security headers ב-`vercel.json`. (הוספה בלבד, לא משפיע על דמו.)
-- 0.6 ווב: הסרת `user-scalable=no` (נגישות; הזום הפנימי של Text-size נשאר); favicon + meta description + manifest.
+- 0.5 ✅ **2026-10-08** — שרת v0.10.0: `@fastify/helmet` (נבדק: אפס egress, אפס פגיעויות חדשות); ווב v1.62.0: HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy (camera/mic/bluetooth ל-self בלבד) ב-`vercel.json`. **CSP לווב עדיין לא** — דורש מדידה של Google Fonts / Gemini WS / ONNX worker+WASM / Render API לפני שכותבים אותו (נשאר ב-S9 כחצי הפתוח).
+- 0.6 ✅ **2026-10-08** — ווב v1.62.0: `user-scalable=no` הוסר (זום בדפדפן מותר; ה-Text-size הפנימי לא נגע), `viewport-fit=cover`, favicon (סימן המותג מדף הנחיתה), description, theme-color, `noindex`. **`manifest.json` + `apple-touch-icon` נדחו ל-8.2** (צריכים PNG ריבועי בכמה גדלים — יחד עם ליטוש החנויות/PWA).
 - 0.7 תפעול: גיבוי cron (חינמי: GitHub Actions schedule → `backup.sh` → artifact מוצפן) + uptime monitor חינמי + Sentry free tier (שרת+ווב+מובייל) + staging (Neon branch חינמי).
 - 0.8 תפעול: paid tier — **נדחה לשלב 8** (D8). בדמו ה-free tier מספיק; לא מוציאים כסף לפני השקה.
 - 0.9 CI: GitHub Actions עם `typecheck` + `expo export` + בדיקות שרת (ה-E2E הקיים כסקריפט).
