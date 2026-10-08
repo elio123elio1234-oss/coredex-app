@@ -34,6 +34,12 @@ export * from './auth/links';
    sessions" list names a device the same way on the web and the phone. */
 export * from './auth/userAgent';
 
+/* Which legal documents exist, at which version, read where — and the
+   consent a sign-up or a Settings row records against them. The text
+   itself is the web app's (public pages); this is what the three
+   systems must agree on. */
+export * from './legal/documents';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -146,6 +152,9 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.21.0 — Exports legal/documents (ids, versions, paths, consent contract,
+//           REQUIRED_CONSENTS, CONSENT_ROUTES, missingConsents) and
+//           RegistrationInput.consents (server v0.13.0, LAUNCH_PLAN 1.8).
 // v1.20.0 — Account self-service contract (server v0.12.0, LAUNCH_PLAN 1.4b):
 //           AuthAccountContract, SessionView + friends, AUTH_LINK_PATHS.changeEmail,
 //           four more AUTH_ROUTES, 'wrong-password'; links reads /change-email;

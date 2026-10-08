@@ -15,6 +15,7 @@
    ================================================================== */
 
 import type { SessionUser } from '../api/contract';
+import type { ConsentInput } from '../legal/documents';
 
 /** FHIR R4 `AdministrativeGender`, spelled out so shared stays dependency
     free. Registration records sex assigned at birth: ECG interpretation
@@ -51,6 +52,11 @@ export interface RegistrationInput extends RegistrationProfile {
   fullName: string;
   email: string;
   password: string;
+  /** The documents the person accepted on the sign-up screen, at their
+      current versions (REQUIRED_CONSENTS). Optional on the wire so an
+      older client still registers; the server records whatever arrives
+      (v0.13.0) and refuses a stale version. */
+  consents?: ConsentInput[];
 }
 
 export interface Credentials {
@@ -346,6 +352,7 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
+// v1.5.0 — RegistrationInput.consents (legal/documents, server v0.13.0, LAUNCH_PLAN 1.8).
 // v1.4.0 — Account self-service (server v0.12.0, LAUNCH_PLAN 1.4b): AuthAccountContract
 //          (change password, change e-mail + confirm, list/revoke sessions), the input
 //          and result shapes, SessionView, AUTH_LINK_PATHS.changeEmail, four more
