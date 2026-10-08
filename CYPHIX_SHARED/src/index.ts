@@ -138,6 +138,9 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.18.0 — Account recovery contract (server v0.11.0): the four e-mailed-link
+//           routes in AUTH_ROUTES, AuthRecoveryContract, AUTH_LINK_PATHS,
+//           SessionUser.email / emailVerified, two new AuthErrorCodes.
 // v1.17.0 — auth/contract: MIN_PASSWORD_LENGTH 10 → 6 (user decision 2026-10-08;
 //           server v0.8.0 enforces the same six and nothing else).
 // v1.16.0 — Exports `ecg/leadAxes`: the hexaxial angle, unit vector and

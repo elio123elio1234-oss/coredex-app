@@ -56,6 +56,17 @@ export interface SessionUser {
    * for records it does not own — which the server correctly answers 403.
    */
   linkedPatientId?: string;
+  /**
+   * The sign-in address, so an Account screen can show it (server v0.11.0).
+   * Optional: a server older than that sends nothing here.
+   */
+  email?: string;
+  /**
+   * Has this person proven they own `email` by opening the link? Absent
+   * means the server did not say — treat as UNKNOWN, never as verified.
+   * Shown, not enforced, while DEMO_MODE is on (LAUNCH_PLAN 1.3, D1).
+   */
+  emailVerified?: boolean;
 }
 
 /**
@@ -85,6 +96,7 @@ export interface AuthTokens {
   user: SessionUser;
 }
 
+// v1.4.0 — SessionUser carries optional `email` + `emailVerified` (server v0.11.0).
 // v1.3.0 — AuthTokens states the REFRESH token's lifetime, so a client that
 //          persists a session across cold starts learns the ceiling from the
 //          server instead of hard-coding it (see auth/session.ts).

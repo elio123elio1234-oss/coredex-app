@@ -70,6 +70,12 @@ export type AuthErrorCode =
   | 'email-taken'
   | 'invalid-credentials'
   | 'weak-password'
+  /** An e-mailed link that is expired, already used, or not ours. The
+      server answers every one of those with the same 400 `invalid_token`
+      on purpose; the client has nothing finer to show either. */
+  | 'invalid-link'
+  /** 429 — the server's per-IP fence on anything that sends mail. */
+  | 'rate-limited'
   | 'network'
   | 'unknown';
 
@@ -92,6 +98,78 @@ export interface AuthServiceContract {
   register(input: RegistrationInput): Promise<AuthSession>;
   logout(): Promise<void>;
 }
+
+/* ── Account recovery + mailbox proof (server v0.11.0) ─────────────── */
+
+/** `POST /auth/password/forgot`. The reply is the same whether or not the
+    address exists — that is the point of it. */
+export interface PasswordForgotInput {
+  email: string;
+}
+export interface PasswordForgotResult {
+  status: 'sent';
+}
+
+/** `POST /auth/password/reset`. Succeeds with the LOGIN envelope: the
+    server has already revoked every other session and signed this device
+    in, so the client stores the tokens exactly as after a sign-in. */
+export interface PasswordResetInput {
+  token: string;
+  password: string;
+}
+
+/** `POST /auth/email/verify/confirm`. No session needed. */
+export interface EmailVerifyInput {
+  token: string;
+}
+export interface EmailVerifyResult {
+  verified: true;
+}
+
+/** `POST /auth/email/verify/request` (signed in). `sent` is also what the
+    server says inside its 60 s per-user cooldown — nothing to enumerate. */
+export interface EmailVerifyRequestResult {
+  status: 'sent' | 'already_verified';
+}
+
+/**
+ * What a platform's auth service does with an e-mailed link.
+ *
+ * A SEPARATE interface rather than four more members on
+ * AuthServiceContract, so a platform can adopt it in its own change-set
+ * without the shared edit breaking the other platform's typecheck first
+ * (root CLAUDE.md §4: a shared change is a change to three apps). An
+ * implementation that has it declares `implements AuthServiceContract,
+ * AuthRecoveryContract`; PARITY.md says who does.
+ */
+export interface AuthRecoveryContract {
+  /** Resolves on 202. Never rejects for "no such address". */
+  requestPasswordReset(input: PasswordForgotInput): Promise<void>;
+  /** Spends the link; on success the device is signed in. Rejects with
+      `invalid-link` or `weak-password`. */
+  resetPassword(input: PasswordResetInput): Promise<AuthSession>;
+  /** Spends the link. Rejects with `invalid-link`. */
+  verifyEmail(input: EmailVerifyInput): Promise<void>;
+  /** For the signed-in account. */
+  requestEmailVerification(): Promise<EmailVerifyRequestResult>;
+}
+
+/**
+ * Where an e-mailed link lands. The WEB app owns these pages (public —
+ * the person may open them on a device that has never signed in). The
+ * phone handles the same two paths as deep links on its scheme
+ * (`cyphix://reset-password?token=…`), and the web page offers to open
+ * the app. The server builds its links from `WEB_ORIGIN` + these paths
+ * (`CYPHIX_SERVER/src/email/templates.ts`, WEB_LINK_PATHS) — an edit
+ * here is an edit there.
+ */
+export const AUTH_LINK_PATHS = {
+  verifyEmail: '/verify-email',
+  resetPassword: '/reset-password',
+} as const;
+
+/** The query parameter the link carries the token in. */
+export const AUTH_LINK_TOKEN_PARAM = 'token';
 
 /** Matches the server policy: at least 6 characters and nothing else
     (`CYPHIX_SERVER/src/policy/password.ts`). The server deploys on its own
@@ -118,6 +196,15 @@ export const AUTH_ROUTES = {
   me: '/auth/me',
   logout: '/auth/logout',
   refresh: '/auth/refresh',
+  /* Server v0.11.0 — e-mailed links (LAUNCH_PLAN 1.3 / 1.4). */
+  /** Signed in. 202 `{status:'sent'}` or 200 `{status:'already_verified'}`. */
+  verifyEmailRequest: '/auth/email/verify/request',
+  /** Public. `{token}` → `{verified:true}`, else 400 `invalid_token`. */
+  verifyEmailConfirm: '/auth/email/verify/confirm',
+  /** Public. `{email}` → always 202 `{status:'sent'}`. */
+  forgotPassword: '/auth/password/forgot',
+  /** Public. `{token, password}` → the login envelope, else 400. */
+  resetPassword: '/auth/password/reset',
 } as const;
 
 /**
@@ -125,12 +212,16 @@ export const AUTH_ROUTES = {
  *
  * Kept separate, and deliberately not merged into AUTH_ROUTES, so a client
  * cannot call one by accident and so the gap is impossible to forget: a
- * platform that offers "forgot password" or SMS verification today is
- * answering out of its own device, not out of the server (tracked in
- * CYPHIX_MEDICAL_MOBILE/PARITY.md).
+ * platform that offers SMS verification today is answering out of its own
+ * device, not out of the server (tracked in CYPHIX_MEDICAL_MOBILE/PARITY.md).
+ * `requestPasswordReset` left this list on 2026-10-08 — it is real now, as
+ * AUTH_ROUTES.forgotPassword.
  */
 export const AUTH_ROUTES_PLANNED = {
-  requestPasswordReset: '/auth/password-reset',
+  /** Signed in: `{currentPassword, newPassword}` (LAUNCH_PLAN 1.4, S13). */
+  changePassword: '/auth/password/change',
+  /** Signed in: list / revoke the account's sessions (LAUNCH_PLAN 1.4, A20). */
+  sessions: '/auth/sessions',
   requestPhoneCode: '/auth/phone/code',
   verifyPhoneCode: '/auth/phone/verify',
 } as const;
@@ -153,6 +244,11 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
+// v1.3.0 — Account recovery (server v0.11.0): AUTH_ROUTES gains the four e-mailed-link
+//          routes; AuthRecoveryContract (separate, so each platform adopts it in its
+//          own change-set); AUTH_LINK_PATHS + the token param; AuthErrorCode gains
+//          'invalid-link' and 'rate-limited'. AUTH_ROUTES_PLANNED now names
+//          changePassword + sessions instead of the reset route that exists.
 // v1.2.0 — MIN_PASSWORD_LENGTH 10 → 6 (user decision 2026-10-08); matches server v0.8.0.
 // v1.1.0 — AUTH_ROUTES now matches what CYPHIX_SERVER really serves (/auth/me,
 //          not /auth/session); unimplemented routes moved to AUTH_ROUTES_PLANNED.

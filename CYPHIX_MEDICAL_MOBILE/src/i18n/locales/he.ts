@@ -1023,6 +1023,8 @@ export const he: Record<TranslationKey, string> = {
   authErrWeakPassword: 'הסיסמה קצרה מדי.',
   authErrNetwork: 'אין חיבור. בדקו את הרשת ונסו שוב.',
   authErrUnknown: 'משהו השתבש. נסו שוב.',
+  authErrInvalidLink: 'הקישור אינו תקף או שפג תוקפו. בקשו קישור חדש.',
+  authErrRateLimited: 'יותר מדי ניסיונות. המתינו כמה דקות ונסו שוב.',
   authErrWrongCode: 'הקוד אינו תואם. בדקו ונסו שוב.',
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1383,3 +1385,4 @@ export const he: Record<TranslationKey, string> = {
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.
 // v1.26.0 — Settings → About: 'מצב' / 'הדגמה — …' (DEMO_MODE row, Hebrew).
+// v1.27.0 — authErrInvalidLink / authErrRateLimited (Hebrew).

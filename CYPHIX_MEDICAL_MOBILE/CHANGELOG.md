@@ -1,5 +1,18 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.100.1 - 2026-10-08 - two error lines for the recovery contract
+
+**JS only — NOT shipped as its own OTA; rides with v0.101.0.**
+
+`@cyphix/shared` v1.18.0 added `invalid-link` and `rate-limited` to
+`AuthErrorCode` (server v0.11.0 now has real e-mailed links), and
+`OnboardingScreen`'s `Record<AuthErrorCode, TranslationKey>` is exhaustive
+by design — so the phone had to learn the two sentences before the shared
+edit could land without breaking its typecheck (root CLAUDE.md §4). Nothing
+on screen reaches them yet; the real "forgot password" wiring is v0.101.0.
+
+**Rollback:** `restore-point-2026-10-08`.
+
 ## v0.100.0 - 2026-10-08 - one launch switch
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

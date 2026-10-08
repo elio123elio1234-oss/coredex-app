@@ -1150,6 +1150,8 @@ export const en = {
   authErrWeakPassword: 'That password is too short.',
   authErrNetwork: 'No connection. Check your network and try again.',
   authErrUnknown: 'Something went wrong. Please try again.',
+  authErrInvalidLink: 'This link is invalid or has expired. Request a new one.',
+  authErrRateLimited: 'Too many attempts. Wait a few minutes and try again.',
   authErrWrongCode: 'That code does not match. Check it and try again.',
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1581,3 +1583,4 @@ export type TranslationKey = keyof typeof en;
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.
 // v1.26.0 — Settings → About: 'Mode' / 'Demo — …' (DEMO_MODE row).
+// v1.27.0 — authErrInvalidLink / authErrRateLimited (shared AuthErrorCode v1.3.0).

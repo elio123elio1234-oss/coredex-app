@@ -1,8 +1,14 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.100.0';
-export const APP_BUILD_LABEL = 'one launch switch: every demo affordance now reads DEMO_MODE; nothing you see has changed';
+export const APP_VERSION = '0.100.1';
+export const APP_BUILD_LABEL = 'two error lines for expired links; nothing you see has changed yet';
 
+// v0.100.1 - TWO ERROR LINES. JS only - rides with the next OTA.
+//
+//            shared v1.18.0 widened AuthErrorCode for the server's new
+//            e-mailed links; the exhaustive error map on OnboardingScreen
+//            needed the two sentences. No screen reaches them yet.
+//
 // v0.100.0 - ONE LAUNCH SWITCH. JS only - OTA.
 //
 //            DEMO_MODE (config/featureFlags) is the single constant every

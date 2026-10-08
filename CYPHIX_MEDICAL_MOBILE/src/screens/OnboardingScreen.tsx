@@ -59,6 +59,8 @@ const ERROR_KEYS: Record<AuthErrorCode, TranslationKey> = {
   'email-taken': 'authErrEmailTaken',
   'invalid-credentials': 'authErrInvalidCredentials',
   'weak-password': 'authErrWeakPassword',
+  'invalid-link': 'authErrInvalidLink',
+  'rate-limited': 'authErrRateLimited',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -459,4 +461,5 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v1.0.1 — ERROR_KEYS covers 'invalid-link' / 'rate-limited' (shared v1.18.0).
 // v1.0.0 — The signed-out flow: 14 steps, one screen, the reference's scrIn.
