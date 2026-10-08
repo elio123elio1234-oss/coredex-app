@@ -3,9 +3,10 @@
 
    The confirmation deliberately does NOT say "we sent you an email". It
    says a link is on its way IF that address is on an account, because
-   confirming which addresses exist is an enumeration oracle — and
-   because, in this stage, no mail server exists at all. The wording is
-   true either way, which is the only wording worth shipping.
+   confirming which addresses exist is an enumeration oracle. Since server
+   v0.11.0 the sentence is also literally true: the server answers 202 for
+   every address and mails the ones it knows. The wording did not change —
+   it was written for exactly this answer.
    ================================================================== */
 
 import { StyleSheet, Text, View } from 'react-native';
@@ -25,6 +26,11 @@ interface Props {
   sent: boolean;
   ready: boolean;
   rtl: boolean;
+  /** The request is in flight: the button spins and refuses a second tap. */
+  busy?: boolean;
+  /** The request itself failed (no signal, rate-limited). Not "no such
+      address" — that is never reported, by design. */
+  errorMessage?: string | null;
 }
 
 export default function ForgotStep({
@@ -36,6 +42,8 @@ export default function ForgotStep({
   sent,
   ready,
   rtl,
+  busy = false,
+  errorMessage = null,
 }: Props) {
   const { t: tr } = useTranslation();
   const align = rtl ? ('right' as const) : ('left' as const);
@@ -53,6 +61,7 @@ export default function ForgotStep({
           onPress={onSend}
           palette={palette}
           enabled={ready}
+          busy={busy}
         />
       }
     >
@@ -77,6 +86,12 @@ export default function ForgotStep({
         rtl={rtl}
       />
 
+      {errorMessage != null && (
+        <Text style={[styles.error, { color: palette.weak, textAlign: align }]}>
+          {errorMessage}
+        </Text>
+      )}
+
       {sent && (
         <View
           accessibilityRole="alert"
@@ -97,6 +112,7 @@ export default function ForgotStep({
 const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '600', letterSpacing: -0.5, marginBottom: 6 },
   sub: { fontSize: 14, lineHeight: 21, marginBottom: 26 },
+  error: { marginTop: 12, fontSize: 13.5, lineHeight: 20 },
   banner: {
     marginTop: 18,
     padding: 15,
@@ -106,4 +122,6 @@ const styles = StyleSheet.create({
   bannerText: { fontSize: 13.5, lineHeight: 20 },
 });
 
+// v1.1.0 — Real now (server v0.11.0): a busy button and a line for a request that
+//          failed to leave the phone. Wording unchanged — it was already right.
 // v1.0.0 — Password reset request (enumeration-safe confirmation).

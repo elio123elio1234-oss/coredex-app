@@ -122,7 +122,7 @@ export default function SettingsScreen() {
   const { t: tr, lang, setLang, rtl } = useTranslation();
   const ble = useBle();
   const ota = useOtaUpdate();
-  const { user, logout } = useAuth();
+  const { user, logout, requestEmailVerification } = useAuth();
   const dispatch = useAppDispatch();
   const debugRole = useAppSelector((st) => st.auth.debugRole);
   const sessionRole = useAppSelector((st) => st.auth.user?.role);
@@ -131,6 +131,11 @@ export default function SettingsScreen() {
      one, which is how a demo becomes a false belief about an account. */
   const realRole: Role = sessionRole ?? 'clinician';
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  /* "Verify e-mail" row: its own little state machine — a global auth
+     spinner over the whole Settings screen would be the wrong signal. */
+  const [verifyState, setVerifyState] = useState<'idle' | 'sending' | 'sent' | 'already'>(
+    'idle',
+  );
   const appLockEnabled = useAppSelector((st) => st.auth.appLockEnabled);
   /* Whether the OS can honour a lock at all — asked once, on mount, and
      used to decide whether the row exists. See the row itself for why a
@@ -466,6 +471,51 @@ export default function SettingsScreen() {
             label={tr('setAccountName')}
             value={user?.displayName ?? DEMO_CARD.displayName}
           />
+          {/* The address and whether it is PROVEN (server v0.11.0). The chip
+              only renders when the server actually said — an older server
+              sends nothing, and "not verified" would then be a guess. Nothing
+              is gated on it in demo mode (LAUNCH_PLAN 1.3, D1). */}
+          <SettingsRow label={tr('setAccountEmail')} value={user?.email ?? '—'} />
+          {typeof user?.emailVerified === 'boolean' ? (
+            <SettingsRow
+              label={tr('setAccountEmailStatus')}
+              value={
+                <SettingsChip
+                  label={
+                    user.emailVerified
+                      ? tr('setAccountEmailVerified')
+                      : tr('setAccountEmailUnverified')
+                  }
+                  tone={user.emailVerified ? 'ok' : 'warn'}
+                />
+              }
+            />
+          ) : null}
+          {user?.emailVerified === false ? (
+            <SettingsRow
+              label={tr('setAccountVerify')}
+              description={
+                verifyState === 'sent'
+                  ? tr('setAccountVerifySent')
+                  : verifyState === 'already'
+                    ? tr('setAccountVerifyAlready')
+                    : tr('setAccountVerifyDesc')
+              }
+              disabled={verifyState !== 'idle'}
+              onPress={
+                verifyState === 'idle'
+                  ? () => {
+                      setVerifyState('sending');
+                      requestEmailVerification()
+                        .then((r) =>
+                          setVerifyState(r.status === 'already_verified' ? 'already' : 'sent'),
+                        )
+                        .catch(() => setVerifyState('idle'));
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
           <SettingsRow
             label={tr('setAccountRole')}
             value={<SettingsChip label={tr(ROLE_LABEL_KEY[user?.role ?? 'patient'])} />}
@@ -742,6 +792,8 @@ const styles = StyleSheet.create({
 // v2.2.0 — About names the frosted material this phone actually resolved.
 //          "It doesn't look like glass" has three indistinguishable causes and
 //          only the device can say which one it is.
+// v2.2.0 — Account: the e-mail address, a Verified / Not verified chip (only when the
+//          server said), and a "Verify e-mail" row that sends the link (server v0.11.0).
 // v2.1.0 — Sign out is live (with a confirmation), and the Account section
 //          shows the account that is actually signed in.
 // v2.1.0 — "Preview as role" is gated by DEMO_MODE (or dev, or a real admin); About

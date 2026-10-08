@@ -19,7 +19,11 @@ import { createAsyncThunk, createSlice, isAnyOf, type PayloadAction } from '@red
 import {
   AuthError,
   type AuthErrorCode,
+  type AuthLink,
   type Credentials,
+  type EmailVerifyInput,
+  type EmailVerifyRequestResult,
+  type PasswordResetInput,
   type RegistrationInput,
   type RegistrationProfile,
   type SessionMode,
@@ -77,6 +81,14 @@ export interface AuthState {
    * of it.
    */
   justRegistered: boolean;
+  /**
+   * An e-mailed link the OS just handed us (cyphix://reset-password?…,
+   * cyphix://verify-email?…), waiting for whoever handles that kind: a
+   * verification link is spent by `AuthLinkListener` wherever the app is;
+   * a reset link is taken by the signed-out flow (`OnboardingScreen`),
+   * which opens its reset step on it. Cleared by `authLinkConsumed`.
+   */
+  pendingLink: AuthLink | null;
   /**
    * Whether a server has confirmed this session during THIS app run.
    *
@@ -154,6 +166,7 @@ const initialState: AuthState = {
   status: 'restoring',
   error: null,
   justRegistered: false,
+  pendingLink: null,
   /* v0.69.0 — starts at the configured preview role ('admin') instead of
      `null`. See DEFAULT_PREVIEW_ROLE: a rendering default, not a grant. */
   debugRole: DEFAULT_PREVIEW_ROLE,
@@ -270,6 +283,52 @@ export const registerUser = createAsyncThunk<
   }
 });
 
+/* ── Account recovery (server v0.11.0) ─────────────────────────────── */
+
+/** Spends an e-mailed reset link. Success IS a sign-in: the server ended
+    every other session and handed this phone the login envelope. */
+export const resetPassword = createAsyncThunk<
+  { user: SessionUser; profile: RegistrationProfile },
+  PasswordResetInput,
+  { rejectValue: AuthErrorCode }
+>('auth/resetPassword', async (input, { rejectWithValue }) => {
+  try {
+    const session = await authService.resetPassword(input);
+    auditSignIn(session.user, 'password-reset');
+    return { user: session.user, profile: session.profile };
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+/** Spends an e-mailed verification link. Deliberately touches no
+    `status`: it can happen while signed in, signed out or mid-wizard, and
+    a global spinner over any of those would be the wrong signal. */
+export const verifyEmail = createAsyncThunk<
+  void,
+  EmailVerifyInput,
+  { rejectValue: AuthErrorCode }
+>('auth/verifyEmail', async (input, { rejectWithValue }) => {
+  try {
+    await authService.verifyEmail(input);
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+/** Settings → Account → "Verify e-mail". The row keeps its own state. */
+export const requestEmailVerification = createAsyncThunk<
+  EmailVerifyRequestResult,
+  void,
+  { rejectValue: AuthErrorCode }
+>('auth/requestEmailVerification', async (_arg, { rejectWithValue }) => {
+  try {
+    return await authService.requestEmailVerification();
+  } catch (err) {
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
 export const logoutUser = createAsyncThunk('auth/logout', async (_arg, { getState }) => {
   const current = (getState() as { auth: AuthState }).auth.user;
   await authService.logout();
@@ -289,6 +348,13 @@ const authSlice = createSlice({
     clearAuthError(state) {
       state.error = null;
       if (state.status === 'error') state.status = 'idle';
+    },
+    /** The OS opened the app with an e-mailed link (see `pendingLink`). */
+    authLinkReceived(state, action: PayloadAction<AuthLink>) {
+      state.pendingLink = action.payload;
+    },
+    authLinkConsumed(state) {
+      state.pendingLink = null;
     },
     /**
      * DEBUG: render the app as `role`, or `null` to go back to the real one.
@@ -482,6 +548,30 @@ const authSlice = createSlice({
         state.sessionMode = 'offline';
         state.locked = false;
       })
+      /* ── recovery ── */
+      .addCase(resetPassword.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload ?? 'unknown';
+      })
+      /* A reset lands exactly like a sign-in: a password was just set BY
+         the server for this account, which confirms the session outright. */
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.profile = action.payload.profile;
+        state.status = 'idle';
+        state.error = null;
+        state.sessionMode = 'live';
+        state.locked = false;
+      })
+      .addCase(verifyEmail.fulfilled, (state) => {
+        /* The link may be opened on a phone already signed in as that
+           person; the principal learns the fact without a refetch. */
+        if (state.user) state.user.emailVerified = true;
+      })
       /* Sign-in and registration land the same way — except that
          registration also latches `justRegistered`, so they cannot share
          one matcher. RTK requires every addCase BEFORE any addMatcher. */
@@ -516,7 +606,15 @@ const authSlice = createSlice({
   },
 });
 
-export const { appRelocked, appUnlocked, clearAuthError, debugRoleSet, welcomeAcknowledged } =
+export const {
+  appRelocked,
+  appUnlocked,
+  authLinkConsumed,
+  authLinkReceived,
+  clearAuthError,
+  debugRoleSet,
+  welcomeAcknowledged,
+} =
   authSlice.actions;
 export default authSlice.reducer;
 
@@ -556,6 +654,9 @@ export default authSlice.reducer;
 //          latch. Before this, "offline" and "revoked" were the same value and
 //          the app took the harsher reading, which revoked nothing and cost the
 //          patient their session on every lift, tunnel and cold start.
+// v1.2.0 — Account recovery: resetPassword (lands like a sign-in), verifyEmail,
+//          requestEmailVerification, and `pendingLink` — the e-mailed link the OS
+//          handed the app, waiting for whichever flow handles its kind.
 // v1.1.0 — Handles sessionExpired from the HTTP layer (refresh exhausted → the
 //          onboarding gate), matching the web slice's v2.2.0 behaviour.
 // v1.0.0 — Session + sign-in lifecycle, mirroring the web auth slice, plus the

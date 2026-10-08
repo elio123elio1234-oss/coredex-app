@@ -13,13 +13,12 @@
      logout   → POST /auth/logout    (revokes the whole token family)
 
    ── What it does NOT pretend to do ──
-   The server has no mail sender and no SMS gateway (see
-   AUTH_ROUTES_PLANNED in @cyphix/shared). The onboarding flow has a
-   forgot-password screen and a phone-verification step, so those two
-   methods answer HONESTLY out of the device — a fixed, displayed code and
-   a reset that promises nothing — instead of calling routes that would
-   404 and reading as "the server is broken". Each one is a row in
-   PARITY.md, not a silent gap.
+   The server has no SMS gateway (see AUTH_ROUTES_PLANNED in
+   @cyphix/shared), so the phone-verification step answers HONESTLY out of
+   the device — a fixed, displayed code — instead of calling a route that
+   would 404 and read as "the server is broken". A row in PARITY.md, not a
+   silent gap. (Forgot-password used to be the second such stub; since
+   server v0.11.0 it is real — see the recovery methods below.)
 
    ── And why `emailExists` says "no" here ──
    Asking a server "does this address have an account?" IS an account
@@ -38,6 +37,12 @@ import {
   type AuthSession,
   type AuthTokens,
   type Credentials,
+  type EmailVerifyInput,
+  type EmailVerifyRequestResult,
+  type EmailVerifyResult,
+  type PasswordForgotInput,
+  type PasswordForgotResult,
+  type PasswordResetInput,
   type RefreshOutcome,
   type RegistrationInput,
   type SessionUser,
@@ -68,31 +73,52 @@ interface ServerErrorBody {
   error?: { code?: string; message?: string };
 }
 
+interface PostOptions {
+  /** Attach the bearer token; on a 401, refresh ONCE and retry ONCE — the
+      same policy httpBaseQuery applies to every data call. */
+  auth?: boolean;
+}
+
 /** POST json → json. Empty bodies (204) resolve to undefined. */
-async function post<T>(path: string, body: unknown): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${apiRoot()}${path}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    /* A phone is offline far more often than a laptop, and "no signal" is
-       not "wrong password" — the UI says so because the code says so. */
-    throw new AuthError('network');
+async function post<T>(path: string, body: unknown, opts: PostOptions = {}): Promise<T> {
+  const send = async (): Promise<Response> => {
+    const bearer = opts.auth ? getAccessToken() : null;
+    try {
+      return await fetch(`${apiRoot()}${path}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      /* A phone is offline far more often than a laptop, and "no signal" is
+         not "wrong password" — the UI says so because the code says so. */
+      throw new AuthError('network');
+    }
+  };
+
+  let res = await send();
+  if (opts.auth && res.status === 401 && (await refreshSession()).kind === 'refreshed') {
+    res = await send();
   }
 
   if (!res.ok) {
+    let serverCode: string | undefined;
     let message: string | undefined;
     try {
-      message = ((await res.json()) as ServerErrorBody).error?.message;
+      const parsed = (await res.json()) as ServerErrorBody;
+      serverCode = parsed.error?.code;
+      message = parsed.error?.message;
     } catch {
       /* non-JSON error body (a proxy's 502 page, say) */
     }
     let code: AuthErrorCode = 'unknown';
     if (res.status === 401) code = 'invalid-credentials';
     else if (res.status === 409) code = 'email-taken';
+    else if (res.status === 429) code = 'rate-limited';
+    else if (res.status === 400 && serverCode === 'invalid_token') code = 'invalid-link';
     else if (res.status === 400 && message?.toLowerCase().includes('password')) {
       code = 'weak-password';
     }
@@ -436,12 +462,34 @@ export class HttpAuthService implements MobileAuthService {
     return false;
   }
 
-  /** No mail sender server-side yet. The screen's wording ("if that
-      address is on an account, a link is on its way") is already the
-      non-enumerating phrasing a real reset uses, so it stays true — it
-      just is not doing anything yet. Tracked in PARITY.md. */
-  async requestPasswordReset(_email: string): Promise<void> {
-    /* intentionally does nothing — see above */
+  /* ── Account recovery (server v0.11.0, shared AUTH_ROUTES) ── */
+
+  /** The server answers 202 whether or not the address exists; the
+      screen's wording ("if that address is on an account, a link is on
+      its way") was written for exactly that answer, and is now true
+      because something is actually sent. */
+  async requestPasswordReset(input: PasswordForgotInput): Promise<void> {
+    await post<PasswordForgotResult>(AUTH_ROUTES.forgotPassword, {
+      email: input.email.trim().toLowerCase(),
+    });
+  }
+
+  /** The server revoked every other session and answers with the login
+      envelope, so this is a sign-in from here on — stored and remembered
+      exactly like `login`. */
+  async resetPassword(input: PasswordResetInput): Promise<AuthSession> {
+    const tokens = await post<AuthTokens>(AUTH_ROUTES.resetPassword, input);
+    await storeSession(tokens);
+    await remember(tokens.user);
+    return { user: tokens.user, token: tokens.accessToken, profile: {} };
+  }
+
+  async verifyEmail(input: EmailVerifyInput): Promise<void> {
+    await post<EmailVerifyResult>(AUTH_ROUTES.verifyEmailConfirm, input);
+  }
+
+  async requestEmailVerification(): Promise<EmailVerifyRequestResult> {
+    return post<EmailVerifyRequestResult>(AUTH_ROUTES.verifyEmailRequest, {}, { auth: true });
   }
 
   /** No SMS gateway on either side. The code is FIXED and shown on the
@@ -492,3 +540,6 @@ export class HttpAuthService implements MobileAuthService {
 //          able to fail a registration — see uploadPortrait.
 // v1.0.0 — Sign-in/registration against CYPHIX_SERVER: one account across web,
 //          iOS and Android, with the not-yet-server-backed steps kept honest.
+// v2.5.0 — Account recovery against server v0.11.0: forgot / reset / verify-email /
+//          request-verification. `post` can carry the bearer (refresh once, retry
+//          once), maps 429 → rate-limited and `invalid_token` → invalid-link.

@@ -9,9 +9,22 @@
    ================================================================== */
 
 import { useCallback, useMemo } from 'react';
-import type { Credentials, RegistrationInput } from '@cyphix/shared';
+import type {
+  Credentials,
+  EmailVerifyInput,
+  PasswordResetInput,
+  RegistrationInput,
+} from '@cyphix/shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { clearAuthError, loginUser, logoutUser, registerUser } from './authSlice';
+import {
+  clearAuthError,
+  loginUser,
+  logoutUser,
+  registerUser,
+  requestEmailVerification as requestEmailVerificationThunk,
+  resetPassword as resetPasswordThunk,
+  verifyEmail as verifyEmailThunk,
+} from './authSlice';
 
 export function useAuth() {
   const dispatch = useAppDispatch();
@@ -33,6 +46,21 @@ export function useAuth() {
     dispatch(clearAuthError());
   }, [dispatch]);
 
+  /* Account recovery (server v0.11.0). `unwrap()` rejects with the
+     AuthErrorCode, so a screen can tell 'invalid-link' from the rest. */
+  const resetPassword = useCallback(
+    (input: PasswordResetInput) => dispatch(resetPasswordThunk(input)).unwrap(),
+    [dispatch],
+  );
+  const verifyEmail = useCallback(
+    (input: EmailVerifyInput) => dispatch(verifyEmailThunk(input)).unwrap(),
+    [dispatch],
+  );
+  const requestEmailVerification = useCallback(
+    () => dispatch(requestEmailVerificationThunk()).unwrap(),
+    [dispatch],
+  );
+
   return useMemo(
     () => ({
       user,
@@ -45,9 +73,25 @@ export function useAuth() {
       register,
       logout,
       clearError,
+      resetPassword,
+      verifyEmail,
+      requestEmailVerification,
     }),
-    [user, profile, status, error, login, register, logout, clearError],
+    [
+      user,
+      profile,
+      status,
+      error,
+      login,
+      register,
+      logout,
+      clearError,
+      resetPassword,
+      verifyEmail,
+      requestEmailVerification,
+    ],
   );
 }
 
+// v1.1.0 — resetPassword / verifyEmail / requestEmailVerification (account recovery).
 // v1.0.0 — Sign-in/registration hook (the only auth surface a screen sees).

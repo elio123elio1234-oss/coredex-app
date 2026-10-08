@@ -1,5 +1,62 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.101.0 - 2026-10-08 - forgot password is real; verify your e-mail
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** The `cyphix://` scheme
+has been in `app.json` since the first commit, so the native build already
+registers it and React Native's own `Linking` receives the links; no new
+package, no rebuild.
+
+**Why.** LAUNCH_PLAN step 1.6. `ForgotStep` has said "if that address is
+on an account, a link is on its way" since its v1.0.0 — honestly, because
+the sentence was true either way, and nothing was ever sent. Server
+v0.11.0 (same day) sends mail; web v1.63.0 has its pages. This is the
+phone's half.
+
+**What — the flow.** `ForgotStep` really asks (`POST /auth/password/forgot`),
+spins while it does, and shows a line if the *request* failed (no signal,
+rate-limited) — never "no such address", which the server does not say
+and the screen does not invent. A new `'reset'` step (`ResetStep`) is
+reached ONLY through an e-mailed link: one password field with the
+sign-up's strength meter, one button; success is a sign-in (the server
+ended every other session and handed the phone the login envelope,
+stored and remembered exactly like `login`). A dead link — expired, spent,
+forged — hides the field and offers "Request a new link", which goes to
+the forgot screen.
+
+**What — the links.** `AuthLinkListener` (new, mounted once above the
+gate, renders nothing) reads the launch URL and every URL that arrives
+while the app is open, parses it with shared's `parseAuthLinkUrl` (web
+URL, `cyphix://` or an Expo dev-client URL all parse the same), and puts
+the result in the auth slice as `pendingLink`. A verification link is
+spent right there, in any state, and answered with a plain alert
+(verified / expired / something went wrong — a network failure is not
+reported as an expired link); the signed-in principal learns the fact
+without a refetch. A reset link while signed OUT is taken by
+`OnboardingScreen`, which opens the reset step on it; while signed IN it
+is consumed with a one-line explanation (sign out first). The web shows
+its reset page regardless — it has a URL bar; a phone has no way back to
+the link, so the honest path is the explanation.
+
+**What — Settings → Account.** The address, a Verified / Not verified chip
+(only when the server actually said — an older server sends nothing and
+"not verified" would then be a guess), and a "Verify e-mail" row that
+sends the link and then says sent / already verified. Nothing is gated on
+verification while DEMO_MODE is on (LAUNCH_PLAN 1.3, D1).
+
+**What — plumbing.** `MobileAuthService` extends shared's
+`AuthRecoveryContract`; `HttpAuthService` implements the four calls (its
+`post` can carry the bearer — refresh once, retry once — and maps 429 and
+the server's `invalid_token`); the device mock implements the same
+contract honestly (one-time 30-minute links printed to the console as
+`cyphix://` URLs, a reset that signs in, accounts that remember whether
+the address was verified). Three thunks + hook callbacks.
+
+**Not verified on a device yet** — 🔬 in PARITY.md. Typechecks; the
+server half is proven by its CI and the web half in headless Chrome.
+
+**Rollback:** `restore-point-2026-10-08`.
+
 ## v0.100.1 - 2026-10-08 - two error lines for the recovery contract
 
 **JS only — NOT shipped as its own OTA; rides with v0.101.0.**

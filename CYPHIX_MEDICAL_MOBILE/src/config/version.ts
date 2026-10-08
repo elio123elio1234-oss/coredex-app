@@ -1,8 +1,19 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.100.1';
-export const APP_BUILD_LABEL = 'two error lines for expired links; nothing you see has changed yet';
+export const APP_VERSION = '0.101.0';
+export const APP_BUILD_LABEL = 'forgot password is real: a reset link by e-mail opens the app and signs you in; a verify-email link confirms your address; Account shows both';
 
+// v0.101.0 - FORGOT PASSWORD IS REAL. JS only - OTA.
+//
+//            Server v0.11.0 sends mail. The forgot screen now really asks
+//            for a link; the link (cyphix://reset-password?token=...) opens
+//            the app on a new ResetStep and the reply signs the phone in;
+//            a verification link is spent wherever the app is and answered
+//            with an alert; Settings -> Account shows the address, whether
+//            it is verified, and a row to send the link. The cyphix://
+//            scheme has been in app.json since the first build, so no
+//            native change: this ships OTA onto runtime 0.45.0 (build 17).
+//
 // v0.100.1 - TWO ERROR LINES. JS only - rides with the next OTA.
 //
 //            shared v1.18.0 widened AuthErrorCode for the server's new

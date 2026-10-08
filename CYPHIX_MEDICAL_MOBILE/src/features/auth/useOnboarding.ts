@@ -10,7 +10,7 @@
 
 import { useCallback, useMemo, useReducer, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import type { AuthErrorCode } from '@cyphix/shared';
+import { AuthError, type AuthErrorCode } from '@cyphix/shared';
 import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
 import { authService } from '@/services/auth/authService';
 import { useAuth } from './useAuth';
@@ -48,8 +48,13 @@ export interface Onboarding {
   progress: number;
   /** 1-based index of the current health step; 0 outside them. */
   profileIndex: number;
-  /** True once the reset e-mail has been "sent" on the forgot screen. */
+  /** True once the server has accepted the reset request (202). */
   resetSent: boolean;
+  /** The reset request is in flight. */
+  resetBusy: boolean;
+  /** The reset REQUEST failed (no signal, rate-limited) — never "no such
+      address", which the server does not say and this does not invent. */
+  resetIssue: AuthErrorCode | null;
   /** The mock SMS code, shown on the OTP step because no text is sent. */
   devCode: string | null;
   patch: (patch: DraftPatch) => void;
@@ -60,6 +65,10 @@ export interface Onboarding {
   skip: () => void;
   submitSignIn: () => void;
   sendReset: () => void;
+  /** An e-mailed reset link was opened: keep its token, show the reset step. */
+  openResetLink: (token: string) => void;
+  /** Spend the link with the new password. Success signs the phone in. */
+  submitReset: () => void;
   resendCode: () => void;
   finish: () => void;
 }
@@ -69,9 +78,12 @@ export function useOnboarding(): Onboarding {
   const [step, setStep] = useState<OnboardingStep>('welcome');
   const [issue, setIssue] = useState<StepIssue | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetIssue, setResetIssue] = useState<AuthErrorCode | null>(null);
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
-  const { login, register, error, clearError, isBusy } = useAuth();
+  const { login, register, resetPassword, error, clearError, isBusy } = useAuth();
 
   const patch = useCallback((next: DraftPatch) => {
     setIssue(null);
@@ -209,9 +221,37 @@ export function useOnboarding(): Onboarding {
   }, [login, draft]);
 
   const sendReset = useCallback(() => {
-    if (!canContinue('forgot', draft)) return;
-    void authService.requestPasswordReset(draft.email).then(() => setResetSent(true));
-  }, [draft]);
+    if (!canContinue('forgot', draft) || resetBusy) return;
+    setResetBusy(true);
+    setResetIssue(null);
+    authService
+      .requestPasswordReset({ email: draft.email.trim() })
+      .then(() => setResetSent(true))
+      .catch((err: unknown) => setResetIssue(err instanceof AuthError ? err.code : 'unknown'))
+      .finally(() => setResetBusy(false));
+  }, [draft, resetBusy]);
+
+  const openResetLink = useCallback(
+    (token: string) => {
+      setResetToken(token);
+      dispatch({ type: 'patch', patch: { newPassword: '' } });
+      go('reset');
+    },
+    [go],
+  );
+
+  const submitReset = useCallback(() => {
+    if (!canContinue('reset', draft) || !resetToken) return;
+    resetPassword({ token: resetToken, password: draft.newPassword })
+      .then(() => {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      })
+      .catch(() => {
+        /* The code is in the slice and the step renders it; a dead link
+           also offers "Request a new link" there. */
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      });
+  }, [draft, resetToken, resetPassword]);
 
   const profileIndex = isProfileStep(step) ? PROFILE_STEPS.indexOf(step) + 1 : 0;
 
@@ -226,6 +266,8 @@ export function useOnboarding(): Onboarding {
       progress: step === 'review' ? 1 : profileIndex / PROFILE_STEPS.length,
       profileIndex,
       resetSent,
+      resetBusy,
+      resetIssue,
       devCode,
       patch,
       pressKey,
@@ -235,6 +277,8 @@ export function useOnboarding(): Onboarding {
       skip,
       submitSignIn,
       sendReset,
+      openResetLink,
+      submitReset,
       resendCode,
       finish: () => void createAccount(),
     }),
@@ -247,6 +291,8 @@ export function useOnboarding(): Onboarding {
       issue,
       profileIndex,
       resetSent,
+      resetBusy,
+      resetIssue,
       devCode,
       patch,
       pressKey,
@@ -256,12 +302,16 @@ export function useOnboarding(): Onboarding {
       skip,
       submitSignIn,
       sendReset,
+      openResetLink,
+      submitReset,
       resendCode,
       createAccount,
     ],
   );
 }
 
+// v1.2.0 — Forgot really sends (busy + a failure line); the 'reset' step opened by
+//          an e-mailed link spends the token and signs the phone in (server v0.11.0).
 // v1.1.0 — Phone → OTP only under PHONE_VERIFICATION_STEP (= DEMO_MODE); otherwise
 //          phone → first profile step, number kept as unverified (D2).
 // v1.0.0 — The onboarding wizard's hook: draft, step transitions, submission.

@@ -907,6 +907,25 @@ export const he: Record<TranslationKey, string> = {
   authResetSub: 'הזינו את כתובת האימייל של החשבון. נשלח קישור לאיפוס שתקף ל‑30 דקות.',
   authResetSent: 'אם קיים חשבון עם הכתובת הזו, קישור בדרך. בדקו גם בתיקיית הספאם.',
   authSendReset: 'שליחת קישור לאיפוס',
+  authNewPasswordTitle: 'בחירת סיסמה חדשה',
+  authNewPasswordSub: 'לפחות 6 תווים. כל שאר המכשירים ינותקו.',
+  authNewPassword: 'סיסמה חדשה',
+  authSetPassword: 'שמירת הסיסמה והתחברות',
+  authRequestNewLink: 'בקשת קישור חדש',
+  authVerifiedTitle: 'האימייל אומת',
+  authVerifiedBody: 'תודה — הכתובת אושרה.',
+  authVerifyFailedTitle: 'תוקף הקישור פג',
+  authVerifyFailedBody: 'התחברו ובקשו קישור חדש מהגדרות ← חשבון.',
+  authResetSignedInTitle: 'כבר מחוברים',
+  authResetSignedInBody: 'כדי לאפס את הסיסמה, התנתקו תחילה ופתחו את הקישור שוב.',
+  setAccountEmail: 'אימייל',
+  setAccountEmailStatus: 'מצב האימייל',
+  setAccountEmailVerified: 'מאומת',
+  setAccountEmailUnverified: 'לא מאומת',
+  setAccountVerify: 'אימות אימייל',
+  setAccountVerifyDesc: 'שליחת קישור אישור לכתובת שלכם.',
+  setAccountVerifySent: 'נשלח — בדקו את תיבת הדואר ואת הספאם.',
+  setAccountVerifyAlready: 'כבר מאומת.',
 
   /* ── יצירת חשבון ── */
   authSignUpTitle: 'יצירת חשבון',
@@ -1386,3 +1405,4 @@ export const he: Record<TranslationKey, string> = {
 //          copy; the nudge-pad wording is gone with the pad.
 // v1.26.0 — Settings → About: 'מצב' / 'הדגמה — …' (DEMO_MODE row, Hebrew).
 // v1.27.0 — authErrInvalidLink / authErrRateLimited (Hebrew).
+// v1.28.0 — Account recovery: reset step, verify-link alerts, Settings → Account e-mail rows (Hebrew).

@@ -28,6 +28,9 @@ export type OnboardingStep =
   | 'welcome'
   | 'signin'
   | 'forgot'
+  /** Reached ONLY from an e-mailed reset link (cyphix://reset-password):
+      choose a new password, and the reply signs the phone in. */
+  | 'reset'
   | 'signup'
   | 'phone'
   | 'otp'
@@ -61,6 +64,7 @@ export const STEP_ORDER: readonly OnboardingStep[] = [
   'welcome',
   'signin',
   'forgot',
+  'reset',
   'signup',
   'phone',
   'otp',
@@ -80,6 +84,7 @@ export function isProfileStep(step: OnboardingStep): step is ProfileStep {
 const BACK_MAP: Partial<Record<OnboardingStep, OnboardingStep>> = {
   signin: 'welcome',
   forgot: 'signin',
+  reset: 'signin',
   signup: 'welcome',
   phone: 'signup',
   otp: 'phone',
@@ -117,6 +122,9 @@ export interface OnboardingDraft {
   fullName: string;
   email: string;
   password: string;
+  /** The reset step's new password. Separate from `password` so a reset
+      never leaks into a later sign-up attempt's field. */
+  newPassword: string;
   dialIndex: number;
   phone: string; // digits only
   otp: string;
@@ -141,6 +149,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   fullName: '',
   email: '',
   password: '',
+  newPassword: '',
   dialIndex: 0,
   phone: '',
   otp: '',
@@ -266,6 +275,8 @@ export function canContinue(step: OnboardingStep, draft: OnboardingDraft): boole
       return isEmailShaped(draft.email) && draft.password.length > 0;
     case 'forgot':
       return isEmailShaped(draft.email);
+    case 'reset':
+      return draft.newPassword.length >= MIN_PASSWORD_LENGTH;
     case 'signup':
       return (
         draft.fullName.trim().length > 1 &&
@@ -339,3 +350,4 @@ export function initialsOf(fullName: string): string {
 // v1.1.0 — Names are capitalised as they are typed (`capitalizeName`), in the
 //          reducer rather than in a field, so every route into the draft gets it.
 // v1.0.0 — The onboarding wizard as pure state: step order, draft, gating.
+// v1.3.0 — 'reset' step (from an e-mailed link): newPassword in the draft, back → signin.

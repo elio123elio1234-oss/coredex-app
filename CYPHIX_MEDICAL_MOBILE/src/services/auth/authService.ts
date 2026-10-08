@@ -33,10 +33,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import {
+  AUTH_LINK_PATHS,
+  AUTH_LINK_TOKEN_PARAM,
   AuthError,
   MIN_PASSWORD_LENGTH,
   type AuthSession,
   type Credentials,
+  type EmailVerifyInput,
+  type EmailVerifyRequestResult,
+  type PasswordForgotInput,
+  type PasswordResetInput,
   type RefreshOutcome,
   type RegistrationInput,
   type RegistrationProfile,
@@ -63,7 +69,20 @@ interface StoredAccount {
   displayName: string;
   role: SessionUser['role'];
   profile: RegistrationProfile;
+  /** Set by the mock verification link. Absent on older accounts = false. */
+  emailVerified?: boolean;
 }
+
+/** The mock's "sent e-mails": one-time links, in memory for this app run.
+    The link is printed to the console, which is the offline build's mailbox,
+    as `cyphix://…` — paste it into the dev client's URL field to open it. */
+interface MockLink {
+  purpose: 'reset' | 'verify';
+  userId: string;
+  expiresAt: number;
+}
+const mockLinks = new Map<string, MockLink>();
+const MOCK_LINK_TTL_MS = 30 * 60 * 1000;
 
 /** Which account is signed in. The token itself lives in the enclave. */
 interface StoredSessionPointer {
@@ -106,7 +125,13 @@ function newToken(): string {
     (data minimization — the password digest and the profile do not
     travel with the user object). */
 function toUser(account: StoredAccount): SessionUser {
-  return { id: account.id, displayName: account.displayName, role: account.role };
+  return {
+    id: account.id,
+    displayName: account.displayName,
+    role: account.role,
+    email: account.email,
+    emailVerified: account.emailVerified ?? false,
+  };
 }
 
 function toSession(account: StoredAccount, token: string): AuthSession {
@@ -247,12 +272,74 @@ class MockAuthService implements MobileAuthService {
     return (await this.accounts()).some((a) => a.email === normalized);
   }
 
-  /** Password reset. There is no mail server, so this resolves without
-      claiming anything the app cannot do — the UI says "if that address
-      is on an account, a link is on its way", which is both what a real
-      server should answer (no enumeration) and true here. */
-  async requestPasswordReset(_email: string): Promise<void> {
+  /* ── Account recovery, mocked HONESTLY: the "e-mail" is a console line ──
+     Same rules as the server (CYPHIX_SERVER v0.11.0): single-use, 30 min,
+     the forgot request says the same thing for every address, a reset
+     signs the device in and proves the address. */
+
+  private issueLink(purpose: MockLink['purpose'], userId: string, path: string): void {
+    const token = newToken();
+    mockLinks.set(token, { purpose, userId, expiresAt: Date.now() + MOCK_LINK_TTL_MS });
+    if (__DEV__) {
+      console.log(
+        `[auth] mock ${purpose} link (no mail server in the offline build): cyphix://${path.slice(1)}?${AUTH_LINK_TOKEN_PARAM}=${token}`,
+      );
+    }
+  }
+
+  /** Spends the link if it is of this purpose and unexpired; null otherwise. */
+  private spendLink(purpose: MockLink['purpose'], token: string): string | null {
+    const link = mockLinks.get(token);
+    if (!link) return null;
+    mockLinks.delete(token);
+    if (link.purpose !== purpose || link.expiresAt < Date.now()) return null;
+    return link.userId;
+  }
+
+  async requestPasswordReset({ email }: PasswordForgotInput): Promise<void> {
     await this.settle();
+    const account = (await this.accounts()).find((a) => a.email === normalizeEmail(email));
+    if (account) this.issueLink('reset', account.id, AUTH_LINK_PATHS.resetPassword);
+    /* No account: nothing happens, and nothing is said. */
+  }
+
+  async resetPassword({ token, password }: PasswordResetInput): Promise<AuthSession> {
+    await this.settle();
+    if (!password || password.length < MIN_PASSWORD_LENGTH) throw new AuthError('weak-password');
+    const userId = this.spendLink('reset', token);
+    if (!userId) throw new AuthError('invalid-link');
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === userId);
+    if (!account) throw new AuthError('invalid-link');
+    account.passwordHash = await hashPassword(password);
+    account.emailVerified = true; // proving the mailbox proves the address
+    await writeJson(ACCOUNTS_KEY, accounts);
+    const sessionToken = newToken();
+    setAccessToken(sessionToken);
+    await writeJson(SESSION_KEY, { userId: account.id } satisfies StoredSessionPointer);
+    await writeJson(REMEMBERED_KEY, { userId: account.id } satisfies StoredSessionPointer);
+    return toSession(account, sessionToken);
+  }
+
+  async verifyEmail({ token }: EmailVerifyInput): Promise<void> {
+    await this.settle();
+    const userId = this.spendLink('verify', token);
+    if (!userId) throw new AuthError('invalid-link');
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === userId);
+    if (!account) throw new AuthError('invalid-link');
+    account.emailVerified = true;
+    await writeJson(ACCOUNTS_KEY, accounts);
+  }
+
+  async requestEmailVerification(): Promise<EmailVerifyRequestResult> {
+    await this.settle();
+    const pointer = await readJson<StoredSessionPointer>(SESSION_KEY);
+    const account = pointer ? (await this.accounts()).find((a) => a.id === pointer.userId) : undefined;
+    if (!account) throw new AuthError('unknown');
+    if (account.emailVerified) return { status: 'already_verified' };
+    this.issueLink('verify', account.id, AUTH_LINK_PATHS.verifyEmail);
+    return { status: 'sent' };
   }
 
   /** Phone verification, mocked. The code is FIXED and shown in the UI
@@ -286,6 +373,10 @@ export const authService: MobileAuthService = ENV.hasBackend
   ? new HttpAuthService()
   : new MockAuthService();
 
+// v2.2.0 — The mock implements AuthRecoveryContract honestly: one-time 30-minute
+//          links printed to the console as cyphix:// URLs, a reset that signs in,
+//          accounts that remember whether the address was verified; the principal
+//          carries email + emailVerified.
 // v2.1.0 — The mock answers `revalidate()` with `offline`: with no server there
 //          is nothing to confirm and nothing to refuse, and reporting a refusal
 //          would sign a patient out of a build that has no backend by design.

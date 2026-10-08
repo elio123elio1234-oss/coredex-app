@@ -1034,6 +1034,25 @@ export const en = {
   authResetSub: 'Enter the email on your account. We will send a reset link valid for 30 minutes.',
   authResetSent: 'If that address is on an account, a link is on its way. Check your inbox and spam folder.',
   authSendReset: 'Send reset link',
+  authNewPasswordTitle: 'Choose a new password',
+  authNewPasswordSub: 'At least 6 characters. Every other device will be signed out.',
+  authNewPassword: 'New password',
+  authSetPassword: 'Set password and sign in',
+  authRequestNewLink: 'Request a new link',
+  authVerifiedTitle: 'Email verified',
+  authVerifiedBody: 'Thanks — your address is confirmed.',
+  authVerifyFailedTitle: 'This link has expired',
+  authVerifyFailedBody: 'Sign in and request a new link from Settings → Account.',
+  authResetSignedInTitle: 'Already signed in',
+  authResetSignedInBody: 'To reset the password, sign out first and open the link again.',
+  setAccountEmail: 'Email',
+  setAccountEmailStatus: 'Email status',
+  setAccountEmailVerified: 'Verified',
+  setAccountEmailUnverified: 'Not verified',
+  setAccountVerify: 'Verify email',
+  setAccountVerifyDesc: 'Send a confirmation link to your address.',
+  setAccountVerifySent: 'Sent — check your inbox and spam folder.',
+  setAccountVerifyAlready: 'Already verified.',
 
   /* ── Create account ── */
   authSignUpTitle: 'Create account',
@@ -1584,3 +1603,4 @@ export type TranslationKey = keyof typeof en;
 //          what the grey trace is. The nudge-pad wording is gone with the pad.
 // v1.26.0 — Settings → About: 'Mode' / 'Demo — …' (DEMO_MODE row).
 // v1.27.0 — authErrInvalidLink / authErrRateLimited (shared AuthErrorCode v1.3.0).
+// v1.28.0 — Account recovery: reset step, verify-link alerts, Settings → Account e-mail rows.

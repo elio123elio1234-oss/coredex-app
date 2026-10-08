@@ -27,6 +27,7 @@ import HeightStep from '@/components/organisms/Auth/HeightStep';
 import OtpStep from '@/components/organisms/Auth/OtpStep';
 import PhoneStep from '@/components/organisms/Auth/PhoneStep';
 import PhotoStep from '@/components/organisms/Auth/PhotoStep';
+import ResetStep from '@/components/organisms/Auth/ResetStep';
 import ReviewStep, { type SummaryItem } from '@/components/organisms/Auth/ReviewStep';
 import SexStep from '@/components/organisms/Auth/SexStep';
 import SignInStep from '@/components/organisms/Auth/SignInStep';
@@ -48,8 +49,8 @@ import {
 import { useOnboarding } from '@/features/auth/useOnboarding';
 import { useProfilePhoto } from '@/features/auth/useProfilePhoto';
 import { unlockWithBiometrics } from '@/services/auth/biometrics';
-import { useAppDispatch } from '@/store/hooks';
-import { restoreSession, welcomeAcknowledged } from '@/features/auth/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { authLinkConsumed, restoreSession, welcomeAcknowledged } from '@/features/auth/authSlice';
 import type { TranslationKey } from '@/i18n/config';
 import { useTranslation } from '@/i18n/useTranslation';
 import { authPalette } from '@/theme/authTheme';
@@ -81,6 +82,17 @@ export default function OnboardingScreen() {
   const dispatch = useAppDispatch();
   const flow = useOnboarding();
   const { draft, step } = flow;
+
+  /* An e-mailed reset link opened the app (or arrived while it was on
+     this flow): take the token off the slice and show the reset step on
+     it. Verification links never reach here — AuthLinkListener spends
+     them wherever the app is. */
+  const pendingLink = useAppSelector((s) => s.auth.pendingLink);
+  useEffect(() => {
+    if (pendingLink?.kind !== 'reset') return;
+    dispatch(authLinkConsumed());
+    flow.openResetLink(pendingLink.token);
+  }, [pendingLink, dispatch, flow]);
 
   const photo = useProfilePhoto(
     useCallback((uri: string) => flow.patch({ photoUri: uri }), [flow]),
@@ -262,6 +274,24 @@ export default function OnboardingScreen() {
             onSend={flow.sendReset}
             sent={flow.resetSent}
             ready={flow.ready}
+            busy={flow.resetBusy}
+            errorMessage={flow.resetIssue != null ? tr(ERROR_KEYS[flow.resetIssue]) : null}
+          />
+        );
+      case 'reset':
+        return (
+          <ResetStep
+            palette={palette}
+            rtl={rtl}
+            password={draft.newPassword}
+            onChangePassword={(newPassword) => flow.patch({ newPassword })}
+            onSubmit={flow.submitReset}
+            onBack={flow.back}
+            onRequestNewLink={() => flow.go('forgot')}
+            busy={flow.busy}
+            ready={flow.ready}
+            errorMessage={errorMessage}
+            linkDead={flow.error === 'invalid-link'}
           />
         );
       case 'signup':
@@ -461,5 +491,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v1.1.0 — The 'reset' step (ResetStep) opened by an e-mailed link via the slice's
+//          pendingLink; ForgotStep gets busy + a failure line (server v0.11.0).
 // v1.0.1 — ERROR_KEYS covers 'invalid-link' / 'rate-limited' (shared v1.18.0).
 // v1.0.0 — The signed-out flow: 14 steps, one screen, the reference's scrIn.

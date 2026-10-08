@@ -16,7 +16,12 @@
    they move to shared then — not before.
    ================================================================== */
 
-import type { AuthServiceContract, AuthSession, RefreshOutcome } from '@cyphix/shared';
+import type {
+  AuthRecoveryContract,
+  AuthServiceContract,
+  AuthSession,
+  RefreshOutcome,
+} from '@cyphix/shared';
 
 /** The account this device last signed in as. Name only — it is shown
     above the biometric button so the patient knows WHOSE record is about
@@ -26,7 +31,7 @@ export interface RememberedAccount {
   displayName: string;
 }
 
-export interface MobileAuthService extends AuthServiceContract {
+export interface MobileAuthService extends AuthServiceContract, AuthRecoveryContract {
   /**
    * Ask the authority whether the session `restore()` just opened is
    * still real, and report which of the three things happened.
@@ -59,7 +64,9 @@ export interface MobileAuthService extends AuthServiceContract {
   /** Does an account already exist for this address? Used by the sign-up
       step to fail on the field that owns the problem. */
   emailExists(email: string): Promise<boolean>;
-  requestPasswordReset(email: string): Promise<void>;
+  /* `requestPasswordReset`, `resetPassword`, `verifyEmail` and
+     `requestEmailVerification` come from AuthRecoveryContract (shared
+     v1.18.0) — real since server v0.11.0, implemented by both classes. */
   /** Returns the code to DISPLAY when no SMS was really sent, so nobody
       waits for a text that is not coming. */
   requestPhoneCode(phone: string): Promise<{ devCode: string }>;
@@ -78,3 +85,5 @@ export const MOCK_SMS_CODE = '000000';
 //          the app open offline without pretending the server agreed.
 // v1.0.0 — The two-implementation auth surface: shared contract + the device
 //          extras, so swapping mock ⇄ server is a compiler-checked change.
+// v1.3.0 — Extends AuthRecoveryContract (shared v1.18.0): the four e-mailed-link calls
+//          replace the old device-only requestPasswordReset(email) stub.

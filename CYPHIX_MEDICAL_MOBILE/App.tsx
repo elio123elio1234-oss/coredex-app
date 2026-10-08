@@ -3,6 +3,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
+import AuthLinkListener from '@/features/auth/AuthLinkListener';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
@@ -48,6 +49,10 @@ export default function App() {
                   not reset mid-recording. */}
               <BleProvider>
                 <StatusBar style="auto" />
+                {/* The e-mailed links (reset, verify) arrive as cyphix:// URLs
+                    whatever the app is showing, so the listener sits ABOVE the
+                    gate and renders nothing. */}
+                <AuthLinkListener />
                 {/* The signed-out flow stands in FRONT of the navigator,
                     not inside it: the splash, the sign-in and the
                     registration wizard have no tabs, no dock and no

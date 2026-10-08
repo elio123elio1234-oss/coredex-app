@@ -26,6 +26,10 @@ export * from './auth/contract';
    transport — which is why it is here and not in either app. */
 export * from './auth/session';
 
+/* The two URLs an auth e-mail carries, read the same way on every
+   platform: a reset link and a verification link → { kind, token }. */
+export * from './auth/links';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -138,6 +142,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.19.0 — Exports auth/links: parseAuthLinkUrl, one reader for the reset and
+//           verification links (web URL, cyphix:// scheme, Expo dev-client URL).
 // v1.18.0 — Account recovery contract (server v0.11.0): the four e-mailed-link
 //           routes in AUTH_ROUTES, AuthRecoveryContract, AUTH_LINK_PATHS,
 //           SessionUser.email / emailVerified, two new AuthErrorCodes.
