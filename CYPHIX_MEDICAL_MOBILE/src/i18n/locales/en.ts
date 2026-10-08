@@ -1098,6 +1098,20 @@ export const en = {
   authEmailChangeFailedTitle: 'This link has expired',
   authEmailChangeFailedBody: 'Request the change again from Settings → Account.',
   authEmailChangeTakenBody: 'That address now belongs to another account. Choose a different one from Settings → Account.',
+  /* ── Legal documents + consent (server v0.13.0) ── */
+  legalTermsTitle: 'Terms of Use',
+  legalPrivacyTitle: 'Privacy Notice',
+  authConsentBefore: 'I have read and agree to the ',
+  authConsentAnd: ' and the ',
+  authConsentAfter: '.',
+  authConsentA11y: 'I have read and agree to the Terms of Use and the Privacy Notice',
+  setAboutLegalDesc: 'The documents you accepted when creating your account',
+  setAboutConsent: 'Consent on record',
+  setAboutConsentDesc: 'The version of the Terms and Privacy Notice this account accepted',
+  setAboutConsentOk: 'Accepted',
+  setAboutConsentMissing: 'Not on record',
+  setAboutConsentUnknown: 'Could not load',
+  setAboutConsentAccept: 'Tap to accept the current Terms of Use and Privacy Notice',
 
   /* ── Create account ── */
   authSignUpTitle: 'Create account',
@@ -1653,3 +1667,5 @@ export type TranslationKey = keyof typeof en;
 // v1.28.1 — authErrWrongPassword (shared AuthErrorCode v1.4.0).
 // v1.29.0 — Account self-service: change password / e-mail sheets, the devices list,
 //           the change-email link alerts, device + client words (server v0.12.0).
+// v1.30.0 — Legal documents: the review-step consent box, About legal + consent rows
+//           (server v0.13.0).

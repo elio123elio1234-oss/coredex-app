@@ -24,7 +24,9 @@
    ================================================================== */
 
 import { StatusBar } from 'expo-status-bar';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, StyleSheet, Text, View } from 'react-native';
+import { legalDocUrl } from '@cyphix/shared';
+import { ENV } from '@/config/env';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -140,11 +142,26 @@ export default function WelcomeStep({ palette, onCreateAccount, onSignIn, rtl }:
             </>
           )}
         </View>
+        {/* The two names are LINKS now (v2.1.0): they open the published
+            pages on the web app. They were bold words leading nowhere
+            since v1.0.0 — a promise with no document behind it. */}
         <Text style={[styles.legal, { color: palette.label, textAlign: align }]}>
           {tr('authLegalBefore')}
-          <Text style={{ color: palette.body, fontWeight: '600' }}>{tr('authLegalTerms')}</Text>
+          <Text
+            accessibilityRole="link"
+            onPress={() => void Linking.openURL(legalDocUrl('terms', ENV.webOrigin))}
+            style={{ color: palette.body, fontWeight: '600', textDecorationLine: 'underline' }}
+          >
+            {tr('authLegalTerms')}
+          </Text>
           {tr('authLegalAnd')}
-          <Text style={{ color: palette.body, fontWeight: '600' }}>{tr('authLegalPrivacy')}</Text>
+          <Text
+            accessibilityRole="link"
+            onPress={() => void Linking.openURL(legalDocUrl('privacy', ENV.webOrigin))}
+            style={{ color: palette.body, fontWeight: '600', textDecorationLine: 'underline' }}
+          >
+            {tr('authLegalPrivacy')}
+          </Text>
           {tr('authLegalAfter')}
         </Text>
       </View>
@@ -180,6 +197,8 @@ const styles = StyleSheet.create({
   legal: { fontSize: 11.5, lineHeight: 17, marginTop: 8, paddingHorizontal: 2 },
 });
 
+// v2.1.0 — "Terms" and "Privacy Notice" in the legal line open the published pages
+//          (legalDocUrl on ENV.webOrigin). They led nowhere before (LAUNCH_PLAN 1.8, M5).
 // v2.0.0 — The photograph FADES IN when it is ready instead of appearing
 //          between two frames: the layers are explicit now (image / scrim /
 //          copy), so only the picture animates and the wordmark never waits

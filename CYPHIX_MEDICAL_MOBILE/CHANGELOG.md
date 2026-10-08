@@ -1,5 +1,41 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.103.0 - 2026-10-09 - the Terms and the Privacy Notice exist, and sign-up asks
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package: the
+documents are the web app's public pages, opened with React Native's own
+`Linking`; the consent box is a `Switch` on the existing review step.
+
+**Why.** LAUNCH_PLAN step 1.8 (holes M5, R1–R3, R8). The welcome screen
+has said "By continuing you agree to the Terms and Privacy Notice" since
+v1.0.0 — bold words leading nowhere, with no document behind them and no
+record that anyone agreed. Web v1.65.0 publishes the two documents
+(version 1.0, he/en, at `/terms` and `/privacy`); server v0.13.0 records
+the acceptance; this is the phone's part.
+
+**What.**
+- **WelcomeStep:** "Terms" and "Privacy Notice" are links now (underlined,
+  `accessibilityRole="link"`) and open the published pages in the browser
+  at `ENV.webOrigin` (new `EXPO_PUBLIC_WEB_ORIGIN`, default the shared
+  `WEB_ORIGIN_DEFAULT`, until a domain exists — D12).
+- **ReviewStep:** below the summary, the consent box — a switch and the
+  sentence "I have read and agree to the Terms of Use and the Privacy
+  Notice", both names linked. "Confirm and finish" stays grey until it is
+  on, and the refusal lives in the step (the grey button is tappable by
+  design). `useOnboarding.createAccount` sends `REQUIRED_CONSENTS` with
+  the registration; the server writes them in the same commit as the
+  account. Same box, same sentence as the web's review step.
+- **Settings → About:** rows for the two documents (open in the browser)
+  and a "Consent on record" chip — Accepted v1.0 / Not on record — with
+  one-tap acceptance for accounts from before this release or after a
+  future version bump (`useConsents`, judged against the versions the
+  SERVER says are current). Nothing gated in demo mode (D1).
+- **Services:** `HttpAuthService` + the device mock implement
+  `ConsentContract` (`listConsents`, `recordConsent`); the mock stores
+  what the box confirmed on the account and refuses a stale version.
+
+**Verified.** `tsc --noEmit` + parent CI. 🔬 Not yet touched on a device.
+
 ## v0.102.0 - 2026-10-09 - change your password, change your e-mail, see your devices
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package, no

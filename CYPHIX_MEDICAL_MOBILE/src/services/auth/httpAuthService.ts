@@ -32,10 +32,15 @@
 import {
   AUTH_ROUTES,
   AuthError,
+  CONSENT_ROUTES,
   PATIENT_ROUTES,
   type AuthErrorCode,
   type AuthSession,
   type AuthTokens,
+  type ConsentInput,
+  type ConsentRecord,
+  type ConsentRecordedResult,
+  type ConsentsResult,
   type Credentials,
   type EmailChangeConfirmInput,
   type EmailChangeConfirmResult,
@@ -421,6 +426,9 @@ export class HttpAuthService implements MobileAuthService {
         emergencyPhone: profile.emergencyPhone,
         emergencyRelation: profile.emergencyRelation,
       },
+      /* What the review screen's box confirmed, at the versions this
+         build knows; the server writes it with the account (v0.13.0). */
+      ...(input.consents?.length ? { consents: input.consents } : {}),
     });
     await storeSession(tokens);
     await remember(tokens.user);
@@ -549,6 +557,17 @@ export class HttpAuthService implements MobileAuthService {
     return r.revoked;
   }
 
+  /* ── Consent (server v0.13.0) ── */
+
+  async listConsents(): Promise<ConsentsResult> {
+    return request<ConsentsResult>(CONSENT_ROUTES.list, undefined, { auth: true, method: 'GET' });
+  }
+
+  async recordConsent(input: ConsentInput): Promise<ConsentRecord> {
+    const r = await post<ConsentRecordedResult>(CONSENT_ROUTES.record, input, { auth: true });
+    return r.consent;
+  }
+
   /** No SMS gateway on either side. The code is FIXED and shown on the
       step, exactly as in the mock: a hidden random code would make the
       step impossible to finish, and a real-looking one would let a patient
@@ -600,6 +619,8 @@ export class HttpAuthService implements MobileAuthService {
 // v2.5.0 — Account recovery against server v0.11.0: forgot / reset / verify-email /
 //          request-verification. `post` can carry the bearer (refresh once, retry
 //          once), maps 429 → rate-limited and `invalid_token` → invalid-link.
+// v2.7.0 — Consent (server v0.13.0): register carries `consents`; listConsents /
+//          recordConsent (ConsentContract).
 // v2.6.0 — Account self-service against server v0.12.0: change password, change
 //          e-mail (+ confirm), list / revoke sessions. `post` is a thin name over
 //          `request` (GET / DELETE too); `wrong_password` → wrong-password ahead of

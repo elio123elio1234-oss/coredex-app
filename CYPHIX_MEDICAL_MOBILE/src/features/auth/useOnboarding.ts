@@ -10,7 +10,7 @@
 
 import { useCallback, useMemo, useReducer, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { AuthError, type AuthErrorCode } from '@cyphix/shared';
+import { AuthError, REQUIRED_CONSENTS, type AuthErrorCode } from '@cyphix/shared';
 import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
 import { authService } from '@/services/auth/authService';
 import { useAuth } from './useAuth';
@@ -116,7 +116,10 @@ export function useOnboarding(): Onboarding {
       flow half way should not leave an account behind. */
   const createAccount = useCallback(async () => {
     try {
-      await register(toRegistrationInput(draft));
+      /* The review screen's consent box is what lets this run (its button
+         stays grey until ticked), so what is sent is what was confirmed:
+         both documents at the versions this build knows (server v0.13.0). */
+      await register({ ...toRegistrationInput(draft), consents: [...REQUIRED_CONSENTS] });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStep('success');
     } catch {
@@ -310,6 +313,8 @@ export function useOnboarding(): Onboarding {
   );
 }
 
+// v1.3.0 — createAccount sends REQUIRED_CONSENTS with the registration (server v0.13.0);
+//          the review screen's box is what lets it run.
 // v1.2.0 — Forgot really sends (busy + a failure line); the 'reset' step opened by
 //          an e-mailed link spends the token and signs the phone in (server v0.11.0).
 // v1.1.0 — Phone → OTP only under PHONE_VERIFICATION_STEP (= DEMO_MODE); otherwise

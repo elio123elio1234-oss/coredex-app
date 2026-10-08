@@ -971,6 +971,20 @@ export const he: Record<TranslationKey, string> = {
   authEmailChangeFailedTitle: 'תוקף הקישור פג',
   authEmailChangeFailedBody: 'בקשו את השינוי שוב מהגדרות ← חשבון.',
   authEmailChangeTakenBody: 'הכתובת הזו שייכת עכשיו לחשבון אחר. בחרו כתובת אחרת מהגדרות ← חשבון.',
+  /* ── Legal documents + consent (server v0.13.0) ── */
+  legalTermsTitle: 'תנאי השימוש',
+  legalPrivacyTitle: 'מדיניות הפרטיות',
+  authConsentBefore: 'קראתי ואני מסכימ/ה ל',
+  authConsentAnd: ' ול',
+  authConsentAfter: '.',
+  authConsentA11y: 'קראתי ואני מסכימ/ה לתנאי השימוש ולמדיניות הפרטיות',
+  setAboutLegalDesc: 'המסמכים שאישרתם ביצירת החשבון',
+  setAboutConsent: 'הסכמה רשומה',
+  setAboutConsentDesc: 'גרסת תנאי השימוש ומדיניות הפרטיות שהחשבון הזה אישר',
+  setAboutConsentOk: 'אושר',
+  setAboutConsentMissing: 'לא רשום',
+  setAboutConsentUnknown: 'לא ניתן לטעון',
+  setAboutConsentAccept: 'הקישו כדי לאשר את תנאי השימוש ומדיניות הפרטיות הנוכחיים',
 
   /* ── יצירת חשבון ── */
   authSignUpTitle: 'יצירת חשבון',
@@ -1455,3 +1469,4 @@ export const he: Record<TranslationKey, string> = {
 // v1.28.1 — authErrWrongPassword (Hebrew).
 // v1.29.0 — Account self-service: change password / e-mail sheets, the devices list,
 //           the change-email link alerts, device + client words (Hebrew).
+// v1.30.0 — Legal documents: the review-step consent box, About legal + consent rows (Hebrew).

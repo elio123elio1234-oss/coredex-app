@@ -28,7 +28,8 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { LEGAL_DOCS, legalDocUrl } from '@cyphix/shared';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
@@ -57,10 +58,12 @@ import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
+import { ENV } from '@/config/env';
 import { DEMO_MODE, LEAD_DEBUG_SCREEN_ENABLED } from '@/config/featureFlags';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
 import { useOtaUpdate } from '@/features/updates/useOtaUpdate';
 import { useAuth } from '@/features/auth/useAuth';
+import { useConsents } from '@/features/auth/useConsents';
 import { useBle } from '@/features/ble/useBle';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { useReminders } from '@/features/reminders/useReminders';
@@ -143,6 +146,12 @@ export default function SettingsScreen() {
   const [accountSheet, setAccountSheet] = useState<'password' | 'email' | 'sessions' | null>(
     null,
   );
+  /* What this account accepted (server v0.13.0) — loaded once per visit. */
+  const consents = useConsents();
+  const loadConsents = consents.load;
+  useEffect(() => {
+    void loadConsents();
+  }, [loadConsents]);
   const appLockEnabled = useAppSelector((st) => st.auth.appLockEnabled);
   /* Whether the OS can honour a lock at all — asked once, on mount, and
      used to decide whether the row exists. See the row itself for why a
@@ -744,6 +753,56 @@ export default function SettingsScreen() {
             value={tr('setAboutComplianceValue')}
             layout="stack"
           />
+          {/* The published documents (the web app's public pages, opened in
+              the browser) and what this account accepted (server v0.13.0).
+              A missing or outdated acceptance is one tap to fix; nothing is
+              gated on it in demo mode (D1). Same rows as the web's About. */}
+          <SettingsRow
+            label={tr('legalTermsTitle')}
+            description={tr('setAboutLegalDesc')}
+            onPress={() => void Linking.openURL(legalDocUrl('terms', ENV.webOrigin))}
+          />
+          <SettingsRow
+            label={tr('legalPrivacyTitle')}
+            onPress={() => void Linking.openURL(legalDocUrl('privacy', ENV.webOrigin))}
+          />
+          <SettingsRow
+            label={tr('setAboutConsent')}
+            description={
+              consents.status === 'success' && consents.missing.length > 0
+                ? tr('setAboutConsentAccept')
+                : tr('setAboutConsentDesc')
+            }
+            value={
+              <SettingsChip
+                label={
+                  consents.status === 'success'
+                    ? consents.missing.length
+                      ? tr('setAboutConsentMissing')
+                      : `${tr('setAboutConsentOk')} v${LEGAL_DOCS.terms.version}`
+                    : consents.status === 'error'
+                      ? tr('setAboutConsentUnknown')
+                      : '…'
+                }
+                tone={
+                  consents.status === 'success' ? (consents.missing.length ? 'warn' : 'ok') : undefined
+                }
+              />
+            }
+            disabled={consents.busy}
+            onPress={
+              consents.status === 'success' && consents.missing.length > 0
+                ? () => {
+                    void Haptics.selectionAsync();
+                    void consents.acceptMissing().catch(() => {
+                      /* the chip keeps saying "not on record" */
+                    });
+                  }
+                : consents.status === 'error'
+                  ? () => void consents.load()
+                  : undefined
+            }
+          />
         </SettingsSection>
         </FadeUpView>
       </ScrollView>
@@ -794,6 +853,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.4.0 — About: Terms of Use / Privacy Notice rows (open the published pages) and a
+//          "Consent on record" chip with one-tap acceptance (server v0.13.0, 1.8).
 // v3.3.0 — Account: "Change password", "Change e-mail" and "Devices & sessions"
 //          rows, each raising its sheet (server v0.12.0, LAUNCH_PLAN 1.4b).
 // v3.2.0 — ECG Device gains a TEMPORARY "Lead debug" row (behind

@@ -36,8 +36,12 @@ import {
   AUTH_LINK_PATHS,
   AUTH_LINK_TOKEN_PARAM,
   AuthError,
+  LEGAL_DOCS,
   MIN_PASSWORD_LENGTH,
   type AuthSession,
+  type ConsentInput,
+  type ConsentRecord,
+  type ConsentsResult,
   type Credentials,
   type EmailChangeConfirmInput,
   type EmailChangeConfirmResult,
@@ -77,6 +81,8 @@ interface StoredAccount {
   profile: RegistrationProfile;
   /** Set by the mock verification link. Absent on older accounts = false. */
   emailVerified?: boolean;
+  /** What this account accepted, newest last (server v0.13.0 shape). */
+  consents?: ConsentRecord[];
 }
 
 /** The mock's "sent e-mails": one-time links, in memory for this app run.
@@ -245,7 +251,8 @@ class MockAuthService implements MobileAuthService {
     const accounts = await this.accounts();
     if (accounts.some((a) => a.email === email)) throw new AuthError('email-taken');
 
-    const { fullName, email: _email, password, ...profile } = input;
+    const { fullName, email: _email, password, consents, ...profile } = input;
+    const now = new Date().toISOString();
     const account: StoredAccount = {
       id: `user-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       email,
@@ -254,6 +261,7 @@ class MockAuthService implements MobileAuthService {
       // A self-registering person is the patient of their own record.
       role: 'patient',
       profile,
+      consents: (consents ?? []).map((c) => ({ ...c, acceptedAt: now })),
     };
     accounts.push(account);
     await writeJson(ACCOUNTS_KEY, accounts);
@@ -502,6 +510,35 @@ class MockAuthService implements MobileAuthService {
     return others.length;
   }
 
+  /* ── Consent (server v0.13.0 shape): latest per document + what is current ── */
+
+  async listConsents(): Promise<ConsentsResult> {
+    await this.settle();
+    const cur = await this.current();
+    const latest = new Map<string, ConsentRecord>();
+    for (const c of cur?.account.consents ?? []) latest.set(c.doc, c);
+    return {
+      consents: [...latest.values()],
+      current: { terms: LEGAL_DOCS.terms.version, privacy: LEGAL_DOCS.privacy.version },
+    };
+  }
+
+  async recordConsent(input: ConsentInput): Promise<ConsentRecord> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    if (input.version !== LEGAL_DOCS[input.doc].version) {
+      throw new AuthError('unknown', 'stale version');
+    }
+    const record: ConsentRecord = { ...input, acceptedAt: new Date().toISOString() };
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === cur.account.id);
+    if (!account) throw new AuthError('unknown');
+    account.consents = [...(account.consents ?? []), record];
+    await writeJson(ACCOUNTS_KEY, accounts);
+    return record;
+  }
+
   /** Phone verification, mocked. The code is FIXED and shown in the UI
       because there is no SMS gateway: a hidden random code would make the
       step impossible to complete, and a real-looking one that always
@@ -533,6 +570,9 @@ export const authService: MobileAuthService = ENV.hasBackend
   ? new HttpAuthService()
   : new MockAuthService();
 
+// v2.4.0 — The mock implements ConsentContract: register stores what the review
+//          screen confirmed; listConsents / recordConsent to the server's shape,
+//          a stale version refused (server v0.13.0).
 // v2.3.0 — The mock implements AuthAccountContract to the server's rules: proves the
 //          current password, a password change ends every other device, an e-mail
 //          change is a cyphix:// link to the NEW address (console) that moves the

@@ -1,8 +1,13 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.102.0';
-export const APP_BUILD_LABEL = 'Settings -> Account can change your password (every other device signs out), change your e-mail (a link to the new address confirms it, and opens the app) and list your devices & sessions with remote sign-out';
+export const APP_VERSION = '0.103.0';
+export const APP_BUILD_LABEL = 'The Terms of Use and Privacy Notice are real pages: the welcome line and the review step link to them, sign-up asks you to accept them and records the version, About shows your consent on record';
 
+// v0.103.0 - LEGAL DOCUMENTS + CONSENT (server v0.13.0, LAUNCH_PLAN 1.8). JS only - OTA.
+//            The welcome line's "Terms" / "Privacy Notice" open the web app's
+//            public pages; the review step gains the consent box that gates
+//            "Confirm and finish" and is sent with the registration; About
+//            gains the two documents and a "Consent on record" chip.
 // v0.102.0 - ACCOUNT SELF-SERVICE (server v0.12.0, LAUNCH_PLAN 1.4b). JS only - OTA.
 //            Three Account rows raise three sheets: change password, change
 //            e-mail, devices & sessions. The new-address link
