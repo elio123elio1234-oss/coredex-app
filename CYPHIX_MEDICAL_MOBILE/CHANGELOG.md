@@ -1,5 +1,30 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.99.0 - 2026-10-08 - a six-character password is enough
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+The first change-set of `Coredex_App/LAUNCH_PLAN.md` (step 0.2, hole S6).
+Three places decided how long a password must be and none of them agreed:
+the web's sign-up copy said *six*, `@cyphix/shared` said *ten*, and the
+server demanded ten **plus a letter and a digit** without telling anyone.
+On this phone the sign-up step prints the shared number, so it honestly
+asked for ten — but a person who had just made an account on the web with
+a seven-character password could not have made the same one here.
+
+The user set the policy on 2026-10-08: **six characters, nothing else.**
+
+Nothing in this app's own source changed. `SignUpStep` and
+`onboardingModel.canContinue` read `MIN_PASSWORD_LENGTH` from
+`@cyphix/shared`, which is now 6 (shared v1.17.0), so the placeholder
+*"At least 6 characters"* and the Continue gate moved on their own. The
+server enforces the same six (server v0.8.0, deployed before this OTA so
+no phone can race ahead of it) and the web reads the same number
+(web v1.60.0). Existing accounts are untouched.
+
+**Rollback:** `restore-point-2026-10-08` — `eas update` from that tag's
+mobile + shared tree; no native change.
+
 ## v0.98.0 - 2026-09-24 - full screen follows the phone, and a limit gives
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

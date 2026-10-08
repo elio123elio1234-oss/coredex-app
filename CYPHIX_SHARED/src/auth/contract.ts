@@ -93,8 +93,13 @@ export interface AuthServiceContract {
   logout(): Promise<void>;
 }
 
-/** Matches the server policy (≥10 chars; letter + digit enforced there). */
-export const MIN_PASSWORD_LENGTH = 10;
+/** Matches the server policy: at least 6 characters and nothing else
+    (`CYPHIX_SERVER/src/policy/password.ts`). The server deploys on its own
+    and cannot import this package, so the number lives in both places and
+    an edit to one is an edit to both. It was 10 + a letter + a digit until
+    2026-10-08, when the user set it to 6 — which is what the web's sign-up
+    copy had promised all along. */
+export const MIN_PASSWORD_LENGTH = 6;
 
 /**
  * The routes an HTTP implementation calls, relative to API_VERSION_PATH.
@@ -148,5 +153,6 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
+// v1.2.0 — MIN_PASSWORD_LENGTH 10 → 6 (user decision 2026-10-08); matches server v0.8.0.
 // v1.1.0 — AUTH_ROUTES now matches what CYPHIX_SERVER really serves (/auth/me,
 //          not /auth/session); unimplemented routes moved to AUTH_ROUTES_PLANNED.

@@ -138,6 +138,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.17.0 — auth/contract: MIN_PASSWORD_LENGTH 10 → 6 (user decision 2026-10-08;
+//           server v0.8.0 enforces the same six and nothing else).
 // v1.16.0 — Exports `ecg/leadAxes`: the hexaxial angle, unit vector and
 //           electrode pair of each limb lead, with the sign convention and
 //           anatomical frame stated. The web's 3-D heart reads it, and so

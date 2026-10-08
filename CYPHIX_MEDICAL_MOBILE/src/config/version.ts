@@ -1,8 +1,19 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.98.0';
-export const APP_BUILD_LABEL = 'full screen follows the phone, and a zoom that hits its limit gives instead of going dead';
+export const APP_VERSION = '0.99.0';
+export const APP_BUILD_LABEL = 'a six-character password is enough - server, web and phone finally agree';
 
+// v0.99.0 - A SIX-CHARACTER PASSWORD IS ENOUGH. JS only - OTA.
+//
+//           No mobile source changed: the sign-up step reads
+//           MIN_PASSWORD_LENGTH from @cyphix/shared, which went 10 -> 6
+//           (shared v1.17.0) at the user's decision on 2026-10-08, so the
+//           placeholder "At least {n} characters" and the Continue gate
+//           moved with it. The server (v0.8.0) enforces the same six and
+//           nothing else; until now it silently demanded ten plus a letter
+//           and a digit while every sign-up screen promised six. First
+//           change-set of Coredex_App/LAUNCH_PLAN.md (step 0.2).
+//
 // v0.98.0 - FULL SCREEN FOLLOWS THE PHONE, AND A LIMIT GIVES. JS only - OTA.
 //
 //           Two questions: "why isn't [the zoom] there when you enter full
