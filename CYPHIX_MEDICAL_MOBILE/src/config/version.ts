@@ -1,8 +1,12 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.101.0';
-export const APP_BUILD_LABEL = 'forgot password is real: a reset link by e-mail opens the app and signs you in; a verify-email link confirms your address; Account shows both';
+export const APP_VERSION = '0.101.1';
+export const APP_BUILD_LABEL = 'words for the new wrong-password failure code (shared v1.20.0); no behaviour change';
 
+// v0.101.1 - The exhaustive error-code map gains 'wrong-password' (shared
+//            v1.20.0, the account self-service contract). Compile fix only;
+//            the phone's own change password / e-mail / sessions screens
+//            are the next change-set (LAUNCH_PLAN 1.4b).
 // v0.101.0 - FORGOT PASSWORD IS REAL. JS only - OTA.
 //
 //            Server v0.11.0 sends mail. The forgot screen now really asks

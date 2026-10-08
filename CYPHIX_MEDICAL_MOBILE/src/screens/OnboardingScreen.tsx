@@ -62,6 +62,9 @@ const ERROR_KEYS: Record<AuthErrorCode, TranslationKey> = {
   'weak-password': 'authErrWeakPassword',
   'invalid-link': 'authErrInvalidLink',
   'rate-limited': 'authErrRateLimited',
+  /* Cannot happen in this flow (nobody is signed in here); listed because
+     the map is exhaustive on purpose — a new code must be given words. */
+  'wrong-password': 'authErrWrongPassword',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -493,5 +496,6 @@ const styles = StyleSheet.create({
 
 // v1.1.0 — The 'reset' step (ResetStep) opened by an e-mailed link via the slice's
 //          pendingLink; ForgotStep gets busy + a failure line (server v0.11.0).
+// v1.1.1 — ERROR_KEYS covers 'wrong-password' (shared v1.20.0; unreachable in this flow).
 // v1.0.1 — ERROR_KEYS covers 'invalid-link' / 'rate-limited' (shared v1.18.0).
 // v1.0.0 — The signed-out flow: 14 steps, one screen, the reference's scrIn.

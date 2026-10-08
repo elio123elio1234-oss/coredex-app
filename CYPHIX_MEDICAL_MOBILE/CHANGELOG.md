@@ -1,5 +1,16 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.101.1 - 2026-10-09 - words for the new failure code (shared v1.20.0)
+
+**Why.** `@cyphix/shared` v1.20.0 adds the account self-service contract
+(LAUNCH_PLAN 1.4b: change password, change e-mail, sessions) and with it
+the error code `'wrong-password'`. `OnboardingScreen`'s `ERROR_KEYS` is
+`Record<AuthErrorCode, …>` on purpose — a code without words is a compile
+error, not a blank line on a screen — so this entry gives it words
+(`authErrWrongPassword`, en + he) and nothing else. Unreachable in the
+signed-out flow; the screens that can raise it ship in v0.102.0. No OTA
+for this alone.
+
 ## v0.101.0 - 2026-10-08 - forgot password is real; verify your e-mail
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** The `cyphix://` scheme

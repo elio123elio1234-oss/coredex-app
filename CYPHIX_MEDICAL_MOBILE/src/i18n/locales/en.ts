@@ -1171,6 +1171,7 @@ export const en = {
   authErrUnknown: 'Something went wrong. Please try again.',
   authErrInvalidLink: 'This link is invalid or has expired. Request a new one.',
   authErrRateLimited: 'Too many attempts. Wait a few minutes and try again.',
+  authErrWrongPassword: 'The current password is incorrect.',
   authErrWrongCode: 'That code does not match. Check it and try again.',
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1604,3 +1605,4 @@ export type TranslationKey = keyof typeof en;
 // v1.26.0 — Settings → About: 'Mode' / 'Demo — …' (DEMO_MODE row).
 // v1.27.0 — authErrInvalidLink / authErrRateLimited (shared AuthErrorCode v1.3.0).
 // v1.28.0 — Account recovery: reset step, verify-link alerts, Settings → Account e-mail rows.
+// v1.28.1 — authErrWrongPassword (shared AuthErrorCode v1.4.0).

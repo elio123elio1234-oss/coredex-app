@@ -1044,6 +1044,7 @@ export const he: Record<TranslationKey, string> = {
   authErrUnknown: 'משהו השתבש. נסו שוב.',
   authErrInvalidLink: 'הקישור אינו תקף או שפג תוקפו. בקשו קישור חדש.',
   authErrRateLimited: 'יותר מדי ניסיונות. המתינו כמה דקות ונסו שוב.',
+  authErrWrongPassword: 'הסיסמה הנוכחית שגויה.',
   authErrWrongCode: 'הקוד אינו תואם. בדקו ונסו שוב.',
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1406,3 +1407,4 @@ export const he: Record<TranslationKey, string> = {
 // v1.26.0 — Settings → About: 'מצב' / 'הדגמה — …' (DEMO_MODE row, Hebrew).
 // v1.27.0 — authErrInvalidLink / authErrRateLimited (Hebrew).
 // v1.28.0 — Account recovery: reset step, verify-link alerts, Settings → Account e-mail rows (Hebrew).
+// v1.28.1 — authErrWrongPassword (Hebrew).

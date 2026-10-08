@@ -19,7 +19,7 @@
 
 import { AUTH_LINK_PATHS, AUTH_LINK_TOKEN_PARAM } from './contract';
 
-export type AuthLinkKind = 'reset' | 'verify';
+export type AuthLinkKind = 'reset' | 'verify' | 'change-email';
 
 export interface AuthLink {
   kind: AuthLinkKind;
@@ -51,7 +51,9 @@ export function parseAuthLinkUrl(url: string): AuthLink | null {
       ? 'reset'
       : path === AUTH_LINK_PATHS.verifyEmail
         ? 'verify'
-        : null;
+        : path === AUTH_LINK_PATHS.changeEmail
+          ? 'change-email'
+          : null;
   if (!kind) return null;
 
   const raw = (m[3] ?? '')
@@ -68,4 +70,5 @@ export function parseAuthLinkUrl(url: string): AuthLink | null {
   return TOKEN_SHAPE.test(token) ? { kind, token } : null;
 }
 
+// v1.1.0 — Reads the third link: /change-email?token= → kind 'change-email' (server v0.12.0).
 // v1.0.0 — parseAuthLinkUrl: web URL, cyphix:// scheme or Expo dev-client URL → { kind, token }.
