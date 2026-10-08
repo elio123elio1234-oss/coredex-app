@@ -21,6 +21,7 @@ import {
   type BloodType,
   type RegistrationInput,
 } from '@cyphix/shared';
+import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
 import { AVATAR_TONES } from '@/theme/authTheme';
 
 export type OnboardingStep =
@@ -73,14 +74,16 @@ export function isProfileStep(step: OnboardingStep): step is ProfileStep {
 }
 
 /** Where ← goes. Steps not listed fall back to their predecessor in
-    PROFILE_STEPS, and the first of those returns to the OTP screen. */
+    PROFILE_STEPS, and the first of those returns to the OTP screen — or,
+    when the code step is switched off (PHONE_VERIFICATION_STEP, i.e. outside
+    DEMO_MODE), straight to the phone step it was reached from. */
 const BACK_MAP: Partial<Record<OnboardingStep, OnboardingStep>> = {
   signin: 'welcome',
   forgot: 'signin',
   signup: 'welcome',
   phone: 'signup',
   otp: 'phone',
-  sex: 'otp',
+  sex: PHONE_VERIFICATION_STEP ? 'otp' : 'phone',
   review: 'photo',
 };
 
@@ -331,6 +334,8 @@ export function initialsOf(fullName: string): string {
     .toUpperCase();
 }
 
+// v1.2.0 — Back from the first profile step returns to the phone step when the
+//          code step is off (PHONE_VERIFICATION_STEP = DEMO_MODE); unchanged in demo.
 // v1.1.0 — Names are capitalised as they are typed (`capitalizeName`), in the
 //          reducer rather than in a field, so every route into the draft gets it.
 // v1.0.0 — The onboarding wizard as pure state: step order, draft, gating.

@@ -54,7 +54,7 @@ import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
-import { LEAD_DEBUG_SCREEN_ENABLED } from '@/config/featureFlags';
+import { DEMO_MODE, LEAD_DEBUG_SCREEN_ENABLED } from '@/config/featureFlags';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
 import { useOtaUpdate } from '@/features/updates/useOtaUpdate';
 import { useAuth } from '@/features/auth/useAuth';
@@ -477,7 +477,11 @@ export default function SettingsScreen() {
               request behind them returns 403. That is the point — it shows
               which UI a role gets, on a device, without keeping four test
               accounts. The description says so on screen, because a switch
-              labelled only "Admin" invites the opposite conclusion. */}
+              labelled only "Admin" invites the opposite conclusion.
+              Shown under DEMO_MODE (featureFlags), in a dev build, or to a
+              real admin — a patient on a launched product must not meet it. */}
+          {(DEMO_MODE || __DEV__ || realRole === 'admin') && (
+            <>
           <SettingsRow
             label={tr('setDevRole')}
             description={tr('setDevRoleDesc')}
@@ -515,6 +519,8 @@ export default function SettingsScreen() {
               label={tr('setDevRoleReal')}
               value={<SettingsChip label={tr(ROLE_LABEL_KEY[realRole])} />}
             />
+          )}
+            </>
           )}
           {/* ── The app lock ──
               The app now opens on a session restored from this phone's
@@ -566,6 +572,14 @@ export default function SettingsScreen() {
           description={tr('setSecAboutDesc')}
         >
           <SettingsRow first label={tr('setAboutVersion')} value={APP_VERSION} />
+          {/* The visible state of the launch switch — a switch nobody can
+              see is a switch nobody checks. The row leaves with the mode. */}
+          {DEMO_MODE && (
+            <SettingsRow
+              label={tr('setAboutMode')}
+              value={<SettingsChip label={tr('setAboutModeDemo')} />}
+            />
+          )}
           {/* ★ v0.63.0 — THE UPDATE ROW.
               expo-updates was installed, configured and delivering, and
               nothing in the app ever called it — so its defaults ran the
@@ -730,6 +744,8 @@ const styles = StyleSheet.create({
 //          only the device can say which one it is.
 // v2.1.0 — Sign out is live (with a confirmation), and the Account section
 //          shows the account that is actually signed in.
+// v2.1.0 — "Preview as role" is gated by DEMO_MODE (or dev, or a real admin); About
+//          shows "Mode: Demo" while the switch is on. Unchanged on screen today.
 // v2.0.0 — Fully translated, and gains the Language picker at the top of
 //          Appearance (the one setting a patient must be able to find while
 //          unable to read the rest of the screen).

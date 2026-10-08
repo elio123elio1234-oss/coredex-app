@@ -384,6 +384,8 @@ export const en = {
   setSecAbout: 'About',
   setSecAboutDesc: 'Version and compliance',
   setAboutVersion: 'App version',
+  setAboutMode: 'Mode',
+  setAboutModeDemo: 'Demo — fictitious accounts and preview controls are on',
   setAboutBuild: 'This build',
   setAboutMaterial: 'Surface material',
   setAboutBootTime: 'Last launch',
@@ -1578,3 +1580,4 @@ export type TranslationKey = keyof typeof en;
 // v1.2.0 — English locale: the canonical key set for the mobile app. Carries
 //          the comparison sheet’s copy — the legend and the sentence saying
 //          what the grey trace is. The nudge-pad wording is gone with the pad.
+// v1.26.0 — Settings → About: 'Mode' / 'Demo — …' (DEMO_MODE row).

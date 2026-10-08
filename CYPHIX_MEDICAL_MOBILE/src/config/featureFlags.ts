@@ -15,6 +15,41 @@ export const FEATURE_FLAGS = {
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
 
 /**
+ * ★ DEMO_MODE — the ONE launch switch (Coredex_App/LAUNCH_PLAN.md, steps
+ * 0.1 / 0.3 / 0.4, decision D1).
+ *
+ * The user is still demonstrating the product and has not launched, so
+ * every demo affordance stays exactly as it is today — but each one is now
+ * DERIVED from this constant instead of being its own private `true`, so
+ * that launch day is one flip here (and one on the web, and one env var on
+ * the server) rather than a hunt. What hangs off it on the phone:
+ *
+ *   • `LEAD_DEBUG_SCREEN_ENABLED`  — the firmware bring-up screen.
+ *   • `DEFAULT_PREVIEW_ROLE`       — the app draws itself as admin on launch.
+ *   • `SHOW_SOCIAL_SIGN_IN`        — the Apple / Google placeholders on the
+ *                                    welcome screen (neither is wired; a dead
+ *                                    "Sign in with Apple" fails App Review).
+ *   • `PHONE_VERIFICATION_STEP`    — the SMS-code step whose code is a fixed
+ *                                    `000000` printed on the screen. In demo
+ *                                    it stays, labelled as a demo code; off
+ *                                    demo the step is skipped and the phone
+ *                                    number is kept as unverified (D2).
+ *   • Settings → About → "Mode: Demo" — the visible proof of this switch on
+ *                                    a running build, like the version badge.
+ *
+ * A CODE CONSTANT, not an env var, on purpose: an absent env var silently
+ * takes a default, and a launch that depends on someone remembering to set
+ * one is the failure this exists to remove. The web's `featureFlags.ts`
+ * carries the same constant; the server's `DEMO_MODE` is reported by
+ * `/healthz`. The three are meant to agree. Flipping this is JS-only — an
+ * OTA, not a rebuild.
+ *
+ * Outside the mirrored `FEATURE_FLAGS` table for the same reason as every
+ * switch below it: it is a mode of the whole product, not a nav module.
+ */
+export const DEMO_MODE = true;
+
+/**
  * The floating CYPHIX wordmark in the top-start corner of the patient shell.
  *
  * ★ Deliberately OUTSIDE `FEATURE_FLAGS` above: that table mirrors the web's
@@ -103,7 +138,7 @@ export const PRECORDIAL_LEADS_ENABLED = false;
  * Mobile-only and outside the mirrored table for the same reason as the
  * wordmark switch above. Recorded in PARITY.md.
  */
-export const LEAD_DEBUG_SCREEN_ENABLED = true;
+export const LEAD_DEBUG_SCREEN_ENABLED = DEMO_MODE || __DEV__;
 
 /**
  * ⚠️ TEMPORARY — WHICH ROLE THE APP DRAWS ITSELF AS, BEFORE ANYONE ASKS.
@@ -134,8 +169,30 @@ export const LEAD_DEBUG_SCREEN_ENABLED = true;
  *
  * Set to `null` to go back to "draw whatever the account actually is".
  */
-export const DEFAULT_PREVIEW_ROLE: Role | null = 'admin';
+export const DEFAULT_PREVIEW_ROLE: Role | null = DEMO_MODE ? 'admin' : null;
 
+/**
+ * The Apple / Google buttons on the welcome screen. Neither is wired (the
+ * server holds no client secrets for either — PARITY.md), so they land on
+ * the ordinary sign-in form. Fine in a demo; a placeholder "Sign in with
+ * Apple" on a launched app is an App Review rejection and a lie to the
+ * person tapping it. See DEMO_MODE.
+ */
+export const SHOW_SOCIAL_SIGN_IN = DEMO_MODE;
+
+/**
+ * The SMS-code step of sign-up. There is no SMS gateway on either side of
+ * the wire (`AUTH_ROUTES_PLANNED` in @cyphix/shared), so the code is a fixed
+ * `000000` the step prints on itself — honest as a demo, meaningless as a
+ * verification. Off demo the step is skipped: the number is still collected
+ * on the phone step and stored, simply not marked verified (D2). The real
+ * step returns if an SMS provider is ever bought. See DEMO_MODE.
+ */
+export const PHONE_VERIFICATION_STEP = DEMO_MODE;
+
+// v0.100.0 — Adds DEMO_MODE (true), the one launch switch; LEAD_DEBUG_SCREEN_ENABLED
+//            and DEFAULT_PREVIEW_ROLE now derive from it, plus SHOW_SOCIAL_SIGN_IN
+//            and PHONE_VERIFICATION_STEP. Nothing changes while it is true.
 // v0.69.0 — Adds DEFAULT_PREVIEW_ROLE ('admin'): where the role preview
 //           starts on every launch, so it stops being a per-session chore.
 //           Rendering only — the server still authorises the real role.

@@ -351,6 +351,8 @@ export const he: Record<TranslationKey, string> = {
   setSecAbout: 'אודות',
   setSecAboutDesc: 'גרסה ותאימות רגולטורית',
   setAboutVersion: 'גרסת אפליקציה',
+  setAboutMode: 'מצב',
+  setAboutModeDemo: 'הדגמה — חשבונות פיקטיביים ובקרות תצוגה פעילים',
   setAboutBuild: 'הגרסה הזו',
   setAboutMaterial: 'חומר המשטחים',
   setAboutBootTime: 'ההפעלה האחרונה',
@@ -1380,3 +1382,4 @@ export const he: Record<TranslationKey, string> = {
 // v1.2.0 — Hebrew locale (RTL); wording copied from the web locale where the
 //          web already says the same sentence. Carries the comparison sheet’s
 //          copy; the nudge-pad wording is gone with the pad.
+// v1.26.0 — Settings → About: 'מצב' / 'הדגמה — …' (DEMO_MODE row, Hebrew).

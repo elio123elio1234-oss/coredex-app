@@ -1,5 +1,33 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.100.0 - 2026-10-08 - one launch switch
+
+**JS only — OTA onto runtime 0.45.0 (build 17).**
+
+LAUNCH_PLAN steps 0.1 / 0.3 / 0.4, decision D1: the user stays in **demo
+mode** until the official launch, so nothing demo-ish is removed. But the
+launch-plan review found the phone's demo affordances scattered as four
+private `true`s — the Lead-debug screen, the admin role preview on launch,
+the Apple/Google placeholder buttons, the SMS-code step whose code is a
+fixed `000000` printed on the screen — and a launch that depends on
+finding all four is a launch that misses one.
+
+`DEMO_MODE` in `config/featureFlags.ts` is now the one constant they all
+derive from (`LEAD_DEBUG_SCREEN_ENABLED`, `DEFAULT_PREVIEW_ROLE`,
+`SHOW_SOCIAL_SIGN_IN`, `PHONE_VERIFICATION_STEP`), and Settings → About
+gains a **"Mode: Demo"** row so the switch can be read off a running build
+the way the version can. "Preview as role" is additionally shown to a real
+admin or a dev build even outside demo. Outside demo the sign-up goes
+phone → profile, keeping the number as unverified (D2); in demo the code
+step stays exactly as it was, with its honest demo notice.
+
+**The switch is true, so nothing visible changes except the About row.**
+The server carries the same switch (v0.9.0, `DEMO_MODE` env reported by
+`/healthz`) and the web its own constant (v1.61.0). Flipping it here is
+JS-only — an OTA, not a rebuild.
+
+**Rollback:** `restore-point-2026-10-08`.
+
 ## v0.99.0 - 2026-10-08 - a six-character password is enough
 
 **JS only — OTA onto runtime 0.45.0 (build 17).**

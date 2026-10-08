@@ -11,6 +11,7 @@
 import { useCallback, useMemo, useReducer, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import type { AuthErrorCode } from '@cyphix/shared';
+import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
 import { authService } from '@/services/auth/authService';
 import { useAuth } from './useAuth';
 import {
@@ -146,6 +147,14 @@ export function useOnboarding(): Onboarding {
         return;
       }
       case 'phone':
+        /* No SMS gateway exists, so outside DEMO_MODE the code step is
+           skipped: the number is kept (it is on the card for a clinician to
+           call) and simply not marked verified. In demo the step stays, with
+           its fixed code printed on it — see featureFlags. */
+        if (!PHONE_VERIFICATION_STEP) {
+          go('sex');
+          return;
+        }
         setChecking(true);
         void authService
           .requestPhoneCode(draft.phone)
@@ -253,4 +262,6 @@ export function useOnboarding(): Onboarding {
   );
 }
 
+// v1.1.0 — Phone → OTP only under PHONE_VERIFICATION_STEP (= DEMO_MODE); otherwise
+//          phone → first profile step, number kept as unverified (D2).
 // v1.0.0 — The onboarding wizard's hook: draft, step transitions, submission.

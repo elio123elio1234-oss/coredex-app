@@ -32,6 +32,7 @@ import { HERO_IMAGE } from '@/services/media/heroImage';
 import AuthPrimaryButton from '@/components/atoms/Auth/AuthPrimaryButton';
 import AuthSecondaryButton from '@/components/atoms/Auth/AuthSecondaryButton';
 import CyphixWordmark from '@/components/atoms/CyphixWordmark';
+import { SHOW_SOCIAL_SIGN_IN } from '@/config/featureFlags';
 import { useTranslation } from '@/i18n/useTranslation';
 import { AUTH_METRICS, type AuthPalette } from '@/theme/authTheme';
 
@@ -117,21 +118,27 @@ export default function WelcomeStep({ palette, onCreateAccount, onSignIn, rtl }:
           />
           {/* The two platform identities. They land on the same form for
               now — see PARITY.md: neither Apple nor Google sign-in can be
-              wired until the server holds the client secrets. */}
-          <AuthSecondaryButton
-            label="Ap"
-            accessibilityLabel={tr('authAppleSignIn')}
-            onPress={onSignIn}
-            palette={palette}
-            square
-          />
-          <AuthSecondaryButton
-            label="G"
-            accessibilityLabel={tr('authGoogleSignIn')}
-            onPress={onSignIn}
-            palette={palette}
-            square
-          />
+              wired until the server holds the client secrets. Shown only
+              in DEMO_MODE (featureFlags): a placeholder "Sign in with Apple"
+              on a launched app fails App Review and misleads the tapper. */}
+          {SHOW_SOCIAL_SIGN_IN && (
+            <>
+              <AuthSecondaryButton
+                label="Ap"
+                accessibilityLabel={tr('authAppleSignIn')}
+                onPress={onSignIn}
+                palette={palette}
+                square
+              />
+              <AuthSecondaryButton
+                label="G"
+                accessibilityLabel={tr('authGoogleSignIn')}
+                onPress={onSignIn}
+                palette={palette}
+                square
+              />
+            </>
+          )}
         </View>
         <Text style={[styles.legal, { color: palette.label, textAlign: align }]}>
           {tr('authLegalBefore')}
@@ -177,5 +184,7 @@ const styles = StyleSheet.create({
 //          between two frames: the layers are explicit now (image / scrim /
 //          copy), so only the picture animates and the wordmark never waits
 //          for it. Prefetched during the splash — see services/media/heroImage.
+// v1.2.0 — The Apple / Google placeholders render only under SHOW_SOCIAL_SIGN_IN
+//          (= DEMO_MODE). Unchanged on screen today.
 // v1.1.0 — The hero is the product in use, with a navy scrim under the type;
 //          the lockup is the text-only wordmark.

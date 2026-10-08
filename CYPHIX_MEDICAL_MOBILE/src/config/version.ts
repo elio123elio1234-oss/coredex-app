@@ -1,8 +1,21 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.99.0';
-export const APP_BUILD_LABEL = 'a six-character password is enough - server, web and phone finally agree';
+export const APP_VERSION = '0.100.0';
+export const APP_BUILD_LABEL = 'one launch switch: every demo affordance now reads DEMO_MODE; nothing you see has changed';
 
+// v0.100.0 - ONE LAUNCH SWITCH. JS only - OTA.
+//
+//            DEMO_MODE (config/featureFlags) is the single constant every
+//            demo affordance now derives from: the Lead-debug screen, the
+//            admin role preview on launch, the Apple/Google placeholder
+//            buttons, the SMS-code step with its printed demo code, and a
+//            new "Mode: Demo" row under Settings > About so the switch can
+//            be read off a running build. The switch is true, so nothing
+//            visible changes except that About row. LAUNCH_PLAN 0.1/0.3/0.4,
+//            decision D1 (the user stays in demo until the official launch).
+//            Server v0.9.0 carries the same switch (DEMO_MODE env, reported
+//            by /healthz), the web v1.61.0 its own constant.
+//
 // v0.99.0 - A SIX-CHARACTER PASSWORD IS ENOUGH. JS only - OTA.
 //
 //           No mobile source changed: the sign-up step reads

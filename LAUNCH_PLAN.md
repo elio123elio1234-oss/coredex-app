@@ -197,11 +197,11 @@ invoice_lines        (invoice_id, description, qty, unit_minor, total_minor)
 
 | # | חור | איפה | מה לעשות |
 |---|---|---|---|
-| S1 | **Demo seed פועל בפרודקשן** (`SEED_DEMO: "true"` ב-`render.yaml`), עם סיסמה `Cyphix-Demo1` שכתובה ב-README פומבי. `clinician@example.com` הוא רופא אמיתי ב-DB הייצור | שרת | 🔁 `SEED_DEMO=false` ב-Render; להשבית (`disabled_at`) או למחוק את חשבונות הדמו; לסובב את סיסמת האדמין |
-| S2 | **הקוד הסודי של SMS קבוע ומוצג** למשתמש | מובייל | להסיר את שלב הטלפון/OTP עד שיש ספק SMS, **או** לסמן אותו "לא מאומת" בבירור. 🔁 שינוי זרימה — אישור |
+| S1 | **Demo seed פועל בפרודקשן** (`SEED_DEMO: "true"` ב-`render.yaml`), עם סיסמה `Cyphix-Demo1` שכתובה ב-README פומבי. `clinician@example.com` הוא רופא אמיתי ב-DB הייצור | שרת | 🟡 **מאחורי `DEMO_MODE` מאז 2026-10-08** (שרת v0.9.0): היפוך הדגל משבית את החשבונות בעלייה. נסגר סופית בשלב 8.0. סיבוב סיסמת האדמין — שלב 8 |
+| S2 | **הקוד הסודי של SMS קבוע ומוצג** למשתמש | מובייל | 🟡 **מאחורי `PHONE_VERIFICATION_STEP = DEMO_MODE` מאז 2026-10-08** (מובייל v0.100.0): מחוץ לדמו השלב מדולג. נסגר סופית בשלב 8.0 |
 | S3 | **"שכחתי סיסמה" לא עושה כלום** אבל מבטיח מייל | מובייל | מימוש אמיתי (שלב 2) |
-| S4 | **"View as role" זמין לכולם** ב-Settings (ווב `v2.6.0`: "always available now"; מובייל `DEFAULT_PREVIEW_ROLE = 'admin'`). השרת אוכף נכון (403), אבל מטופל רואה כפתורי אדמין ויכול לחשוב שהמערכת פרוצה | ווב + מובייל | 🔁 לגדר ל-`isDev` / לאדמין בלבד |
-| S5 | `LEAD_DEBUG_SCREEN_ENABLED = true` — מסך דיבאג חומרה בבילד ייצור | מובייל | 🔁 לכבות בייצור (flag לפי `__DEV__` / channel) |
+| S4 | **"View as role" זמין לכולם** ב-Settings (ווב `v2.6.0`: "always available now"; מובייל `DEFAULT_PREVIEW_ROLE = 'admin'`). השרת אוכף נכון (403), אבל מטופל רואה כפתורי אדמין ויכול לחשוב שהמערכת פרוצה | ווב + מובייל | 🟡 **מאחורי `DEMO_MODE` מאז 2026-10-08** (ווב v1.61.0, מובייל v0.100.0): מחוץ לדמו מוצג רק ל-dev / אדמין אמיתי. נסגר סופית בשלב 8.0 |
+| S5 | `LEAD_DEBUG_SCREEN_ENABLED = true` — מסך דיבאג חומרה בבילד ייצור | מובייל | 🟡 **`LEAD_DEBUG_SCREEN_ENABLED = DEMO_MODE \|\| __DEV__` מאז 2026-10-08** (v0.100.0). נסגר סופית בשלב 8.0 |
 | S6 | **אי-התאמת מדיניות סיסמה**: הווב מציג "At least 6 characters" (`authPasswordHint`, `authErrWeakPassword`) בעוד השרת וה-`MIN_PASSWORD_LENGTH` דורשים 10 + אות + ספרה. משתמש מקבל שגיאה בלי להבין למה | ווב | ✅ **נסגר 2026-10-08** (change-set 0.2, D14): המדיניות היא 6 תווים בכל מקום — שרת v0.8.0, shared v1.17.0, ווב v1.60.0, מובייל v0.99.0 |
 | S7 | אין אימות מייל ⇒ אפשר להירשם עם מייל של מישהו אחר | שרת+ווב+מובייל | `email_verified_at`, קוד/קישור, חסימת פניות עד אימות |
 | S8 | אין הגנה על `/auth/register` מפני בוטים (רק rate-limit 10/דקה/IP) | שרת | CAPTCHA (hCaptcha/Turnstile) או לפחות honeypot + rate per-email |
@@ -376,10 +376,10 @@ Sentry · Uptime · סליקה (מאוחר).
 > ★ מעודכן לפי D1: המערכת נשארת **במצב דמו** עד ההשקה הרשמית. לכן שלב 0 לא *מסיר* את חפצי הדמו —
 > הוא **מרכז אותם מאחורי דגל אחד** (`DEMO_MODE`, לכל פלטפורמה), כך שההשקה היא היפוך דגל אחד ולא חיפוש
 > אחרי שישה מקומות. היום הדגל `true`; בשלב 8 הוא הופך ל-`false`.
-- 0.1 shared+שרת: `DEMO_MODE` (שרת: env `DEMO_MODE`, ברירת מחדל = `SEED_DEMO`). בדמו: seed נשאר, חשבונות הדמו נשארים. מחוץ לדמו: seed כבוי, חשבונות הדמו מושבתים אוטומטית (`disabled_at`) בעלייה. **לא מוחקים כלום.**
+- 0.1 ✅ **2026-10-08** — שרת v0.9.0: `DEMO_MODE` (env, ברירת מחדל = `SEED_DEMO`, ולכן Render במצב דמו בלי שינוי). בדמו: seed נשאר, חשבונות הדמו נשארים. מחוץ לדמו: seed כבוי, חשבונות הדמו **מושבתים** בעלייה (`disabled_at`, מסיים גם sessions) ומוחזרים אם הדגל חוזר. **לא מוחקים כלום.** `/healthz` מדווח `demo`.
 - 0.2 ✅ **2026-10-08** — מדיניות סיסמה = **6 תווים ותו לא**, בכל מקום (D14): שרת v0.8.0 (`policy/password.ts`), shared v1.17.0, ווב v1.60.0, מובייל v0.99.0 (OTA). הטקסט "לפחות 6" היה נכון כל הזמן; השרת וה-constants תוקנו אליו. נפרס שרת-קודם כדי שאף לקוח לא יקדים אותו.
-- 0.3 ווב+מובייל: "View as role", `LEAD_DEBUG_SCREEN_ENABLED`, `DEFAULT_PREVIEW_ROLE`, כפתורי Apple/Google, שלב ה-OTP המזויף — כולם נקראים מ-`DEMO_MODE` במקום מקבועים נפרדים. בדמו הם נשארים בדיוק כמו היום.
-- 0.4 מובייל: שלב ה-OTP מקבל תווית ברורה "קוד הדגמה — הטלפון לא אומת" (בדמו); מחוץ לדמו השלב מדולג והטלפון נשמר כ-`unverified` (D2).
+- 0.3 ✅ **2026-10-08** — ווב v1.61.0 + מובייל v0.100.0: "View as role" (מוצג בדמו / dev / אדמין אמיתי), `LEAD_DEBUG_SCREEN_ENABLED`, `DEFAULT_PREVIEW_ROLE`, כפתורי Apple/Google (`SHOW_SOCIAL_SIGN_IN`), שלב ה-OTP (`PHONE_VERIFICATION_STEP`) — כולם נגזרים מקבוע `DEMO_MODE` אחד ב-`featureFlags` של כל אפליקציה. נוספה שורה גלויה Settings → About → "מצב: הדגמה" בשני האפים. בדמו הכול נשאר בדיוק כמו היום.
+- 0.4 ✅ **2026-10-08** — מובייל v0.100.0: בדמו שלב ה-OTP נשאר עם ההודעה הקיימת "גרסת הדגמה — לא נשלחת הודעת SMS"; מחוץ לדמו השלב מדולג (טלפון → פרופיל, וחזרה אחורה בהתאם) והטלפון נשמר כלא-מאומת (D2).
 - 0.5 שרת: `@fastify/helmet`; ווב: security headers ב-`vercel.json`. (הוספה בלבד, לא משפיע על דמו.)
 - 0.6 ווב: הסרת `user-scalable=no` (נגישות; הזום הפנימי של Text-size נשאר); favicon + meta description + manifest.
 - 0.7 תפעול: גיבוי cron (חינמי: GitHub Actions schedule → `backup.sh` → artifact מוצפן) + uptime monitor חינמי + Sentry free tier (שרת+ווב+מובייל) + staging (Neon branch חינמי).
@@ -446,6 +446,7 @@ Sentry · Uptime · סליקה (מאוחר).
 - 7.5 חובות Cross-Platform קיימים: Reminders + Interpretation לווב (W15, W16).
 
 ### שלב 8 — השקה
+- 8.0 ★ **היפוך `DEMO_MODE`** — שלושה מקומות, יחד: Render env `DEMO_MODE=false` + `SEED_DEMO=false` (החשבונות הפיקטיביים מושבתים בעלייה הבאה, לא נמחקים); ווב `config/featureFlags.ts` → `DEMO_MODE = false` (commit + Vercel); מובייל `config/featureFlags.ts` → `DEMO_MODE = false` (OTA). אימות: `/healthz` → `demo:false`, ובשני האפים Settings → About **בלי** שורת "מצב: הדגמה".
 - 8.1 דף נחיתה: טופס, עברית/RTL, קישורים, משפטי, SEO (4.6).
 - 8.2 חנויות: Play + App Store (M12) — privacy URL, מחיקת חשבון, צילומים, review notes.
 - 8.3 דומיינים + מייל `support@` (O6) + runbooks (O7).
