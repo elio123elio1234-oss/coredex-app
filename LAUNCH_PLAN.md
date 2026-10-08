@@ -8,6 +8,20 @@
 >
 > מוסכמות: ✅ קיים ועובד · 🟡 קיים חלקית / מזויף · ❌ חסר · 🔁 דורש שינוי (אישור) · 🚨 חור אבטחה/השקה
 
+> **📍 נקודת השחזור — `restore-point-2026-10-08`** (tag זהה בשלושת הריפואים, נדחף ל-GitHub).
+> "חוזרים לגרסה הנוכחית" = ה-tag הזה. מה הוא מצביע עליו:
+>
+> | ריפו | branch | commit | גרסה | פרוס |
+> |---|---|---|---|---|
+> | `coredex-app` (parent: mobile, shared, landing, HW, deck, תוכנית זו) | `master` | ראו `git show restore-point-2026-10-08` | mobile **0.98.0** (OTA) על runtime **0.45.0** build 17 · shared 0.3.0 · landing 0.3.1 | EAS channel `production` |
+> | `cyphix-medical-web` | `main` | `2bb9f4a` | **v1.59.1** | Vercel (auto מ-`main`) |
+> | `cyphix-server` | `main` | `9deffd7` | **0.7.1** | Render `cyphix-api` (auto מ-`main`), אומת: `/healthz` → `0.7.1` |
+>
+> **איך חוזרים:** שרת/ווב — `git revert` של ה-commits המאוחרים ל-`main` ו-push (Render/Vercel פורסים לבד), או
+> `git checkout restore-point-2026-10-08` + push ל-branch. מובייל — ה-JS חוזר ב-OTA: `git checkout restore-point-2026-10-08 -- CYPHIX_MEDICAL_MOBILE CYPHIX_SHARED`
+> ואז `eas update --channel production`; הבילד הנייטיבי (0.45.0) לא משתנה ולכן לא צריך חנות. DB — מיגרציות הן additive-only,
+> גרסת שרת ישנה רצה על סכמה חדשה ללא rollback של DB. סודות (`MASTER_KEY`) לא נוגעים בהם בשום rollback.
+
 ---
 
 ## 0. תקציר מנהלים (מה המצב באמת)
@@ -359,14 +373,17 @@ Sentry · Uptime · סליקה (מאוחר).
 > change-sets ביום אתה מאשר.
 
 ### שלב 0 — סגירת חורי השקה (ללא פיצ'רים חדשים)
-- 0.1 🔁 שרת: `SEED_DEMO=false` ב-Render, השבתת חשבונות הדמו, rotation לסיסמת אדמין. (אישור)
-- 0.2 🔁 ווב: תיקון טקסט סיסמה (6→10) en+he; מד חוזק מ-shared.
-- 0.3 🔁 ווב+מובייל: "View as role" רק ב-dev/אדמין; `LEAD_DEBUG_SCREEN_ENABLED` לפי `__DEV__`; `DEFAULT_PREVIEW_ROLE = null` בייצור.
-- 0.4 🔁 מובייל: הסתרת כפתורי Apple/Google אם אינם ממומשים.
-- 0.5 שרת: `@fastify/helmet`; ווב: headers ב-`vercel.json`.
-- 0.6 🔁 ווב: הסרת `user-scalable=no`; favicon + meta description + manifest.
-- 0.7 תפעול: גיבוי cron + uptime monitor + Sentry (שרת+ווב+מובייל) + staging (Neon branch).
-- 0.8 🔁 תפעול: מעבר ל-paid tier (Render Starter + Neon Launch) — אישור תקציב.
+> ★ מעודכן לפי D1: המערכת נשארת **במצב דמו** עד ההשקה הרשמית. לכן שלב 0 לא *מסיר* את חפצי הדמו —
+> הוא **מרכז אותם מאחורי דגל אחד** (`DEMO_MODE`, לכל פלטפורמה), כך שההשקה היא היפוך דגל אחד ולא חיפוש
+> אחרי שישה מקומות. היום הדגל `true`; בשלב 8 הוא הופך ל-`false`.
+- 0.1 shared+שרת: `DEMO_MODE` (שרת: env `DEMO_MODE`, ברירת מחדל = `SEED_DEMO`). בדמו: seed נשאר, חשבונות הדמו נשארים. מחוץ לדמו: seed כבוי, חשבונות הדמו מושבתים אוטומטית (`disabled_at`) בעלייה. **לא מוחקים כלום.**
+- 0.2 ווב: תיקון טקסט סיסמה (6→10) en+he; מד חוזק מ-shared. (באג, לא שינוי התנהגות — השרת כבר דורש 10.)
+- 0.3 ווב+מובייל: "View as role", `LEAD_DEBUG_SCREEN_ENABLED`, `DEFAULT_PREVIEW_ROLE`, כפתורי Apple/Google, שלב ה-OTP המזויף — כולם נקראים מ-`DEMO_MODE` במקום מקבועים נפרדים. בדמו הם נשארים בדיוק כמו היום.
+- 0.4 מובייל: שלב ה-OTP מקבל תווית ברורה "קוד הדגמה — הטלפון לא אומת" (בדמו); מחוץ לדמו השלב מדולג והטלפון נשמר כ-`unverified` (D2).
+- 0.5 שרת: `@fastify/helmet`; ווב: security headers ב-`vercel.json`. (הוספה בלבד, לא משפיע על דמו.)
+- 0.6 ווב: הסרת `user-scalable=no` (נגישות; הזום הפנימי של Text-size נשאר); favicon + meta description + manifest.
+- 0.7 תפעול: גיבוי cron (חינמי: GitHub Actions schedule → `backup.sh` → artifact מוצפן) + uptime monitor חינמי + Sentry free tier (שרת+ווב+מובייל) + staging (Neon branch חינמי).
+- 0.8 תפעול: paid tier — **נדחה לשלב 8** (D8). בדמו ה-free tier מספיק; לא מוציאים כסף לפני השקה.
 - 0.9 CI: GitHub Actions עם `typecheck` + `expo export` + בדיקות שרת (ה-E2E הקיים כסקריפט).
 
 ### שלב 1 — תשתית תקשורת יוצאת + זהות מלאה
@@ -413,7 +430,7 @@ Sentry · Uptime · סליקה (מאוחר).
 - 5.3 ווב: `/admin` shell + Overview + Organizations + Clinicians (תור אישורים) + Patients (עם סיבת צפייה) + Requests + Audit + System.
 - 5.4 שרת+ווב: Leads & Support (A16) + טופס בדף הנחיתה (L1).
 - 5.5 2FA TOTP לאדמין ולצוות (S14) — חובה לפני שאדמין רואה PHI מכל המערכת.
-- 5.6 `devices` (A12) + claim מהאפליקציה + מסכי Devices (admin, clinic, patient).
+- 5.6 `devices` (A12) + claim מהאפליקציה + מסכי Devices (admin, clinic, patient) — **נדחה עד שיש אבטיפוס מתקדם** (D13): החיבור לחומרה צפוי להשתנות, ולכן הסכמה תתוכנן אז, סביב מזהה שהקושחה החדשה תספק (serial), לא סביב שם BLE.
 
 ### שלב 6 — חיוב
 - 6.1 shared+שרת: סכמת 3.2 + job יומי `usage_counters` + יצירת חשבוניות + מייל חשבונית.
@@ -437,22 +454,29 @@ Sentry · Uptime · סליקה (מאוחר).
 
 ---
 
-## 7. החלטות שדרושות ממך לפני תחילת ביצוע (🔁)
+## 7. החלטות — נסגרו 2026-10-08
 
-| # | שאלה | ברירת המחדל שלי אם לא תענה |
-|---|---|---|
-| D1 | לכבות demo seed בפרודקשן ולהשבית `clinician@example.com`/`patient@example.com`? | כן |
-| D2 | OTP טלפוני: להסיר, להחליף ב-SMS אמיתי (עלות), או להשאיר כ"לא מאומת"? | להסיר עד שיש ספק |
-| D3 | רופא פרטי — אישור ידני שלך לכל רופא (תור בדשבורד) או אוטומטי עם רישיון? | ידני |
-| D4 | מנהל-על רואה תוכן פניות (טקסט חופשי) או רק מטא-דאטה? | רק מטא-דאטה |
-| D5 | מטופל standalone (בלי רופא) — חינם לתמיד / ניסיון / בתשלום? | חינם עם מגבלת היסטוריה (נדון בשלב 6) |
-| D6 | מטבע ILS + VAT 18%? | כן |
-| D7 | דף נחיתה: אחד לקהל לקוחות (ועברית) או להשאיר משקיעים ולהוסיף `/clinics`? | דף אחד, שני CTA |
-| D8 | מעבר ל-paid tier (Render ~$7, Neon ~$19) כבר בשלב 0? | כן |
-| D9 | איחוד RBAC ל-`CYPHIX_SHARED` (מוחק 2 עותקים) | כן, בשלב 3.1 |
-| D10 | ניתוב לפי תפקיד אחרי login (רופא נוחת ב-`/clinic`) — זה משנה את מסך הבית לרופאים | כן |
-| D11 | Push במובייל — להחזיר את ה-entitlement (דורש build native + פרופיל Apple) | כן, בשלב 3.9 |
-| D12 | דומיין: `cyphix.co.il` / `cyphix.health` / אחר? | — (אין ברירת מחדל) |
+המשתמש ענה: **D1 = נשארים במצב דמו** (אין השקה רשמית עדיין; החיבור לחומרה צפוי להשתנות עם אבטיפוס
+מתקדם יותר). **כל השאר הושאר להחלטתי** — להלן ההחלטות, והן מחייבות עד שייאמר אחרת:
+
+| # | שאלה | החלטה | למה |
+|---|---|---|---|
+| D1 | demo seed וחשבונות הדמו | **נשארים.** `SEED_DEMO=true` לא נוגעים. במקום הסרה: דגל `DEMO_MODE` אחד שמרכז את כל חפצי הדמו (0.1–0.4) ונהפך בהשקה | המשתמש: עדיין דמו |
+| D2 | OTP טלפוני | בדמו: נשאר, עם תווית "קוד הדגמה". מחוץ לדמו: השלב מדולג, הטלפון נשמר `unverified`. SMS אמיתי רק אם יוחלט לקנות ספק | אין ספק SMS; קוד מזויף שנראה אמיתי הוא הגרוע מכולם |
+| D3 | הרשמת רופא | **אישור ידני** שלך בתור בדשבורד (5.3), עם מספר רישיון + תעודה מצורפת | פיילוט קטן; אמון > אוטומציה |
+| D4 | מה מנהל-על רואה בפניות | **מטא-דאטה בלבד** (מי, למי, מתי, סטטוס). תוכן נשאר מוצפן per-patient | הפרדת תפקידים; זה למה ההצפנה per-patient |
+| D5 | מטופל standalone | **חינם בפיילוט, בלי מגבלת היסטוריה.** תוכנית B2C ממודלת אך לא פעילה. נבחן מחדש בשלב 6 | אין סיבה לחסום בדמו |
+| D6 | מטבע/מע"מ | **ILS, VAT 18%**, סכומים ב-agorot (`*_minor`) | שוק ראשון ישראל |
+| D7 | דף נחיתה | **דף אחד, שני CTA** ("אני מטופל" → חנויות/ווב · "אני מרפאה/רופא" → טופס), **עברית + אנגלית עם RTL** | קהל ראשון ישראלי; שני דפים = כפל תחזוקה |
+| D8 | paid tier | **נדחה לשלב 8.** לא מוציאים כסף לפני השקה; בדמו ה-cold start של ~50 שניות נסבל ומתועד על המסך (W17) | המשתמש בדמו; עלות = החלטה שלו ביום ההשקה |
+| D9 | איחוד RBAC ל-shared | **כן**, שלב 3.1, עם בדיקה שמשווה את 3 העותקים לפני המחיקה | שלושה עותקים של החלטת אבטחה |
+| D10 | ניתוב לפי תפקיד אחרי login | **כן**: `clinician/technician` → `/clinic`, `admin` → `/admin`, `patient` → `/measure`. חשבון הדמו `clinician@example.com` ינחת ב-`/clinic` ברגע שהוא קיים | רופא במסך בית של מטופל הוא הבאג הכי בולט היום |
+| D11 | Push במובייל | **כן**, שלב 3.9 — ויתואם עם הבילד הנייטיבי הבא (שגם החומרה החדשה תדרוש), לפי הכלל "native work goes last" | בילד נייטיבי = חנות; לעשות פעם אחת |
+| D12 | דומיין | **נדחה לשלב 8** — רכישה = כסף = החלטה שלך. עד אז `*.onrender.com` / `*.vercel.app`. המסמכים המשפטיים ייכתבו עם placeholder | |
+| D13 | חומרה / טבלת `devices` | **נדחה** (5.6) עד אבטיפוס מתקדם. שום דבר בשלבים 0–4 לא תלוי בזהות מכשיר | המשתמש: החיבור לחומרה ישתנה |
+
+**כלל העבודה שנקבע:** הכול ב-GitHub; כל change-set הוא commit משלו; אם משהו נשבר חוזרים ל-`restore-point-2026-10-08`
+(ראו הבלוק בראש המסמך). נקודת שחזור חדשה נוצרת בסוף כל שלב (`restore-point-<date>-phaseN`).
 
 ---
 
@@ -486,4 +510,5 @@ Sentry · Uptime · סליקה (מאוחר).
 
 ---
 
+<!-- v1.1.0 — Decisions D1–D13 recorded (demo mode stays; DEMO_MODE flag instead of removals; paid tier, domain and devices deferred); restore-point-2026-10-08 documented with the rollback procedure. -->
 <!-- v1.0.0 — LAUNCH_PLAN: full gap analysis + phased plan from prototype to a closed, launchable system (planning only, no code changed). -->
