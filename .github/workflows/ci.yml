@@ -1,0 +1,55 @@
+# ==================================================================
+# CI for the parent repo (coredex-app): the mobile app, the shared
+# package and the landing page. LAUNCH_PLAN step 0.9 / hole O1 — until
+# 2026-10-08 nothing ran on push anywhere, so "typechecks on my machine"
+# was the only gate and a broken push stayed broken until someone pulled.
+#
+# What this proves and what it does not (root CLAUDE.md §6.4): a green
+# run means the code is WELL-FORMED — it typechecks and the landing page
+# bundles. It does not mean a screen works; that still needs a phone.
+# ==================================================================
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  mobile-and-shared:
+    name: Mobile + shared — typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: CYPHIX_MEDICAL_MOBILE
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: CYPHIX_MEDICAL_MOBILE/package-lock.json
+      - run: npm ci
+      # The mobile typecheck follows every import into ../CYPHIX_SHARED, so a
+      # broken shared file fails here too; the second command checks shared on
+      # its own tsconfig so a file nobody imports yet is still held to it.
+      - run: npm run typecheck
+      - run: npx tsc --noEmit -p ../CYPHIX_SHARED/tsconfig.json
+
+  landing:
+    name: Landing page — build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: LANDING PAGE
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: LANDING PAGE/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+# v1.0.0 — First CI: mobile + shared typecheck, landing build, on every push and PR.

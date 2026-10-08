@@ -310,7 +310,7 @@ invoice_lines        (invoice_id, description, qty, unit_minor, total_minor)
 
 | # | חסר |
 |---|---|
-| O1 | אין בדיקות אוטומטיות, אין CI (אין `.github/`) באף אחד מ-5 הריפואים |
+| O1 | אין בדיקות אוטומטיות, אין CI (אין `.github/`) באף אחד מ-5 הריפואים — 🟡 **CI ✅ 2026-10-08** (0.9) בשלושת הריפואים; בדיקות יחידה/E2E רחבות עדיין חסרות |
 | O2 | אין סביבת staging — `npm run dev` מקומי כותב לפרודקשן (מתועד בזיכרון). צריך Neon branch + Render preview |
 | O3 | גיבוי: `backup.sh` ידני. צריך cron יומי + בדיקת שחזור חודשית + גיבוי `MASTER_KEY` |
 | O4 | ניטור: uptime (Better Uptime / UptimeRobot על `/healthz`), שגיאות (Sentry), לוגים מרוכזים |
@@ -384,7 +384,7 @@ Sentry · Uptime · סליקה (מאוחר).
 - 0.6 ✅ **2026-10-08** — ווב v1.62.0: `user-scalable=no` הוסר (זום בדפדפן מותר; ה-Text-size הפנימי לא נגע), `viewport-fit=cover`, favicon (סימן המותג מדף הנחיתה), description, theme-color, `noindex`. **`manifest.json` + `apple-touch-icon` נדחו ל-8.2** (צריכים PNG ריבועי בכמה גדלים — יחד עם ליטוש החנויות/PWA).
 - 0.7 תפעול: גיבוי cron (חינמי: GitHub Actions schedule → `backup.sh` → artifact מוצפן) + uptime monitor חינמי + Sentry free tier (שרת+ווב+מובייל) + staging (Neon branch חינמי).
 - 0.8 תפעול: paid tier — **נדחה לשלב 8** (D8). בדמו ה-free tier מספיק; לא מוציאים כסף לפני השקה.
-- 0.9 CI: GitHub Actions עם `typecheck` + `expo export` + בדיקות שרת (ה-E2E הקיים כסקריפט).
+- 0.9 ✅ **2026-10-08** — GitHub Actions בשלושת הריפואים: parent (מובייל typecheck + shared על ה-tsconfig שלו + בניית דף הנחיתה), ווב v1.62.1 (typecheck + build + בדיקה שגרסת ה-badge באמת בתוך ה-bundle), שרת v0.10.1 (typecheck + build + **עלייה אמיתית מול Postgres 16** עם סודות לריצה: seed, login דמו, מדיניות סיסמה 6/5, nosniff, ואז עלייה שנייה עם `DEMO_MODE=false` שמוכיחה שחשבונות הדמו הושבתו). `expo export` לא ב-CI (איטי, ולא מוכיח יותר מ-typecheck לפי §6.4).
 
 ### שלב 1 — תשתית תקשורת יוצאת + זהות מלאה
 - 1.1 shared: טיפוסים וחוזים (`AUTH_ROUTES` מלא, `email_tokens`, `UserStatus`).
