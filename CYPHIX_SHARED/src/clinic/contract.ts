@@ -164,7 +164,11 @@ export type NotificationKind =
   /** A patient redeemed your code (staff), or you were linked (patient). */
   | 'care:linked'
   /** The other side ended the link. */
-  | 'care:revoked';
+  | 'care:revoked'
+  /** A clinician registered and awaits review (admins; server v0.18.0). */
+  | 'clinician:pending'
+  /** Your account was approved (the clinician). */
+  | 'account:approved';
 
 /** References only — the audit rule. The words are the client's, from
     the kind and the names it already has. */
@@ -174,7 +178,7 @@ export interface NotificationView {
   createdAt: string;
   readAt: string | null;
   patientId: string | null;
-  resourceType: 'Request' | 'Recording' | 'CareRelationship' | null;
+  resourceType: 'Request' | 'Recording' | 'CareRelationship' | 'User' | null;
   resourceId: string | null;
   /** The other party's display name, resolved when read — not stored. */
   actorName: string | null;
@@ -211,6 +215,8 @@ export const CLINIC_PERMISSIONS = [
 ] as const;
 export type ClinicPermission = (typeof CLINIC_PERMISSIONS)[number];
 
+// v1.1.0 — NotificationKind gains 'clinician:pending' / 'account:approved'; resourceType
+//          gains 'User' (server v0.18.0, LAUNCH_PLAN 3.7).
 // v1.0.0 — PatientSummary + PATIENT_SUMMARY_ROUTE, the request entity (status machine,
 //          RequestView / Detail / Patch / Reply, REQUEST_ROUTES), notifications,
 //          PagedResult, the portal's permission names (LAUNCH_PLAN 3.1).

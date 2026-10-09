@@ -99,6 +99,10 @@ export type AuthErrorCode =
       expired — they live 300 s) or 503 `captcha_unavailable` (the
       verifier could not be reached). Either way: a fresh challenge. */
   | 'captcha-failed'
+  /** 401 `account_pending` — a self-registered clinician whose account
+      an admin has not yet approved (D3). Said only after the password
+      verified, so the address cannot be probed. */
+  | 'account-pending'
   | 'network'
   | 'unknown';
 
@@ -328,6 +332,8 @@ export const AUTH_ROUTES = {
   sessions: '/auth/sessions',
   /** Signed in. DELETE → 204: that one device is signed out. */
   session: (id: string) => `/auth/sessions/${encodeURIComponent(id)}`,
+  /** Public (server v0.18.0). ClinicianRegistrationInput → 202 pending; no tokens. */
+  registerClinician: '/auth/register-clinician',
 } as const;
 
 /**
@@ -364,6 +370,8 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
+// v1.7.0 — AuthErrorCode 'account-pending' + AUTH_ROUTES.registerClinician (server v0.18.0,
+//          LAUNCH_PLAN 3.7).
 // v1.6.0 — RegistrationInput.captchaToken + AuthErrorCode 'captcha-required' /
 //          'captcha-failed' (auth/captcha, server v0.15.0, LAUNCH_PLAN 1.10).
 // v1.5.0 — RegistrationInput.consents (legal/documents, server v0.13.0, LAUNCH_PLAN 1.8).

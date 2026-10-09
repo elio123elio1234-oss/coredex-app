@@ -52,6 +52,11 @@ export * from './auth/lifecycle';
    travels in, the posted message: all named here so three systems agree. */
 export * from './auth/captcha';
 
+/* A clinician registers themselves and waits for an admin (D3): the
+   input, the pending answer, what the reviewer sees, the status patch,
+   and the first ADMIN_ROUTES (the cockpit, phase 5, extends them). */
+export * from './auth/clinician';
+
 /* How a patient and their care are connected (LAUNCH_PLAN phase 2): a
    link as each side sees it, an invite as the staff who minted it see
    it, the code's alphabet and helpers, the routes, and the URL a QR code
@@ -182,6 +187,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.26.0 — Exports auth/clinician (UserStatus, ClinicianRegistrationInput / Result,
+//           PendingClinicianView, UserStatusPatch, ADMIN_ROUTES); AuthErrorCode
+//           'account-pending'; AUTH_ROUTES.registerClinician; two NotificationKinds
+//           (server v0.18.0, LAUNCH_PLAN 3.7).
 // v1.25.0 — Exports care/messages (ChatMessage, ChatThread, SendMessageInput,
 //           MESSAGE_ROUTES) and clinic/contract (PatientSummary, the request entity +
 //           state machine, notifications, PagedResult, CLINIC_PERMISSIONS) —
