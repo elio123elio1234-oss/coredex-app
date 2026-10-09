@@ -63,6 +63,9 @@ export * from './auth/clinician';
    carries — read by the phone as a deep link and by the web as a page. */
 export * from './care/contract';
 export * from './care/links';
+/* A clinic's patient list as text → invitation rows, parsed the same
+   way everywhere (header-aware, delimiter-tolerant, bad lines reported). */
+export * from './care/csv';
 
 /* The patient ↔ care thread (messages, requests with a coded reason),
    lifted from the web's view models so the phone's messageApi and the
@@ -191,6 +194,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.29.0 — care/contract v1.1.0 (invitations by e-mail, many at once, the treating
+//           clinician per link) + care/csv (parseInviteCsv) — LAUNCH_PLAN 4.3.
 // v1.28.0 — org/contract v1.1.0: OrgInviteRegisterInput + ORG_ROUTES.inviteRegister (a
 //           newcomer takes a team invitation without an account; active at once).
 // v1.27.0 — Exports org/contract (OrganizationView / Patch / Registration, the team's

@@ -60,6 +60,9 @@ export interface InviteSummary {
   expiresAt: string;
   usedAt: string | null;
   state: InviteState;
+  /** The address the invitation was e-mailed to (v1.1.0), null when the
+      code was handed over some other way. The inviter typed it. */
+  invitedEmail?: string | null;
 }
 
 export interface InviteCreateInput {
@@ -67,6 +70,46 @@ export interface InviteCreateInput {
   patientHint?: string;
   /** Clinic invites only; must be a member of the inviter's clinic. */
   assignedClinicianId?: string;
+  /** v1.1.0: the server e-mails the patient the link and the code. */
+  email?: string;
+}
+
+/* ── Many at once (LAUNCH_PLAN 4.3; A8) ───────────────────────────── */
+
+export const BULK_INVITE_MAX_ROWS = 200;
+
+/** One patient of a CSV (care/csv.ts) or a pasted list. */
+export interface BulkInviteRow {
+  email: string;
+  patientHint?: string;
+  /** Overrides the batch's default treating clinician for this row. */
+  assignedClinicianId?: string;
+}
+/** `POST /care/invites/bulk` (staff) → 201 BulkInviteResult. Every row
+    is answered — sent, or skipped with a reason — never silently dropped. */
+export interface BulkInviteInput {
+  kind: CareConnectionKind;
+  rows: BulkInviteRow[];
+  /** The treating clinician for every row that names none (clinic invites). */
+  assignedClinicianId?: string;
+}
+export type BulkInviteSkipReason = 'invalid_email' | 'duplicate' | 'already_linked' | 'unknown_clinician';
+export interface BulkInviteOutcome {
+  email: string;
+  status: 'sent' | 'skipped';
+  reason?: BulkInviteSkipReason;
+  inviteId?: string;
+}
+export interface BulkInviteResult {
+  sent: number;
+  skipped: number;
+  outcomes: BulkInviteOutcome[];
+}
+
+/** `PATCH /care/relationships/:id` (the clinic's staff; clinic links
+    only). `null` clears the treating clinician. */
+export interface CareRelationshipPatch {
+  assignedClinicianId: string | null;
 }
 
 /** `POST /care/invites` → 201. The one and only time the code is sent. */
@@ -132,10 +175,13 @@ export function formatInviteCode(raw: string): string {
 export const CARE_ROUTES = {
   /** GET → CareRelationshipView[] (the caller's side). */
   relationships: 'care/relationships',
-  /** DELETE → 204 (either party, or admin). */
+  /** DELETE → 204 (either party, or admin) · PATCH CareRelationshipPatch →
+      CareRelationshipView (the clinic's staff; v1.1.0). */
   relationship: (id: string) => `care/relationships/${encodeURIComponent(id)}`,
   /** Staff. GET → InvitesResult · POST InviteCreateInput → InviteCreated. */
   invites: 'care/invites',
+  /** Staff. POST BulkInviteInput → 201 BulkInviteResult (v1.1.0). */
+  bulkInvites: 'care/invites/bulk',
   /** Staff. DELETE → 204 (an OPEN invite is cancelled; a used one is 409). */
   invite: (id: string) => `care/invites/${encodeURIComponent(id)}`,
   /** Patient. POST CareLinkInput → CareLinkResult; 404 for a wrong, used,
@@ -154,5 +200,8 @@ export function careLinkUrl(code: string, origin: string = WEB_ORIGIN_DEFAULT): 
   return `${origin.replace(/\/+$/, '')}${CARE_LINK_PATH}/${normalizeInviteCode(code)}`;
 }
 
+// v1.1.0 — Invitations by e-mail (InviteCreateInput.email, InviteSummary.invitedEmail), many at
+//          once (BulkInviteRow / Input / Outcome / Result, CARE_ROUTES.bulkInvites), the
+//          treating clinician per link (CareRelationshipPatch) — LAUNCH_PLAN 4.3.
 // v1.0.0 — CareRelationshipView, InviteSummary (+ state), the create / link shapes,
 //          the code's alphabet + helpers, CARE_ROUTES, careLinkUrl (LAUNCH_PLAN 2.1).
