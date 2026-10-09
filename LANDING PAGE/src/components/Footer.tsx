@@ -3,7 +3,7 @@ import { APP_VERSION, APP_BUILD_LABEL } from "../config/version";
 
 export default function Footer() {
   return (
-    <footer className="footer" id="contact">
+    <footer className="footer" id="footer">
       <div className="container footer-inner">
         <a className="brand" href="#top" aria-label="CYPHIX home">
           <Logo className="brand-logo" />
@@ -21,4 +21,5 @@ export default function Footer() {
   );
 }
 
+// v0.4.0 — #contact moved to the form; the footer is #footer
 // v0.1.0 — footer with brand, copyright, visible version badge

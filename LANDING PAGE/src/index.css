@@ -597,6 +597,145 @@ p {
   flex-wrap: wrap;
 }
 
+/* contact — the request-access form (v0.4.0) */
+.contact {
+  border-top: 1px solid var(--line-2);
+}
+.contact-card {
+  max-width: 720px;
+  margin: 36px auto 0;
+  padding: 30px;
+}
+.contact-card:hover {
+  transform: none;
+}
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--head);
+}
+.field em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.field input,
+.field select,
+.field textarea {
+  font: inherit;
+  font-weight: 500;
+  font-size: 15.5px;
+  color: var(--head);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 13px 15px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.field textarea {
+  resize: vertical;
+  min-height: 112px;
+  line-height: 1.5;
+}
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%23566677' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  background: #fff;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 143, 146, 0.14);
+}
+.field.is-invalid input,
+.field.is-invalid select {
+  border-color: #d9534f;
+}
+.form-note {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.form-error {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #c0392b;
+}
+.contact-captcha {
+  min-height: 65px;
+}
+.contact-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.contact-actions .btn[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+  transform: none;
+}
+.contact-privacy {
+  font-size: 13px;
+  color: var(--muted);
+}
+.contact-sent {
+  text-align: center;
+  padding: 16px 8px 8px;
+}
+.contact-sent h3 {
+  margin: 14px 0 8px;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.contact-sent p {
+  margin: 0 auto;
+  max-width: 46ch;
+  color: var(--body);
+  line-height: 1.55;
+}
+.contact-check {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal-soft);
+  color: var(--teal-ink);
+}
+@media (max-width: 640px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+  .contact-card {
+    padding: 22px 18px;
+  }
+}
+
 /* footer */
 .footer {
   background: #fff;

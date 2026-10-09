@@ -28,6 +28,15 @@ vercel        # preview
 vercel --prod # production
 ```
 
+## The "Request access" form (v0.4.0)
+
+`src/components/ContactForm.tsx` posts a lead to the CYPHIX API
+(`POST {API_BASE_URL}/api/v1/leads`, see `src/config/api.ts`; the production
+server by default, `VITE_API_BASE_URL` to override). The server decides whether
+a CAPTCHA is needed (`GET /api/v1/auth/captcha`); the Turnstile widget is
+rendered only when it says so. The route answers any origin, so the page can
+be deployed anywhere.
+
 ## Structure
 
 ```

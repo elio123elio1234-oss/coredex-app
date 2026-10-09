@@ -1,5 +1,31 @@
 # Changelog — CYPHIX Landing
 
+## v0.4.0 — 2026-10-09 — "Request access" is a real form (LAUNCH_PLAN 5.4, L1)
+
+**Why:** every CTA on the page said "Request access" and scrolled to a footer
+with no form, no address and no phone (hole L1 in the launch plan). The
+server now has a door for exactly this (`POST /api/v1/leads`, v0.23.0).
+
+**What**
+
+- New `ContactForm` section (`#contact`) between the closing CTA and the
+  footer: full name, work e-mail, "I am" (clinic / hospital / private
+  practice / patient / other), organization (optional), message (optional).
+  Posts a lead with `source: "landing"`; the server thanks the sender by
+  e-mail and tells the team. A "sent" state replaces the form; errors are
+  said plainly (a bad field, too many requests, no connection).
+- Bot protection is the server's decision: the form asks `GET /auth/captcha`
+  and renders Cloudflare's Turnstile widget only when the policy names a
+  provider. Nothing is loaded otherwise — the page stays dependency-free.
+- The API base is `https://cyphix-api.onrender.com` by default
+  (`VITE_API_BASE_URL` overrides it). The server answers this route from
+  any origin, so the page can live on whatever domain it is deployed to.
+- The footer is `#footer` now; `#contact` is the form.
+- The form says what it is for: access requests, no medical details.
+
+**Not done:** Hebrew / RTL (L4), the sign-in and store links (L2), legal
+links (L3) — separate items in the launch plan.
+
 ## v0.3.1 — 2026-08-24 — Fit fix: clip overflow + true centering
 
 **Why:** v0.3.0 looked right in a raw browser window but broke when viewed
