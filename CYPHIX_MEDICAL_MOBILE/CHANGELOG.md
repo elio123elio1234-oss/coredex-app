@@ -1,5 +1,45 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.107.0 - 2026-10-09 - the request form is real, and the answer comes back
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package.
+
+**Why.** LAUNCH_PLAN 3.8 (M1). Since v0.92.0 the Chat tab has been a
+request form that, pressed, said in words that nothing was sent —
+because this app had no `messageApi`. The server has taken requests
+since v0.1.0 and, since v0.17.0 (phase 3), keeps each one as a thing
+with a status and tells the patient when it is answered. This is the
+phone catching up with its own API.
+
+**What.**
+- `messageApi` (mirror of the web's): the thread, send (a request when
+  it carries a reason), the patient's requests with status, one request
+  with its replies, the notifications inbox. Two new cache tags.
+- Send request → the real mutation: the recording as the attachment,
+  the coded reason (SNOMED CT where there is one), the details as the
+  text. Then one sentence: sent — or not sent and why (no care link
+  yet · offline · an error). A build without a backend still says "not
+  connected on this device", as before. Never dressed up.
+- "Your requests": every request, newest first — reason, when, the
+  recording, and a status in the patient's words (Sent · Being looked
+  at · Answered · Closed). Asked again once a minute while the tab is
+  in front.
+- Tap one → `RequestDetailSheet`: what you sent and every reply from
+  the care team; "has not answered yet" while it is open.
+- A banner counts the unread updates on your requests ("the doctor
+  answered", a status move); one tap clears them. This is the in-app
+  half of 3.8; push (3.9) waits for the entitlement.
+- Sign-in on a clinician account that awaits approval says so (server
+  v0.18.0, `account-pending`); the phone has no clinician registration
+  — that is the web's door (LAUNCH_PLAN 3.7, M13).
+
+**Verified.** `tsc --noEmit` and the OTA export; published as update
+group `81c2cf02-ca02-4585-83fe-338cb279a677` on channel `production`,
+runtime 0.45.0. 🔬 **Not run on a device in this change-set**: the
+list, the sheet and a real send were not touched on a phone — the
+server side of every call is probed by the server's CI (v1.7.0 /
+v1.8.0), the JS side is typechecked only.
+
 ## v0.106.0 - 2026-10-09 - your care team, and a way to join it
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package.

@@ -70,6 +70,9 @@ const ERROR_KEYS: Record<AuthErrorCode, TranslationKey> = {
      the challenge sheet is raised again. */
   'captcha-required': 'authErrCaptchaRequired',
   'captcha-failed': 'authErrCaptchaFailed',
+  /* A clinician who registered on the web and is not yet approved, trying
+     the phone (server v0.18.0). Shown on the sign-in step. */
+  'account-pending': 'authErrAccountPending',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };

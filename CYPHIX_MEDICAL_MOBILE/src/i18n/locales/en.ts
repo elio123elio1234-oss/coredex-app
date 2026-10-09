@@ -1004,6 +1004,22 @@ export const en = {
      is not wired on this device yet, and a fake "sent" would be worse
      than an honest "not sent". */
   reqNotConnected: 'Not sent — messaging is not connected on this device yet.',
+  /* v0.107.0: the delivery is real (server v0.17.0). Every outcome is a
+     plain sentence; a failure is still "not sent", never dressed up. */
+  reqSent: 'Your request was sent. The answer will appear here, under Your requests.',
+  reqNoCareLink: 'Not sent — you are not connected to a doctor or clinic yet. Join one from the banner above.',
+  reqOffline: 'Not sent — no connection. Try again when you are back online.',
+  reqSendError: 'Not sent — something went wrong. Please try again.',
+  reqLoadError: 'Could not load your requests right now.',
+  reqStatusNew: 'Sent',
+  reqStatusInProgress: 'Being looked at',
+  reqStatusAnswered: 'Answered',
+  reqStatusClosed: 'Closed',
+  reqDetailTitle: 'Your request',
+  reqYou: 'You',
+  reqCareTeam: 'Your care team',
+  reqAwaiting: 'Your care team has not answered yet. You will see it here when they do.',
+  reqUpdates: '{n} new updates on your requests — tap to clear',
   consultReasonLabel: 'Reason',
   consultReasonPlaceholder: 'Choose a reason…',
   reasonPalpitations: 'Palpitations',
@@ -1278,6 +1294,7 @@ export const en = {
   /* ── The bot check (server v0.15.0, LAUNCH_PLAN 1.10) ── */
   authErrCaptchaRequired: 'Please complete the quick check first.',
   authErrCaptchaFailed: 'The quick check did not go through. Please try it again.',
+  authErrAccountPending: 'Your clinician account is awaiting approval. You will be e-mailed when it is ready.',
   authCaptchaTitle: 'One quick check',
   authCaptchaBody: 'Confirm you are a person to finish creating your account.',
   authCaptchaNoWebView: 'This check opens in your browser and brings you straight back here.',
@@ -1724,3 +1741,5 @@ export type TranslationKey = keyof typeof en;
 // v1.32.0 — The bot check: two error codes, the challenge sheet (server v0.15.0).
 // v1.33.0 — Care links: the care-team rows, disconnect, the join sheet, the request-form banner
 //           (server v0.16.0).
+// v1.34.0 — Requests are real: sent / not-sent outcomes, the four statuses, the detail sheet,
+//           the updates banner (server v0.17.0); authErrAccountPending (server v0.18.0).

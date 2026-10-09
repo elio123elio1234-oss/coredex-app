@@ -18,6 +18,10 @@ const ERROR_KEY: Record<AuthErrorCode, TranslationKey> = {
   'wrong-password': 'authErrWrongPassword',
   'captcha-required': 'authErrCaptchaRequired',
   'captcha-failed': 'authErrCaptchaFailed',
+  /* A self-registered clinician awaiting approval (server v0.18.0). The
+     phone has no clinician sign-up, but a clinician may try to sign in
+     here — the sentence must exist. */
+  'account-pending': 'authErrAccountPending',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -26,5 +30,6 @@ export function authErrorKey(code: AuthErrorCode | null | undefined): Translatio
   return code ? ERROR_KEY[code] : null;
 }
 
+// v1.2.0 — account-pending (shared v1.26.0, server v0.18.0).
 // v1.1.0 — captcha-required / captcha-failed (shared v1.23.0, server v0.15.0).
 // v1.0.0 — AuthErrorCode → translation key (for the Account sheets).

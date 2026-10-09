@@ -27,24 +27,17 @@
    different and more honest thing to show a patient than a chat that may
    sit unanswered for a day.
 
-   ══ ⚠️ WHAT IS REAL TODAY AND WHAT IS NOT ══
-   **The form is real.** The recordings in the picker are this patient's
-   actual studies from `recordingApi`; the reasons are the platform's
-   coded list; the details field types; validation decides when the button
-   lights.
-
-   **The delivery is not.** This app has no `messageApi` —
-   `services/api/endpoints/` holds photo, profile, recording and sync and
-   nothing else — so the request has nowhere to go, and this round was
-   asked for as appearance first. Pressing Send therefore runs the real
-   sending state (which is where the border beam lives) and then says, in
-   words, that nothing was sent.
-
-   ⚠️ It must NOT be made to look successful. A patient who believes they
-   have asked a clinician to look at their heart, and has not, is the
-   worst outcome this screen can produce — worse than a screen that
-   plainly says it is not connected. When `messageApi` lands, `submit()`
-   becomes the mutation and `SENT_NOTICE` goes.
+   ══ WHAT IS REAL (v2.3.0, LAUNCH_PLAN 3.8, M1) ══
+   All of it. The recordings in the picker are this patient's studies from
+   `recordingApi`; the reasons are the platform's coded list; and Send is
+   `messageApi.sendMessage` — the server opens a `requests` row for it and
+   tells the staff. "Your requests" is the server's list with each one's
+   status, a tap opens the replies, and a banner counts the unread
+   updates. A build with no backend still says, in words, that nothing
+   was sent. The rule from v2.0.0 stands: a failure is never dressed up
+   as success — a patient who believes they have asked a clinician to
+   look at their heart, and has not, is the worst outcome this screen can
+   produce.
    ================================================================== */
 
 import { useMemo, useRef, useState } from 'react';
@@ -61,10 +54,20 @@ import {
 import ChoiceSheet, { type Choice } from '@/components/molecules/ChoiceSheet';
 import FieldRow from '@/components/molecules/FieldRow';
 import JoinCareSheet from '@/components/organisms/Care/JoinCareSheet';
+import RequestDetailSheet, {
+  REQUEST_STATUS_KEY,
+} from '@/components/organisms/Care/RequestDetailSheet';
 import { useGetCareRelationshipsQuery } from '@/services/api/endpoints/careApi';
+import {
+  useGetNotificationsQuery,
+  useGetRequestsQuery,
+  useMarkAllNotificationsReadMutation,
+  useSendMessageMutation,
+} from '@/services/api/endpoints/messageApi';
 import SendRequestButton from '@/components/molecules/SendRequestButton';
 import PatientShell from '@/components/templates/PatientShell';
 import { CONSULT_REASONS } from '@/config/consultReasons';
+import { ENV } from '@/config/env';
 import { useActivePatientId } from '@/features/auth/useActivePatientId';
 import { HISTORY_PAGE_SIZE, useListRecordingsQuery } from '@/services/api/endpoints/recordingApi';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -72,8 +75,11 @@ import type { TranslationKey } from '@/i18n/config';
 import { RADIUS } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
-/** How long the sending state is held before the notice. See the header. */
-const FAKE_SEND_MS = 1100;
+/** The SNOMED CT system URI a coded reason is stored under (web CLAUDE.md §5). */
+const SNOMED_SYSTEM = 'http://snomed.info/sct';
+
+/** How often the list and the inbox are re-asked while the tab is in front. */
+const POLL_MS = 60_000;
 
 /** One line of the field, and the ceiling it grows to before scrolling. */
 const MIN_DETAILS = 24;
@@ -109,6 +115,27 @@ export default function ChatScreen() {
   const care = useGetCareRelationshipsQuery();
   const nobodyLinked = care.isSuccess && (care.data ?? []).length === 0;
   const [careJoinOpen, setCareJoinOpen] = useState(false);
+  /* Which thread the request goes down: the clinic's when there is one
+     (triage), the private doctor's otherwise. The server makes it a
+     request either way, because of the reason. */
+  const mode = (care.data ?? []).some((r) => r.kind === 'clinic') ? 'clinic' : 'clinician';
+
+  /* The delivery (v2.3.0, LAUNCH_PLAN 3.8). Without a backend the local
+     store has no route for any of this, so it is not asked — and Send
+     says, as before, that nothing was sent. */
+  const wired = ENV.hasBackend && patientId != null;
+  const [send] = useSendMessageMutation();
+  const reqs = useGetRequestsQuery(
+    { limit: 20 },
+    { skip: !wired, pollingInterval: POLL_MS, skipPollingIfUnfocused: true },
+  );
+  const inbox = useGetNotificationsQuery(
+    { unread: true, limit: 20 },
+    { skip: !wired, pollingInterval: POLL_MS, skipPollingIfUnfocused: true },
+  );
+  const [readAll] = useMarkAllNotificationsReadMutation();
+  const unread = inbox.data?.unread ?? 0;
+  const [openRequest, setOpenRequest] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const detailsRef = useRef<TextInput>(null);
@@ -167,22 +194,49 @@ export default function ChatScreen() {
      and what for. Details are genuinely optional. */
   const canSend = studyId !== null && reasonId !== null && !sending;
 
-  const submit = () => {
+  const submit = async () => {
+    if (studyId === null || reasonId === null) return;
     setNotice(null);
     setSending(true);
     Keyboard.dismiss();
-    /* ⚠️ NOT a simulated success. The sending state is real — it is what
-       the button's beam is for — and what follows is the truth. */
-    setTimeout(() => {
-      /* ★ The outcome is PARKED, not shown. The button reports `onSettled`
-         once its light has travelled home, and the answer appears then —
-         so the result and the button's own state change together instead
-         of "not sent" landing under a button still reading "Sending…".
-         The wait is bounded by one lap (~2 s) and it never changes WHAT is
-         reported, only when. */
+    /* ★ The outcome is PARKED, not shown. The button reports `onSettled`
+       once its light has travelled home, and the answer appears then — so
+       the result and the button's own state change together instead of
+       "not sent" landing under a button still reading "Sending…". The wait
+       is bounded by one lap (~2 s) and never changes WHAT is reported. */
+    if (!wired || !patientId) {
       outcome.current = tr('reqNotConnected');
       setSending(false);
-    }, FAKE_SEND_MS);
+      return;
+    }
+    const reason = CONSULT_REASONS.find((r) => r.id === reasonId);
+    try {
+      await send({
+        patientId,
+        mode,
+        body: {
+          /* The server wants a text; with no details the reason is the text. */
+          text: details.trim() || reasonLabel || '',
+          reason: {
+            display: reasonLabel ?? '',
+            ...(reason?.code ? { code: reason.code, system: SNOMED_SYSTEM } : {}),
+          },
+          attachment: { recordingId: studyId, label: (studyLabel ?? studyId).slice(0, 200) },
+        },
+      }).unwrap();
+      outcome.current = tr('reqSent');
+      setStudyId(null);
+      setReasonId(null);
+      setDetails('');
+    } catch (err) {
+      /* ⚠️ Every branch is "not sent". 404 = no active link of that kind;
+         0 = the network; the rest is the server's problem, said plainly. */
+      const status = (err as { status?: number } | null)?.status ?? 0;
+      outcome.current =
+        status === 404 ? tr('reqNoCareLink') : status === 0 ? tr('reqOffline') : tr('reqSendError');
+    } finally {
+      setSending(false);
+    }
   };
 
   const settled = () => {
@@ -296,9 +350,72 @@ export default function ChatScreen() {
           <Text style={[styles.section, { color: t.textSecondary, textAlign: align }]}>
             {tr('reqYours')}
           </Text>
-          <Text style={[styles.empty, { color: t.textTertiary, textAlign: align }]}>
-            {tr('reqYoursEmpty')}
-          </Text>
+
+          {/* The in-app half of "the doctor answered" (3.8; push is 3.9):
+              the server counts what this person has not seen about their
+              requests, and one tap clears it. References only — the row
+              below is where the words are. */}
+          {unread > 0 && (
+            <Pressable
+              onPress={() => readAll()}
+              style={[styles.updates, { backgroundColor: t.surface, borderColor: t.accent }]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.updatesText, { color: t.accent, textAlign: align }]}>
+                {tr('reqUpdates', { n: unread })}
+              </Text>
+            </Pressable>
+          )}
+
+          {reqs.data && reqs.data.items.length > 0 ? (
+            reqs.data.items.map((r) => (
+              <Pressable
+                key={r.id}
+                onPress={() => setOpenRequest(r.id)}
+                style={[
+                  styles.reqRow,
+                  {
+                    backgroundColor: t.surface,
+                    borderColor: t.border,
+                    flexDirection: rtl ? 'row-reverse' : 'row',
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`${r.reason?.display ?? tr('reqDetailTitle')} · ${tr(REQUEST_STATUS_KEY[r.status])}`}
+              >
+                <View style={styles.reqMain}>
+                  <Text
+                    style={[styles.reqReason, { color: t.textPrimary, textAlign: align }]}
+                    numberOfLines={1}
+                  >
+                    {r.reason?.display ?? tr('reqDetailTitle')}
+                  </Text>
+                  <Text
+                    style={[styles.reqWhen, { color: t.textTertiary, textAlign: align }]}
+                    numberOfLines={1}
+                  >
+                    {fmtWhen(r.openedAt)}
+                    {r.attachment ? ` · ${r.attachment.label}` : ''}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.pill,
+                    {
+                      color: r.status === 'answered' ? t.accent : t.textSecondary,
+                      borderColor: r.status === 'answered' ? t.accent : t.border,
+                    },
+                  ]}
+                >
+                  {tr(REQUEST_STATUS_KEY[r.status])}
+                </Text>
+              </Pressable>
+            ))
+          ) : (
+            <Text style={[styles.empty, { color: t.textTertiary, textAlign: align }]}>
+              {reqs.isError ? tr('reqLoadError') : tr('reqYoursEmpty')}
+            </Text>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -324,6 +441,11 @@ export default function ChatScreen() {
         rtl={rtl}
       />
       <JoinCareSheet visible={careJoinOpen} onClose={() => setCareJoinOpen(false)} />
+      <RequestDetailSheet
+        visible={openRequest !== null}
+        requestId={openRequest}
+        onClose={() => setOpenRequest(null)}
+      />
     </PatientShell>
   );
 }
@@ -361,8 +483,36 @@ const styles = StyleSheet.create({
   },
   joinTitle: { fontSize: 14.5, fontWeight: '700', lineHeight: 20 },
   joinLink: { fontSize: 13.5, fontWeight: '700', lineHeight: 19 },
+  updates: { borderWidth: 1, borderRadius: RADIUS.lg, paddingVertical: 10, paddingHorizontal: 14 },
+  updatesText: { fontSize: 13.5, fontWeight: '700', lineHeight: 19 },
+  reqRow: {
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    gap: 10,
+  },
+  reqMain: { flex: 1, gap: 2 },
+  reqReason: { fontSize: 15, fontWeight: '700' },
+  reqWhen: { fontSize: 12.5 },
+  pill: {
+    fontSize: 12,
+    fontWeight: '700',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    overflow: 'hidden',
+  },
 });
 
+// v2.3.0 — THE DELIVERY IS REAL (server v0.17.0, LAUNCH_PLAN 3.8, M1): Send is the
+//          messageApi mutation (recording attached, coded reason, details as the
+//          text) and every outcome is a sentence — sent, or not sent and why. "Your
+//          requests" lists the server's rows with a status in the patient's words,
+//          a tap opens the replies (RequestDetailSheet), and a banner counts the
+//          unread updates. No backend → the old honest "not connected" line.
 // v2.2.0 — A banner above the form when nobody is linked, opening JoinCareSheet
 //          (server v0.16.0, LAUNCH_PLAN 2.4 — the phone's twin of web 2.5).
 // v2.1.0 — Two things that grated: the title sits to the SIDE like every other

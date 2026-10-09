@@ -892,6 +892,20 @@ export const he: Record<TranslationKey, string> = {
   reqYours: 'הפניות שלכם',
   reqYoursEmpty: 'פניות שתשלחו יופיעו כאן עם הסטטוס שלהן.',
   reqNotConnected: 'לא נשלח — ההודעות עדיין לא מחוברות במכשיר הזה.',
+  reqSent: 'הפנייה נשלחה. התשובה תופיע כאן, תחת "הפניות שלכם".',
+  reqNoCareLink: 'לא נשלח — עדיין לא חוברתם לרופא/ה או למרפאה. הצטרפו דרך הבאנר למעלה.',
+  reqOffline: 'לא נשלח — אין חיבור. נסו שוב כשתחזרו לרשת.',
+  reqSendError: 'לא נשלח — משהו השתבש. נסו שוב.',
+  reqLoadError: 'לא ניתן לטעון את הפניות כרגע.',
+  reqStatusNew: 'נשלחה',
+  reqStatusInProgress: 'בטיפול',
+  reqStatusAnswered: 'נענתה',
+  reqStatusClosed: 'נסגרה',
+  reqDetailTitle: 'הפנייה שלכם',
+  reqYou: 'את/ה',
+  reqCareTeam: 'הצוות המטפל',
+  reqAwaiting: 'הצוות המטפל עדיין לא ענה. התשובה תופיע כאן כשתגיע.',
+  reqUpdates: '{n} עדכונים חדשים על הפניות שלכם — הקישו לניקוי',
   consultReasonLabel: 'סיבה',
   consultReasonPlaceholder: 'בחרו סיבה…',
   reasonPalpitations: 'דפיקות לב',
@@ -1151,6 +1165,7 @@ export const he: Record<TranslationKey, string> = {
   /* ── בדיקת בוט (שרת v0.15.0) ── */
   authErrCaptchaRequired: 'קודם השלימו את הבדיקה הקצרה.',
   authErrCaptchaFailed: 'הבדיקה הקצרה לא עברה. נסו שוב.',
+  authErrAccountPending: 'חשבון הרופא שלך ממתין לאישור. נודיע לך במייל כשהוא מוכן.',
   authCaptchaTitle: 'בדיקה קצרה אחת',
   authCaptchaBody: 'אשרו שאתם בני אדם כדי לסיים את יצירת החשבון.',
   authCaptchaNoWebView: 'הבדיקה נפתחת בדפדפן ומחזירה אתכם ישר לכאן.',
@@ -1524,3 +1539,5 @@ export const he: Record<TranslationKey, string> = {
 //           the "Deletion scheduled" row (Hebrew).
 // v1.32.0 — The bot check: two error codes, the challenge sheet (Hebrew).
 // v1.33.0 — Care links: the care-team rows, disconnect, the join sheet, the banner (Hebrew).
+// v1.34.0 — Requests are real: outcomes, statuses, the detail sheet, the updates banner;
+//           authErrAccountPending (Hebrew).

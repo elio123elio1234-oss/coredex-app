@@ -1,8 +1,13 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.106.0';
-export const APP_BUILD_LABEL = 'Settings → Care connection lists who you are connected to (Disconnect) and joins a doctor or clinic with the 8-character code; cyphix://link/CODE opens the same sheet; the request form says when nobody is linked';
+export const APP_VERSION = '0.107.0';
+export const APP_BUILD_LABEL = 'Requests are real: Send request reaches your care team, Your requests lists each one with its status (Sent · Being looked at · Answered · Closed), tap one to read the answer, a banner counts new updates; signing in on a clinician account that awaits approval says so';
 
+// v0.107.0 - THE REQUEST FORM IS WIRED (server v0.17.0, LAUNCH_PLAN 3.8, M1). JS only -
+//            OTA. messageApi (thread / send / requests / detail / notifications);
+//            Send is the mutation with every outcome in words; "Your requests" with
+//            status + RequestDetailSheet (the replies); the unread-updates banner;
+//            'account-pending' at sign-in (server v0.18.0).
 // v0.106.0 - CARE LINKS (server v0.16.0, LAUNCH_PLAN 2.4). JS only - OTA. Settings →
 //            Care connection: the care-team rows (role, day, assigned clinician) with
 //            a confirmed Disconnect, and "Join a doctor or clinic" → JoinCareSheet
