@@ -187,6 +187,23 @@ export interface OrgInviteAcceptResult {
   orgRole: OrgRole;
 }
 
+/** `POST /organizations/invites/register` (public): a newcomer takes the
+    invitation WITHOUT an account. The org_admin vouched for them, so the
+    account is `active` at once — no super-admin review — with the
+    invited address, the global role they are, and the membership. The
+    answer is the login envelope (`AuthTokens`): signed in on the spot.
+    A clinician still gives their licence (kept, reviewed_by = the inviter). */
+export interface OrgInviteRegisterInput {
+  token: string;
+  fullName: string;
+  password: string;
+  role: Extract<GlobalRole, 'clinician' | 'technician'>;
+  specialty?: string;
+  licenseNo?: string;
+  consents?: ConsentInput[];
+  captchaToken?: string;
+}
+
 /** The web page the invitation e-mail opens (`?token=`). The web owns
     the page; the phone has no team screen (a clinician's tool, M13). */
 export const ORG_INVITE_PATH = '/join-team';
@@ -217,6 +234,8 @@ export const ORG_ROUTES = {
   invitePeek: (token: string) => `organizations/invites/${encodeURIComponent(token)}`,
   /** Signed in. POST OrgInviteAcceptInput → OrgInviteAcceptResult. */
   inviteAccept: 'organizations/invites/accept',
+  /** Public. POST OrgInviteRegisterInput → 201 AuthTokens (a new, active account). */
+  inviteRegister: 'organizations/invites/register',
 } as const;
 
 /* ── The super-admin's side (the cockpit, phase 5, extends these) ─── */
@@ -240,6 +259,8 @@ export const ADMIN_ORG_ROUTES = {
   organizationStatus: (id: string) => `admin/organizations/${encodeURIComponent(id)}/status`,
 } as const;
 
+// v1.1.0 — OrgInviteRegisterInput + ORG_ROUTES.inviteRegister: a newcomer takes the
+//          invitation without an account and is active at once (the org_admin vouched).
 // v1.0.0 — OrganizationView / Patch / Registration (A5), the team: OrgMemberView,
 //          OrgMemberPatch, the e-mail invitation (input, view, peek, accept, the
 //          /join-team page) (A6), ORG_ROUTES + ADMIN_ORG_ROUTES (LAUNCH_PLAN 4.1).

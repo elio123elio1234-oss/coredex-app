@@ -191,6 +191,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.28.0 — org/contract v1.1.0: OrgInviteRegisterInput + ORG_ROUTES.inviteRegister (a
+//           newcomer takes a team invitation without an account; active at once).
 // v1.27.0 — Exports org/contract (OrganizationView / Patch / Registration, the team's
 //           OrgMemberView / OrgMemberPatch, the e-mail invitation, ORG_ROUTES +
 //           ADMIN_ORG_ROUTES); three NotificationKinds + resourceType 'Organization'
