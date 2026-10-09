@@ -39,7 +39,17 @@ export interface AdminOverviewStats {
   /** One point per day, zero-filled, oldest first (`day` = yyyy-mm-dd). */
   recordingsPerDay: Array<{ day: string; count: number }>;
   /** What needs a human today. */
-  attention: { pendingClinicians: number; pendingOrganizations: number; overdueRequests: number };
+  attention: {
+    pendingClinicians: number;
+    pendingOrganizations: number;
+    overdueRequests: number;
+    /** v1.1.0 (server v0.23.0): leads not yet contacted, tickets not yet
+        answered. Optional on the wire — an older server sends neither. */
+    newLeads?: number;
+    openSupport?: number;
+  };
+  /** v1.1.0: the two doors of contact/contract.ts, counted. Optional. */
+  contact?: { leads: number; newLeads: number; tickets: number; openSupport: number };
 }
 
 /* ── People ───────────────────────────────────────────────────────── */
@@ -210,6 +220,7 @@ export const ADMIN_COCKPIT_ROUTES = {
   system: 'admin/system',
 } as const;
 
+// v1.1.0 — attention.newLeads / openSupport + the `contact` block (leads & support, 5.4).
 // v1.0.0 — The cockpit's contract: overview stats, users / patients / requests rows and
 //          queries, the reason-gated patient view, audit rows + query + CSV cap, system
 //          info, the organizations row, ADMIN_COCKPIT_ROUTES (LAUNCH_PLAN 5.1).

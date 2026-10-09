@@ -85,6 +85,10 @@ export * from './org/contract';
    people as rows, every request's age against the SLA (metadata only,
    D4), the audit trail as pages, the system's own report, the routes. */
 export * from './admin/contract';
+/* Leads & support (LAUNCH_PLAN 5.4): the landing page's "Request access"
+   and the apps' "Contact support" as two public doors — inputs, the
+   admin's rows and status ladders, the routes, the shape checks. */
+export * from './contact/contract';
 
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
@@ -198,6 +202,9 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.31.0 — Exports contact/contract (leads + support tickets: inputs, rows, queries, status
+//           patches, CONTACT_ROUTES / ADMIN_CONTACT_ROUTES, the shape checks); admin/contract
+//           v1.1.0 adds the optional contact counts to the overview — LAUNCH_PLAN 5.4.
 // v1.30.0 — Exports admin/contract (the cockpit: overview stats, users / patients /
 //           requests rows + queries, the reason-gated patient view, audit, system info,
 //           ADMIN_COCKPIT_ROUTES) — LAUNCH_PLAN 5.1.
