@@ -1124,6 +1124,13 @@ export const he: Record<TranslationKey, string> = {
   authErrRateLimited: 'יותר מדי ניסיונות. המתינו כמה דקות ונסו שוב.',
   authErrWrongPassword: 'הסיסמה הנוכחית שגויה.',
   authErrWrongCode: 'הקוד אינו תואם. בדקו ונסו שוב.',
+  /* ── בדיקת בוט (שרת v0.15.0) ── */
+  authErrCaptchaRequired: 'קודם השלימו את הבדיקה הקצרה.',
+  authErrCaptchaFailed: 'הבדיקה הקצרה לא עברה. נסו שוב.',
+  authCaptchaTitle: 'בדיקה קצרה אחת',
+  authCaptchaBody: 'אשרו שאתם בני אדם כדי לסיים את יצירת החשבון.',
+  authCaptchaNoWebView: 'הבדיקה נפתחת בדפדפן ומחזירה אתכם ישר לכאן.',
+  authCaptchaOpenBrowser: 'פתיחת הבדיקה',
 
   /* ══════════════════════════════════════════════════════════════════
      פענוח (טאב הפענוח).
@@ -1491,3 +1498,4 @@ export const he: Record<TranslationKey, string> = {
 // v1.30.0 — Legal documents: the review-step consent box, About legal + consent rows (Hebrew).
 // v1.31.0 — Export + scheduled deletion: the Privacy export row states, the delete sheet,
 //           the "Deletion scheduled" row (Hebrew).
+// v1.32.0 — The bot check: two error codes, the challenge sheet (Hebrew).

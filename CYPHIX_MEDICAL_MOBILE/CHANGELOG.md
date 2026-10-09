@@ -1,5 +1,40 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.105.0 - 2026-10-09 - a bot check at sign-up, when the server asks for one
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package: the
+challenge is the web app's own public `/captcha` page shown in the
+`react-native-webview` this binary has carried since app.json 0.35.0
+(`OptionalWebView`), and Cloudflare's widget runs inside that page.
+
+**Why.** LAUNCH_PLAN step 1.10 (hole S8). Server v0.15.0 can demand a
+Cloudflare Turnstile token on `POST /auth/register`; web v1.67.0 shows
+the widget on its review step and hosts the page the phone borrows.
+This is the phone's half.
+
+**What.**
+- **"Confirm and finish" asks first.** `GET /auth/captcha` — `off`
+  (every deployment until someone pastes Turnstile keys into Render)
+  creates the account exactly as v0.104.0 did; a named provider raises
+  `CaptchaSheet` over the review step.
+- **`CaptchaSheet`:** the web's `/captcha?embed=1&lang=…` in a 300 pt
+  WebView; the page posts `{type:'cyphix-captcha', token}` (shared
+  contract) and the sheet closes and registers with it. A binary without
+  the WebView, or a page that will not load, offers "Open the check"
+  instead: the same page in the system browser with
+  `return=cyphix://captcha`, and `AuthLinkListener` brings the token back
+  to the review step as a deep link (kind `captcha`, shared v1.23.0).
+- **Refusals:** `captcha-required` / `captcha-failed` from the server
+  put a line under the summary and raise the sheet again — a token is
+  single-use and lives 300 s, so a retry needs a new one.
+- **Deliberate divergence from web:** the phone draws no widget of its
+  own. One page, one set of words; nothing to drift. Recorded in
+  PARITY.md.
+
+🔬 Needs a device: the WebView's `postMessage` round trip, the sheet
+height with the widget in Hebrew, and the browser fallback's return
+through the `cyphix://` scheme have only been typechecked and bundled.
+
 ## v0.104.0 - 2026-10-09 - take your data with you; have your account erased
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package: the

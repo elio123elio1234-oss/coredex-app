@@ -1251,6 +1251,13 @@ export const en = {
   authErrRateLimited: 'Too many attempts. Wait a few minutes and try again.',
   authErrWrongPassword: 'The current password is incorrect.',
   authErrWrongCode: 'That code does not match. Check it and try again.',
+  /* ── The bot check (server v0.15.0, LAUNCH_PLAN 1.10) ── */
+  authErrCaptchaRequired: 'Please complete the quick check first.',
+  authErrCaptchaFailed: 'The quick check did not go through. Please try it again.',
+  authCaptchaTitle: 'One quick check',
+  authCaptchaBody: 'Confirm you are a person to finish creating your account.',
+  authCaptchaNoWebView: 'This check opens in your browser and brings you straight back here.',
+  authCaptchaOpenBrowser: 'Open the check',
 
   /* ══════════════════════════════════════════════════════════════════
      SCREENING (the Interpretation tab).
@@ -1690,3 +1697,4 @@ export type TranslationKey = keyof typeof en;
 //           (server v0.13.0).
 // v1.31.0 — Export + scheduled deletion: the Privacy export row states, the delete sheet,
 //           the "Deletion scheduled" row (server v0.14.0).
+// v1.32.0 — The bot check: two error codes, the challenge sheet (server v0.15.0).

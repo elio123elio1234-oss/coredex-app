@@ -41,6 +41,7 @@ import {
   MIN_PASSWORD_LENGTH,
   type AccountExport,
   type AuthSession,
+  type CaptchaPolicy,
   type ConsentInput,
   type ConsentRecord,
   type ConsentsResult,
@@ -251,6 +252,12 @@ class MockAuthService implements MobileAuthService {
     return toSession(account, token);
   }
 
+  /** No server, no policy: the offline mock never asks for a challenge,
+      which is what every mock build has always done. */
+  async captchaPolicy(): Promise<CaptchaPolicy> {
+    return { provider: 'off' };
+  }
+
   async register(input: RegistrationInput): Promise<AuthSession> {
     await this.settle();
     if (!input.password || input.password.length < MIN_PASSWORD_LENGTH) {
@@ -260,7 +267,7 @@ class MockAuthService implements MobileAuthService {
     const accounts = await this.accounts();
     if (accounts.some((a) => a.email === email)) throw new AuthError('email-taken');
 
-    const { fullName, email: _email, password, consents, ...profile } = input;
+    const { fullName, email: _email, password, consents, captchaToken: _captcha, ...profile } = input;
     const now = new Date().toISOString();
     const account: StoredAccount = {
       id: `user-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -675,3 +682,5 @@ export const authService: MobileAuthService = ENV.hasBackend
 // v2.5.0 — The mock implements AuthLifecycleContract: export (account + consents; the
 //          offline build has no server-side recordings) and a 14-day scheduled
 //          deletion with cancel, password-proven — server v0.14.0 shape.
+// v2.6.0 — The mock implements CaptchaContract: always `off` (no server, no policy);
+//          register drops `captchaToken` before storing the profile (server v0.15.0).

@@ -178,6 +178,22 @@ are materially closer to patient safety than the item that prompted it.
   a loading screen. Put it anywhere a reader draws a conclusion from what
   it renders and §1.3 is void.
 
+---
+
+## 4. Remote services this app loads on demand (not packages)
+
+Not SOUP in the §8.1.2 sense — nothing is installed, nothing runs at
+install — but egress, and therefore recorded.
+
+| Service | Where | When it loads | What it sees |
+|---|---|---|---|
+| **Cloudflare Turnstile** (v0.105.0) | Inside the web app's public `/captcha` page, shown in `react-native-webview` by `CaptchaSheet` | ONLY when `GET /auth/captcha` names a provider — i.e. a deployment whose operator set `TURNSTILE_*` keys on the server. Without them the sheet is never mounted and no byte goes to Cloudflare | The widget runs in its own cross-origin iframe inside the hosted page: the site key, nothing of the sign-up draft (which lives in this app's memory, not on that page). The token goes to our server, which sends it with the client IP to Cloudflare's `siteverify` |
+
+The widget is evaluated in the web register (`CYPHIX_MEDICAL_WEB/SOUP.md`
+§4), which owns the page. `react-native-webview` itself is row 38 of §2
+and still ⏳.
+
+<!-- v1.1.0 — §4: Cloudflare Turnstile recorded as a remote service loaded on demand inside the WebView (LAUNCH_PLAN 1.10). -->
 <!-- v1.0.0 — Opened when `thinking-orbs` was added and the right question was
      asked about it. Records what was verified against the published artifact
      and the built bundle rather than against documentation, and — more

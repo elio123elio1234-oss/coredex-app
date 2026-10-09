@@ -115,11 +115,19 @@ export default function AuthLinkListener() {
       dispatch(authLinkConsumed());
       Alert.alert(tr('authResetSignedInTitle'), tr('authResetSignedInBody'));
     }
-    /* A reset link while signed out stays pending for OnboardingScreen. */
+    /* The browser fallback of the sign-up's bot check (cyphix://captcha,
+       server v0.15.0) is only meaningful on the review screen; signed in,
+       there is no sign-up to finish and the token is simply dropped. */
+    if (pending.kind === 'captcha' && user) {
+      dispatch(authLinkConsumed());
+    }
+    /* A reset or captcha link while signed out stays pending for OnboardingScreen. */
   }, [pending, user, dispatch, tr]);
 
   return null;
 }
 
+// v1.2.0 — cyphix://captcha?token= (the bot check's browser fallback) stays pending for
+//          the review screen; dropped when signed in (server v0.15.0).
 // v1.1.0 — Spends the third link, cyphix://change-email?token= (server v0.12.0).
 // v1.0.0 — Deep-link intake for the reset and verification links (server v0.11.0).

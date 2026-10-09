@@ -21,6 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { AdministrativeGender, AuthErrorCode, BloodType } from '@cyphix/shared';
 import StepFadeIn from '@/components/atoms/Auth/StepFadeIn';
 import BloodStep from '@/components/organisms/Auth/BloodStep';
+import CaptchaSheet from '@/components/organisms/Auth/CaptchaSheet';
 import EmergencyStep from '@/components/organisms/Auth/EmergencyStep';
 import ForgotStep from '@/components/organisms/Auth/ForgotStep';
 import HeightStep from '@/components/organisms/Auth/HeightStep';
@@ -65,6 +66,10 @@ const ERROR_KEYS: Record<AuthErrorCode, TranslationKey> = {
   /* Cannot happen in this flow (nobody is signed in here); listed because
      the map is exhaustive on purpose — a new code must be given words. */
   'wrong-password': 'authErrWrongPassword',
+  /* The bot check (server v0.15.0): shown under the review summary while
+     the challenge sheet is raised again. */
+  'captcha-required': 'authErrCaptchaRequired',
+  'captcha-failed': 'authErrCaptchaFailed',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -92,9 +97,17 @@ export default function OnboardingScreen() {
      them wherever the app is. */
   const pendingLink = useAppSelector((s) => s.auth.pendingLink);
   useEffect(() => {
-    if (pendingLink?.kind !== 'reset') return;
-    dispatch(authLinkConsumed());
-    flow.openResetLink(pendingLink.token);
+    if (pendingLink?.kind === 'reset') {
+      dispatch(authLinkConsumed());
+      flow.openResetLink(pendingLink.token);
+      return;
+    }
+    /* The bot check's browser fallback came back (cyphix://captcha?token=,
+       server v0.15.0): only the review screen can spend it. */
+    if (pendingLink?.kind === 'captcha' && flow.step === 'review') {
+      dispatch(authLinkConsumed());
+      flow.submitCaptcha(pendingLink.token);
+    }
   }, [pendingLink, dispatch, flow]);
 
   const photo = useProfilePhoto(
@@ -486,6 +499,13 @@ export default function OnboardingScreen() {
       <StepFadeIn key={step} direction={direction} style={styles.root}>
         {renderStep()}
       </StepFadeIn>
+      {/* Raised over the review step only when the server's policy named a
+          provider (server v0.15.0); never mounted otherwise. */}
+      <CaptchaSheet
+        visible={flow.captchaOpen}
+        onClose={flow.cancelCaptcha}
+        onToken={flow.submitCaptcha}
+      />
     </View>
   );
 }
@@ -494,6 +514,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v1.2.0 — CaptchaSheet over the review step; ERROR_KEYS covers the two captcha codes;
+//          a cyphix://captcha link (browser fallback) is spent on the review step.
 // v1.1.0 — The 'reset' step (ResetStep) opened by an e-mailed link via the slice's
 //          pendingLink; ForgotStep gets busy + a failure line (server v0.11.0).
 // v1.1.1 — ERROR_KEYS covers 'wrong-password' (shared v1.20.0; unreachable in this flow).

@@ -16,6 +16,8 @@ const ERROR_KEY: Record<AuthErrorCode, TranslationKey> = {
   'invalid-link': 'authErrInvalidLink',
   'rate-limited': 'authErrRateLimited',
   'wrong-password': 'authErrWrongPassword',
+  'captcha-required': 'authErrCaptchaRequired',
+  'captcha-failed': 'authErrCaptchaFailed',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -24,4 +26,5 @@ export function authErrorKey(code: AuthErrorCode | null | undefined): Translatio
   return code ? ERROR_KEY[code] : null;
 }
 
+// v1.1.0 — captcha-required / captcha-failed (shared v1.23.0, server v0.15.0).
 // v1.0.0 — AuthErrorCode → translation key (for the Account sheets).

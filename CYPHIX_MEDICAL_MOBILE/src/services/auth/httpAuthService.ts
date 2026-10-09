@@ -35,9 +35,11 @@ import {
   ACCOUNT_LIFECYCLE_ROUTES,
   CONSENT_ROUTES,
   PATIENT_ROUTES,
+  CAPTCHA_ROUTES,
   type AuthErrorCode,
   type AuthSession,
   type AuthTokens,
+  type CaptchaPolicy,
   type ConsentInput,
   type ConsentRecord,
   type ConsentRecordedResult,
@@ -141,6 +143,11 @@ async function request<T>(path: string, body: unknown, opts: RequestOptions = {}
     /* Before the message heuristic: "the current password is incorrect"
        contains the word too, and is not a weak password. */
     else if (res.status === 400 && serverCode === 'wrong_password') code = 'wrong-password';
+    /* The bot check (server v0.15.0): "show the sheet" vs "a fresh one". */
+    else if (serverCode === 'captcha_required') code = 'captcha-required';
+    else if (serverCode === 'captcha_failed' || serverCode === 'captcha_unavailable') {
+      code = 'captcha-failed';
+    }
     else if (res.status === 400 && message?.toLowerCase().includes('password')) {
       code = 'weak-password';
     }
@@ -400,6 +407,11 @@ export class HttpAuthService implements MobileAuthService {
     return { user: tokens.user, token: tokens.accessToken, profile: {} };
   }
 
+  /** Public. `off` is a complete answer. */
+  captchaPolicy(): Promise<CaptchaPolicy> {
+    return request<CaptchaPolicy>(CAPTCHA_ROUTES.policy, undefined, { method: 'GET' });
+  }
+
   async register(input: RegistrationInput): Promise<AuthSession> {
     const { fullName, email, password, ...profile } = input;
     /* The server's register schema takes the health details as `profile`
@@ -433,6 +445,8 @@ export class HttpAuthService implements MobileAuthService {
       /* What the review screen's box confirmed, at the versions this
          build knows; the server writes it with the account (v0.13.0). */
       ...(input.consents?.length ? { consents: input.consents } : {}),
+      /* The challenge response, when the policy asked for one (v0.15.0). */
+      ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
     });
     await storeSession(tokens);
     await remember(tokens.user);
@@ -647,6 +661,9 @@ export class HttpAuthService implements MobileAuthService {
 // v2.5.0 — Account recovery against server v0.11.0: forgot / reset / verify-email /
 //          request-verification. `post` can carry the bearer (refresh once, retry
 //          once), maps 429 → rate-limited and `invalid_token` → invalid-link.
+// v2.9.0 — CAPTCHA (server v0.15.0): captchaPolicy() reads GET /auth/captcha; register
+//          carries `captchaToken`; captcha_required → 'captcha-required',
+//          captcha_failed / captcha_unavailable → 'captcha-failed'.
 // v2.7.0 — Consent (server v0.13.0): register carries `consents`; listConsents /
 //          recordConsent (ConsentContract).
 // v2.6.0 — Account self-service against server v0.12.0: change password, change

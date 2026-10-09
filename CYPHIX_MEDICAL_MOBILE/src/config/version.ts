@@ -1,8 +1,14 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.104.0';
-export const APP_BUILD_LABEL = '"Export my data" shares your whole account as one JSON file; "Delete account" schedules erasure 14 days out (password), cancellable from the same row';
+export const APP_VERSION = '0.105.0';
+export const APP_BUILD_LABEL = 'Sign-up raises a Turnstile bot check (in the web page, inside a sheet) when the server asks for one; off until keys are set';
 
+// v0.105.0 - THE BOT CHECK (server v0.15.0, LAUNCH_PLAN 1.10). JS only - OTA.
+//            "Confirm and finish" asks GET /auth/captcha; a named provider raises
+//            CaptchaSheet (the web's /captcha page in the binary's WebView, token by
+//            posted message; browser fallback via cyphix://captcha) and the token
+//            rides the registration. `off` - every deployment without keys - is the
+//            old path, unchanged.
 // v0.104.0 - EXPORT + SCHEDULED DELETION (server v0.14.0, LAUNCH_PLAN 1.9). JS only - OTA.
 //            Privacy → "Export my data" fetches the account as one JSON document and
 //            hands it to the share sheet; Account → "Delete account" asks for the

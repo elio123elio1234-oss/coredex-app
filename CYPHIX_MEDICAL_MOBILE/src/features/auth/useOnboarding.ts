@@ -10,7 +10,7 @@
 
 import { useCallback, useMemo, useReducer, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { AuthError, REQUIRED_CONSENTS, type AuthErrorCode } from '@cyphix/shared';
+import { AuthError, REQUIRED_CONSENTS, type AuthErrorCode, type CaptchaPolicy } from '@cyphix/shared';
 import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
 import { authService } from '@/services/auth/authService';
 import { useAuth } from './useAuth';
@@ -71,6 +71,11 @@ export interface Onboarding {
   submitReset: () => void;
   resendCode: () => void;
   finish: () => void;
+  /** The bot check's sheet is up (server v0.15.0 named a provider). */
+  captchaOpen: boolean;
+  /** The sheet handed back a token: create the account with it. */
+  submitCaptcha: (token: string) => void;
+  cancelCaptcha: () => void;
 }
 
 export function useOnboarding(): Onboarding {
@@ -83,6 +88,7 @@ export function useOnboarding(): Onboarding {
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const [captchaOpen, setCaptchaOpen] = useState(false);
   const { login, register, resetPassword, error, clearError, isBusy } = useAuth();
 
   const patch = useCallback((next: DraftPatch) => {
@@ -114,22 +120,64 @@ export function useOnboarding(): Onboarding {
   /** Create the account. Called at the END of the wizard (the review
       step), not after the credentials step: a patient who abandons the
       flow half way should not leave an account behind. */
-  const createAccount = useCallback(async () => {
-    try {
-      /* The review screen's consent box is what lets this run (its button
-         stays grey until ticked), so what is sent is what was confirmed:
-         both documents at the versions this build knows (server v0.13.0). */
-      await register({ ...toRegistrationInput(draft), consents: [...REQUIRED_CONSENTS] });
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setStep('success');
-    } catch {
-      /* The code is in the slice. Both failures that can land here
-         (address taken, password rejected) are about the credentials, so
-         that is the step to be standing on when reading the message. */
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setStep('signup');
-    }
-  }, [draft, register]);
+  const createAccount = useCallback(
+    async (captchaToken?: string) => {
+      try {
+        /* The review screen's consent box is what lets this run (its button
+           stays grey until ticked), so what is sent is what was confirmed:
+           both documents at the versions this build knows (server v0.13.0). */
+        await register({
+          ...toRegistrationInput(draft),
+          consents: [...REQUIRED_CONSENTS],
+          ...(captchaToken ? { captchaToken } : {}),
+        });
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setStep('success');
+      } catch (code) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        /* The bot check (server v0.15.0): a refused token is spent (they
+           are single-use), and a demand this build did not expect is still
+           a demand — both raise the challenge sheet again over the review
+           screen, where the slice's code reads as the line under the
+           summary. */
+        if (code === 'captcha-required' || code === 'captcha-failed') {
+          setCaptchaOpen(true);
+          return;
+        }
+        /* The code is in the slice. Both failures that can land here
+           (address taken, password rejected) are about the credentials, so
+           that is the step to be standing on when reading the message. */
+        setStep('signup');
+      }
+    },
+    [draft, register],
+  );
+
+  /** "Confirm and finish": ask whether the server wants a challenge
+      first. `off` — every deployment until Turnstile keys are set — goes
+      straight to the account; a named provider raises the sheet, whose
+      token then calls createAccount. A failed policy read is not a
+      refusal: register, and let the server say. */
+  const finish = useCallback(() => {
+    setChecking(true);
+    authService
+      .captchaPolicy()
+      .catch((): CaptchaPolicy => ({ provider: 'off' }))
+      .then((policy) => {
+        setChecking(false);
+        if (policy.provider !== 'off') setCaptchaOpen(true);
+        else void createAccount();
+      });
+  }, [createAccount]);
+
+  const submitCaptcha = useCallback(
+    (token: string) => {
+      setCaptchaOpen(false);
+      void createAccount(token);
+    },
+    [createAccount],
+  );
+  const cancelCaptcha = useCallback(() => setCaptchaOpen(false), []);
 
   const advanceProfile = useCallback(
     (from: OnboardingStep) => {
@@ -283,7 +331,10 @@ export function useOnboarding(): Onboarding {
       openResetLink,
       submitReset,
       resendCode,
-      finish: () => void createAccount(),
+      finish,
+      captchaOpen,
+      submitCaptcha,
+      cancelCaptcha,
     }),
     [
       step,
@@ -308,11 +359,17 @@ export function useOnboarding(): Onboarding {
       openResetLink,
       submitReset,
       resendCode,
-      createAccount,
+      finish,
+      captchaOpen,
+      submitCaptcha,
+      cancelCaptcha,
     ],
   );
 }
 
+// v1.4.0 — finish asks GET /auth/captcha first (server v0.15.0): a named provider raises
+//          CaptchaSheet and its token rides the registration; captcha-required /
+//          captcha-failed raise it again; `off` is the old path, unchanged.
 // v1.3.0 — createAccount sends REQUIRED_CONSENTS with the registration (server v0.13.0);
 //          the review screen's box is what lets it run.
 // v1.2.0 — Forgot really sends (busy + a failure line); the 'reset' step opened by
