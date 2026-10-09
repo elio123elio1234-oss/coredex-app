@@ -1,8 +1,15 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.105.0';
-export const APP_BUILD_LABEL = 'Sign-up raises a Turnstile bot check (in the web page, inside a sheet) when the server asks for one; off until keys are set';
+export const APP_VERSION = '0.106.0';
+export const APP_BUILD_LABEL = 'Settings → Care connection lists who you are connected to (Disconnect) and joins a doctor or clinic with the 8-character code; cyphix://link/CODE opens the same sheet; the request form says when nobody is linked';
 
+// v0.106.0 - CARE LINKS (server v0.16.0, LAUNCH_PLAN 2.4). JS only - OTA. Settings →
+//            Care connection: the care-team rows (role, day, assigned clinician) with
+//            a confirmed Disconnect, and "Join a doctor or clinic" → JoinCareSheet
+//            (code shaped as typed, consent sentence, 404/409 in words). A
+//            cyphix://link/CODE deep link (or the web /link URL a QR carries) raises
+//            the sheet pre-filled via CareLinkHost. The request form shows a banner
+//            when nobody is linked. Offline store: seeded demo links, CYPHDEM2 / CYPHCNC2.
 // v0.105.0 - THE BOT CHECK (server v0.15.0, LAUNCH_PLAN 1.10). JS only - OTA.
 //            "Confirm and finish" asks GET /auth/captcha; a named provider raises
 //            CaptchaSheet (the web's /captcha page in the binary's WebView, token by

@@ -28,7 +28,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LEGAL_DOCS, legalDocUrl } from '@cyphix/shared';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -61,6 +61,11 @@ import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
 import SettingsSection from '@/components/molecules/SettingsSection';
+import JoinCareSheet from '@/components/organisms/Care/JoinCareSheet';
+import {
+  useGetCareRelationshipsQuery,
+  useUnlinkCareMutation,
+} from '@/services/api/endpoints/careApi';
 import { ENV } from '@/config/env';
 import { DEMO_MODE, LEAD_DEBUG_SCREEN_ENABLED } from '@/config/featureFlags';
 import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
@@ -147,6 +152,29 @@ export default function SettingsScreen() {
   const ble = useBle();
   const ota = useOtaUpdate();
   const { user, logout, requestEmailVerification } = useAuth();
+  /* Care links (server v0.16.0, LAUNCH_PLAN 2.4): who this account is
+     connected to, a way to join with a code, and a confirmed disconnect.
+     The confirmation is an Alert — the same deliberate divergence from the
+     web as the remote sign-outs (PARITY.md). */
+  const care = useGetCareRelationshipsQuery();
+  const [unlinkCare] = useUnlinkCareMutation();
+  const [joinOpen, setJoinOpen] = useState(false);
+  const isStaff = user?.role === 'clinician' || user?.role === 'technician' || user?.role === 'admin';
+  const confirmDisconnect = (id: string, name: string) =>
+    Alert.alert(
+      tr('careDisconnectTitle'),
+      `${name}\n\n${isStaff ? tr('careDisconnectBodyStaff') : tr('careDisconnectBody')}`,
+      [
+        { text: tr('acctCancel'), style: 'cancel' },
+        {
+          text: tr('careDisconnect'),
+          style: 'destructive',
+          onPress: () => void unlinkCare(id).unwrap().catch(() => {}),
+        },
+      ],
+    );
+  const careDay = (iso: string) =>
+    new Date(iso).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' });
   const dispatch = useAppDispatch();
   const debugRole = useAppSelector((st) => st.auth.debugRole);
   const sessionRole = useAppSelector((st) => st.auth.user?.role);
@@ -430,6 +458,38 @@ export default function SettingsScreen() {
               />
             }
           />
+          {/* Who this account is actually connected to (server v0.16.0),
+              and — for a patient — the way to connect: the 8-character
+              code their clinician hands them, or the link it came with. */}
+          {care.isLoading ? (
+            <SettingsRow label={tr('histLoading')} />
+          ) : care.isError ? (
+            <SettingsRow label={tr('careTeamLoadError')} />
+          ) : (care.data ?? []).length === 0 ? (
+            <SettingsRow
+              label={isStaff ? tr('carePatientsEmpty') : tr('careTeamEmpty')}
+              description={isStaff ? undefined : tr('careTeamEmptyDesc')}
+            />
+          ) : (
+            (care.data ?? []).map((r) => (
+              <SettingsRow
+                key={r.id}
+                label={r.counterpartName}
+                description={`${r.counterpartRole} · ${tr('careTeamSince')} ${careDay(r.consentedAt ?? r.createdAt)}${
+                  r.assignedClinicianName ? ` · ${tr('careTeamAssigned')} ${r.assignedClinicianName}` : ''
+                }`}
+                value={tr('careDisconnect')}
+                onPress={() => confirmDisconnect(r.id, r.counterpartName)}
+              />
+            ))
+          )}
+          {!isStaff && (
+            <SettingsRow
+              label={tr('careJoinRow')}
+              description={tr('careJoinRowDesc')}
+              onPress={() => setJoinOpen(true)}
+            />
+          )}
         </SettingsSection>
         </FadeUpView>
 
@@ -893,6 +953,7 @@ export default function SettingsScreen() {
         onClose={() => setAccountSheet(null)}
         requestDeletion={lifecycle.requestDeletion}
       />
+      <JoinCareSheet visible={joinOpen} onClose={() => setJoinOpen(false)} />
     </View>
   );
 }
@@ -918,6 +979,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.5.0 — Care connection: the care-team / patients rows with a confirmed Disconnect
+//          (Alert), and "Join a doctor or clinic" → JoinCareSheet for patients
+//          (server v0.16.0, LAUNCH_PLAN 2.4).
 // v3.4.0 — About: Terms of Use / Privacy Notice rows (open the published pages) and a
 //          "Consent on record" chip with one-tap acceptance (server v0.13.0, 1.8).
 // v3.3.0 — Account: "Change password", "Change e-mail" and "Devices & sessions"

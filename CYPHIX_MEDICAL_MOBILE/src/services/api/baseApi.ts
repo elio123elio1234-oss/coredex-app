@@ -24,10 +24,11 @@ export const baseApi = createApi({
      reason a whole offline layer could be added without touching a single
      endpoint definition or screen. */
   baseQuery: ENV.hasBackend ? offlineBaseQuery : localBaseQuery,
-  tagTypes: ['Patient', 'Condition', 'Encounter', 'Recording', 'Message'],
+  tagTypes: ['Patient', 'Condition', 'Encounter', 'Recording', 'Message', 'Care'],
   endpoints: () => ({}),
 });
 
+// v0.4.0 — 'Care' tag (care relationships + invites, server v0.16.0).
 // v0.3.0 — The backend path now goes through offlineBaseQuery (device-first
 //          reads over the HTTP transport) instead of httpBaseQuery directly.
 // v0.2.0 — Live swap point: localBaseQuery (on-device Scan History) when no

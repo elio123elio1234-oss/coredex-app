@@ -1,5 +1,48 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.106.0 - 2026-10-09 - your care team, and a way to join it
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package.
+
+**Why.** LAUNCH_PLAN phase 2 (2.4, 2.6): the server has linked patients
+to clinicians by invite code since its first schema and this app could
+neither show a link nor make one. Server v0.16.0 answers what a screen
+needs; web v1.68.0/v1.69.0 is the browser half; this is the phone's.
+
+**What.**
+- **Settings → Care connection:** under the private-doctor / clinic
+  switch, the rows of who this account is connected to — name,
+  speciality or "Clinic", the day it was agreed, the clinic's assigned
+  clinician — each a tap to **Disconnect** (an Alert confirms; the link
+  ends on both sides and the card refreshes). Staff see their patients
+  in the same rows. Loading, failure and "nobody yet" are rows too.
+- **"Join a doctor or clinic"** (patients only) → `JoinCareSheet`: the
+  8-character code, upper-cased and dashed as typed, the consent
+  sentence in plain words above the button (redeeming IS the recorded
+  consent), one sentence for wrong / used / expired / cancelled (the
+  server's one 404), "already connected" its own. Success names who was
+  joined.
+- **Deep link.** `cyphix://link/CODE` — or the web `/link/CODE` URL a QR
+  code or a shared message carries — raises the sheet pre-filled
+  (`CareLinkHost`, mounted above the gate: a code that arrives signed
+  out waits for the sign-in; staff's is dropped). No native change: the
+  scheme has been in `app.json` since the first build.
+- **The request form** (Chat tab) shows a banner when nobody is linked,
+  opening the same sheet — the phone's twin of web 2.5.
+- **Offline build:** `careStore` seeds the demo doctor and clinic;
+  `CYPHDEM2` / `CYPHCNC2` join them back after a disconnect; any other
+  well-formed code is "not found" — the same table as the web mock.
+
+**Deliberately NOT in this build — QR scanning.** It needs `expo-camera`,
+a new native dependency (a SOUP evaluation and a rebuild), and native
+work goes last. The phone's own camera app reads the QR (it is a web
+URL), the page offers "Open in the CYPHIX app", and the deep link does
+the rest. Recorded in PARITY.md as pending with this reason.
+
+🔬 Needs a device: the sheet with the keyboard up, the Alert's two
+buttons in Hebrew, the deep link arriving signed out and then signed
+in, and the whole flow against Render 0.16.0 with a real code.
+
 ## v0.105.0 - 2026-10-09 - a bot check at sign-up, when the server asks for one
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package: the

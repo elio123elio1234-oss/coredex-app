@@ -333,6 +333,30 @@ export const en = {
   setCareClinicDesc: 'Requests are triaged by the clinic to an available clinician',
   careClinician: 'My doctor',
   careClinic: 'Clinic',
+  /* ── Care links: my care team, join with a code (server v0.16.0) ── */
+  careTeamEmpty: 'Not connected to a doctor or clinic yet',
+  careTeamEmptyDesc: 'Join with the code your clinician gave you, and your recordings and requests reach them.',
+  carePatientsEmpty: 'No patients linked yet',
+  careTeamLoadError: 'Could not load your care team. Try again later.',
+  careTeamSince: 'connected',
+  careTeamAssigned: 'followed by',
+  careDisconnect: 'Disconnect',
+  careDisconnectTitle: 'Disconnect?',
+  careDisconnectBody: 'They will no longer see your recordings or receive your requests. You can join again with a new code.',
+  careDisconnectBodyStaff: 'You will no longer see this patient’s recordings or requests. They can join again with a new code.',
+  careJoinRow: 'Join a doctor or clinic',
+  careJoinRowDesc: 'Enter the 8-character code your clinician gave you, or open the link they sent.',
+  careJoinTitle: 'Join a doctor or clinic',
+  careJoinDesc: 'Enter the code from your clinician or clinic. It works once and for 7 days.',
+  careJoinCodeLabel: 'Invite code',
+  careJoinConsent: 'By joining, you allow this clinician or clinic to see your recordings, your medical card and your requests. You can disconnect at any time from Settings.',
+  careJoinBtn: 'Join',
+  careJoining: 'Joining…',
+  careJoinNotFound: 'That code is not valid, has expired or was already used. Ask your clinician for a new one.',
+  careJoinAlready: 'You are already connected to them.',
+  careJoinedTitle: 'Connected',
+  careJoinedBody: 'You are now connected to {name} ({role}). Your recordings and requests reach them from now on.',
+  careJoinBanner: 'Join a doctor or clinic ›',
 
   setSecDevice: 'ECG Device',
   setSecDeviceDesc: 'Your Bluetooth ECG connection',
@@ -1698,3 +1722,5 @@ export type TranslationKey = keyof typeof en;
 // v1.31.0 — Export + scheduled deletion: the Privacy export row states, the delete sheet,
 //           the "Deletion scheduled" row (server v0.14.0).
 // v1.32.0 — The bot check: two error codes, the challenge sheet (server v0.15.0).
+// v1.33.0 — Care links: the care-team rows, disconnect, the join sheet, the request-form banner
+//           (server v0.16.0).

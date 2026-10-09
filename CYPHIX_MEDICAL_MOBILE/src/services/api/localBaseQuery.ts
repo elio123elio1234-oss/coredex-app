@@ -22,6 +22,14 @@
 import type { BaseQueryFn } from '@reduxjs/toolkit/query';
 import type { ApiError, ApiRequest } from '@cyphix/shared';
 import {
+  cancelInvite,
+  createInvite,
+  linkCare,
+  listCareLinks,
+  listInvites,
+  unlinkCare,
+} from '@/services/db/careStore';
+import {
   addAnnotation,
   createRecording,
   getRecording,
@@ -69,6 +77,13 @@ const ROUTES: Array<{ method: string; pattern: string[]; handler: Handler }> = [
     pattern: ['recordings', ':id', 'note'],
     handler: (s, b) => setRecordingNote(s[1], (b as { note: string }).note),
   },
+  /* ---- Care links (server v0.16.0): the same table as the web mock ---- */
+  { method: 'GET', pattern: ['care', 'relationships'], handler: () => listCareLinks() },
+  { method: 'DELETE', pattern: ['care', 'relationships', ':id'], handler: (s) => unlinkCare(s[2]) },
+  { method: 'POST', pattern: ['care', 'link'], handler: (_s, b) => linkCare((b as { code: string }).code) },
+  { method: 'GET', pattern: ['care', 'invites'], handler: () => listInvites() },
+  { method: 'POST', pattern: ['care', 'invites'], handler: (_s, b) => createInvite(b as never) },
+  { method: 'DELETE', pattern: ['care', 'invites', ':id'], handler: (s) => cancelInvite(s[2]) },
 ];
 
 function matches(pattern: string[], segments: string[]): boolean {
@@ -112,5 +127,6 @@ export const localBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiError> = async 
   }
 };
 
+// v1.1.0 — Care routes over careStore (relationships, link, invites), LAUNCH_PLAN 2.4.
 // v1.0.0 — Offline baseQuery over the on-device recording store; same envelope
 //          and route table as web mockBaseQuery, so endpoints are portable.

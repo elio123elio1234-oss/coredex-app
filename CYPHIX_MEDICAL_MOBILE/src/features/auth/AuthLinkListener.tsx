@@ -27,10 +27,11 @@
 
 import { useEffect, useRef } from 'react';
 import { Alert, Linking } from 'react-native';
-import { parseAuthLinkUrl } from '@cyphix/shared';
+import { parseAuthLinkUrl, parseCareLinkUrl } from '@cyphix/shared';
 import {
   authLinkConsumed,
   authLinkReceived,
+  careLinkReceived,
   confirmEmailChange,
   verifyEmail,
 } from '@/features/auth/authSlice';
@@ -48,8 +49,17 @@ export default function AuthLinkListener() {
      rejection means "no link", nothing more. */
   useEffect(() => {
     const handle = (url: string | null) => {
-      const link = url ? parseAuthLinkUrl(url) : null;
-      if (link) dispatch(authLinkReceived(link));
+      if (!url) return;
+      const link = parseAuthLinkUrl(url);
+      if (link) {
+        dispatch(authLinkReceived(link));
+        return;
+      }
+      /* A care-invite link (server v0.16.0): /link/CODE on the web host or
+         on the app scheme. Not an auth link — it goes to the join sheet
+         (CareLinkHost), once a patient is signed in. */
+      const code = parseCareLinkUrl(url);
+      if (code) dispatch(careLinkReceived(code));
     };
     Linking.getInitialURL()
       .then(handle)
@@ -127,6 +137,8 @@ export default function AuthLinkListener() {
   return null;
 }
 
+// v1.3.0 — Also reads care-invite links (cyphix://link/CODE, the web /link/CODE URL) into
+//          `pendingCareCode` for the join sheet (server v0.16.0, LAUNCH_PLAN 2.4).
 // v1.2.0 — cyphix://captcha?token= (the bot check's browser fallback) stays pending for
 //          the review screen; dropped when signed in (server v0.15.0).
 // v1.1.0 — Spends the third link, cyphix://change-email?token= (server v0.12.0).

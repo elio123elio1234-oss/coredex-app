@@ -4,6 +4,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import AuthLinkListener from '@/features/auth/AuthLinkListener';
+import CareLinkHost from '@/features/care/CareLinkHost';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
@@ -53,6 +54,10 @@ export default function App() {
                     whatever the app is showing, so the listener sits ABOVE the
                     gate and renders nothing. */}
                 <AuthLinkListener />
+                {/* A care-invite link (cyphix://link/CODE) becomes the join
+                    sheet once a patient is signed in; also above the gate,
+                    so a code that arrives signed-out waits for the sign-in. */}
+                <CareLinkHost />
                 {/* The signed-out flow stands in FRONT of the navigator,
                     not inside it: the splash, the sign-in and the
                     registration wizard have no tabs, no dock and no
@@ -117,6 +122,8 @@ const styles = StyleSheet.create({
 //          copy of the record and asks the server only what changed.
 // v2.5.0 — Starts the bundled-image warm-up at module scope, before the first
 //          render, so no photograph is first asked for on the screen showing it.
+// v2.9.0 — Mounts CareLinkHost next to AuthLinkListener: a care-invite deep link
+//          becomes the join sheet once a patient is signed in (LAUNCH_PLAN 2.4).
 // v2.4.0 — Adds the AuthGate around the navigator: splash → onboarding → app.
 // v2.3.0 — Adds I18nProvider inside the preference gate, so the first paint is
 //          already in the patient's stored language.

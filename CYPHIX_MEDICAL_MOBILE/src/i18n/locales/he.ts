@@ -305,6 +305,30 @@ export const he: Record<TranslationKey, string> = {
   setCareConnection: 'חיבור',
   setCareClinicianDesc: 'צ׳אט ישיר עם הרופא הפרטי שלך',
   setCareClinicDesc: 'הפניות ממוינות במרפאה לרופא פנוי',
+  /* ── קשרי טיפול: הצוות המטפל שלי, הצטרפות עם קוד (שרת v0.16.0) ── */
+  careTeamEmpty: 'עדיין לא מחוברים לרופא או למרפאה',
+  careTeamEmptyDesc: 'הצטרפו עם הקוד שקיבלתם מהרופא, וההקלטות והפניות שלכם יגיעו אליו.',
+  carePatientsEmpty: 'עדיין אין מטופלים מקושרים',
+  careTeamLoadError: 'לא ניתן לטעון את הצוות המטפל. נסו שוב מאוחר יותר.',
+  careTeamSince: 'מחובר מאז',
+  careTeamAssigned: 'במעקב של',
+  careDisconnect: 'ניתוק',
+  careDisconnectTitle: 'לנתק?',
+  careDisconnectBody: 'הם לא יראו יותר את ההקלטות שלכם ולא יקבלו את הפניות שלכם. אפשר להצטרף שוב עם קוד חדש.',
+  careDisconnectBodyStaff: 'לא תראו יותר את ההקלטות והפניות של המטופל. הוא יוכל להצטרף שוב עם קוד חדש.',
+  careJoinRow: 'הצטרפות לרופא או למרפאה',
+  careJoinRowDesc: 'הזינו את הקוד בן 8 התווים שקיבלתם מהרופא, או פתחו את הקישור שנשלח לכם.',
+  careJoinTitle: 'הצטרפות לרופא או למרפאה',
+  careJoinDesc: 'הזינו את הקוד מהרופא או מהמרפאה. הוא תקף לפעם אחת ולשבעה ימים.',
+  careJoinCodeLabel: 'קוד הזמנה',
+  careJoinConsent: 'בהצטרפות אתם מאפשרים לרופא או למרפאה לראות את ההקלטות, את הכרטיס הרפואי ואת הפניות שלכם. אפשר להתנתק בכל עת מההגדרות.',
+  careJoinBtn: 'הצטרפות',
+  careJoining: 'מצטרפים…',
+  careJoinNotFound: 'הקוד אינו תקף, פג תוקפו או שכבר נוצל. בקשו מהרופא קוד חדש.',
+  careJoinAlready: 'אתם כבר מחוברים אליהם.',
+  careJoinedTitle: 'מחוברים',
+  careJoinedBody: 'אתם מחוברים עכשיו ל{name} ({role}). מעכשיו ההקלטות והפניות שלכם מגיעות אליהם.',
+  careJoinBanner: 'הצטרפות לרופא או למרפאה ›',
   careClinician: 'הרופא שלי',
   careClinic: 'מרפאה',
 
@@ -1499,3 +1523,4 @@ export const he: Record<TranslationKey, string> = {
 // v1.31.0 — Export + scheduled deletion: the Privacy export row states, the delete sheet,
 //           the "Deletion scheduled" row (Hebrew).
 // v1.32.0 — The bot check: two error codes, the challenge sheet (Hebrew).
+// v1.33.0 — Care links: the care-team rows, disconnect, the join sheet, the banner (Hebrew).

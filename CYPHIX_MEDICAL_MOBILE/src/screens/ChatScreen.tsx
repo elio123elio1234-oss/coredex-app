@@ -60,6 +60,8 @@ import {
 } from 'react-native';
 import ChoiceSheet, { type Choice } from '@/components/molecules/ChoiceSheet';
 import FieldRow from '@/components/molecules/FieldRow';
+import JoinCareSheet from '@/components/organisms/Care/JoinCareSheet';
+import { useGetCareRelationshipsQuery } from '@/services/api/endpoints/careApi';
 import SendRequestButton from '@/components/molecules/SendRequestButton';
 import PatientShell from '@/components/templates/PatientShell';
 import { CONSULT_REASONS } from '@/config/consultReasons';
@@ -100,6 +102,13 @@ export default function ChatScreen() {
   const [details, setDetails] = useState('');
   const [detailsH, setDetailsH] = useState(MIN_DETAILS);
   const [picking, setPicking] = useState<'study' | 'reason' | null>(null);
+  /* Who the request would go to (server v0.16.0, LAUNCH_PLAN 2.4). With
+     nobody linked the form is a letter with no address, and the honest
+     thing is to say so above it and offer the join sheet — the phone's
+     twin of the web's Chat empty state (2.5). */
+  const care = useGetCareRelationshipsQuery();
+  const nobodyLinked = care.isSuccess && (care.data ?? []).length === 0;
+  const [careJoinOpen, setCareJoinOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const detailsRef = useRef<TextInput>(null);
@@ -205,6 +214,22 @@ export default function ChatScreen() {
             {tr('reqIntro')}
           </Text>
 
+          {nobodyLinked && (
+            <Pressable
+              onPress={() => setCareJoinOpen(true)}
+              style={[styles.joinBanner, { backgroundColor: t.surface, borderColor: t.border }]}
+              accessibilityRole="button"
+              accessibilityLabel={tr('careJoinRow')}
+            >
+              <Text style={[styles.joinTitle, { color: t.textPrimary, textAlign: align }]}>
+                {tr('careTeamEmpty')}
+              </Text>
+              <Text style={[styles.joinLink, { color: t.accent, textAlign: align }]}>
+                {tr('careJoinBanner')}
+              </Text>
+            </Pressable>
+          )}
+
           <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
             <FieldRow
               label={tr('reqStudyLabel')}
@@ -298,6 +323,7 @@ export default function ChatScreen() {
         onClose={() => setPicking(null)}
         rtl={rtl}
       />
+      <JoinCareSheet visible={careJoinOpen} onClose={() => setCareJoinOpen(false)} />
     </PatientShell>
   );
 }
@@ -326,8 +352,19 @@ const styles = StyleSheet.create({
   notice: { fontSize: 13.5, lineHeight: 19 },
   section: { fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
   empty: { fontSize: 13.5, lineHeight: 19 },
+  joinBanner: {
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    padding: 14,
+    marginBottom: 14,
+    gap: 4,
+  },
+  joinTitle: { fontSize: 14.5, fontWeight: '700', lineHeight: 20 },
+  joinLink: { fontSize: 13.5, fontWeight: '700', lineHeight: 19 },
 });
 
+// v2.2.0 — A banner above the form when nobody is linked, opening JoinCareSheet
+//          (server v0.16.0, LAUNCH_PLAN 2.4 — the phone's twin of web 2.5).
 // v2.1.0 — Two things that grated: the title sits to the SIDE like every other
 //          screen's (a centred one read as a different app), and the outcome now
 //          waits for the send button's light to finish its lap, so the answer

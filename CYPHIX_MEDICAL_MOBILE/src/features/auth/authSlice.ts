@@ -95,6 +95,12 @@ export interface AuthState {
    */
   pendingLink: AuthLink | null;
   /**
+   * A care-invite code the OS handed us (`cyphix://link/CODE`, or the web
+   * URL a QR code carries), waiting for a signed-in patient to spend it in
+   * the join sheet (`CareLinkHost`). Cleared by `careLinkConsumed`.
+   */
+  pendingCareCode: string | null;
+  /**
    * Whether a server has confirmed this session during THIS app run.
    *
    * `offline` is the honest state after a cold start that could not reach
@@ -172,6 +178,7 @@ const initialState: AuthState = {
   error: null,
   justRegistered: false,
   pendingLink: null,
+  pendingCareCode: null,
   /* v0.69.0 — starts at the configured preview role ('admin') instead of
      `null`. See DEFAULT_PREVIEW_ROLE: a rendering default, not a grant. */
   debugRole: DEFAULT_PREVIEW_ROLE,
@@ -406,6 +413,15 @@ const authSlice = createSlice({
     },
     authLinkConsumed(state) {
       state.pendingLink = null;
+    },
+    /** A care-invite link (`cyphix://link/CODE`, or the web URL a QR
+        carries) opened the app. Kept until a signed-in PATIENT can spend
+        it in the join sheet (CareLinkHost); staff drop it. */
+    careLinkReceived(state, action: PayloadAction<string>) {
+      state.pendingCareCode = action.payload;
+    },
+    careLinkConsumed(state) {
+      state.pendingCareCode = null;
     },
     /**
      * DEBUG: render the app as `role`, or `null` to go back to the real one.
@@ -670,6 +686,8 @@ export const {
   appUnlocked,
   authLinkConsumed,
   authLinkReceived,
+  careLinkConsumed,
+  careLinkReceived,
   clearAuthError,
   debugRoleSet,
   welcomeAcknowledged,
@@ -677,6 +695,8 @@ export const {
   authSlice.actions;
 export default authSlice.reducer;
 
+// v2.6.0 — Adds `pendingCareCode` + careLinkReceived / careLinkConsumed: a care-invite
+//          deep link waiting for the join sheet (server v0.16.0, LAUNCH_PLAN 2.4).
 // v2.5.0 — Adds `revalidatedOnce`: has the server been ASKED and answered, as
 //          distinct from "no request is in flight", which is also true before
 //          the first one. The boot warm-up waits on that distinction so a
