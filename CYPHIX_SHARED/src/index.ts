@@ -97,6 +97,11 @@ export * from './admin/contract';
    and the apps' "Contact support" as two public doors — inputs, the
    admin's rows and status ladders, the routes, the shape checks. */
 export * from './contact/contract';
+/* Billing (LAUNCH_PLAN phase 6; §3; D5, D6): plans per track, a subscription
+   with a trial and monthly periods, the counters a job computes, invoices
+   with VAT marked paid by hand, the subscriber's view, the cockpit's
+   revenue — and the ONE pricing rule both sides use. No payment processor. */
+export * from './billing/contract';
 
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
@@ -210,6 +215,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.33.0 — Exports billing/contract (plans, subscriptions, usage counters, invoices, the
+//           subscriber's view, the revenue report, BILLING_ROUTES / ADMIN_BILLING_ROUTES, the
+//           pure pricing rule); admin/contract v1.2.0 (billing block); clinic/contract v1.3.0
+//           (two NotificationKinds) — LAUNCH_PLAN 6.1, server v0.25.0.
 // v1.32.0 — Exports auth/totp (TOTP two-factor for staff: shapes, routes, challenge, contract,
 //           pure RFC 6238 maths for the mocks); AuthErrorCode 'totp-required' / 'totp-invalid' /
 //           'totp-expired'; SessionUser.totpEnabled (server v0.24.0, LAUNCH_PLAN 5.5).

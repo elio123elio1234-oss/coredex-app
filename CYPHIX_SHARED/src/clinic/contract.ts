@@ -174,7 +174,11 @@ export type NotificationKind =
   /** A clinician registered and awaits review (admins; server v0.18.0). */
   | 'clinician:pending'
   /** Your account was approved (the clinician). */
-  | 'account:approved';
+  | 'account:approved'
+  /** Billing (server v0.25.0): a period closed and an invoice is out (the
+      org's admins / the clinician); the subscription fell past due. */
+  | 'invoice:issued'
+  | 'subscription:past_due';
 
 /** References only — the audit rule. The words are the client's, from
     the kind and the names it already has. */
@@ -221,6 +225,7 @@ export const CLINIC_PERMISSIONS = [
 ] as const;
 export type ClinicPermission = (typeof CLINIC_PERMISSIONS)[number];
 
+// v1.3.0 — NotificationKind gains 'invoice:issued' / 'subscription:past_due' (billing, 6.1).
 // v1.2.0 — NotificationKind gains 'org:pending' / 'org:approved' / 'team:joined'; resourceType
 //          gains 'Organization' (LAUNCH_PLAN 4.1).
 // v1.1.0 — NotificationKind gains 'clinician:pending' / 'account:approved'; resourceType

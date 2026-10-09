@@ -47,9 +47,15 @@ export interface AdminOverviewStats {
         answered. Optional on the wire — an older server sends neither. */
     newLeads?: number;
     openSupport?: number;
+    /** v1.2.0 (server v0.25.0): subscriptions past due. Optional. */
+    pastDue?: number;
   };
   /** v1.1.0: the two doors of contact/contract.ts, counted. Optional. */
   contact?: { leads: number; newLeads: number; tickets: number; openSupport: number };
+  /** v1.2.0 (server v0.25.0): the money, from billing/contract.ts — the
+      forecast of the live subscriptions' next invoices (MRR), what is
+      issued and unpaid, and the subscriptions by state. Optional. */
+  billing?: { mrrMinor: number; outstandingMinor: number; trial: number; active: number; pastDue: number };
 }
 
 /* ── People ───────────────────────────────────────────────────────── */
@@ -220,6 +226,7 @@ export const ADMIN_COCKPIT_ROUTES = {
   system: 'admin/system',
 } as const;
 
+// v1.2.0 — attention.pastDue + the `billing` block (MRR, outstanding, subscriptions by state) — 6.1.
 // v1.1.0 — attention.newLeads / openSupport + the `contact` block (leads & support, 5.4).
 // v1.0.0 — The cockpit's contract: overview stats, users / patients / requests rows and
 //          queries, the reason-gated patient view, audit rows + query + CSV cap, system
