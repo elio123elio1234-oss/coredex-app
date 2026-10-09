@@ -419,8 +419,8 @@ Sentry · Uptime · סליקה (מאוחר).
 - 3.9 Push (M8, A19): "הרופא ענה", "תזכורת שלא בוצעה" — רק אחרי אישור entitlement.
 
 ### שלב 4 — מרפאה (org) 
-- 4.1 shared+שרת: הרחבת `organizations` (A5), `org_admin` יכולות (A6), הזמנת צוות במייל.
-- 4.2 ווב: הרשמת מרפאה (self-serve, `pending`) + Team screen + Clinic settings (פרטים, לוגו).
+- 4.1 ✅ **2026-10-09** — shared v1.27.0 + v1.28.0 (`org/contract`: `OrganizationView/Patch/RegistrationInput`, `OrgMemberView/Patch`, ההזמנה — input, view, peek ציבורי, accept, `OrgInviteRegisterInput`, דף `/join-team`; `ORG_ROUTES` + `ADMIN_ORG_ROUTES`; שלושה `NotificationKind` + resource `Organization`), שרת v0.19.0 (PR #9; migration 0011: `organizations` — type / status / פרטים (כתובת + ח.פ. חתומים) / review, `org_invites` עם hash בלבד; `POST /organizations/register` → 202 מרפאה + מנהל/ת ראשון/ה שניהם `pending`, ה-super-admins מקבלים התראה + מייל; `mine` / `:id` / `PATCH` (org_admin, פעילה בלבד); צוות — list / role / remove, לעולם לא ה-org_admin האחרון/ה (409); הזמנות במייל — קישור חד-פעמי 7 ימים ל-`/join-team`, peek ציבורי, accept מחובר/ת (רק הכתובת שהוזמנה), **newcomer נרשם/ת דרך הקישור ופעיל/ה מיד** (ה-org_admin ערב/ה); `GET /admin/organizations?status=` + `PATCH …/status` (אישור → המייסד/ת פעיל/ה + מייל + התראה); CI v1.9.0 בבוט נפרד). **🔁 נדחה:** צמצום scope המטופלים של מרפאה מושעית (שינוי התנהגות קיימת).
+- 4.2 ✅ **2026-10-09** — ווב v1.75.0: "רישום מרפאה" במסך הפתיחה → ארבעה מסכים (המרפאה וסוגה, את/ה, התפקיד, הסכמה + CAPTCHA) → "אצל מנהל/ת ב-CYPHIX"; `/clinic/settings` (פרטי המרפאה — org_admin עורך/ת, שדה שרוקן מתנקה; הצוות עם select תפקיד + הסרה, 409 במילים; "הזמנת עמית/ה" במייל + רשימת ההזמנות + ביטול; מרפאה pending = קריאה בלבד); `/join-team?token=` ציבורי (מחובר/ת → כפתור אחד; חשבון קיים → התחברות ואז הכפתור; newcomer → רישום קצר ונכנס/ת מיד). `orgTypes` מראה, `orgApi`, `OrganizationContract` בשני שירותי ה-auth, mock עם מרפאת הדמו. 55 בדיקות headless; live קריאה בלבד (רופא הדמו רואה את "CYPHIX Demo Clinic" עם חבר/ה אחד/ת). **מסך האישור של ה-admin למרפאות = 5.3.** המובייל: ללא מסך צוות בכוונה (M13) — קישור ההזמנה בטלפון פותח את הווב.
 - 4.3 שרת+ווב: הזמנות בכמות + ייבוא CSV + "רופא מטפל" לכל מטופל (A8, care_relationships.assigned_clinician_id).
 - 4.4 ווב: Requests inbox מרפאתי עם "שייך לרופא".
 - 4.5 Technician (מזכירה): רשימת מטופלים + הזמנות, בלי פרשנות (RBAC קיים).
@@ -513,6 +513,7 @@ Sentry · Uptime · סליקה (מאוחר).
 
 ---
 
+<!-- v1.9.0 — 4.1–4.2 shipped (shared v1.28.0, server v0.19.0, web v1.75.0: organizations — self-registration, the team, e-mail invitations, /join-team, 2026-10-09); suspended-org patient scope deferred; admin approval screens are 5.3. -->
 <!-- v1.8.0 — 3.4–3.7 shipped (web v1.71.0–v1.74.0: patients, requests, invite; shared v1.26.0 + server v0.18.0: clinician self-registration, pending until an admin approves, 2026-10-09); W5 deferred; the admin approval screen is 5.3. -->
 <!-- v1.7.0 — 3.1–3.3 shipped (shared v1.25.0, server v0.17.0, web v1.70.0: the clinic portal's contract, API and shell, 2026-10-09); X3 + role-based landing deferred. -->
 <!-- v1.6.0 — Phase 2 shipped (care links across shared/server/web/mobile, 2026-10-09); QR scanning deferred to the next native build. Phase 3 next. -->
