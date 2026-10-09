@@ -57,6 +57,10 @@ export interface RegistrationInput extends RegistrationProfile {
       older client still registers; the server records whatever arrives
       (v0.13.0) and refuses a stale version. */
   consents?: ConsentInput[];
+  /** The challenge response, when `GET /auth/captcha` named a provider
+      (auth/captcha.ts, server v0.15.0). Absent when the policy is off;
+      the server answers 400 `captcha_required` if it wanted one. */
+  captchaToken?: string;
 }
 
 export interface Credentials {
@@ -87,6 +91,14 @@ export type AuthErrorCode =
       'invalid-credentials' because the message is different: nothing is
       wrong with the account, only with what was just typed. */
   | 'wrong-password'
+  /** 400 `captcha_required` — the server wants a challenge response and
+      none was sent (a client older than the policy, or a token that was
+      never produced). The fix is to show the widget. */
+  | 'captcha-required'
+  /** 400 `captcha_failed` (the challenge was not passed, or its token
+      expired — they live 300 s) or 503 `captcha_unavailable` (the
+      verifier could not be reached). Either way: a fresh challenge. */
+  | 'captcha-failed'
   | 'network'
   | 'unknown';
 
@@ -352,6 +364,8 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
+// v1.6.0 — RegistrationInput.captchaToken + AuthErrorCode 'captcha-required' /
+//          'captcha-failed' (auth/captcha, server v0.15.0, LAUNCH_PLAN 1.10).
 // v1.5.0 — RegistrationInput.consents (legal/documents, server v0.13.0, LAUNCH_PLAN 1.8).
 // v1.4.0 — Account self-service (server v0.12.0, LAUNCH_PLAN 1.4b): AuthAccountContract
 //          (change password, change e-mail + confirm, list/revoke sessions), the input

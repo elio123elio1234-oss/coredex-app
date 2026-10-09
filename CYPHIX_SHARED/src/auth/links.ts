@@ -17,9 +17,14 @@
      exp://192.168.1.5:8081/--/reset-password?token=…      (Expo dev client)
    ================================================================== */
 
+import { CAPTCHA_PAGE_PATH, isCaptchaTokenShaped } from './captcha';
 import { AUTH_LINK_PATHS, AUTH_LINK_TOKEN_PARAM } from './contract';
 
-export type AuthLinkKind = 'reset' | 'verify' | 'change-email';
+/** 'captcha' is not an e-mailed link: it is the browser fallback of the
+    hosted challenge page handing its token back to the app
+    (`cyphix://captcha?token=…`, auth/captcha.ts). Same reader because it
+    arrives the same way — as a URL the OS hands the app. */
+export type AuthLinkKind = 'reset' | 'verify' | 'change-email' | 'captcha';
 
 export interface AuthLink {
   kind: AuthLinkKind;
@@ -53,7 +58,9 @@ export function parseAuthLinkUrl(url: string): AuthLink | null {
         ? 'verify'
         : path === AUTH_LINK_PATHS.changeEmail
           ? 'change-email'
-          : null;
+          : path === CAPTCHA_PAGE_PATH
+            ? 'captcha'
+            : null;
   if (!kind) return null;
 
   const raw = (m[3] ?? '')
@@ -67,8 +74,13 @@ export function parseAuthLinkUrl(url: string): AuthLink | null {
   } catch {
     return null;
   }
-  return TOKEN_SHAPE.test(token) ? { kind, token } : null;
+  /* A challenge token is a different animal from a server-minted one
+     (longer, dotted), so it has its own bound. */
+  const shaped = kind === 'captcha' ? isCaptchaTokenShaped(token) : TOKEN_SHAPE.test(token);
+  return shaped ? { kind, token } : null;
 }
 
+// v1.2.0 — Reads the browser fallback of the hosted challenge page:
+//          /captcha?token= → kind 'captcha' (server v0.15.0, LAUNCH_PLAN 1.10).
 // v1.1.0 — Reads the third link: /change-email?token= → kind 'change-email' (server v0.12.0).
 // v1.0.0 — parseAuthLinkUrl: web URL, cyphix:// scheme or Expo dev-client URL → { kind, token }.

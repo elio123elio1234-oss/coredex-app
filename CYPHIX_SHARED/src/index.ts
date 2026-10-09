@@ -45,6 +45,13 @@ export * from './legal/documents';
    law gives a person over their record, as routes, shapes and a contract. */
 export * from './auth/lifecycle';
 
+/* Bot protection on the public doors (register today; leads and support
+   when they exist). The SERVER decides whether a challenge is required —
+   a provider key in its environment — and the clients ask; no key means
+   nothing changes. The hosted page the phone shows, the field the token
+   travels in, the posted message: all named here so three systems agree. */
+export * from './auth/captcha';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -157,6 +164,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.23.0 — Exports auth/captcha: CaptchaPolicy, CAPTCHA_ROUTES, the token field,
+//           the hosted page (path, params, message, app return), CaptchaContract;
+//           RegistrationInput.captchaToken, two AuthErrorCodes, link kind 'captcha'
+//           (server v0.15.0, LAUNCH_PLAN 1.10).
 // v1.22.0 — Exports auth/lifecycle: AccountExport, DeletionStatus, the routes,
 //           DELETION_GRACE_DAYS, AuthLifecycleContract (server v0.14.0, LAUNCH_PLAN 1.9).
 // v1.21.0 — Exports legal/documents (ids, versions, paths, consent contract,
