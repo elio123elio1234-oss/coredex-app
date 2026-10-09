@@ -40,6 +40,11 @@ export * from './auth/userAgent';
    systems must agree on. */
 export * from './legal/documents';
 
+/* Take your data with you (one JSON document) and have your account
+   erased (scheduled, with a grace period and a cancel). The rights the
+   law gives a person over their record, as routes, shapes and a contract. */
+export * from './auth/lifecycle';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -152,6 +157,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.22.0 — Exports auth/lifecycle: AccountExport, DeletionStatus, the routes,
+//           DELETION_GRACE_DAYS, AuthLifecycleContract (server v0.14.0, LAUNCH_PLAN 1.9).
 // v1.21.0 — Exports legal/documents (ids, versions, paths, consent contract,
 //           REQUIRED_CONSENTS, CONSENT_ROUTES, missingConsents) and
 //           RegistrationInput.consents (server v0.13.0, LAUNCH_PLAN 1.8).
