@@ -74,6 +74,10 @@ export * from './care/messages';
    notifications as references, one pagination shape, and the names of
    the permissions the portal's guards use. */
 export * from './clinic/contract';
+/* Organizations (LAUNCH_PLAN phase 4): a clinic / hospital / practice
+   with a status, self-registration with its first admin, the team with
+   org roles, and the e-mailed invitation that gets a colleague in. */
+export * from './org/contract';
 
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
@@ -187,6 +191,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.27.0 — Exports org/contract (OrganizationView / Patch / Registration, the team's
+//           OrgMemberView / OrgMemberPatch, the e-mail invitation, ORG_ROUTES +
+//           ADMIN_ORG_ROUTES); three NotificationKinds + resourceType 'Organization'
+//           (LAUNCH_PLAN 4.1).
 // v1.26.0 — Exports auth/clinician (UserStatus, ClinicianRegistrationInput / Result,
 //           PendingClinicianView, UserStatusPatch, ADMIN_ROUTES); AuthErrorCode
 //           'account-pending'; AUTH_ROUTES.registerClinician; two NotificationKinds
