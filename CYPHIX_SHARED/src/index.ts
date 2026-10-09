@@ -81,6 +81,10 @@ export * from './clinic/contract';
    with a status, self-registration with its first admin, the team with
    org roles, and the e-mailed invitation that gets a colleague in. */
 export * from './org/contract';
+/* The admin cockpit (LAUNCH_PLAN phase 5): the overview's numbers, the
+   people as rows, every request's age against the SLA (metadata only,
+   D4), the audit trail as pages, the system's own report, the routes. */
+export * from './admin/contract';
 
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
@@ -194,6 +198,9 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.30.0 — Exports admin/contract (the cockpit: overview stats, users / patients /
+//           requests rows + queries, the reason-gated patient view, audit, system info,
+//           ADMIN_COCKPIT_ROUTES) — LAUNCH_PLAN 5.1.
 // v1.29.0 — care/contract v1.1.0 (invitations by e-mail, many at once, the treating
 //           clinician per link) + care/csv (parseInviteCsv) — LAUNCH_PLAN 4.3.
 // v1.28.0 — org/contract v1.1.0: OrgInviteRegisterInput + ORG_ROUTES.inviteRegister (a
