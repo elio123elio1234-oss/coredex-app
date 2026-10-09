@@ -27,7 +27,7 @@ interface Props {
   enabled?: boolean;
   busy?: boolean;
   /** White on navy is the default; the success screen inverts it. */
-  tone?: 'navy' | 'white';
+  tone?: 'navy' | 'white' | 'danger';
 }
 
 export default function AuthPrimaryButton({
@@ -38,7 +38,14 @@ export default function AuthPrimaryButton({
   busy = false,
   tone = 'navy',
 }: Props) {
-  const background = tone === 'white' ? '#FFFFFF' : enabled ? palette.navy : palette.muted;
+  const background =
+    tone === 'white'
+      ? '#FFFFFF'
+      : !enabled
+        ? palette.muted
+        : tone === 'danger'
+          ? palette.weak
+          : palette.navy;
   const color = tone === 'white' ? palette.navy : '#FFFFFF';
 
   return (
@@ -81,3 +88,4 @@ const styles = StyleSheet.create({
 });
 
 // v1.0.0 — The flow's navy primary action (grey when the step is incomplete).
+// v1.1.0 — `tone="danger"`: the destructive primary (delete account) — palette.weak when ready.

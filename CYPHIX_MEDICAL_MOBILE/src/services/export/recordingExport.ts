@@ -67,6 +67,7 @@ export async function shareFile(
 function utiFor(filename: string): string {
   if (filename.endsWith('.csv')) return 'public.comma-separated-values-text';
   if (filename.endsWith('.pdf')) return 'com.adobe.pdf';
+  if (filename.endsWith('.json')) return 'public.json';
   // EDF+ has no registered UTI. `public.data` is the honest generic answer:
   // it offers Files and Mail, which is where a research export goes.
   return 'public.data';
@@ -74,3 +75,4 @@ function utiFor(filename: string): string {
 
 // v1.0.0 — Mobile delivery for exports: cache write + OS share sheet, with the
 //          UTI iOS needs to offer the right destinations.
+// v1.0.1 — `.json` carries its UTI (the account export), so iOS offers Files and Mail for it.

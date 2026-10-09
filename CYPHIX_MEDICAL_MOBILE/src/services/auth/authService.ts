@@ -35,14 +35,18 @@ import * as Crypto from 'expo-crypto';
 import {
   AUTH_LINK_PATHS,
   AUTH_LINK_TOKEN_PARAM,
+  DELETION_GRACE_DAYS,
   AuthError,
   LEGAL_DOCS,
   MIN_PASSWORD_LENGTH,
+  type AccountExport,
   type AuthSession,
   type ConsentInput,
   type ConsentRecord,
   type ConsentsResult,
   type Credentials,
+  type DeletionRequestInput,
+  type DeletionStatus,
   type EmailChangeConfirmInput,
   type EmailChangeConfirmResult,
   type EmailChangeInput,
@@ -83,6 +87,11 @@ interface StoredAccount {
   emailVerified?: boolean;
   /** What this account accepted, newest last (server v0.13.0 shape). */
   consents?: ConsentRecord[];
+  /** When the account was made — the export reports it. Absent on older accounts. */
+  createdAt?: string;
+  /** Set while a deletion is scheduled (server v0.14.0 shape); cleared on cancel. */
+  deletionRequestedAt?: string;
+  deletionExecuteAfter?: string;
 }
 
 /** The mock's "sent e-mails": one-time links, in memory for this app run.
@@ -262,6 +271,7 @@ class MockAuthService implements MobileAuthService {
       role: 'patient',
       profile,
       consents: (consents ?? []).map((c) => ({ ...c, acceptedAt: now })),
+      createdAt: now,
     };
     accounts.push(account);
     await writeJson(ACCOUNTS_KEY, accounts);
@@ -539,6 +549,81 @@ class MockAuthService implements MobileAuthService {
     return record;
   }
 
+  /* ── Export + scheduled deletion (server v0.14.0 shape) ── */
+
+  private deletionOf(account: StoredAccount): DeletionStatus {
+    return {
+      scheduled: !!account.deletionExecuteAfter,
+      requestedAt: account.deletionRequestedAt ?? null,
+      executeAfter: account.deletionExecuteAfter ?? null,
+    };
+  }
+
+  /** The offline build holds no server-side recordings, threads or care
+      links — the export says so with empty lists, not invented ones. */
+  async exportData(): Promise<AccountExport> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    const { account } = cur;
+    return {
+      format: 'cyphix-export/1',
+      exportedAt: new Date().toISOString(),
+      account: {
+        id: account.id,
+        email: account.email,
+        displayName: account.displayName,
+        role: account.role,
+        createdAt: account.createdAt ?? new Date(0).toISOString(),
+        emailVerified: account.emailVerified ?? false,
+      },
+      patient: null,
+      recordings: [],
+      messages: [],
+      careRelationships: [],
+      consents: account.consents ?? [],
+    };
+  }
+
+  async deletionStatus(): Promise<DeletionStatus> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    return this.deletionOf(cur.account);
+  }
+
+  async requestDeletion({ password }: DeletionRequestInput): Promise<DeletionStatus> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    if ((await hashPassword(password)) !== cur.account.passwordHash) {
+      throw new AuthError('wrong-password');
+    }
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === cur.account.id);
+    if (!account) throw new AuthError('unknown');
+    const now = new Date();
+    account.deletionRequestedAt = now.toISOString();
+    account.deletionExecuteAfter = new Date(
+      now.getTime() + DELETION_GRACE_DAYS * 86_400_000,
+    ).toISOString();
+    await writeJson(ACCOUNTS_KEY, accounts);
+    return this.deletionOf(account);
+  }
+
+  async cancelDeletion(): Promise<DeletionStatus> {
+    await this.settle();
+    const cur = await this.current();
+    if (!cur) throw new AuthError('unknown');
+    const accounts = await this.accounts();
+    const account = accounts.find((a) => a.id === cur.account.id);
+    if (!account) throw new AuthError('unknown');
+    delete account.deletionRequestedAt;
+    delete account.deletionExecuteAfter;
+    await writeJson(ACCOUNTS_KEY, accounts);
+    return this.deletionOf(account);
+  }
+
   /** Phone verification, mocked. The code is FIXED and shown in the UI
       because there is no SMS gateway: a hidden random code would make the
       step impossible to complete, and a real-looking one that always
@@ -587,3 +672,6 @@ export const authService: MobileAuthService = ENV.hasBackend
 //          would sign a patient out of a build that has no backend by design.
 // v2.0.0 — Live swap point: HttpAuthService (CYPHIX_SERVER accounts, shared with
 //          the web app) when EXPO_PUBLIC_API_BASE_URL is set; device mock when not.
+// v2.5.0 — The mock implements AuthLifecycleContract: export (account + consents; the
+//          offline build has no server-side recordings) and a 14-day scheduled
+//          deletion with cancel, password-proven — server v0.14.0 shape.

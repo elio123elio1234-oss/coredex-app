@@ -32,6 +32,7 @@
 import {
   AUTH_ROUTES,
   AuthError,
+  ACCOUNT_LIFECYCLE_ROUTES,
   CONSENT_ROUTES,
   PATIENT_ROUTES,
   type AuthErrorCode,
@@ -41,7 +42,10 @@ import {
   type ConsentRecord,
   type ConsentRecordedResult,
   type ConsentsResult,
+  type AccountExport,
   type Credentials,
+  type DeletionRequestInput,
+  type DeletionStatus,
   type EmailChangeConfirmInput,
   type EmailChangeConfirmResult,
   type EmailChangeInput,
@@ -568,6 +572,30 @@ export class HttpAuthService implements MobileAuthService {
     return r.consent;
   }
 
+  /* ── Export + scheduled deletion (server v0.14.0) ── */
+
+  async exportData(): Promise<AccountExport> {
+    return request<AccountExport>(ACCOUNT_LIFECYCLE_ROUTES.export, undefined, {
+      auth: true,
+      method: 'GET',
+    });
+  }
+
+  async deletionStatus(): Promise<DeletionStatus> {
+    return request<DeletionStatus>(ACCOUNT_LIFECYCLE_ROUTES.deletion, undefined, {
+      auth: true,
+      method: 'GET',
+    });
+  }
+
+  async requestDeletion(input: DeletionRequestInput): Promise<DeletionStatus> {
+    return post<DeletionStatus>(ACCOUNT_LIFECYCLE_ROUTES.deletion, input, { auth: true });
+  }
+
+  async cancelDeletion(): Promise<DeletionStatus> {
+    return post<DeletionStatus>(ACCOUNT_LIFECYCLE_ROUTES.deletionCancel, {}, { auth: true });
+  }
+
   /** No SMS gateway on either side. The code is FIXED and shown on the
       step, exactly as in the mock: a hidden random code would make the
       step impossible to finish, and a real-looking one would let a patient
@@ -625,3 +653,5 @@ export class HttpAuthService implements MobileAuthService {
 //          e-mail (+ confirm), list / revoke sessions. `post` is a thin name over
 //          `request` (GET / DELETE too); `wrong_password` → wrong-password ahead of
 //          the "password" message heuristic.
+// v2.8.0 — Export + scheduled deletion against server v0.14.0 (AuthLifecycleContract):
+//          one decrypted JSON document; request / status / cancel of a 14-day erasure.

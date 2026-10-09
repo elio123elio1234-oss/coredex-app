@@ -329,6 +329,25 @@ export const he: Record<TranslationKey, string> = {
   encryptionBadge: 'מוצפן',
   setPrivacyExport: 'ייצוא הנתונים שלי',
   setPrivacyExportDesc: 'הורדת כל מה שנשמר במכשיר הזה',
+  /* ── Export + scheduled deletion (server v0.14.0) ── */
+  setPrivacyExportAccountDesc:
+    'הורדת עותק של החשבון — פרופיל, הקלטות, הודעות והסכמות — כקובץ JSON אחד.',
+  setPrivacyExportGo: 'הורדה',
+  setPrivacyExportBusy: 'מכינים…',
+  setPrivacyExportDone: 'שותף',
+  setPrivacyExportFailed: 'לא ניתן להכין את הייצוא. נסו שוב בעוד רגע.',
+  setAccountDelete: 'מחיקת חשבון',
+  setAccountDeleteDesc: 'מחיקת החשבון וכל מה שבו, אחרי תקופת חרטה של 14 יום.',
+  acctDeleteTitle: 'מחיקת החשבון שלכם',
+  acctDeleteBody:
+    'החשבון, ההקלטות, הפרופיל וההודעות יימחקו לצמיתות בעוד {days} יום. עד אז החשבון ממשיך לעבוד ואפשר לבטל מכאן. הזינו את הסיסמה לאישור.',
+  acctDeleteConfirm: 'מחקו את החשבון שלי',
+  acctDeleteScheduledTitle: 'המחיקה תוזמנה',
+  acctDeleteScheduledBody:
+    'החשבון יימחק ב-{date}. אם תתחרטו, חזרו לכאן לפני כן ובטלו. שלחנו לכם גם מייל.',
+  setAccountDeletionScheduled: 'המחיקה תוזמנה',
+  setAccountDeletionScheduledDesc: 'החשבון יימחק ב-{date}. הקישו כדי לבטל.',
+  setAccountDeletionCancel: 'ביטול המחיקה',
 
   setSecAccount: 'חשבון',
   setSecAccountDesc: 'החשבון שאיתו התחברת',
@@ -1470,3 +1489,5 @@ export const he: Record<TranslationKey, string> = {
 // v1.29.0 — Account self-service: change password / e-mail sheets, the devices list,
 //           the change-email link alerts, device + client words (Hebrew).
 // v1.30.0 — Legal documents: the review-step consent box, About legal + consent rows (Hebrew).
+// v1.31.0 — Export + scheduled deletion: the Privacy export row states, the delete sheet,
+//           the "Deletion scheduled" row (Hebrew).

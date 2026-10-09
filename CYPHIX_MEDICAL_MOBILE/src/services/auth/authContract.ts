@@ -18,6 +18,7 @@
 
 import type {
   AuthAccountContract,
+  AuthLifecycleContract,
   AuthRecoveryContract,
   AuthServiceContract,
   AuthSession,
@@ -34,7 +35,12 @@ export interface RememberedAccount {
 }
 
 export interface MobileAuthService
-  extends AuthServiceContract, AuthRecoveryContract, AuthAccountContract, ConsentContract {
+  extends
+    AuthServiceContract,
+    AuthRecoveryContract,
+    AuthAccountContract,
+    ConsentContract,
+    AuthLifecycleContract {
   /**
    * Ask the authority whether the session `restore()` just opened is
    * still real, and report which of the three things happened.
@@ -96,3 +102,5 @@ export const MOCK_SMS_CODE = '000000';
 // v1.4.0 — Extends AuthAccountContract (shared v1.20.0): change password / e-mail,
 //          sessions — server v0.12.0.
 // v1.5.0 — Extends ConsentContract (shared v1.21.0): consent on record — server v0.13.0.
+// v1.6.0 — Extends AuthLifecycleContract (shared v1.22.0): export + scheduled deletion —
+//          server v0.14.0.

@@ -1,8 +1,12 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.103.0';
-export const APP_BUILD_LABEL = 'The Terms of Use and Privacy Notice are real pages: the welcome line and the review step link to them, sign-up asks you to accept them and records the version, About shows your consent on record';
+export const APP_VERSION = '0.104.0';
+export const APP_BUILD_LABEL = '"Export my data" shares your whole account as one JSON file; "Delete account" schedules erasure 14 days out (password), cancellable from the same row';
 
+// v0.104.0 - EXPORT + SCHEDULED DELETION (server v0.14.0, LAUNCH_PLAN 1.9). JS only - OTA.
+//            Privacy → "Export my data" fetches the account as one JSON document and
+//            hands it to the share sheet; Account → "Delete account" asks for the
+//            password and schedules erasure 14 days out; the row then cancels it.
 // v0.103.0 - LEGAL DOCUMENTS + CONSENT (server v0.13.0, LAUNCH_PLAN 1.8). JS only - OTA.
 //            The welcome line's "Terms" / "Privacy Notice" open the web app's
 //            public pages; the review step gains the consent box that gates

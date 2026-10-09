@@ -53,6 +53,9 @@ import BackgroundSelectRow from '@/components/molecules/BackgroundSelectRow';
 import ConfirmDialog from '@/components/molecules/ConfirmDialog';
 import ChangeEmailSheet from '@/components/organisms/Account/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/organisms/Account/ChangePasswordSheet';
+import DeleteAccountSheet, {
+  formatDeletionDay,
+} from '@/components/organisms/Account/DeleteAccountSheet';
 import SessionsSheet from '@/components/organisms/Account/SessionsSheet';
 import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
@@ -64,6 +67,7 @@ import { APP_BUILD_LABEL, APP_VERSION } from '@/config/version';
 import { useOtaUpdate } from '@/features/updates/useOtaUpdate';
 import { useAuth } from '@/features/auth/useAuth';
 import { useConsents } from '@/features/auth/useConsents';
+import { useAccountLifecycle, type ExportState } from '@/features/auth/useAccountLifecycle';
 import { useBle } from '@/features/ble/useBle';
 import { usePreferences } from '@/features/preferences/usePreferences';
 import { useReminders } from '@/features/reminders/useReminders';
@@ -119,6 +123,20 @@ const ROLE_LABEL_KEY: Record<Role, TranslationKey> = {
   guest: 'roleLabelPatient',
 };
 
+/** The export row's chip, one label per state. */
+const EXPORT_CHIP_KEY: Record<ExportState, TranslationKey> = {
+  idle: 'setPrivacyExportGo',
+  busy: 'setPrivacyExportBusy',
+  done: 'setPrivacyExportDone',
+  error: 'acctRetry',
+};
+const EXPORT_CHIP_TONE: Record<ExportState, 'neutral' | 'ok' | 'warn'> = {
+  idle: 'neutral',
+  busy: 'neutral',
+  done: 'ok',
+  error: 'warn',
+};
+
 export default function SettingsScreen() {
   const t = useTheme();
   const dark = useIsDark();
@@ -143,15 +161,22 @@ export default function SettingsScreen() {
     'idle',
   );
   /* Which Account sheet is up (server v0.12.0). One at a time. */
-  const [accountSheet, setAccountSheet] = useState<'password' | 'email' | 'sessions' | null>(
-    null,
-  );
+  const [accountSheet, setAccountSheet] = useState<
+    'password' | 'email' | 'sessions' | 'delete' | null
+  >(null);
   /* What this account accepted (server v0.13.0) — loaded once per visit. */
   const consents = useConsents();
   const loadConsents = consents.load;
   useEffect(() => {
     void loadConsents();
   }, [loadConsents]);
+  /* Export + scheduled deletion (server v0.14.0). The deletion status is
+     loaded once per visit so the Account row tells the truth. */
+  const lifecycle = useAccountLifecycle();
+  const loadDeletion = lifecycle.loadDeletion;
+  useEffect(() => {
+    void loadDeletion();
+  }, [loadDeletion]);
   const appLockEnabled = useAppSelector((st) => st.auth.appLockEnabled);
   /* Whether the OS can honour a lock at all — asked once, on mount, and
      used to decide whether the row exists. See the row itself for why a
@@ -467,10 +492,24 @@ export default function SettingsScreen() {
             description={tr('setPrivacyOnDeviceDesc')}
             value={<SettingsChip label={tr('encryptionBadge')} tone="ok" />}
           />
+          {/* Real since server v0.14.0: one JSON document through the share
+              sheet. The chip is the state machine; a failure says so in the
+              description and offers another try. */}
           <SettingsRow
             label={tr('setPrivacyExport')}
-            description={tr('setPrivacyExportDesc')}
-            value={<SettingsChip label={tr('setComingSoon')} />}
+            description={
+              lifecycle.exportState === 'error'
+                ? tr('setPrivacyExportFailed')
+                : tr('setPrivacyExportAccountDesc')
+            }
+            onPress={() => void lifecycle.exportAndShare(tr('setPrivacyExport'))}
+            disabled={lifecycle.exportState === 'busy'}
+            value={
+              <SettingsChip
+                label={tr(EXPORT_CHIP_KEY[lifecycle.exportState])}
+                tone={EXPORT_CHIP_TONE[lifecycle.exportState]}
+              />
+            }
           />
         </SettingsSection>
         </FadeUpView>
@@ -550,6 +589,27 @@ export default function SettingsScreen() {
             description={tr('setAccountSessionsDesc')}
             onPress={() => setAccountSheet('sessions')}
           />
+          {/* Server v0.14.0: one row, two truths. Nothing scheduled → the
+              sheet asks for the password and schedules 14 days out; scheduled
+              → the row says the day and a tap cancels (the safe direction
+              needs no second confirmation). */}
+          {lifecycle.deletion?.scheduled && lifecycle.deletion.executeAfter ? (
+            <SettingsRow
+              label={tr('setAccountDeletionScheduled')}
+              description={tr('setAccountDeletionScheduledDesc', {
+                date: formatDeletionDay(lifecycle.deletion.executeAfter, lang),
+              })}
+              onPress={() => void lifecycle.cancelDeletion()}
+              disabled={lifecycle.busy}
+              value={<SettingsChip label={tr('setAccountDeletionCancel')} tone="warn" />}
+            />
+          ) : (
+            <SettingsRow
+              label={tr('setAccountDelete')}
+              description={tr('setAccountDeleteDesc')}
+              onPress={() => setAccountSheet('delete')}
+            />
+          )}
           <SettingsRow
             label={tr('setAccountRole')}
             value={<SettingsChip label={tr(ROLE_LABEL_KEY[user?.role ?? 'patient'])} />}
@@ -828,6 +888,11 @@ export default function SettingsScreen() {
       />
       <ChangeEmailSheet visible={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
       <SessionsSheet visible={accountSheet === 'sessions'} onClose={() => setAccountSheet(null)} />
+      <DeleteAccountSheet
+        visible={accountSheet === 'delete'}
+        onClose={() => setAccountSheet(null)}
+        requestDeletion={lifecycle.requestDeletion}
+      />
     </View>
   );
 }
@@ -895,3 +960,6 @@ const styles = StyleSheet.create({
 // v2.0.0 — Fully translated, and gains the Language picker at the top of
 //          Appearance (the one setting a patient must be able to find while
 //          unable to read the rest of the screen).
+// v3.5.0 — Privacy: "Export my data" is real (one JSON document through the share sheet);
+//          Account: the "Delete account" sheet and the "Deletion scheduled → cancel" row
+//          (server v0.14.0, LAUNCH_PLAN 1.9).

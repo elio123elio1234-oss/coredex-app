@@ -359,6 +359,25 @@ export const en = {
   encryptionBadge: 'Encrypted',
   setPrivacyExport: 'Export my data',
   setPrivacyExportDesc: 'Download everything stored on this device',
+  /* ── Export + scheduled deletion (server v0.14.0) ── */
+  setPrivacyExportAccountDesc:
+    'Download a copy of your account — profile, recordings, messages and consents — as one JSON file.',
+  setPrivacyExportGo: 'Download',
+  setPrivacyExportBusy: 'Preparing…',
+  setPrivacyExportDone: 'Shared',
+  setPrivacyExportFailed: 'Could not prepare the export. Try again in a moment.',
+  setAccountDelete: 'Delete account',
+  setAccountDeleteDesc: 'Erase the account and everything in it, after a 14-day grace period.',
+  acctDeleteTitle: 'Delete your account',
+  acctDeleteBody:
+    'Your account, recordings, profile and messages will be permanently erased {days} days from now. Until then the account keeps working and you can cancel from here. Enter your password to confirm.',
+  acctDeleteConfirm: 'Delete my account',
+  acctDeleteScheduledTitle: 'Deletion scheduled',
+  acctDeleteScheduledBody:
+    'Your account will be erased on {date}. If you change your mind, come back here before then and cancel. We have also sent you an e-mail.',
+  setAccountDeletionScheduled: 'Deletion scheduled',
+  setAccountDeletionScheduledDesc: 'Your account will be erased on {date}. Tap to cancel.',
+  setAccountDeletionCancel: 'Cancel deletion',
 
   setSecAccount: 'Account',
   setSecAccountDesc: 'Who you are signed in as',
@@ -1669,3 +1688,5 @@ export type TranslationKey = keyof typeof en;
 //           the change-email link alerts, device + client words (server v0.12.0).
 // v1.30.0 — Legal documents: the review-step consent box, About legal + consent rows
 //           (server v0.13.0).
+// v1.31.0 — Export + scheduled deletion: the Privacy export row states, the delete sheet,
+//           the "Deletion scheduled" row (server v0.14.0).
