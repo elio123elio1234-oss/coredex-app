@@ -52,6 +52,13 @@ export * from './auth/lifecycle';
    travels in, the posted message: all named here so three systems agree. */
 export * from './auth/captcha';
 
+/* How a patient and their care are connected (LAUNCH_PLAN phase 2): a
+   link as each side sees it, an invite as the staff who minted it see
+   it, the code's alphabet and helpers, the routes, and the URL a QR code
+   carries — read by the phone as a deep link and by the web as a page. */
+export * from './care/contract';
+export * from './care/links';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -164,6 +171,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.24.0 — Exports care/contract + care/links: CareRelationshipView, InviteSummary,
+//           InviteCreateInput / InviteCreated / CareLinkInput / CareLinkResult,
+//           CARE_ROUTES, the invite-code alphabet + helpers, careLinkUrl,
+//           parseCareLinkUrl (server v0.16.0, LAUNCH_PLAN 2.1).
 // v1.23.0 — Exports auth/captcha: CaptchaPolicy, CAPTCHA_ROUTES, the token field,
 //           the hosted page (path, params, message, app return), CaptchaContract;
 //           RegistrationInput.captchaToken, two AuthErrorCodes, link kind 'captcha'
