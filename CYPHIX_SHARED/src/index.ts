@@ -59,6 +59,17 @@ export * from './auth/captcha';
 export * from './care/contract';
 export * from './care/links';
 
+/* The patient ↔ care thread (messages, requests with a coded reason),
+   lifted from the web's view models so the phone's messageApi and the
+   clinic inbox read the same words. */
+export * from './care/messages';
+
+/* The clinic portal (LAUNCH_PLAN phase 3): a patient as a list sees
+   them, a request as an entity with a status machine and an assignee,
+   notifications as references, one pagination shape, and the names of
+   the permissions the portal's guards use. */
+export * from './clinic/contract';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -171,6 +182,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.25.0 — Exports care/messages (ChatMessage, ChatThread, SendMessageInput,
+//           MESSAGE_ROUTES) and clinic/contract (PatientSummary, the request entity +
+//           state machine, notifications, PagedResult, CLINIC_PERMISSIONS) —
+//           server v0.17.0, LAUNCH_PLAN 3.1.
 // v1.24.0 — Exports care/contract + care/links: CareRelationshipView, InviteSummary,
 //           InviteCreateInput / InviteCreated / CareLinkInput / CareLinkResult,
 //           CARE_ROUTES, the invite-code alphabet + helpers, careLinkUrl,
