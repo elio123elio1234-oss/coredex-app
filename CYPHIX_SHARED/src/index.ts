@@ -202,6 +202,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.31.1 — contact/contract v1.0.1: SUPPORT_PAGE_PATH + supportPageUrl (the phone's welcome
+//           screen links the web's public support page) — LAUNCH_PLAN 5.4.
 // v1.31.0 — Exports contact/contract (leads + support tickets: inputs, rows, queries, status
 //           patches, CONTACT_ROUTES / ADMIN_CONTACT_ROUTES, the shape checks); admin/contract
 //           v1.1.0 adds the optional contact counts to the overview — LAUNCH_PLAN 5.4.

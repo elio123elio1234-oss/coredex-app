@@ -1,5 +1,33 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.109.0 - 2026-10-09 - Contact support from Settings
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package.
+
+**Why.** LAUNCH_PLAN 5.4: the web got "Contact support" (v1.80.0) on the
+server's new `POST /support` (v0.23.0); the cross-platform rule puts the
+same row on the phone in the same change-set.
+
+**What.** Settings → Account → "Contact support" opens `SupportSheet`: the
+account's address shown (not asked), six category chips, a subject, the
+text with its counter, Send. The server attaches the account (the bearer
+token), uses its address and asks no CAPTCHA; the sheet then says where
+the answer arrives and shows the reference. Errors are said plainly
+(fields, 429, offline, other); a build with no server configured says
+there is nowhere to send to instead of pretending. The welcome screen's
+legal line gains "Need help? Contact support", which opens the web app's
+public `/support` page in the browser — a person who cannot sign in has to
+be able to say so, and the CAPTCHA already lives on that page (the same
+rule as the sign-up's challenge). `contactApi` (one mutation);
+`support:create` on the audit set; shared v1.31.1 names the page's path.
+
+**Deliberate divergence (PARITY.md).** The phone renders no public form
+of its own; the locked-out are sent to the web page.
+
+**Verified.** `tsc --noEmit` + `expo export` (OTA). 🔬 Not yet run on a
+device.
+
+
 ## v0.108.0 - 2026-10-09 - the permission matrix catches up (front desk invites)
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package. No

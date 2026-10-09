@@ -1,8 +1,11 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.108.0';
-export const APP_BUILD_LABEL = 'Permission matrix caught up with the web and the server: the four clinic-portal names, and the front desk may invite patients on behalf of the clinic (no screen on the phone uses them yet)';
+export const APP_VERSION = '0.109.0';
+export const APP_BUILD_LABEL =
+  'Contact support: Settings → Account → a sheet that sends a ticket (the account attached; no challenge); the welcome screen links the web’s public support page for whoever cannot sign in.';
 
+// v0.109.0 - CONTACT SUPPORT (server v0.23.0, LAUNCH_PLAN 5.4). JS only - OTA. Settings → Account →
+//            SupportSheet; the welcome screen links the web's public /support page.
 // v0.108.0 - RBAC COPY CAUGHT UP (LAUNCH_PLAN 4.5). JS only - OTA. types/rbac.ts gains the
 //            four clinic-portal permission names 3.2 should have given it, plus technician +
 //            invite:create. No screen changes: the phone has no staff tools (M13).

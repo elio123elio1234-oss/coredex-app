@@ -35,7 +35,9 @@ export type AuditAction =
   | 'recording:export'
   | 'recording:annotate'
   | 'scan:start'
-  | 'scan:stop';
+  | 'scan:stop'
+  /* A support ticket sent from Settings (server v0.23.0, LAUNCH_PLAN 5.4). */
+  | 'support:create';
 
 export interface AuditEntry {
   timestamp: string;
@@ -116,6 +118,7 @@ export function getAuditTrail(): readonly AuditEntry[] {
   return [...ring];
 }
 
+// v1.2.0 — Adds support:create (Contact support, 5.4).
 // v1.1.0 — Adds auth:login / auth:logout to the action set, so who came in
 //          and who left is on the same trail as who read a recording.
 // v1.1.0 — Adds patient:update — the portrait is part of the medical record

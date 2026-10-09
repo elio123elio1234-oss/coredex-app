@@ -57,6 +57,7 @@ import DeleteAccountSheet, {
   formatDeletionDay,
 } from '@/components/organisms/Account/DeleteAccountSheet';
 import SessionsSheet from '@/components/organisms/Account/SessionsSheet';
+import SupportSheet from '@/components/organisms/Account/SupportSheet';
 import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
@@ -190,7 +191,7 @@ export default function SettingsScreen() {
   );
   /* Which Account sheet is up (server v0.12.0). One at a time. */
   const [accountSheet, setAccountSheet] = useState<
-    'password' | 'email' | 'sessions' | 'delete' | null
+    'password' | 'email' | 'sessions' | 'support' | 'delete' | null
   >(null);
   /* What this account accepted (server v0.13.0) — loaded once per visit. */
   const consents = useConsents();
@@ -649,6 +650,13 @@ export default function SettingsScreen() {
             description={tr('setAccountSessionsDesc')}
             onPress={() => setAccountSheet('sessions')}
           />
+          {/* Contact support (server v0.23.0, LAUNCH_PLAN 5.4): the account
+              attached, no challenge — the web's row, on a phone. */}
+          <SettingsRow
+            label={tr('setAccountSupport')}
+            description={tr('setAccountSupportDesc')}
+            onPress={() => setAccountSheet('support')}
+          />
           {/* Server v0.14.0: one row, two truths. Nothing scheduled → the
               sheet asks for the password and schedules 14 days out; scheduled
               → the row says the day and a tap cancels (the safe direction
@@ -948,6 +956,7 @@ export default function SettingsScreen() {
       />
       <ChangeEmailSheet visible={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
       <SessionsSheet visible={accountSheet === 'sessions'} onClose={() => setAccountSheet(null)} />
+      <SupportSheet visible={accountSheet === 'support'} onClose={() => setAccountSheet(null)} />
       <DeleteAccountSheet
         visible={accountSheet === 'delete'}
         onClose={() => setAccountSheet(null)}
@@ -979,6 +988,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.6.0 — A "Contact support" row in Account → SupportSheet (server v0.23.0, LAUNCH_PLAN 5.4).
 // v3.5.0 — Care connection: the care-team / patients rows with a confirmed Disconnect
 //          (Alert), and "Join a doctor or clinic" → JoinCareSheet for patients
 //          (server v0.16.0, LAUNCH_PLAN 2.4).

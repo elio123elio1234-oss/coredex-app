@@ -25,7 +25,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import { Image, Linking, StyleSheet, Text, View } from 'react-native';
-import { legalDocUrl } from '@cyphix/shared';
+import { legalDocUrl, supportPageUrl } from '@cyphix/shared';
 import { ENV } from '@/config/env';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -164,6 +164,16 @@ export default function WelcomeStep({ palette, onCreateAccount, onSignIn, rtl }:
           </Text>
           {tr('authLegalAfter')}
         </Text>
+        {/* v2.2.0 — "Need help?" opens the web app's public /support page in the
+            browser: a person who cannot sign in has to be able to say so, and
+            the CAPTCHA already lives there (server v0.23.0, LAUNCH_PLAN 5.4). */}
+        <Text
+          accessibilityRole="link"
+          onPress={() => void Linking.openURL(supportPageUrl(ENV.webOrigin))}
+          style={[styles.legal, styles.help, { color: palette.body, textAlign: align }]}
+        >
+          {tr('authSupportLink')}
+        </Text>
       </View>
     </View>
   );
@@ -195,8 +205,10 @@ const styles = StyleSheet.create({
   rowRtl: { flexDirection: 'row-reverse' },
   grow: { flex: 1 },
   legal: { fontSize: 11.5, lineHeight: 17, marginTop: 8, paddingHorizontal: 2 },
+  help: { fontWeight: '600', textDecorationLine: 'underline', marginTop: 6 },
 });
 
+// v2.2.0 — "Need help? Contact support" under the legal line → the web's public /support page (5.4).
 // v2.1.0 — "Terms" and "Privacy Notice" in the legal line open the published pages
 //          (legalDocUrl on ENV.webOrigin). They led nowhere before (LAUNCH_PLAN 1.8, M5).
 // v2.0.0 — The photograph FADES IN when it is ready instead of appearing

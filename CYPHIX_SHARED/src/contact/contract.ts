@@ -202,6 +202,13 @@ export const ADMIN_CONTACT_ROUTES = {
   supportStatus: (id: string) => `admin/support/${encodeURIComponent(id)}/status`,
 } as const;
 
+/** The web app's public support page — where a phone sends a person who
+    cannot sign in (the CAPTCHA already lives there). */
+export const SUPPORT_PAGE_PATH = '/support';
+export function supportPageUrl(origin: string): string {
+  return `${origin.replace(/\/+$/, '')}${SUPPORT_PAGE_PATH}`;
+}
+
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -234,6 +241,7 @@ export function supportInputProblems(input: Partial<SupportInput>): Array<keyof 
   return bad;
 }
 
+// v1.0.1 — SUPPORT_PAGE_PATH + supportPageUrl: the web's public page, linked from the phone.
 // v1.0.0 — Leads (the landing form) + support tickets (Settings / the public page): inputs,
 //          rows, queries, status patches, routes, the shape checks (server v0.23.0,
 //          LAUNCH_PLAN 5.4).
