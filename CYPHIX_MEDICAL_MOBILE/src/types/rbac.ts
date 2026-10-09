@@ -43,7 +43,15 @@ export type Permission =
   | 'ecg:annotate'
   | 'ecg:compare'
   | 'ecg:export:pdf'
-  | 'ecg:export:raw';
+  | 'ecg:export:raw'
+  /* ── The clinic portal (server v0.17.0, LAUNCH_PLAN 3.2) — names from
+     shared CLINIC_PERMISSIONS, as the web and the server carry them. The
+     phone's copy only gained them in v1.1.0 (4.5); 3.2's note that all
+     three copies had them was wrong for the phone. ── */
+  | 'request:read'
+  | 'request:manage'
+  | 'invite:create'
+  | 'notification:read';
 
 /** The authenticated principal. Shape is auth-provider agnostic. */
 export interface AuthUser {
@@ -87,6 +95,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'ecg:compare',
     'ecg:export:pdf',
     'ecg:export:raw',
+    'request:read',
+    'request:manage',
+    'invite:create',
+    'notification:read',
   ],
   clinician: [
     'scan:run',
@@ -102,6 +114,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'ecg:compare',
     'ecg:export:pdf',
     'ecg:export:raw',
+    'request:read',
+    'request:manage',
+    'invite:create',
+    'notification:read',
   ],
   technician: [
     'scan:run',
@@ -112,11 +128,20 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Records the study and checks it is usable; does not interpret it.
     'ecg:filter',
     'ecg:export:pdf',
+    /* The front desk sees the inbox and the bell; answering is a clinician's. */
+    'request:read',
+    'notification:read',
+    /* The front desk onboards patients — on behalf of the clinic only
+       (the server refuses a 1:1 "private doctor" invite from a technician). */
+    'invite:create',
   ],
   patient: [
     'scan:run',
     'patient:read:self',
     'history:read:self',
+    /* Their own requests and their own inbox (the clinic portal, 3.2). */
+    'request:read',
+    'notification:read',
     // Their own data, their own copy — see the note above.
     'ecg:export:pdf',
     // A patient may DELETE their own recordings (GDPR right to erasure). The
@@ -131,4 +156,8 @@ export function roleCan(role: Role, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role].includes(permission);
 }
 
+// v1.1.0 — The four clinic-portal names (request:read / request:manage / invite:create /
+//          notification:read) in the union and the lists, as web rbac.ts v1.4.0 and server
+//          permissions.ts v0.4.0 carry them — including technician + invite:create (4.5).
+//          Corrects 3.2's note that all three copies already had them: the phone's did not.
 // v1.0.0 — Roles + permission matrix, mirrored from the web app 1:1.

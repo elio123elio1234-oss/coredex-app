@@ -1,8 +1,11 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.107.0';
-export const APP_BUILD_LABEL = 'Requests are real: Send request reaches your care team, Your requests lists each one with its status (Sent · Being looked at · Answered · Closed), tap one to read the answer, a banner counts new updates; signing in on a clinician account that awaits approval says so';
+export const APP_VERSION = '0.108.0';
+export const APP_BUILD_LABEL = 'Permission matrix caught up with the web and the server: the four clinic-portal names, and the front desk may invite patients on behalf of the clinic (no screen on the phone uses them yet)';
 
+// v0.108.0 - RBAC COPY CAUGHT UP (LAUNCH_PLAN 4.5). JS only - OTA. types/rbac.ts gains the
+//            four clinic-portal permission names 3.2 should have given it, plus technician +
+//            invite:create. No screen changes: the phone has no staff tools (M13).
 // v0.107.0 - THE REQUEST FORM IS WIRED (server v0.17.0, LAUNCH_PLAN 3.8, M1). JS only -
 //            OTA. messageApi (thread / send / requests / detail / notifications);
 //            Send is the mutation with every outcome in words; "Your requests" with

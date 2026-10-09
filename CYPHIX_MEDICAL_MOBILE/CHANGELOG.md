@@ -1,5 +1,30 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.108.0 - 2026-10-09 - the permission matrix catches up (front desk invites)
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package. No
+screen changes.
+
+**Why.** LAUNCH_PLAN 4.5 gives the front desk (technician)
+`invite:create` on the server (v0.21.0) and the web (v1.78.0). The
+three copies of the matrix must stay identical (X3 is still 🔁), and
+while making this edit it turned out the phone's copy never received
+the four clinic-portal names of 3.2 (`request:read`, `request:manage`,
+`invite:create`, `notification:read`) — 3.2's note that "all three
+copies" had them was wrong for the phone. Nothing on the phone read
+those names (no staff tools here, M13), which is why nothing broke and
+nothing noticed.
+
+**What.** `types/rbac.ts` v1.1.0: the four names in the union and in
+the admin / clinician / technician / patient lists exactly as web
+`rbac.ts` v1.4.0 and server `permissions.ts` v0.4.0 carry them,
+including technician + `invite:create`.
+
+**Verified.** `tsc --noEmit` and the OTA export; published as update
+group `f5d4cad5-d96d-4813-8d91-defd67a427da` on channel `production`,
+runtime 0.45.0. Behaviour on the phone is unchanged by construction (no
+caller of the new names); nothing to run on a device for this one.
+
 ## v0.107.0 - 2026-10-09 - the request form is real, and the answer comes back
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package.
