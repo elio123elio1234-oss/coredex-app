@@ -18,6 +18,7 @@
 import { createAsyncThunk, createSlice, isAnyOf, type PayloadAction } from '@reduxjs/toolkit';
 import {
   AuthError,
+  TotpChallengeRequired,
   type AuthErrorCode,
   type AuthLink,
   type Credentials,
@@ -33,6 +34,8 @@ import {
   type RegistrationProfile,
   type SessionMode,
   type SessionUser,
+  type TotpChallenge,
+  type TotpLoginInput,
 } from '@cyphix/shared';
 import { authService } from '@/services/auth/authService';
 import { DEFAULT_PREVIEW_ROLE } from '@/config/featureFlags';
@@ -167,6 +170,10 @@ export interface AuthState {
    * bound is, which is the gate.
    */
   recovering: boolean;
+  /** A sign-in that stopped after the password (server v0.24.0): the
+      account asks for a code from its authenticator app. The code step
+      renders while this is set; `loginTotp` spends it. */
+  totpChallenge: TotpChallenge | null;
 }
 
 const initialState: AuthState = {
@@ -190,6 +197,7 @@ const initialState: AuthState = {
   locked: false,
   appLockEnabled: false,
   recovering: false,
+  totpChallenge: null,
 };
 
 function auditSignIn(user: SessionUser, detail: string): void {
@@ -271,10 +279,33 @@ export const loginUser = createAsyncThunk<
   { user: SessionUser; profile: RegistrationProfile },
   Credentials,
   { rejectValue: AuthErrorCode }
->('auth/login', async (credentials, { rejectWithValue }) => {
+>('auth/login', async (credentials, { rejectWithValue, dispatch }) => {
   try {
     const session = await authService.login(credentials);
     auditSignIn(session.user, 'login');
+    return { user: session.user, profile: session.profile };
+  } catch (err) {
+    /* Not a failure: the password was right and the account wants a
+       code (server v0.24.0). Park the challenge, then "reject" with a
+       code the reducer reads as "move to the second step". */
+    if (err instanceof TotpChallengeRequired) {
+      dispatch(totpChallenged(err.challenge));
+      return rejectWithValue('totp-required');
+    }
+    return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
+  }
+});
+
+/** The second step of a sign-in: the parked challenge + a code (or a
+    recovery code). Success lands exactly like `loginUser`. */
+export const loginTotp = createAsyncThunk<
+  { user: SessionUser; profile: RegistrationProfile },
+  TotpLoginInput,
+  { rejectValue: AuthErrorCode }
+>('auth/loginTotp', async (input, { rejectWithValue }) => {
+  try {
+    const session = await authService.loginTotp(input);
+    auditSignIn(session.user, 'login-totp');
     return { user: session.user, profile: session.profile };
   } catch (err) {
     return rejectWithValue(err instanceof AuthError ? err.code : 'unknown');
@@ -406,6 +437,20 @@ const authSlice = createSlice({
     clearAuthError(state) {
       state.error = null;
       if (state.status === 'error') state.status = 'idle';
+    },
+    /** The sign-in's first step passed; the code step takes over. */
+    totpChallenged(state, action: PayloadAction<TotpChallenge>) {
+      state.totpChallenge = action.payload;
+    },
+    /** Back from the code step: the next sign-in starts over. */
+    totpChallengeCancelled(state) {
+      state.totpChallenge = null;
+      state.error = null;
+      if (state.status === 'error') state.status = 'idle';
+    },
+    /** The Settings sheet turned the factor on or off (useTwoFactor). */
+    totpEnabledChanged(state, action: PayloadAction<boolean>) {
+      if (state.user) state.user.totpEnabled = action.payload;
     },
     /** The OS opened the app with an e-mailed link (see `pendingLink`). */
     authLinkReceived(state, action: PayloadAction<AuthLink>) {
@@ -659,6 +704,17 @@ const authSlice = createSlice({
            confirmed by definition — the strongest evidence there is. */
         state.sessionMode = 'live';
         state.locked = false;
+        state.totpChallenge = null;
+      })
+      /* The code spent the challenge: a sign-in, with the same evidence. */
+      .addCase(loginTotp.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.profile = action.payload.profile;
+        state.status = 'idle';
+        state.error = null;
+        state.sessionMode = 'live';
+        state.locked = false;
+        state.totpChallenge = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.user = action.payload.user;
@@ -670,14 +726,25 @@ const authSlice = createSlice({
         state.sessionMode = 'live';
         state.locked = false;
       })
-      .addMatcher(isAnyOf(loginUser.pending, registerUser.pending), (state) => {
+      .addMatcher(isAnyOf(loginUser.pending, loginTotp.pending, registerUser.pending), (state) => {
         state.status = 'loading';
         state.error = null;
       })
-      .addMatcher(isAnyOf(loginUser.rejected, registerUser.rejected), (state, action) => {
-        state.status = 'error';
-        state.error = action.payload ?? 'unknown';
-      });
+      .addMatcher(
+        isAnyOf(loginUser.rejected, loginTotp.rejected, registerUser.rejected),
+        (state, action) => {
+          const code = action.payload ?? 'unknown';
+          /* Not a failure: the sign-in moved to its second step (the
+             challenge is already in state via totpChallenged). */
+          if (code === 'totp-required') {
+            state.status = 'idle';
+            state.error = null;
+            return;
+          }
+          state.status = 'error';
+          state.error = code;
+        },
+      );
   },
 });
 
@@ -690,11 +757,17 @@ export const {
   careLinkReceived,
   clearAuthError,
   debugRoleSet,
+  totpChallengeCancelled,
+  totpChallenged,
+  totpEnabledChanged,
   welcomeAcknowledged,
 } =
   authSlice.actions;
 export default authSlice.reducer;
 
+// v2.7.0 — Two-factor (server v0.24.0): `totpChallenge` parked by loginUser on a 202 (the
+//          'totp-required' rejection is not an error), loginTotp spends it, totpChallengeCancelled
+//          drops it, totpEnabledChanged keeps the principal honest after the Settings sheet.
 // v2.6.0 — Adds `pendingCareCode` + careLinkReceived / careLinkConsumed: a care-invite
 //          deep link waiting for the join sheet (server v0.16.0, LAUNCH_PLAN 2.4).
 // v2.5.0 — Adds `revalidatedOnce`: has the server been ASKED and answered, as

@@ -103,6 +103,17 @@ export type AuthErrorCode =
       an admin has not yet approved (D3). Said only after the password
       verified, so the address cannot be probed. */
   | 'account-pending'
+  /** The sign-in answered 202 with a TOTP challenge (server v0.24.0,
+      auth/totp.ts): not a failure, but `login()` cannot resolve with a
+      session it does not have. The rejection is a TotpChallengeRequired
+      carrying the challenge; the UI shows the code step. */
+  | 'totp-required'
+  /** 400 `totp_invalid` — the code was wrong (or a recovery code already
+      spent). Same challenge, try again; the lockout counter is charged. */
+  | 'totp-invalid'
+  /** 400 `totp_challenge_expired` — five minutes passed, or the challenge
+      was spent. Back to the password. */
+  | 'totp-expired'
   | 'network'
   | 'unknown';
 
@@ -370,6 +381,8 @@ export function passwordStrength(password: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, byLength + varied) as 0 | 1 | 2 | 3 | 4;
 }
 
+// v1.8.0 — AuthErrorCode 'totp-required' / 'totp-invalid' / 'totp-expired' (auth/totp.ts,
+//          server v0.24.0, LAUNCH_PLAN 5.5).
 // v1.7.0 — AuthErrorCode 'account-pending' + AUTH_ROUTES.registerClinician (server v0.18.0,
 //          LAUNCH_PLAN 3.7).
 // v1.6.0 — RegistrationInput.captchaToken + AuthErrorCode 'captcha-required' /

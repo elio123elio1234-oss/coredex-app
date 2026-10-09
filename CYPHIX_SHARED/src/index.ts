@@ -57,6 +57,14 @@ export * from './auth/captcha';
    and the first ADMIN_ROUTES (the cockpit, phase 5, extends them). */
 export * from './auth/clinician';
 
+/* Two-factor sign-in with an authenticator app for the staff roles
+   (LAUNCH_PLAN 5.5, S14): the status / setup / enable / disable shapes,
+   the 202 challenge a login answers with and the code that spends it,
+   TOTP_ROUTES, TotpChallengeRequired, TotpContract — and the RFC 6238
+   maths in pure TypeScript so the offline mocks can verify a real app's
+   code. The server has its own copy over node:crypto. */
+export * from './auth/totp';
+
 /* How a patient and their care are connected (LAUNCH_PLAN phase 2): a
    link as each side sees it, an invite as the staff who minted it see
    it, the code's alphabet and helpers, the routes, and the URL a QR code
@@ -202,6 +210,9 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.32.0 — Exports auth/totp (TOTP two-factor for staff: shapes, routes, challenge, contract,
+//           pure RFC 6238 maths for the mocks); AuthErrorCode 'totp-required' / 'totp-invalid' /
+//           'totp-expired'; SessionUser.totpEnabled (server v0.24.0, LAUNCH_PLAN 5.5).
 // v1.31.1 — contact/contract v1.0.1: SUPPORT_PAGE_PATH + supportPageUrl (the phone's welcome
 //           screen links the web's public support page) — LAUNCH_PLAN 5.4.
 // v1.31.0 — Exports contact/contract (leads + support tickets: inputs, rows, queries, status

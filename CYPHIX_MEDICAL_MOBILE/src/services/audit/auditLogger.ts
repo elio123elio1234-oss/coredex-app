@@ -37,7 +37,10 @@ export type AuditAction =
   | 'scan:start'
   | 'scan:stop'
   /* A support ticket sent from Settings (server v0.23.0, LAUNCH_PLAN 5.4). */
-  | 'support:create';
+  | 'support:create'
+  /* Two-factor turned on / off from Settings (server v0.24.0, LAUNCH_PLAN 5.5). */
+  | 'auth:totp-enable'
+  | 'auth:totp-disable';
 
 export interface AuditEntry {
   timestamp: string;
@@ -118,6 +121,7 @@ export function getAuditTrail(): readonly AuditEntry[] {
   return [...ring];
 }
 
+// v1.3.0 — Adds auth:totp-enable / auth:totp-disable (two-factor sign-in, 5.5).
 // v1.2.0 — Adds support:create (Contact support, 5.4).
 // v1.1.0 — Adds auth:login / auth:logout to the action set, so who came in
 //          and who left is on the same trail as who read a recording.

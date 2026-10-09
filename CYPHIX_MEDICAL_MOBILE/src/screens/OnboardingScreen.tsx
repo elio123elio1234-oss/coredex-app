@@ -32,6 +32,7 @@ import ResetStep from '@/components/organisms/Auth/ResetStep';
 import ReviewStep, { type SummaryItem } from '@/components/organisms/Auth/ReviewStep';
 import SexStep from '@/components/organisms/Auth/SexStep';
 import SignInStep from '@/components/organisms/Auth/SignInStep';
+import TotpStep from '@/components/organisms/Auth/TotpStep';
 import SignUpStep from '@/components/organisms/Auth/SignUpStep';
 import SuccessStep from '@/components/organisms/Auth/SuccessStep';
 import WeightStep from '@/components/organisms/Auth/WeightStep';
@@ -73,6 +74,11 @@ const ERROR_KEYS: Record<AuthErrorCode, TranslationKey> = {
   /* A clinician who registered on the web and is not yet approved, trying
      the phone (server v0.18.0). Shown on the sign-in step. */
   'account-pending': 'authErrAccountPending',
+  /* Two-factor (server v0.24.0): shown on the code step. 'totp-required'
+     never renders — the slice turns it into the step itself. */
+  'totp-required': 'authErrTotpRequired',
+  'totp-invalid': 'authErrTotpInvalid',
+  'totp-expired': 'authErrTotpExpired',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -278,6 +284,21 @@ export default function OnboardingScreen() {
             onSubmit={flow.submitSignIn}
             onBiometric={onBiometric}
             errorMessage={errorMessage}
+            busy={flow.busy}
+            ready={flow.ready}
+          />
+        );
+      case 'totp':
+        return (
+          <TotpStep
+            palette={palette}
+            rtl={rtl}
+            code={draft.totpCode}
+            onChangeCode={(totpCode) => flow.patch({ totpCode })}
+            onSubmit={flow.submitTotp}
+            onBack={flow.back}
+            errorMessage={errorMessage}
+            expired={flow.error === 'totp-expired'}
             busy={flow.busy}
             ready={flow.ready}
           />
@@ -517,6 +538,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 });
 
+// v1.3.0 — The 'totp' step (TotpStep) after the password when the account asks for a code
+//          (server v0.24.0); ERROR_KEYS covers the three totp codes.
 // v1.2.0 — CaptchaSheet over the review step; ERROR_KEYS covers the two captcha codes;
 //          a cyphix://captcha link (browser fallback) is spent on the review step.
 // v1.1.0 — The 'reset' step (ResetStep) opened by an e-mailed link via the slice's

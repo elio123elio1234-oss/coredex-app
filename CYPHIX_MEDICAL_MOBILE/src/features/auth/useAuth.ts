@@ -17,6 +17,7 @@ import type {
   PasswordChangeInput,
   PasswordResetInput,
   RegistrationInput,
+  TotpLoginInput,
 } from '@cyphix/shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
@@ -24,22 +25,34 @@ import {
   clearAuthError,
   confirmEmailChange as confirmEmailChangeThunk,
   loginUser,
+  loginTotp as loginTotpThunk,
   logoutUser,
   registerUser,
   requestEmailChange as requestEmailChangeThunk,
   requestEmailVerification as requestEmailVerificationThunk,
   resetPassword as resetPasswordThunk,
+  totpChallengeCancelled,
   verifyEmail as verifyEmailThunk,
 } from './authSlice';
 
 export function useAuth() {
   const dispatch = useAppDispatch();
-  const { user, profile, status, error } = useAppSelector((s) => s.auth);
+  const { user, profile, status, error, totpChallenge } = useAppSelector((s) => s.auth);
 
   const login = useCallback(
     (credentials: Credentials) => dispatch(loginUser(credentials)).unwrap(),
     [dispatch],
   );
+
+  /* Two-factor (server v0.24.0): the code step spends the parked
+     challenge, or drops it. */
+  const loginTotp = useCallback(
+    (input: TotpLoginInput) => dispatch(loginTotpThunk(input)).unwrap(),
+    [dispatch],
+  );
+  const cancelTotp = useCallback(() => {
+    dispatch(totpChallengeCancelled());
+  }, [dispatch]);
 
   const register = useCallback(
     (input: RegistrationInput) => dispatch(registerUser(input)).unwrap(),
@@ -88,9 +101,12 @@ export function useAuth() {
       profile,
       status,
       error,
+      totpChallenge,
       isSignedIn: user !== null,
       isBusy: status === 'loading',
       login,
+      loginTotp,
+      cancelTotp,
       register,
       logout,
       clearError,
@@ -106,7 +122,10 @@ export function useAuth() {
       profile,
       status,
       error,
+      totpChallenge,
       login,
+      loginTotp,
+      cancelTotp,
       register,
       logout,
       clearError,
@@ -120,6 +139,7 @@ export function useAuth() {
   );
 }
 
+// v1.3.0 — loginTotp / cancelTotp / totpChallenge (two-factor sign-in, server v0.24.0).
 // v1.2.0 — changePassword / requestEmailChange / confirmEmailChange (account self-service).
 // v1.1.0 — resetPassword / verifyEmail / requestEmailVerification (account recovery).
 // v1.0.0 — Sign-in/registration hook (the only auth surface a screen sees).

@@ -8,7 +8,7 @@
    the ORDER can change in `onboardingModel.ts` alone.
    ================================================================== */
 
-import { useCallback, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { AuthError, REQUIRED_CONSENTS, type AuthErrorCode, type CaptchaPolicy } from '@cyphix/shared';
 import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
@@ -64,6 +64,8 @@ export interface Onboarding {
   next: () => void;
   skip: () => void;
   submitSignIn: () => void;
+  /** The code step: spend the parked challenge with what was typed. */
+  submitTotp: () => void;
   sendReset: () => void;
   /** An e-mailed reset link was opened: keep its token, show the reset step. */
   openResetLink: (token: string) => void;
@@ -89,7 +91,8 @@ export function useOnboarding(): Onboarding {
   const [devCode, setDevCode] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [captchaOpen, setCaptchaOpen] = useState(false);
-  const { login, register, resetPassword, error, clearError, isBusy } = useAuth();
+  const { login, register, resetPassword, error, clearError, isBusy, totpChallenge, loginTotp, cancelTotp } =
+    useAuth();
 
   const patch = useCallback((next: DraftPatch) => {
     setIssue(null);
@@ -114,8 +117,22 @@ export function useOnboarding(): Onboarding {
   const back = useCallback(() => {
     clearError();
     setIssue(null);
-    setStep((current) => backTarget(current));
-  }, [clearError]);
+    /* Leaving the code step drops the parked challenge: the next sign-in
+       starts over with the password (server v0.24.0). */
+    if (step === 'totp') cancelTotp();
+    setStep(backTarget(step));
+  }, [clearError, step, cancelTotp]);
+
+  /* The sign-in answered with a challenge (server v0.24.0): the slice
+     parked it; show the code step. Only from the sign-in step — a
+     challenge cannot appear anywhere else. */
+  useEffect(() => {
+    if (totpChallenge && step === 'signin') {
+      setIssue(null);
+      dispatch({ type: 'patch', patch: { totpCode: '' } });
+      setStep('totp');
+    }
+  }, [totpChallenge, step]);
 
   /** Create the account. Called at the END of the wizard (the review
       step), not after the credentials step: a patient who abandons the
@@ -271,6 +288,20 @@ export function useOnboarding(): Onboarding {
     });
   }, [login, draft]);
 
+  const submitTotp = useCallback(() => {
+    if (!canContinue('totp', draft) || !totpChallenge) return;
+    void loginTotp({ challengeToken: totpChallenge.challengeToken, code: draft.totpCode })
+      .then(() => {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      })
+      .catch(() => {
+        /* The code is in the slice and the step renders it; a wrong code
+           keeps the challenge, so the field is cleared for the next try. */
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        dispatch({ type: 'patch', patch: { totpCode: '' } });
+      });
+  }, [draft, totpChallenge, loginTotp]);
+
   const sendReset = useCallback(() => {
     if (!canContinue('forgot', draft) || resetBusy) return;
     setResetBusy(true);
@@ -327,6 +358,7 @@ export function useOnboarding(): Onboarding {
       next,
       skip,
       submitSignIn,
+      submitTotp,
       sendReset,
       openResetLink,
       submitReset,
@@ -355,6 +387,7 @@ export function useOnboarding(): Onboarding {
       next,
       skip,
       submitSignIn,
+      submitTotp,
       sendReset,
       openResetLink,
       submitReset,
@@ -367,6 +400,8 @@ export function useOnboarding(): Onboarding {
   );
 }
 
+// v1.5.0 — The 'totp' step (server v0.24.0): a parked challenge moves the sign-in to the code step,
+//          submitTotp spends it, back drops it.
 // v1.4.0 — finish asks GET /auth/captcha first (server v0.15.0): a named provider raises
 //          CaptchaSheet and its token rides the registration; captcha-required /
 //          captcha-failed raise it again; `off` is the old path, unchanged.

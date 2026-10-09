@@ -67,6 +67,13 @@ export interface SessionUser {
    * Shown, not enforced, while DEMO_MODE is on (LAUNCH_PLAN 1.3, D1).
    */
   emailVerified?: boolean;
+  /**
+   * Is the authenticator-app factor ON for this account (server v0.24.0,
+   * auth/totp.ts)? Optional: a server older than that sends nothing, and
+   * a client treats absent as "not said" — the Settings row then asks
+   * `GET /auth/totp` rather than guessing.
+   */
+  totpEnabled?: boolean;
 }
 
 /**
@@ -96,6 +103,7 @@ export interface AuthTokens {
   user: SessionUser;
 }
 
+// v1.5.0 — SessionUser carries optional `totpEnabled` (server v0.24.0, LAUNCH_PLAN 5.5).
 // v1.4.0 — SessionUser carries optional `email` + `emailVerified` (server v0.11.0).
 // v1.3.0 — AuthTokens states the REFRESH token's lifetime, so a client that
 //          persists a session across cold starts learns the ceiling from the

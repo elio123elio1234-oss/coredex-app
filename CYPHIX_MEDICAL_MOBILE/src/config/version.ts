@@ -1,9 +1,13 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.109.0';
+export const APP_VERSION = '0.110.0';
 export const APP_BUILD_LABEL =
-  'Contact support: Settings → Account → a sheet that sends a ticket (the account attached; no challenge); the welcome screen links the web’s public support page for whoever cannot sign in.';
+  'Two-factor sign-in for staff: Settings → Account → “Two-factor sign-in” (the key as text or handed straight to the authenticator app, a code turns it on, eight recovery codes shown once, off with the password + a code) and the code step at sign-in for an account that asks for it (server v0.24.0).';
 
+// v0.110.0 - TWO-FACTOR SIGN-IN (server v0.24.0, shared v1.32.0, LAUNCH_PLAN 5.5). JS only - OTA.
+//            Settings → Account → TwoFactorSheet for staff; TotpStep after the password when the
+//            account asks for a code. No QR on the phone: the key goes to the authenticator app as
+//            an otpauth:// link or as text.
 // v0.109.0 - CONTACT SUPPORT (server v0.23.0, LAUNCH_PLAN 5.4). JS only - OTA. Settings → Account →
 //            SupportSheet; the welcome screen links the web's public /support page.
 // v0.108.0 - RBAC COPY CAUGHT UP (LAUNCH_PLAN 4.5). JS only - OTA. types/rbac.ts gains the

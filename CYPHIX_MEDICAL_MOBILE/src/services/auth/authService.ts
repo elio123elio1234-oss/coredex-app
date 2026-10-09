@@ -33,6 +33,29 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import {
+  TOTP_CHALLENGE_TTL_SEC,
+  TOTP_DIGITS,
+  TOTP_ISSUER,
+  TOTP_PERIOD_SEC,
+  TOTP_RECOVERY_RANDOM_BYTES,
+  TOTP_SECRET_BYTES,
+  TotpChallengeRequired,
+  isRecoveryCodeShaped,
+  isTotpEligibleRole,
+  normalizeTotpInput,
+  otpauthUrl,
+  recoveryCodesFromBytes,
+  secretFromBytes,
+  verifyTotpCode,
+  type TotpDisableInput,
+  type TotpDisableResult,
+  type TotpEnableInput,
+  type TotpEnableResult,
+  type TotpLoginInput,
+  type TotpSetup,
+  type TotpStatus,
+} from '@cyphix/shared';
+import {
   AUTH_LINK_PATHS,
   AUTH_LINK_TOKEN_PARAM,
   DELETION_GRACE_DAYS,
@@ -77,7 +100,24 @@ const SESSION_KEY = 'cyphix:auth:session';
 const REMEMBERED_KEY = 'cyphix:auth:remembered';
 
 /** A stored account. `passwordHash` is a digest, never the password. */
+/** Two-factor (server v0.24.0 shape): a pending secret until `enabledAt`
+    is set; the recovery codes as SHA-256 hex, spent by `usedAt`. */
+interface StoredTotp {
+  secret: string;
+  enabledAt: string | null;
+  /** The last accepted 30 s step — a code is honoured once. */
+  lastStep: number | null;
+  recovery: { hash: string; usedAt: string | null }[];
+}
+
+/** The five-minute challenges a sign-in with the factor on hands out.
+    In memory on purpose: a cold start between the password and the code
+    is an honest 'totp-expired', exactly as the server would say. */
+const totpChallenges = new Map<string, { userId: string; expiresAt: number }>();
+
 interface StoredAccount {
+  /** Two-factor, when the account set it up (see StoredTotp). */
+  totp?: StoredTotp;
   id: string;
   email: string; // normalized (lower-cased, trimmed)
   passwordHash: string;
@@ -188,6 +228,7 @@ function toUser(account: StoredAccount): SessionUser {
     role: account.role,
     email: account.email,
     emailVerified: account.emailVerified ?? false,
+    totpEnabled: !!account.totp?.enabledAt,
   };
 }
 
@@ -246,6 +287,21 @@ class MockAuthService implements MobileAuthService {
     if (!account) throw new AuthError('invalid-credentials');
     if ((await hashPassword(password)) !== account.passwordHash) {
       throw new AuthError('invalid-credentials');
+    }
+    /* Two-factor (server v0.24.0): the password was right; the account
+       asks for a code. A challenge instead of a session — the code step
+       spends it in loginTotp. */
+    if (account.totp?.enabledAt) {
+      const challengeToken = `ch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      totpChallenges.set(challengeToken, {
+        userId: account.id,
+        expiresAt: Date.now() + TOTP_CHALLENGE_TTL_SEC * 1000,
+      });
+      throw new TotpChallengeRequired({
+        totpRequired: true,
+        challengeToken,
+        expiresInSec: TOTP_CHALLENGE_TTL_SEC,
+      });
     }
     const token = await openMockSession(account.id);
     await writeJson(REMEMBERED_KEY, { userId: account.id } satisfies StoredSessionPointer);
@@ -635,6 +691,122 @@ class MockAuthService implements MobileAuthService {
       because there is no SMS gateway: a hidden random code would make the
       step impossible to complete, and a real-looking one that always
       works would be worse — a patient could believe a text was sent. */
+  /* ── Two-factor (server v0.24.0, LAUNCH_PLAN 5.5) ──
+     Real on the phone with no server: the maths is the shared pure TOTP,
+     so the code a real authenticator app shows for the key on screen
+     verifies here, and the sign-in really has a second step. */
+
+  private async totpAccount(): Promise<StoredAccount | null> {
+    const ptr = await readJson<StoredSessionPointer>(SESSION_KEY);
+    if (!ptr) return null;
+    return (await this.accounts()).find((a) => a.id === ptr.userId) ?? null;
+  }
+
+  private async saveTotpAccount(account: StoredAccount): Promise<void> {
+    const all = await this.accounts();
+    await writeJson(ACCOUNTS_KEY, all.map((a) => (a.id === account.id ? account : a)));
+  }
+
+  /** A TOTP code, or an unused recovery code (spent here). */
+  private async proveTotp(account: StoredAccount, code: string): Promise<boolean> {
+    const t = account.totp;
+    if (!t?.enabledAt) return false;
+    const v = verifyTotpCode(t.secret, code, Date.now() / 1000, t.lastStep);
+    if (v.ok) {
+      t.lastStep = v.step;
+      await this.saveTotpAccount(account);
+      return true;
+    }
+    if (isRecoveryCodeShaped(code)) {
+      const hash = await hashPassword(normalizeTotpInput(code));
+      const r = t.recovery.find((x) => x.hash === hash && !x.usedAt);
+      if (r) {
+        r.usedAt = new Date().toISOString();
+        await this.saveTotpAccount(account);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async totpStatus(): Promise<TotpStatus> {
+    await this.settle();
+    const a = await this.totpAccount();
+    if (!a) throw new AuthError('invalid-credentials');
+    const on = !!a.totp?.enabledAt;
+    return {
+      enabled: on,
+      enabledAt: a.totp?.enabledAt ?? null,
+      recoveryCodesLeft: on ? (a.totp?.recovery ?? []).filter((r) => !r.usedAt).length : 0,
+      eligible: isTotpEligibleRole(a.role),
+    };
+  }
+
+  async totpSetup(): Promise<TotpSetup> {
+    await this.settle();
+    const a = await this.totpAccount();
+    if (!a) throw new AuthError('invalid-credentials');
+    if (!isTotpEligibleRole(a.role)) throw new AuthError('unknown', 'Offered to staff accounts');
+    if (a.totp?.enabledAt) throw new AuthError('unknown', 'Already on');
+    const secret = secretFromBytes(Crypto.getRandomBytes(TOTP_SECRET_BYTES));
+    a.totp = { secret, enabledAt: null, lastStep: null, recovery: [] };
+    await this.saveTotpAccount(a);
+    return {
+      secret,
+      otpauthUrl: otpauthUrl(secret, a.email),
+      issuer: TOTP_ISSUER,
+      account: a.email,
+      digits: TOTP_DIGITS,
+      periodSec: TOTP_PERIOD_SEC,
+    };
+  }
+
+  async totpEnable({ code }: TotpEnableInput): Promise<TotpEnableResult> {
+    await this.settle();
+    const a = await this.totpAccount();
+    if (!a?.totp || a.totp.enabledAt) throw new AuthError('unknown', 'Ask for a setup first');
+    const v = verifyTotpCode(a.totp.secret, code, Date.now() / 1000, null);
+    if (!v.ok) throw new AuthError('totp-invalid');
+    const codes = recoveryCodesFromBytes(Crypto.getRandomBytes(TOTP_RECOVERY_RANDOM_BYTES));
+    const enabledAt = new Date().toISOString();
+    const recovery: StoredTotp['recovery'] = [];
+    for (const c of codes) recovery.push({ hash: await hashPassword(normalizeTotpInput(c)), usedAt: null });
+    a.totp = { secret: a.totp.secret, enabledAt, lastStep: v.step, recovery };
+    await this.saveTotpAccount(a);
+    return { enabled: true, enabledAt, recoveryCodes: codes };
+  }
+
+  async totpDisable({ password, code }: TotpDisableInput): Promise<TotpDisableResult> {
+    await this.settle();
+    const a = await this.totpAccount();
+    if (!a) throw new AuthError('invalid-credentials');
+    if (!a.totp?.enabledAt) throw new AuthError('unknown', 'Not on');
+    if ((await hashPassword(password)) !== a.passwordHash) throw new AuthError('wrong-password');
+    if (!(await this.proveTotp(a, code))) throw new AuthError('totp-invalid');
+    delete a.totp;
+    await this.saveTotpAccount(a);
+    return { enabled: false };
+  }
+
+  async loginTotp({ challengeToken, code }: TotpLoginInput): Promise<AuthSession> {
+    await this.settle();
+    const ch = totpChallenges.get(challengeToken);
+    if (!ch || ch.expiresAt < Date.now()) {
+      totpChallenges.delete(challengeToken);
+      throw new AuthError('totp-expired');
+    }
+    const a = (await this.accounts()).find((x) => x.id === ch.userId);
+    if (!a?.totp?.enabledAt) {
+      totpChallenges.delete(challengeToken);
+      throw new AuthError('totp-expired');
+    }
+    if (!(await this.proveTotp(a, code))) throw new AuthError('totp-invalid');
+    totpChallenges.delete(challengeToken);
+    const token = await openMockSession(a.id);
+    await writeJson(REMEMBERED_KEY, { userId: a.id } satisfies StoredSessionPointer);
+    return toSession(a, token);
+  }
+
   async requestPhoneCode(_phone: string): Promise<{ devCode: string }> {
     await this.settle();
     return { devCode: MOCK_SMS_CODE };
@@ -662,6 +834,10 @@ export const authService: MobileAuthService = ENV.hasBackend
   ? new HttpAuthService()
   : new MockAuthService();
 
+// v2.7.0 — The mock implements TotpContract (server v0.24.0) for real: a sign-in with the
+//          factor on throws the challenge, loginTotp spends it, setup / enable / disable keep
+//          the secret and the recovery-code hashes on the account (shared pure TOTP; random
+//          bytes from expo-crypto); the principal says `totpEnabled`.
 // v2.4.0 — The mock implements ConsentContract: register stores what the review
 //          screen confirmed; listConsents / recordConsent to the server's shape,
 //          a stale version refused (server v0.13.0).

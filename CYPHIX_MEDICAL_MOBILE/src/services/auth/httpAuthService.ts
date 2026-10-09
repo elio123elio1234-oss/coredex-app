@@ -32,6 +32,8 @@
 import {
   AUTH_ROUTES,
   AuthError,
+  TOTP_ROUTES,
+  TotpChallengeRequired,
   ACCOUNT_LIFECYCLE_ROUTES,
   CONSENT_ROUTES,
   PATIENT_ROUTES,
@@ -66,6 +68,14 @@ import {
   type SessionsRevokedResult,
   type SessionUser,
   type SessionView,
+  type TotpChallenge,
+  type TotpDisableInput,
+  type TotpDisableResult,
+  type TotpEnableInput,
+  type TotpEnableResult,
+  type TotpLoginInput,
+  type TotpSetup,
+  type TotpStatus,
 } from '@cyphix/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { toPortraitDataUrl } from '@/services/media/photoPicker';
@@ -148,6 +158,10 @@ async function request<T>(path: string, body: unknown, opts: RequestOptions = {}
     else if (serverCode === 'captcha_failed' || serverCode === 'captcha_unavailable') {
       code = 'captcha-failed';
     }
+    /* Two-factor (server v0.24.0): a wrong code keeps the challenge; a
+       dead challenge sends the person back to the password. */
+    else if (serverCode === 'totp_invalid') code = 'totp-invalid';
+    else if (serverCode === 'totp_challenge_expired') code = 'totp-expired';
     else if (res.status === 400 && message?.toLowerCase().includes('password')) {
       code = 'weak-password';
     }
@@ -398,13 +412,44 @@ export class HttpAuthService implements MobileAuthService {
   }
 
   async login(credentials: Credentials): Promise<AuthSession> {
-    const tokens = await post<AuthTokens>(AUTH_ROUTES.login, {
+    const body = await post<AuthTokens | TotpChallenge>(AUTH_ROUTES.login, {
       email: credentials.email.trim().toLowerCase(),
       password: credentials.password,
     });
+    /* 202 (server v0.24.0): the password was right and this account asks
+       for a code from its authenticator app. Nothing to store yet — the
+       slice parks the challenge and the code step spends it. */
+    if ('totpRequired' in body) throw new TotpChallengeRequired(body);
+    await storeSession(body);
+    await remember(body.user);
+    return { user: body.user, token: body.accessToken, profile: {} };
+  }
+
+  /* ── Two-factor (server v0.24.0; routes as in shared TOTP_ROUTES) ── */
+
+  /** The second step: the challenge + a code → the login envelope,
+      stored and remembered exactly like `login`. */
+  async loginTotp(input: TotpLoginInput): Promise<AuthSession> {
+    const tokens = await post<AuthTokens>(TOTP_ROUTES.loginTotp, input);
     await storeSession(tokens);
     await remember(tokens.user);
     return { user: tokens.user, token: tokens.accessToken, profile: {} };
+  }
+
+  totpStatus(): Promise<TotpStatus> {
+    return request<TotpStatus>(TOTP_ROUTES.status, undefined, { auth: true, method: 'GET' });
+  }
+
+  totpSetup(): Promise<TotpSetup> {
+    return post<TotpSetup>(TOTP_ROUTES.setup, {}, { auth: true });
+  }
+
+  totpEnable(input: TotpEnableInput): Promise<TotpEnableResult> {
+    return post<TotpEnableResult>(TOTP_ROUTES.enable, input, { auth: true });
+  }
+
+  totpDisable(input: TotpDisableInput): Promise<TotpDisableResult> {
+    return post<TotpDisableResult>(TOTP_ROUTES.disable, input, { auth: true });
   }
 
   /** Public. `off` is a complete answer. */
@@ -623,6 +668,9 @@ export class HttpAuthService implements MobileAuthService {
   }
 }
 
+// v2.10.0 — Two-factor (server v0.24.0): login reads a 202 challenge as TotpChallengeRequired;
+//          loginTotp spends it; totpStatus / totpSetup / totpEnable / totpDisable; maps
+//          totp_invalid → 'totp-invalid', totp_challenge_expired → 'totp-expired'.
 // v2.3.0 — `revalidate()` stops ROTATING a refresh token merely to ask whether
 //          the server is there. AuthGate calls it on every foreground and on a
 //          4 s→60 s backoff while offline, so the app was spending its most

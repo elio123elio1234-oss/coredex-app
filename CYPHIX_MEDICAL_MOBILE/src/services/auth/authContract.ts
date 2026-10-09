@@ -25,6 +25,7 @@ import type {
   CaptchaContract,
   ConsentContract,
   RefreshOutcome,
+  TotpContract,
 } from '@cyphix/shared';
 
 /** The account this device last signed in as. Name only — it is shown
@@ -42,7 +43,8 @@ export interface MobileAuthService
     AuthAccountContract,
     ConsentContract,
     AuthLifecycleContract,
-    CaptchaContract {
+    CaptchaContract,
+    TotpContract {
   /**
    * Ask the authority whether the session `restore()` just opened is
    * still real, and report which of the three things happened.
@@ -107,3 +109,4 @@ export const MOCK_SMS_CODE = '000000';
 // v1.6.0 — Extends AuthLifecycleContract (shared v1.22.0): export + scheduled deletion —
 //          server v0.14.0.
 // v1.7.0 — Extends CaptchaContract (shared v1.23.0): the sign-up bot check — server v0.15.0.
+// v1.8.0 — Extends TotpContract (shared v1.32.0): two-factor sign-in — server v0.24.0.

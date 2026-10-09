@@ -29,7 +29,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { LEGAL_DOCS, legalDocUrl } from '@cyphix/shared';
+import { LEGAL_DOCS, isTotpEligibleRole, legalDocUrl } from '@cyphix/shared';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
@@ -58,6 +58,7 @@ import DeleteAccountSheet, {
 } from '@/components/organisms/Account/DeleteAccountSheet';
 import SessionsSheet from '@/components/organisms/Account/SessionsSheet';
 import SupportSheet from '@/components/organisms/Account/SupportSheet';
+import TwoFactorSheet from '@/components/organisms/Account/TwoFactorSheet';
 import LanguageSelectRow from '@/components/molecules/LanguageSelectRow';
 import SegmentedControl from '@/components/molecules/SegmentedControl';
 import SettingsRow from '@/components/molecules/SettingsRow';
@@ -191,7 +192,7 @@ export default function SettingsScreen() {
   );
   /* Which Account sheet is up (server v0.12.0). One at a time. */
   const [accountSheet, setAccountSheet] = useState<
-    'password' | 'email' | 'sessions' | 'support' | 'delete' | null
+    'password' | 'email' | 'sessions' | 'support' | 'totp' | 'delete' | null
   >(null);
   /* What this account accepted (server v0.13.0) — loaded once per visit. */
   const consents = useConsents();
@@ -650,6 +651,24 @@ export default function SettingsScreen() {
             description={tr('setAccountSessionsDesc')}
             onPress={() => setAccountSheet('sessions')}
           />
+          {/* Two-factor sign-in (server v0.24.0, LAUNCH_PLAN 5.5): offered to
+              staff by the REAL role — a preview role never draws it. The
+              chip says what the principal knows; the sheet asks the rest. */}
+          {isTotpEligibleRole(realRole) && (
+            <SettingsRow
+              label={tr('setAccountTotp')}
+              description={tr('setAccountTotpDesc')}
+              value={
+                typeof user?.totpEnabled === 'boolean' ? (
+                  <SettingsChip
+                    label={user.totpEnabled ? tr('totpOn') : tr('totpOff')}
+                    tone={user.totpEnabled ? 'ok' : 'neutral'}
+                  />
+                ) : undefined
+              }
+              onPress={() => setAccountSheet('totp')}
+            />
+          )}
           {/* Contact support (server v0.23.0, LAUNCH_PLAN 5.4): the account
               attached, no challenge — the web's row, on a phone. */}
           <SettingsRow
@@ -956,6 +975,7 @@ export default function SettingsScreen() {
       />
       <ChangeEmailSheet visible={accountSheet === 'email'} onClose={() => setAccountSheet(null)} />
       <SessionsSheet visible={accountSheet === 'sessions'} onClose={() => setAccountSheet(null)} />
+      <TwoFactorSheet visible={accountSheet === 'totp'} onClose={() => setAccountSheet(null)} />
       <SupportSheet visible={accountSheet === 'support'} onClose={() => setAccountSheet(null)} />
       <DeleteAccountSheet
         visible={accountSheet === 'delete'}
@@ -988,6 +1008,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.7.0 — A "Two-factor sign-in" row in Account for staff → TwoFactorSheet (server v0.24.0, 5.5).
 // v3.6.0 — A "Contact support" row in Account → SupportSheet (server v0.23.0, LAUNCH_PLAN 5.4).
 // v3.5.0 — Care connection: the care-team / patients rows with a confirmed Disconnect
 //          (Alert), and "Join a doctor or clinic" → JoinCareSheet for patients

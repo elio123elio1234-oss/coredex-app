@@ -22,6 +22,9 @@ const ERROR_KEY: Record<AuthErrorCode, TranslationKey> = {
      phone has no clinician sign-up, but a clinician may try to sign in
      here — the sentence must exist. */
   'account-pending': 'authErrAccountPending',
+  'totp-required': 'authErrTotpRequired',
+  'totp-invalid': 'authErrTotpInvalid',
+  'totp-expired': 'authErrTotpExpired',
   network: 'authErrNetwork',
   unknown: 'authErrUnknown',
 };
@@ -30,6 +33,7 @@ export function authErrorKey(code: AuthErrorCode | null | undefined): Translatio
   return code ? ERROR_KEY[code] : null;
 }
 
+// v1.3.0 — totp-required / totp-invalid / totp-expired (shared v1.32.0, server v0.24.0).
 // v1.2.0 — account-pending (shared v1.26.0, server v0.18.0).
 // v1.1.0 — captcha-required / captcha-failed (shared v1.23.0, server v0.15.0).
 // v1.0.0 — AuthErrorCode → translation key (for the Account sheets).

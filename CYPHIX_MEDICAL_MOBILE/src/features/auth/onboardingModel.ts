@@ -19,6 +19,7 @@ import {
   MIN_PASSWORD_LENGTH,
   type AdministrativeGender,
   type BloodType,
+  isTotpInputShaped,
   type RegistrationInput,
 } from '@cyphix/shared';
 import { PHONE_VERIFICATION_STEP } from '@/config/featureFlags';
@@ -27,6 +28,9 @@ import { AVATAR_TONES } from '@/theme/authTheme';
 export type OnboardingStep =
   | 'welcome'
   | 'signin'
+  /** The sign-in's second step (server v0.24.0): a code from the
+      authenticator app, reached only when the server asked for one. */
+  | 'totp'
   | 'forgot'
   /** Reached ONLY from an e-mailed reset link (cyphix://reset-password):
       choose a new password, and the reply signs the phone in. */
@@ -63,6 +67,7 @@ export type ProfileStep = (typeof PROFILE_STEPS)[number];
 export const STEP_ORDER: readonly OnboardingStep[] = [
   'welcome',
   'signin',
+  'totp',
   'forgot',
   'reset',
   'signup',
@@ -83,6 +88,7 @@ export function isProfileStep(step: OnboardingStep): step is ProfileStep {
     DEMO_MODE), straight to the phone step it was reached from. */
 const BACK_MAP: Partial<Record<OnboardingStep, OnboardingStep>> = {
   signin: 'welcome',
+  totp: 'signin',
   forgot: 'signin',
   reset: 'signin',
   signup: 'welcome',
@@ -125,6 +131,8 @@ export interface OnboardingDraft {
   /** The reset step's new password. Separate from `password` so a reset
       never leaks into a later sign-up attempt's field. */
   newPassword: string;
+  /** The sign-in's second-step code: six digits, or a recovery code. */
+  totpCode: string;
   dialIndex: number;
   phone: string; // digits only
   otp: string;
@@ -150,6 +158,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   email: '',
   password: '',
   newPassword: '',
+  totpCode: '',
   dialIndex: 0,
   phone: '',
   otp: '',
@@ -273,6 +282,8 @@ export function canContinue(step: OnboardingStep, draft: OnboardingDraft): boole
   switch (step) {
     case 'signin':
       return isEmailShaped(draft.email) && draft.password.length > 0;
+    case 'totp':
+      return isTotpInputShaped(draft.totpCode);
     case 'forgot':
       return isEmailShaped(draft.email);
     case 'reset':
@@ -345,6 +356,7 @@ export function initialsOf(fullName: string): string {
     .toUpperCase();
 }
 
+// v1.4.0 — 'totp' step (the sign-in's code step, server v0.24.0): totpCode in the draft, back → signin.
 // v1.2.0 — Back from the first profile step returns to the phone step when the
 //          code step is off (PHONE_VERIFICATION_STEP = DEMO_MODE); unchanged in demo.
 // v1.1.0 — Names are capitalised as they are typed (`capitalizeName`), in the

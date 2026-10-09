@@ -1,5 +1,52 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.110.0 - 2026-10-09 - two-factor sign-in for staff (TOTP)
+
+**JS only — OTA onto runtime 0.45.0 (build 17); update group
+`10634c7b-966d-4a1b-bba6-bf32e28ccba2`.** No new package: the
+RFC 6238 maths the offline mock verifies codes with is pure TypeScript in
+`@cyphix/shared` (v1.32.0), and the random bytes come from the
+`expo-crypto` already shipped.
+
+**Why.** LAUNCH_PLAN 5.5 (hole S14): the server (v0.24.0) and the web
+(v1.81.0) got two-factor sign-in with an authenticator app for the staff
+roles; the cross-platform rule puts the same row and the same sign-in
+step on the phone in the same change-set.
+
+**What.**
+- **Settings → Account → "Two-factor sign-in"** (`TwoFactorSheet`),
+  drawn for admin / clinician / technician by the REAL role (a preview
+  role never draws it). Off: what it is, "Turn on". Setup: the key as
+  selectable text and **"Open in authenticator app"** — the
+  `otpauth://` URL handed to whichever app claims it (Linking; a
+  refused open is said, not swallowed) — then a code, "Verify and turn
+  on". Then the eight recovery codes, **shown once**, "I saved them".
+  On: since when, codes left, "Turn off" → the password AND a current
+  code (or a recovery code). The row's chip says On / Off from the
+  principal's `totpEnabled`.
+- **The sign-in's second step** (`TotpStep`, a new `'totp'` step in the
+  onboarding model): when the server answers 202 with a challenge,
+  `login()` rejects with a `TotpChallengeRequired` the slice parks as
+  `totpChallenge` — not an error — and the flow moves from the password
+  to the code; "Verify" spends it (`loginTotp`), back (header, link,
+  hardware button) drops it. A wrong code keeps the challenge and says
+  so; a dead one (five minutes, or spent) offers only the way back.
+- **The mock does it for real:** against a build with no server the
+  code a real authenticator app shows for the on-screen key verifies,
+  the sign-in really has a second step, recovery codes are hashed and
+  spent once.
+- `authContract` extends `TotpContract` (the compiler catches a missing
+  method on either implementation); three error codes; en/he copy.
+
+**Deliberate divergence (PARITY.md).** No QR code on the phone: the
+authenticator app is on the same device, so a picture to scan with
+itself would be absurd — the key travels as a link and as text.
+
+**Verified.** `tsc --noEmit` + `expo export` (OTA). 🔬 Not yet run on a
+device: the otpauth:// hand-off to a real authenticator app and the
+one-time-code keyboard hint are the two things to touch first.
+
+
 ## v0.109.0 - 2026-10-09 - Contact support from Settings
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package.
