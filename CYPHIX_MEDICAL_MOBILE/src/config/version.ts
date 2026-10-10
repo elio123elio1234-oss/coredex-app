@@ -1,9 +1,16 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.110.0';
+export const APP_VERSION = '0.111.0';
 export const APP_BUILD_LABEL =
-  'Two-factor sign-in for staff: Settings → Account → “Two-factor sign-in” (the key as text or handed straight to the authenticator app, a code turns it on, eight recovery codes shown once, off with the password + a code) and the code step at sign-in for an account that asks for it (server v0.24.0).';
+  'New logo everywhere: the boot splash, the welcome and lock screens, the patient shell, Profile and the exported PDF’s letterhead all draw the 2026-10-10 CYPHIX wordmark. It is lettering only — the round mark and the “MEDICAL” sub-line are not in the supplied artwork and are gone.';
 
+// v0.111.0 - NEW LOGO (shared v1.34.0). JS only - OTA. The supplied 2026-10-10 artwork is
+//            the LETTERING ALONE: the round mark with its white dot and the grey "MEDICAL"
+//            beside it are not in it, so BrandLogo stopped being a lockup and now delegates
+//            to CyphixWordmark. Both read the path from @cyphix/shared brand/wordmark, as
+//            does the print engine - one declaration where there were three. Every caller's
+//            width was divided down (160->132, 112->92, 34mm->24.6mm) so the RENDERED HEIGHT
+//            is unchanged and no layout moves.
 // v0.110.0 - TWO-FACTOR SIGN-IN (server v0.24.0, shared v1.32.0, LAUNCH_PLAN 5.5). JS only - OTA.
 //            Settings → Account → TwoFactorSheet for staff; TotpStep after the password when the
 //            account asks for a code. No QR on the phone: the key goes to the authenticator app as

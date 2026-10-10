@@ -1,5 +1,20 @@
 # Changelog — CYPHIX Landing
 
+## v0.5.0 — 2026-10-10 — the new CYPHIX wordmark
+
+**Why.** The brand changed; the header and the footer were still drawing
+the 2024 lettering. `Logo.tsx` now carries the 2026-10-10 artwork,
+mirroring `@cyphix/shared` v1.34.0 `brand/wordmark.ts` (this app builds
+standalone and does not resolve the shared package, so the mirror is the
+arrangement — an edit belongs in both).
+
+`.brand-logo` sizes by **height** (22px), so the header and footer rows do
+not move; the new mark is simply ~16 % wider on the same line, its aspect
+being 4.81 against the old crop's 4.14.
+
+**Not deployed.** This page has not been put on Vercel since v0.4.0 — the
+version badge will not show the change until someone ships it.
+
 ## v0.4.0 — 2026-10-09 — "Request access" is a real form (LAUNCH_PLAN 5.4, L1)
 
 **Why:** every CTA on the page said "Request access" and scrolled to a footer

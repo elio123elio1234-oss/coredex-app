@@ -156,7 +156,7 @@ function page(chrome: Chrome, bodyHtml: string): string {
   return `<section class="pg">
   <header class="lh">
     <div class="lh-l">
-      <div class="mark">${wordmark(34, true)}</div>
+      <div class="mark">${wordmark(24.6, true)}</div>
       <div class="ttl">${esc(chrome.title)}</div>
     </div>
     <div class="lh-r">${esc(chrome.subtitle)}</div>
@@ -1415,6 +1415,11 @@ ul.blind { margin: 0; padding-left: 4mm; font-size: 7.6pt; color: ${SLATE}; line
         padding: 2.5mm 3mm; height: 100%; overflow: hidden; }
 .disc { font-size: 6.4pt; line-height: 1.45; color: ${MUTED}; margin: 0; }
 `;
+
+// v1.1.0 — The letterhead carries the 2026-10-10 wordmark. Its width drops
+//          34 mm → 24.6 mm because the new artwork is lettering only (aspect
+//          4.81, not the old lockup's 6.63): the PRINTED HEIGHT is unchanged,
+//          so the 16 mm band and every assertFits figure stay as they were.
 
 // v4.1.0 — Dual Lead II: the reference page prints a second provenance
 //          paragraph under the processing one, saying what the Lead II fusion

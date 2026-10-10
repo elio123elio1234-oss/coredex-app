@@ -1,5 +1,51 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.111.0 - 2026-10-10 - the new CYPHIX logo, everywhere
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package; the
+artwork is path data.
+
+**Why.** The user supplied a new wordmark and asked for it on every
+surface, web and native. See the web app's v1.83.0 entry for the full
+reasoning — the same two facts drive both.
+
+**The logo is the lettering alone.** The lockup — a navy blob with a
+white dot, CYPHIX, and grey "MEDICAL" beside it — is not what was
+supplied. `BrandLogo` therefore stopped being a different drawing from
+`CyphixWordmark` and delegates to it. Its `crop` option went with the
+change: it existed because the old viewBox carried 7.3 units of air on
+the left and 27.6 on the right, which put the lockup ten units off
+centre; the new viewBox is tight, so there is nothing to crop.
+
+**One declaration, not three.** `CyphixWordmark`, `BrandLogo` and the
+print engine's `services/export/pdf/logo.ts` all read the path from
+`@cyphix/shared` v1.34.0 `brand/wordmark`. The print file used to carry
+three hand-copied path strings under a comment conceding that "four
+copies of one wordmark is not a design"; that is settled now.
+
+**Every caller was resized, so nothing moves.** The old lockup was 5.83
+units wide per unit tall (6.63 as the print engine cropped it); lettering
+alone is 4.81. A caller keeping its width would have drawn a logo ~21 %
+taller than the block it occupies. Widths were divided down to hold the
+**rendered height** constant instead:
+
+| caller | was | now |
+|---|---|---|
+| `PatientShell` floating brand | 160 | 132 |
+| `ProfileScreen` footer brand | 160 | 132 |
+| `ReportHeader` (PDF preview) | 112 | 92 |
+| PDF letterhead (`pages.ts`) | 34 mm | 24.6 mm |
+
+The 16 mm letterhead band and every `assertFits` figure are untouched —
+that was the point of holding height rather than width.
+
+The splash, welcome and lock screens already used `CyphixWordmark` and
+needed no change: the new aspect is 4.81 against the old 4.89, under a
+pixel of difference at the sizes they draw.
+
+**Verified:** `tsc --noEmit` clean, `expo export` bundles. 🔬 Not yet
+seen on an iPhone or an Android device — see PARITY.md.
+
 ## v0.110.0 - 2026-10-09 - two-factor sign-in for staff (TOTP)
 
 **JS only — OTA onto runtime 0.45.0 (build 17); update group

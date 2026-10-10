@@ -35,7 +35,7 @@ export default function ReportHeader({ title, timestamp, simulatedNotice }: Prop
   return (
     <View style={styles.wrap}>
       <View style={[styles.row, { borderBottomColor: t.accent }]}>
-        <BrandLogo width={112} />
+        <BrandLogo width={92} />
         <View style={styles.titleBlock}>
           <Text style={[styles.title, { color: t.accent }]} numberOfLines={1}>
             {title.toUpperCase()}
@@ -84,6 +84,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+// v2.1.0 — New wordmark: 112 → 92 px, chosen to keep the rendered height the
+//          same now that the logo is lettering only and no longer carries the
+//          mark and "MEDICAL" that made the old lockup wide.
 
 // v2.0.0 — One compact letterhead for the whole document instead of the web's
 //          per-A4-sheet repeat; provenance moved to the summary card.

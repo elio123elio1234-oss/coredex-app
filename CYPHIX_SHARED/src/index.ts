@@ -103,6 +103,14 @@ export * from './contact/contract';
    revenue — and the ONE pricing rule both sides use. No payment processor. */
 export * from './billing/contract';
 
+/* ── The brand itself ─────────────────────────────────────────────
+   The CYPHIX wordmark as path data. It is here for the same reason the
+   BLE packet strides are: it was being hand-copied into every renderer
+   that had to draw it (two web components, two mobile components, the
+   print engine, the landing page), and the day the brand changed, seven
+   files had to agree. Pure data — no React, no DOM, no RN. */
+export * from './brand/wordmark';
+
 /* What the app SHOWS about that person: the assembled, minimized medical
    card the Profile screen draws, and the portrait that follows them
    across devices. Same caveat — web `types/viewModels.ts` and the
@@ -215,6 +223,11 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.34.0 — Exports brand/wordmark: the CYPHIX wordmark as path data (the
+//           2026-10-10 lettering-only artwork), its tight viewBox, aspect and
+//           inks, plus `wordmarkSvg()` for renderers that need markup. The
+//           round mark and the "MEDICAL" sub-line are not in the new logo and
+//           are therefore gone from every surface that drew the old lockup.
 // v1.33.0 — Exports billing/contract (plans, subscriptions, usage counters, invoices, the
 //           subscriber's view, the revenue report, BILLING_ROUTES / ADMIN_BILLING_ROUTES, the
 //           pure pricing rule); admin/contract v1.2.0 (billing block); clinic/contract v1.3.0

@@ -336,7 +336,7 @@ export default function ProfileScreen() {
           the switch. Same flag, so the two can never disagree. */}
       {SHOW_SHELL_WORDMARK && (
         <View style={[styles.brand, { top: insets.top + 10 }]} pointerEvents="none">
-          <BrandLogo width={160} tint={palette.logoTint} />
+          <BrandLogo width={132} tint={palette.logoTint} />
         </View>
       )}
 
@@ -970,6 +970,9 @@ const styles = StyleSheet.create({
   signOutLabel: { fontSize: 15.5, fontWeight: '700' },
   signOutDesc: { fontSize: 12.5 },
 });
+
+// v2.2.0 — New wordmark: 160 → 132 px, holding the footer brand's height
+//          constant now that the logo is lettering only.
 
 // v3.1.0 — The pull-to-refresh is driven by the PULL. It read `isFetching`,
 //           which is also true on arrival at the tab and on every background

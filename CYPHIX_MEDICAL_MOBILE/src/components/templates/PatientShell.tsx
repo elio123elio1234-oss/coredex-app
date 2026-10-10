@@ -106,7 +106,7 @@ export default function PatientShell({
 
       {wordmark && (
         <View style={[styles.brand, { top: insets.top + 10 }]} pointerEvents="none">
-          <BrandLogo width={160} tint={palette.logoTint} />
+          <BrandLogo width={132} tint={palette.logoTint} />
         </View>
       )}
 
@@ -157,6 +157,9 @@ const styles = StyleSheet.create({
   brand: { position: 'absolute', left: 20, zIndex: 20 },
   content: { flex: 1, justifyContent: 'center' },
 });
+
+// v2.3.0 — New wordmark: 160 → 132 px, so the shell's floating brand occupies
+//          the same height it did as a lockup (still behind SHOW_SHELL_WORDMARK).
 
 // v2.5.0 — `bleedTop`: a screen with its own frosted header takes the top
 //          clearance onto its scroll content, so the page travels behind the

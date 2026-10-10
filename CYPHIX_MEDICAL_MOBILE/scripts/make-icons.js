@@ -1,4 +1,20 @@
 /* ==================================================================
+   ⚠️ SUPERSEDED — DO NOT RUN (2026-10-10). Two separate reasons:
+
+   1. The mark below — the navy blob with the white counter-dot — was
+      RETIRED with the old lockup. The logo supplied on 2026-10-10 is the
+      lettering alone; `BrandLogo` no longer draws a mark at all. Running
+      this would stamp a dead logo onto the home screen.
+   2. The icons actually shipping are not from this script anyway. They
+      are a later ECG-card illustration, which contains no wordmark and
+      is therefore untouched by the brand change.
+
+   Kept, not deleted, because the rasteriser and the per-platform sizing
+   reasoning below are the part worth having when a new icon is drawn —
+   and because an icon change is a REBUILD, never an OTA, so whoever does
+   it will need this file's notes. Point it at new path data first.
+
+   ──────────────────────────────────────────────────────────────────
    make-icons.js — render the CYPHIX app icons from the BRAND MARK's own
    path data, not from a redrawn approximation.
 
@@ -245,4 +261,8 @@ for (const [name, make] of ICONS) {
   console.log(`wrote ${name.padEnd(32)} ${(buf.length / 1024).toFixed(1)} kB`);
 }
 
+// v1.1.0 — Marked SUPERSEDED: the mark it draws was retired with the 2026-10-10
+//           lockup, and the shipped icons come from a later illustration. No code
+//           change — this is a warning, because the file still runs perfectly and
+//           would silently install a logo that no longer exists.
 // v1.0.0 — Renders every app icon from BrandLogo's own path data.
