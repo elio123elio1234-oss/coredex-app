@@ -102,6 +102,11 @@ export * from './contact/contract';
    with VAT marked paid by hand, the subscriber's view, the cockpit's
    revenue — and the ONE pricing rule both sides use. No payment processor. */
 export * from './billing/contract';
+/* FHIR R4, outbound (LAUNCH_PLAN 7.3): the routes, the ECG codes, the
+   resources we emit, the PURE builder that turns a stored recording into
+   an Observation (so an export on any platform and the server's API are
+   one JSON), and the API keys an organization's EHR reads with. */
+export * from './fhir/contract';
 
 /* ── The brand itself ─────────────────────────────────────────────
    The CYPHIX wordmark as path data. It is here for the same reason the
@@ -223,6 +228,9 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.36.0 — Exports fhir/contract (FHIR R4 outbound: routes, codes, the ECG Observation
+//           builder, API keys); legal/documents v1.1.0 (the DPA as an organization's
+//           document); org/contract v1.3.0 (registration consents carry the DPA) — 7.3.
 // v1.35.0 — org/contract v1.2.0 (departments one level below a hospital or a clinic:
 //           the type, the input, the hierarchical dashboard's tree + stats, the routes)
 //           and admin/contract v1.3.0 (the organizations row names its parent and its

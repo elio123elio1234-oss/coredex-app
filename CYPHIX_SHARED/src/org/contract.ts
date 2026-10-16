@@ -35,7 +35,7 @@
    super-admin, with no PHI in them.
    ================================================================== */
 
-import type { ConsentInput } from '../legal/documents';
+import type { ConsentInput, OrgConsentInput } from '../legal/documents';
 import type { UserStatus } from '../auth/clinician';
 
 /** The global role (the server's `user_role` enum; the web's and the
@@ -131,7 +131,10 @@ export interface OrganizationRegistrationInput {
     specialty?: string;
     licenseNo?: string;
   };
-  consents?: ConsentInput[];
+  /** The person's two documents — and, since 7.3, the organization's
+      Data Processing Agreement (ORG_REQUIRED_CONSENTS), recorded against
+      the first admin's account. */
+  consents?: Array<ConsentInput | OrgConsentInput>;
   captchaToken?: string;
 }
 export interface OrganizationRegistrationResult {
@@ -386,6 +389,7 @@ export const ADMIN_ORG_ROUTES = {
   tree: 'admin/organizations/tree',
 } as const;
 
+// v1.3.0 — OrganizationRegistrationInput.consents may carry the DPA (OrgConsentInput) — 7.3.
 // v1.2.0 — Departments (LAUNCH_PLAN 7.1): OrganizationType + 'department' (never registrable —
 //          RegistrableOrganizationType), PARENT_ORGANIZATION_TYPES / canHaveDepartments,
 //          DepartmentInput / DepartmentsResult / validateDepartmentInput, the hierarchical

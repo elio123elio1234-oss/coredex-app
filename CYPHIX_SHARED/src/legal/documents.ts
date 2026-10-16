@@ -73,6 +73,46 @@ export const REQUIRED_CONSENTS: readonly ConsentInput[] = LEGAL_DOC_IDS.map((id)
   version: LEGAL_DOCS[id].version,
 }));
 
+/* ── Documents an ORGANIZATION accepts (LAUNCH_PLAN 7.3; R4) ──────────
+   The Data Processing Agreement is signed by the clinic / hospital that
+   entrusts its patients' data to CYPHIX — by its first admin at
+   registration — never by a patient. It therefore lives beside
+   LEGAL_DOCS, not inside it: REQUIRED_CONSENTS (a sign-up) is unchanged,
+   and only an organization's registration carries ORG_REQUIRED_CONSENTS. */
+
+export const ORG_LEGAL_DOC_IDS = ['dpa'] as const;
+export type OrgLegalDocId = (typeof ORG_LEGAL_DOC_IDS)[number];
+export type AnyLegalDocId = LegalDocId | OrgLegalDocId;
+
+export interface OrgLegalDocMeta {
+  id: OrgLegalDocId;
+  version: string;
+  updated: string;
+  path: string;
+}
+export const ORG_LEGAL_DOCS: Record<OrgLegalDocId, OrgLegalDocMeta> = {
+  dpa: { id: 'dpa', version: '1.0', updated: '2026-10-16', path: '/dpa' },
+};
+export function orgLegalDocUrl(id: OrgLegalDocId, origin: string = WEB_ORIGIN_DEFAULT): string {
+  return `${origin.replace(/\/+$/, '')}${ORG_LEGAL_DOCS[id].path}`;
+}
+/** "The organization accepts THIS document at THIS version" — recorded
+    against the registering admin's account, like a person's consents. */
+export interface OrgConsentInput {
+  doc: OrgLegalDocId;
+  version: string;
+}
+export const ORG_REQUIRED_CONSENTS: readonly OrgConsentInput[] = ORG_LEGAL_DOC_IDS.map((id) => ({
+  doc: id,
+  version: ORG_LEGAL_DOCS[id].version,
+}));
+/** Every version in force, person's and organization's, in one map. */
+export const ALL_LEGAL_VERSIONS: Record<AnyLegalDocId, string> = {
+  terms: LEGAL_DOCS.terms.version,
+  privacy: LEGAL_DOCS.privacy.version,
+  dpa: ORG_LEGAL_DOCS.dpa.version,
+};
+
 /** Relative to API_VERSION_PATH. Signed in. */
 export const CONSENT_ROUTES = {
   /** GET → ConsentsResult. */
@@ -107,5 +147,7 @@ export function missingConsents(
   );
 }
 
+// v1.1.0 — ORG_LEGAL_DOCS: the Data Processing Agreement v1.0 at /dpa, OrgConsentInput,
+//          ORG_REQUIRED_CONSENTS, ALL_LEGAL_VERSIONS (LAUNCH_PLAN 7.3; R4). REQUIRED_CONSENTS unchanged.
 // v1.0.0 — Legal document ids/versions/paths, the consent contract, REQUIRED_CONSENTS,
 //          CONSENT_ROUTES, missingConsents (server v0.13.0, LAUNCH_PLAN 1.8).
