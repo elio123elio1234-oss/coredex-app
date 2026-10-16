@@ -451,7 +451,7 @@ Sentry · Uptime · סליקה (מאוחר).
 - 8.1 דף נחיתה: טופס, עברית/RTL, קישורים, משפטי, SEO (4.6).
 - 8.2 חנויות: Play + App Store (M12) — privacy URL, מחיקת חשבון, צילומים, review notes.
 - 8.3 דומיינים + מייל `support@` (O6) + runbooks (O7).
-- 8.4 בדיקת נגישות (axe + מקלדת + קורא מסך) + הצהרת נגישות (W11, R6).
+- 8.4 בדיקת נגישות (axe + מקלדת + קורא מסך) + הצהרת נגישות (W11, R6). **הכנה ✅ 2026-10-16 (ווב v1.89.0, shared v1.40.0, מובייל 0.115.0 OTA aeb462ba-a263-40c7-93cd-4d8e322ff124) — הבדיקה האנושית עם קורא מסך נשארת של המשתמש.** סריקת axe-core 4.10 headless על 45 מצבי עמוד (ציבורי, הרשמה, מטופל, פורטל, קוקפיט, עברית; ניגודיות גם בכהה): לפני — 256 צמתים נכשלים ב-35 עמודים (כולם למעט 11 = ניגודיות צבע), כהה 130; אחרי — 7 (5 תוויות dock מאחורי scrim של דיאלוג ב-/link + 2 יעדי ציר הזמן) (בהיר, כל הכללים), 0 (כהה, ניגודיות). תיקונים שאינם משנים התנהגות: שני טוקני האפור ושלושת צבעי הסטטוס כוונו ל-AA (≥4.5:1) על הרקע הבהיר ביותר בשימוש, `--on-brand` לטקסט על מילוי navy שמתבהר במצב כהה, `--info-ink` לתגיות "בטיפול", תג הגרסה בצבע מלא, טבעת פוקוס לבורר השפה, שם ל-progressbar של ההרשמה, אזורי המדידות והמשרעות נגישים במקלדת, תפקידי טבלה לא-חוקיים הוסרו מעץ המחלקות. **הצהרת נגישות** ציבורית ב-`/accessibility` (he/en; placeholders: רכז/ת נגישות, טלפון, תאריך ביקורת) דרך אותו LegalPage, שורה ב-About בווב ובטלפון. לא תוקן בכוונה ומתועד בהצהרה: עמודות ציר הזמן ב-Insights (12px — שינוי עיצוב), פרוטוקול החזה המונחה במצלמה, מסך Live Scan. 18 בדיקות headless + סריקה חוזרת.
 - 8.5 חזרה על 1.1–1.5 (סימולציות) **על מכשיר אמיתי** לפי §6.4 — רק אז "מוכן".
 
 ---
@@ -513,6 +513,7 @@ Sentry · Uptime · סליקה (מאוחר).
 
 ---
 
+<!-- v1.24.0 — 8.4 prepared (web v1.89.0 statement + axe-led fixes, shared v1.40.0, mobile 0.115.0 OTA aeb462ba-a263-40c7-93cd-4d8e322ff124), 2026-10-16; the human audit stays the user's. -->
 <!-- v1.23.0 — 7.3's "share as FHIR" follow-up built on both apps (web v1.88.0, mobile 0.114.0 OTA 5d9f50b0-2994-48cd-ae47-7470cd7e6ff7), 2026-10-16. -->
 <!-- v1.22.0 — 4.4's server debt paid (shared v1.38.0, server v0.28.0 PR #18 awaiting the user's merge; web v1.88.0 parked on a branch), 2026-10-16. -->
 <!-- v1.21.0 — 7.5 corrected (web v1.87.0, 2026-10-16): the Interpretation panel WITHDRAWN on the user's instruction — the app displays data and does not interpret; W16 closed as not wanted (not a debt). Reminders stay. -->

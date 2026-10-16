@@ -1267,6 +1267,8 @@ export const en = {
   /* ── Legal documents + consent (server v0.13.0) ── */
   legalTermsTitle: 'Terms of Use',
   legalPrivacyTitle: 'Privacy Notice',
+  legalAccessibilityTitle: 'Accessibility statement',
+  setAboutAccessibilityDesc: 'How CYPHIX is made usable with a screen reader, large text and a keyboard — and whom to tell when it is not',
   authConsentBefore: 'I have read and agree to the ',
   authConsentAnd: ' and the ',
   authConsentAfter: '.',
@@ -1854,6 +1856,7 @@ export type TranslationKey = keyof typeof en;
 //           (server v0.16.0).
 // v1.34.0 — Requests are real: sent / not-sent outcomes, the four statuses, the detail sheet,
 //           the updates banner (server v0.17.0); authErrAccountPending (server v0.18.0).
+// v1.37.0 — The About row for the accessibility statement (0.115.0).
 // v1.36.0 — "Export FHIR JSON" (the study viewer's ⋯ menu) + its viewer-feature label (0.114.0).
 // v1.35.0 — Two-factor sign-in: the Settings row + sheet (the key, open-in-app, codes, turn off),
 //           the sign-in code step, three error codes (server v0.24.0).

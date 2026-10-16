@@ -1138,6 +1138,8 @@ export const he: Record<TranslationKey, string> = {
   /* ── Legal documents + consent (server v0.13.0) ── */
   legalTermsTitle: 'תנאי השימוש',
   legalPrivacyTitle: 'מדיניות הפרטיות',
+  legalAccessibilityTitle: 'הצהרת נגישות',
+  setAboutAccessibilityDesc: 'איך CYPHIX מותאמת לקורא מסך, לטקסט גדול ולמקלדת — ולמי מדווחים כשהיא לא',
   authConsentBefore: 'קראתי ואני מסכימ/ה ל',
   authConsentAnd: ' ול',
   authConsentAfter: '.',
@@ -1652,5 +1654,6 @@ export const he: Record<TranslationKey, string> = {
 // v1.33.0 — Care links: the care-team rows, disconnect, the join sheet, the banner (Hebrew).
 // v1.34.0 — Requests are real: outcomes, statuses, the detail sheet, the updates banner;
 //           authErrAccountPending (Hebrew).
+// v1.37.0 — The About row for the accessibility statement (Hebrew, 0.115.0).
 // v1.36.0 — "Export FHIR JSON" + its viewer-feature label (Hebrew, 0.114.0).
 // v1.35.0 — Two-factor sign-in: the Settings row + sheet, the sign-in code step, three error codes (Hebrew).

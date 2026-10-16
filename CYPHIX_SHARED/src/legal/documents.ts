@@ -113,6 +113,28 @@ export const ALL_LEGAL_VERSIONS: Record<AnyLegalDocId, string> = {
   dpa: ORG_LEGAL_DOCS.dpa.version,
 };
 
+/* ── Public information pages that are NOT consent documents (v1.2.0) ──
+   The accessibility statement (Israeli service-accessibility regulations,
+   IS 5568 / WCAG 2.1 AA; LAUNCH_PLAN 8.4, W11 / R6) is published by the
+   web app and linked from every platform's About. Nobody accepts it, so
+   it is deliberately NOT in LEGAL_DOC_IDS: no consent is ever recorded
+   against it and REQUIRED_CONSENTS is unchanged. */
+export const INFO_DOC_IDS = ['accessibility'] as const;
+export type InfoDocId = (typeof INFO_DOC_IDS)[number];
+export interface InfoDocMeta {
+  id: InfoDocId;
+  /** The statement's own version (a text version, not a consent version). */
+  version: string;
+  updated: string;
+  path: string;
+}
+export const INFO_DOCS: Record<InfoDocId, InfoDocMeta> = {
+  accessibility: { id: 'accessibility', version: '1.0', updated: '2026-10-16', path: '/accessibility' },
+};
+export function infoDocUrl(id: InfoDocId, origin: string = WEB_ORIGIN_DEFAULT): string {
+  return `${origin.replace(/\/+$/, '')}${INFO_DOCS[id].path}`;
+}
+
 /** Relative to API_VERSION_PATH. Signed in. */
 export const CONSENT_ROUTES = {
   /** GET → ConsentsResult. */
@@ -147,6 +169,8 @@ export function missingConsents(
   );
 }
 
+// v1.2.0 — INFO_DOCS: the accessibility statement at /accessibility (+ infoDocUrl) — a public page,
+//          never a consent (LAUNCH_PLAN 8.4, W11 / R6).
 // v1.1.0 — ORG_LEGAL_DOCS: the Data Processing Agreement v1.0 at /dpa, OrgConsentInput,
 //          ORG_REQUIRED_CONSENTS, ALL_LEGAL_VERSIONS (LAUNCH_PLAN 7.3; R4). REQUIRED_CONSENTS unchanged.
 // v1.0.0 — Legal document ids/versions/paths, the consent contract, REQUIRED_CONSENTS,

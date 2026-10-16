@@ -1,5 +1,26 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.115.0 - 2026-10-16 - the accessibility statement, one tap from About
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package; one row.
+
+**Why.** LAUNCH_PLAN 8.4 (W11 / R6): an Israeli service publishes an
+accessibility statement, and the law wants it reachable from every door
+— the web app publishes it at `/accessibility` (web v1.89.0, with the
+first axe-core audit and the contrast / keyboard / ARIA fixes it led to),
+and the phone links to it exactly as it links to the Terms and the
+Privacy Notice. `@cyphix/shared` legal/documents v1.2.0 names the page
+(`INFO_DOCS`, `infoDocUrl`) so the three systems agree on the path.
+
+**What.** Settings → About → **Accessibility statement** (description:
+what CYPHIX does for a screen reader, large text and a keyboard, and
+whom to tell) opens the page in the browser. The statement itself
+covers the phone apps (VoiceOver / TalkBack, Dynamic Type / font
+scaling) and says plainly that a human screen-reader test is still
+pending on every platform — 8.5 is the user's.
+
+🔬 Not run on a device: typechecks and bundles.
+
 ## v0.114.0 - 2026-10-16 - "Export FHIR JSON" in the study viewer
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package.

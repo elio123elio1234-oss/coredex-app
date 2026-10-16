@@ -232,6 +232,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.40.0 — legal/documents v1.2.0: INFO_DOCS (the accessibility statement page) + infoDocUrl (8.4 prep).
+// v1.39.0 — org/contract v1.4.0: the organization's consents (shapes, route, missingOrgConsents; server v0.29.0).
 // v1.38.0 — clinic/contract v1.4.0: RequestsQuery.assignee + REQUEST_ASSIGNEE_ME/NONE (server v0.28.0; 4.4's debt).
 // v1.37.0 — Exports ecg/screeningContext (the screening context rule lifted from the phone) —
 //           LAUNCH_PLAN 7.5 (the web gets Interpretation + Reminders).

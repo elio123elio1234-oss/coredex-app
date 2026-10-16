@@ -29,7 +29,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { LEGAL_DOCS, isTotpEligibleRole, legalDocUrl } from '@cyphix/shared';
+import { LEGAL_DOCS, infoDocUrl, isTotpEligibleRole, legalDocUrl } from '@cyphix/shared';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
@@ -913,6 +913,13 @@ export default function SettingsScreen() {
             label={tr('legalPrivacyTitle')}
             onPress={() => void Linking.openURL(legalDocUrl('privacy', ENV.webOrigin))}
           />
+          {/* The accessibility statement (8.4; W11 / R6): a public web page,
+              like the two above — the law wants it reachable from every app. */}
+          <SettingsRow
+            label={tr('legalAccessibilityTitle')}
+            description={tr('setAboutAccessibilityDesc')}
+            onPress={() => void Linking.openURL(infoDocUrl('accessibility', ENV.webOrigin))}
+          />
           <SettingsRow
             label={tr('setAboutConsent')}
             description={
@@ -1008,6 +1015,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14.5, marginTop: 6 },
 });
 
+// v3.8.0 — About: an "Accessibility statement" row opening the web's public /accessibility page (0.115.0; 8.4 prep).
 // v3.7.0 — A "Two-factor sign-in" row in Account for staff → TwoFactorSheet (server v0.24.0, 5.5).
 // v3.6.0 — A "Contact support" row in Account → SupportSheet (server v0.23.0, LAUNCH_PLAN 5.4).
 // v3.5.0 — Care connection: the care-team / patients rows with a confirmed Disconnect
