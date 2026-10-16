@@ -35,7 +35,7 @@
    super-admin, with no PHI in them.
    ================================================================== */
 
-import type { ConsentInput, OrgConsentInput } from '../legal/documents';
+import { ORG_LEGAL_DOC_IDS, type ConsentInput, type OrgConsentInput, type OrgLegalDocId } from '../legal/documents';
 import type { UserStatus } from '../auth/clinician';
 
 /** The global role (the server's `user_role` enum; the web's and the
@@ -332,6 +332,34 @@ export interface AdminOrgTreeResult {
   total: number;
 }
 
+/* ── The organization's consents (v1.4.0; LAUNCH_PLAN 7.3's follow-up, R4) ──
+   A clinic that registered before 7.3 never saw the DPA; its org_admin
+   accepts it from Clinic settings. The record names the organization AND
+   the person who bound it; a member reads it, an org_admin records it. */
+
+export interface OrgConsentView extends OrgConsentInput {
+  acceptedAt: string;
+  acceptedByName: string | null;
+}
+/** `GET /organizations/:id/consents`: the latest acceptance per document
+    and the versions in force (so "accepted an older text" is sayable). */
+export interface OrgConsentsResult {
+  consents: OrgConsentView[];
+  current: Record<OrgLegalDocId, string>;
+}
+/** `POST /organizations/:id/consents` → 201 (400 `stale_version`). */
+export interface OrgConsentRecordedResult {
+  recorded: true;
+  consent: OrgConsentView;
+}
+/** Which organization documents are NOT accepted at the current version. */
+export function missingOrgConsents(
+  consents: readonly OrgConsentView[],
+  current: Record<OrgLegalDocId, string>,
+): OrgLegalDocId[] {
+  return ORG_LEGAL_DOC_IDS.filter((id) => !consents.some((c) => c.doc === id && c.version === current[id]));
+}
+
 /* ── Routes (relative to API_VERSION_PATH, like CARE_ROUTES) ──────── */
 
 export const ORG_ROUTES = {
@@ -358,6 +386,9 @@ export const ORG_ROUTES = {
   /** GET → OrgTreeView (a member of the organization or of one of its
       departments, or an admin). Counts only. */
   tree: (id: string) => `organizations/${encodeURIComponent(id)}/tree`,
+  /** GET → OrgConsentsResult (member) · POST OrgConsentInput → 201
+      OrgConsentRecordedResult (org_admin; 400 `stale_version`). v1.4.0. */
+  consents: (id: string) => `organizations/${encodeURIComponent(id)}/consents`,
   /** Public. GET → OrgInvitePeek, 400 `invalid_token` for a dead link. */
   invitePeek: (token: string) => `organizations/invites/${encodeURIComponent(token)}`,
   /** Signed in. POST OrgInviteAcceptInput → OrgInviteAcceptResult. */
@@ -389,6 +420,8 @@ export const ADMIN_ORG_ROUTES = {
   tree: 'admin/organizations/tree',
 } as const;
 
+// v1.4.0 — The organization's consents: OrgConsentView / OrgConsentsResult / OrgConsentRecordedResult,
+//          missingOrgConsents, ORG_ROUTES.consents (server v0.29.0; a pre-7.3 clinic accepts the DPA).
 // v1.3.0 — OrganizationRegistrationInput.consents may carry the DPA (OrgConsentInput) — 7.3.
 // v1.2.0 — Departments (LAUNCH_PLAN 7.1): OrganizationType + 'department' (never registrable —
 //          RegistrableOrganizationType), PARENT_ORGANIZATION_TYPES / canHaveDepartments,
