@@ -24,12 +24,13 @@
    mail at once, and the admins a notice, both through the outbox.
    ================================================================== */
 
-import type { OrganizationType } from '../org/contract';
+import type { RegistrableOrganizationType } from '../org/contract';
 
 /* ── Leads ────────────────────────────────────────────────────────── */
 
-/** Who is asking. The three organization types, a person, or other. */
-export type LeadOrgType = OrganizationType | 'patient' | 'other';
+/** Who is asking. The three REGISTRABLE organization types (a department
+    never asks for access on its own — 7.1), a person, or other. */
+export type LeadOrgType = RegistrableOrganizationType | 'patient' | 'other';
 export const LEAD_ORG_TYPES: readonly LeadOrgType[] = ['clinic', 'hospital', 'practice', 'patient', 'other'];
 
 /** Which door it came through. */
@@ -242,6 +243,8 @@ export function supportInputProblems(input: Partial<SupportInput>): Array<keyof 
 }
 
 // v1.0.1 — SUPPORT_PAGE_PATH + supportPageUrl: the web's public page, linked from the phone.
+// v1.0.2 — LeadOrgType is built on RegistrableOrganizationType (same five values; 'department'
+//          is not a lead's kind) — org/contract v1.2.0.
 // v1.0.0 — Leads (the landing form) + support tickets (Settings / the public page): inputs,
 //          rows, queries, status patches, routes, the shape checks (server v0.23.0,
 //          LAUNCH_PLAN 5.4).

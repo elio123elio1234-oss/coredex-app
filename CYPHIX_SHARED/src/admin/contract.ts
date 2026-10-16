@@ -30,7 +30,9 @@ export const OVERVIEW_DAYS = 30;
 
 export interface AdminOverviewStats {
   generatedAt: string;
-  organizations: { total: number; pending: number; active: number; suspended: number };
+  /** TOP-LEVEL organizations (a department is not counted as one, 7.1);
+      `departments` is how many department rows exist under them. */
+  organizations: { total: number; pending: number; active: number; suspended: number; departments?: number };
   staff: { admins: number; clinicians: number; technicians: number; pendingClinicians: number };
   /** `linked` = with at least one active care link. */
   patients: { total: number; linked: number };
@@ -194,6 +196,10 @@ export interface AdminOrganizationRow {
   patientCount: number;
   recordings30d: number;
   createdAt: string;
+  /** A department names its parent (7.1); the list stays flat — the
+      hierarchy is `ADMIN_ORG_ROUTES.tree`. */
+  parentOrgId: string | null;
+  departmentCount: number;
 }
 
 /* ── Routes (relative to API_VERSION_PATH; all behind the admin guard) ── */
@@ -226,6 +232,8 @@ export const ADMIN_COCKPIT_ROUTES = {
   system: 'admin/system',
 } as const;
 
+// v1.3.0 — AdminOrganizationRow.parentOrgId + departmentCount; the overview's organizations
+//          block counts top-level organizations and reports `departments` (departments, 7.1).
 // v1.2.0 — attention.pastDue + the `billing` block (MRR, outstanding, subscriptions by state) — 6.1.
 // v1.1.0 — attention.newLeads / openSupport + the `contact` block (leads & support, 5.4).
 // v1.0.0 — The cockpit's contract: overview stats, users / patients / requests rows and

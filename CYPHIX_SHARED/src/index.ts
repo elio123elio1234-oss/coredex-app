@@ -223,6 +223,10 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.35.0 — org/contract v1.2.0 (departments one level below a hospital or a clinic:
+//           the type, the input, the hierarchical dashboard's tree + stats, the routes)
+//           and admin/contract v1.3.0 (the organizations row names its parent and its
+//           department count) — LAUNCH_PLAN 7.1.
 // v1.34.0 — Exports brand/wordmark: the CYPHIX wordmark as path data (the
 //           2026-10-10 lettering-only artwork), its tight viewBox, aspect and
 //           inks, plus `wordmarkSvg()` for renderers that need markup. The

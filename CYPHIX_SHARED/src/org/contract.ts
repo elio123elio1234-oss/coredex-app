@@ -22,6 +22,17 @@
    person may DO; `OrgRole` says what they are TO the organization. A
    clinician can be the org_admin of their own practice; a technician
    (front desk) can be one too. The server enforces both.
+
+   Phase 7.1 adds the one level below: a DEPARTMENT. A hospital (or a
+   clinic) holds departments; each is an organization row of its own —
+   its own team, its own patients, its own invitations — pointing at the
+   parent through `parentOrgId` (the column 0011 already carries). The
+   parent's org_admin creates it and holds org_admin over it; a member
+   of the parent who is not an org_admin has NO implicit access to a
+   department, and patient access stays membership-scoped exactly as
+   before. What the hierarchy adds is a DASHBOARD: counts per node and
+   totals for the parent, readable by the parent's members and by the
+   super-admin, with no PHI in them.
    ================================================================== */
 
 import type { ConsentInput } from '../legal/documents';
@@ -34,8 +45,13 @@ export type GlobalRole = 'admin' | 'clinician' | 'technician' | 'patient';
 
 /* ── The organization ─────────────────────────────────────────────── */
 
-export type OrganizationType = 'clinic' | 'hospital' | 'practice';
-export const ORGANIZATION_TYPES: readonly OrganizationType[] = ['clinic', 'hospital', 'practice'];
+/** `department` (7.1) is a hospital's or a clinic's unit — an organization
+    row of its own with `parentOrgId` set. It is never self-registered:
+    the public door takes a RegistrableOrganizationType only. */
+export type OrganizationType = 'clinic' | 'hospital' | 'practice' | 'department';
+export const ORGANIZATION_TYPES: readonly OrganizationType[] = ['clinic', 'hospital', 'practice', 'department'];
+export type RegistrableOrganizationType = Exclude<OrganizationType, 'department'>;
+export const REGISTRABLE_ORGANIZATION_TYPES: readonly RegistrableOrganizationType[] = ['clinic', 'hospital', 'practice'];
 
 /** Mirrors `UserStatus` one level up: a self-registered organization is
     `pending` until a super-admin approves it; `suspended` ends every
@@ -69,6 +85,9 @@ export interface OrganizationView {
   /** The caller's own role in it — present on `ORG_ROUTES.mine`. */
   myRole?: OrgRole;
   memberCount?: number;
+  /** How many departments it holds (7.1) — present on `mine`, `get` and
+      the departments list; 0 for a department and for a practice. */
+  departmentCount?: number;
 }
 
 /** `PATCH /organizations/:id` (org_admin or admin). Absent = unchanged;
@@ -93,7 +112,8 @@ export interface OrganizationPatch {
 export interface OrganizationRegistrationInput {
   organization: {
     name: string;
-    type: OrganizationType;
+    /** Never `department` — a department is created by its parent (7.1). */
+    type: RegistrableOrganizationType;
     address?: string;
     phone?: string;
     /** Kept for the invoice (phase 6); sealed, shown to the admin only. */
@@ -211,6 +231,104 @@ export function orgInviteUrl(token: string, origin: string): string {
   return `${origin.replace(/\/+$/, '')}${ORG_INVITE_PATH}?token=${encodeURIComponent(token)}`;
 }
 
+/* ── Departments (LAUNCH_PLAN 7.1): one level below a hospital or a clinic ── */
+
+/** Which types may hold departments. ONE level only: a department never
+    holds departments, and a private practice has no units. */
+export const PARENT_ORGANIZATION_TYPES: readonly OrganizationType[] = ['hospital', 'clinic'];
+export function canHaveDepartments(type: OrganizationType): boolean {
+  return PARENT_ORGANIZATION_TYPES.includes(type);
+}
+export const ORG_DEPARTMENTS_MAX = 100;
+export const DEPARTMENT_NAME_MIN_LENGTH = 2;
+
+/** `POST /organizations/:id/departments` (org_admin of the parent; the
+    parent active and of a parent type). The department is `active` at
+    once — the parent was already approved — and starts with no members:
+    the parent's org_admin runs its team through the SAME member and
+    invitation routes, because the server grants them `org_admin` over
+    every department of theirs. */
+export interface DepartmentInput {
+  name: string;
+  phone?: string;
+  contactName?: string;
+  contactEmail?: string;
+}
+export interface DepartmentsResult {
+  departments: OrganizationView[];
+}
+/** Shape check shared by the form and the mock (the server has zod). */
+export function validateDepartmentInput(input: DepartmentInput): Array<keyof DepartmentInput> {
+  const bad: Array<keyof DepartmentInput> = [];
+  const name = (input.name ?? '').trim();
+  if (name.length < DEPARTMENT_NAME_MIN_LENGTH || name.length > ORG_NAME_MAX_LENGTH) bad.push('name');
+  if (input.phone !== undefined && input.phone.trim().length > 40) bad.push('phone');
+  if (input.contactName !== undefined && input.contactName.trim().length > ORG_FIELD_MAX_LENGTH) bad.push('contactName');
+  if (input.contactEmail !== undefined && input.contactEmail !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.contactEmail.trim())) {
+    bad.push('contactEmail');
+  }
+  return bad;
+}
+
+/* ── The hierarchical dashboard (7.1) ───────────────────────────────── */
+
+/** The numbers one organization node shows. COUNTS ONLY — no patient's
+    name, no request's text — so a hospital's staff may read them for
+    every department without being a member of any; patient ACCESS stays
+    membership-scoped, exactly as before. */
+export interface OrgNodeStats {
+  members: number;
+  /** Patients with an ACTIVE care link to this node. */
+  patients: number;
+  /** Requests `new` or `in-progress` on this node's links. */
+  openRequests: number;
+  /** Recordings in the last 30 days by this node's patients. */
+  recordings30d: number;
+}
+export interface OrgTreeNode {
+  id: string;
+  name: string;
+  type: OrganizationType;
+  status: OrganizationStatus;
+  parentOrgId: string | null;
+  createdAt: string;
+  stats: OrgNodeStats;
+  /** Empty for a department (one level). */
+  departments: OrgTreeNode[];
+}
+/** `GET /organizations/:id/tree` — the organization with its departments
+    and the totals across the root AND its departments. A patient linked
+    to two departments counts ONCE in `totals.patients` (the server
+    de-duplicates); `members` likewise counts a person once. */
+export interface OrgTreeView {
+  root: OrgTreeNode;
+  totals: OrgNodeStats;
+  generatedAt: string;
+}
+export function emptyOrgNodeStats(): OrgNodeStats {
+  return { members: 0, patients: 0, openRequests: 0, recordings30d: 0 };
+}
+/** A plain sum — for a client adding up a SUBSET of nodes it holds. Unlike
+    the server's `totals` it does NOT de-duplicate a patient or a person
+    present on two nodes; use `totals` for the whole tree. */
+export function sumOrgNodeStats(nodes: readonly OrgNodeStats[]): OrgNodeStats {
+  return nodes.reduce<OrgNodeStats>(
+    (acc, s) => ({
+      members: acc.members + s.members,
+      patients: acc.patients + s.patients,
+      openRequests: acc.openRequests + s.openRequests,
+      recordings30d: acc.recordings30d + s.recordings30d,
+    }),
+    emptyOrgNodeStats(),
+  );
+}
+/** `GET /admin/organizations/tree`: every TOP-LEVEL organization with its
+    departments and totals — the cockpit's hierarchical dashboard. */
+export interface AdminOrgTreeResult {
+  items: OrgTreeView[];
+  total: number;
+}
+
 /* ── Routes (relative to API_VERSION_PATH, like CARE_ROUTES) ──────── */
 
 export const ORG_ROUTES = {
@@ -230,6 +348,13 @@ export const ORG_ROUTES = {
   /** DELETE → 204 (open → cancelled; accepted → 409). */
   invite: (id: string, inviteId: string) =>
     `organizations/${encodeURIComponent(id)}/invites/${encodeURIComponent(inviteId)}`,
+  /** GET → DepartmentsResult (member or admin) · POST DepartmentInput → 201
+      OrganizationView (org_admin of an ACTIVE, parent-type organization;
+      400 `not_a_parent`, 409 `org_not_active`, 409 `departments_limit`). */
+  departments: (id: string) => `organizations/${encodeURIComponent(id)}/departments`,
+  /** GET → OrgTreeView (a member of the organization or of one of its
+      departments, or an admin). Counts only. */
+  tree: (id: string) => `organizations/${encodeURIComponent(id)}/tree`,
   /** Public. GET → OrgInvitePeek, 400 `invalid_token` for a dead link. */
   invitePeek: (token: string) => `organizations/invites/${encodeURIComponent(token)}`,
   /** Signed in. POST OrgInviteAcceptInput → OrgInviteAcceptResult. */
@@ -257,8 +382,16 @@ export const ADMIN_ORG_ROUTES = {
   /** GET ?status= → { items: PendingOrganizationView[] }. */
   organizations: 'admin/organizations',
   organizationStatus: (id: string) => `admin/organizations/${encodeURIComponent(id)}/status`,
+  /** GET → AdminOrgTreeResult (7.1): every top-level organization with its departments. */
+  tree: 'admin/organizations/tree',
 } as const;
 
+// v1.2.0 — Departments (LAUNCH_PLAN 7.1): OrganizationType + 'department' (never registrable —
+//          RegistrableOrganizationType), PARENT_ORGANIZATION_TYPES / canHaveDepartments,
+//          DepartmentInput / DepartmentsResult / validateDepartmentInput, the hierarchical
+//          dashboard (OrgNodeStats, OrgTreeNode, OrgTreeView, AdminOrgTreeResult, the two
+//          pure helpers), OrganizationView.departmentCount, ORG_ROUTES.departments / tree,
+//          ADMIN_ORG_ROUTES.tree.
 // v1.1.0 — OrgInviteRegisterInput + ORG_ROUTES.inviteRegister: a newcomer takes the
 //          invitation without an account and is active at once (the org_admin vouched).
 // v1.0.0 — OrganizationView / Patch / Registration (A5), the team: OrgMemberView,
