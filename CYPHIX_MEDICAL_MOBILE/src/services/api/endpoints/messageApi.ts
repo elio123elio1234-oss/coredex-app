@@ -24,6 +24,8 @@ import {
   type NotificationView,
   type PagedResult,
   type RequestDetail,
+  type RequestPatch,
+  type RequestReplyInput,
   type RequestsQuery,
   type RequestView,
   type SendMessageInput,
@@ -101,6 +103,25 @@ export const messageApi = baseApi.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: 'Request', id }],
     }),
 
+    /* ── The staff's side (v1.1.0, LAUNCH_PLAN 7.4 "Clinician lite"): a short
+          reply into the thread (the request becomes `answered`, the patient is
+          told) and a status move (close). The server decides who may. ── */
+    replyToRequest: build.mutation<ChatMessage, { id: string; body: RequestReplyInput }>({
+      query: ({ id, body }) => ({ url: REQUEST_ROUTES.reply(id), method: 'POST', body }),
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: 'Request', id },
+        { type: 'Request', id: 'LIST' },
+        { type: 'Notification', id: 'LIST' },
+      ],
+    }),
+    updateRequest: build.mutation<RequestView, { id: string; patch: RequestPatch }>({
+      query: ({ id, patch }) => ({ url: REQUEST_ROUTES.request(id), method: 'PATCH', body: patch }),
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: 'Request', id },
+        { type: 'Request', id: 'LIST' },
+      ],
+    }),
+
     /* ── The inbox: references only (kind, request, who), never text. ── */
     getNotifications: build.query<NotificationsResult, NotificationsArgs | void>({
       query: (a) => ({
@@ -129,10 +150,13 @@ export const {
   useSendMessageMutation,
   useGetRequestsQuery,
   useGetRequestQuery,
+  useReplyToRequestMutation,
+  useUpdateRequestMutation,
   useGetNotificationsQuery,
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
 } = messageApi;
 
+// v1.1.0 — replyToRequest + updateRequest: the staff's reply and the close (LAUNCH_PLAN 7.4).
 // v1.0.0 — Thread / send (a request when it carries a reason) / requests list + detail /
 //          notifications, mirror of the web (server v0.17.0, LAUNCH_PLAN 3.8).

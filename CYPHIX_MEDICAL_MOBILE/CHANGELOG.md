@@ -1,5 +1,46 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.112.0 - 2026-10-16 - clinician lite: the staff's inbox in the Chat tab
+
+**JS only — OTA onto runtime 0.45.0 (build 17), update group 343ec8a2-e53f-4ee9-b533-e33e9f84b694 on channel production.** No new package.
+
+**Why.** LAUNCH_PLAN 7.4 (M13). The phone has had no staff tools by
+decision: a clinic is run from a desk, and the portal is the desk. But a
+doctor between two rooms still wants to see what is waiting and answer
+in a sentence, and a front desk wants to see who asked. That is the
+whole of "clinician lite": the inbox, the request, a short reply, a
+close, the updates — and nothing that belongs to the desk.
+
+**What.**
+- **StaffInbox** replaces the request FORM in the Chat tab when the
+  signed-in account is staff (clinician / technician / admin) AND the
+  build has a backend. Open / all requests across their patients from
+  `GET /requests` (the server's scope — a technician sees the clinic's,
+  a clinician their own and the clinic's); each row: the patient, the
+  reason, the recording, when, who it is assigned to, the status in the
+  portal's words ("New", not "Sent"). The unread updates on top, in
+  words the phone adds to the server's references ("Dana filed a
+  recording", "Moshe opened a request"); tapping one opens the request
+  and marks it read; "Mark all as read".
+- **RequestDetailSheet in staff mode** (both flags default off, so the
+  patient's sheet is byte-for-byte what it was): "From <patient>", the
+  team's bubbles are "You", and — for `request:manage` — a short reply
+  pinned under the thread (`POST /requests/:id/reply`, ≤ 600
+  characters; the patient is notified and the request is `answered`)
+  and **Close request** behind a native confirm (`PATCH` status; the
+  Alert is the phone's idiom, as the care-link disconnect already is).
+  A technician reads and is told a clinician answers.
+- `messageApi` gains `replyToRequest` + `updateRequest`; audit
+  `request:reply` / `request:update` (references only).
+- **The demo build (no backend) keeps the patient form for every
+  role**, so the clinician preview a visitor has seen does not move.
+
+**Deliberate divergence from the web portal** (PARITY.md): no
+assigning to a colleague, no patient list or patient page, no
+invitations, no team — those stay on the web. 🔬 Not run on a device:
+the composer under a BottomSheet with the keyboard up is the first
+thing to touch.
+
 ## v0.111.0 - 2026-10-10 - the new CYPHIX logo, everywhere
 
 **JS only — OTA onto runtime 0.45.0 (build 17).** No new package; the

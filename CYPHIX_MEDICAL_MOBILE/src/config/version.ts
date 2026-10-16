@@ -1,9 +1,13 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.111.0';
+export const APP_VERSION = '0.112.0';
 export const APP_BUILD_LABEL =
-  'New logo everywhere: the boot splash, the welcome and lock screens, the patient shell, Profile and the exported PDF’s letterhead all draw the 2026-10-10 CYPHIX wordmark. It is lettering only — the round mark and the “MEDICAL” sub-line are not in the supplied artwork and are gone.';
+  'Clinician lite: with a backend, a staff account’s Chat tab is the inbox — the open requests across their patients, the request with a short reply and a close, the unread updates in words; the patient’s request form is untouched and the demo build keeps it (LAUNCH_PLAN 7.4). Before that — New logo everywhere: the boot splash, the welcome and lock screens, the patient shell, Profile and the exported PDF’s letterhead all draw the 2026-10-10 CYPHIX wordmark. It is lettering only — the round mark and the “MEDICAL” sub-line are not in the supplied artwork and are gone.';
 
+// v0.112.0 - CLINICIAN LITE (LAUNCH_PLAN 7.4, M13 softened). JS only - OTA. StaffInbox in the
+//            Chat tab for a staff account with a backend: open / all requests, the updates in
+//            words, RequestDetailSheet in staff mode with a short reply (POST reply) and a close
+//            (PATCH status). No assignment, no patient pages, no invitations - the portal's.
 // v0.111.0 - NEW LOGO (shared v1.34.0). JS only - OTA. The supplied 2026-10-10 artwork is
 //            the LETTERING ALONE: the round mark with its white dot and the grey "MEDICAL"
 //            beside it are not in it, so BrandLogo stopped being a lockup and now delegates

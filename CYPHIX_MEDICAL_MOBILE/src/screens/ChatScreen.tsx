@@ -57,6 +57,7 @@ import JoinCareSheet from '@/components/organisms/Care/JoinCareSheet';
 import RequestDetailSheet, {
   REQUEST_STATUS_KEY,
 } from '@/components/organisms/Care/RequestDetailSheet';
+import StaffInbox from '@/components/organisms/Care/StaffInbox';
 import { useGetCareRelationshipsQuery } from '@/services/api/endpoints/careApi';
 import {
   useGetNotificationsQuery,
@@ -69,6 +70,7 @@ import PatientShell from '@/components/templates/PatientShell';
 import { CONSULT_REASONS } from '@/config/consultReasons';
 import { ENV } from '@/config/env';
 import { useActivePatientId } from '@/features/auth/useActivePatientId';
+import { usePermissions } from '@/features/auth/useCurrentUser';
 import { HISTORY_PAGE_SIZE, useListRecordingsQuery } from '@/services/api/endpoints/recordingApi';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { TranslationKey } from '@/i18n/config';
@@ -95,6 +97,13 @@ export default function ChatScreen() {
   const t = useTheme();
   const { t: tr, lang, rtl } = useTranslation();
   const patientId = useActivePatientId();
+  /* ★ Clinician lite (v2.4.0, LAUNCH_PLAN 7.4): with a backend, a STAFF
+     account's Chat tab is the inbox — what their patients asked, a short
+     reply, a close — not the patient's request form. The demo build (no
+     backend) keeps the form for every role, so the clinician preview a
+     visitor has seen does not move. The server still decides who reads. */
+  const { user: principal, can } = usePermissions();
+  const staffInbox = ENV.hasBackend && principal != null && principal.role !== 'patient' && can('request:read');
 
   /* The patient's own studies — a bounded page, the same one History
      loads, so both hit one cache entry. */
@@ -244,6 +253,14 @@ export default function ChatScreen() {
     setNotice(outcome.current);
     outcome.current = null;
   };
+
+  if (staffInbox) {
+    return (
+      <PatientShell>
+        <StaffInbox canReply={can('request:manage')} />
+      </PatientShell>
+    );
+  }
 
   return (
     <PatientShell>
@@ -507,6 +524,9 @@ const styles = StyleSheet.create({
   },
 });
 
+// v2.4.0 — CLINICIAN LITE (LAUNCH_PLAN 7.4, M13 softened): with a backend, a staff account's tab
+//          is StaffInbox — the open requests, a short reply, a close, the updates. The patient's
+//          form is untouched, and the demo build keeps it for every role.
 // v2.3.0 — THE DELIVERY IS REAL (server v0.17.0, LAUNCH_PLAN 3.8, M1): Send is the
 //          messageApi mutation (recording attached, coded reason, details as the
 //          text) and every outcome is a sentence — sent, or not sent and why. "Your

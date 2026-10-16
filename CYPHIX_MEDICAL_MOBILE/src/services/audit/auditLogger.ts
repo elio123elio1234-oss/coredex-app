@@ -40,7 +40,10 @@ export type AuditAction =
   | 'support:create'
   /* Two-factor turned on / off from Settings (server v0.24.0, LAUNCH_PLAN 5.5). */
   | 'auth:totp-enable'
-  | 'auth:totp-disable';
+  | 'auth:totp-disable'
+  /* Clinician lite (v0.112.0, LAUNCH_PLAN 7.4): a staff reply, a status move. */
+  | 'request:reply'
+  | 'request:update';
 
 export interface AuditEntry {
   timestamp: string;
@@ -121,6 +124,7 @@ export function getAuditTrail(): readonly AuditEntry[] {
   return [...ring];
 }
 
+// v1.3.0 — request:reply / request:update (clinician lite, 7.4).
 // v1.3.0 — Adds auth:totp-enable / auth:totp-disable (two-factor sign-in, 5.5).
 // v1.2.0 — Adds support:create (Contact support, 5.4).
 // v1.1.0 — Adds auth:login / auth:logout to the action set, so who came in

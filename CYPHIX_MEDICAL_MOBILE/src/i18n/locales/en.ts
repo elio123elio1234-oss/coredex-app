@@ -1019,6 +1019,49 @@ export const en = {
   reqYou: 'You',
   reqCareTeam: 'Your care team',
   reqAwaiting: 'Your care team has not answered yet. You will see it here when they do.',
+
+  /* ── Clinician lite (7.4): the staff's Chat tab ── */
+  staffInboxTitle: 'Requests',
+  staffInboxIntro: 'What your patients asked. Open one to read it and send a short reply — the patient is told at once. The clinic portal on the web has the rest: assigning, the patient pages, invitations.',
+  staffInboxIntroReadOnly: 'What the clinic’s patients asked. You can read them here; a clinician answers.',
+  staffFilterOpen: 'Open',
+  staffFilterAll: 'All',
+  staffEmptyOpen: 'No open requests. Nothing is waiting on you.',
+  staffEmptyAll: 'No requests yet.',
+  staffUnassigned: 'Unassigned',
+  staffReplies: '{n} replies',
+  staffStatusNew: 'New',
+  staffStatusInProgress: 'In progress',
+  staffFrom: 'From {name}',
+  staffAssignedTo: 'assigned to {name}',
+  staffAwaiting: 'Not answered yet.',
+  staffReplyPlaceholder: 'A short reply to the patient…',
+  staffReplySend: 'Send reply',
+  staffReplySending: 'Sending…',
+  staffReplySent: 'Reply sent — the patient is notified.',
+  staffReplyFailed: 'Could not do that. Check the connection and try again.',
+  staffClose: 'Close request',
+  staffCloseConfirm: 'Close this request? The patient sees it as closed; a new question is a new request.',
+  staffClosed: 'Closed.',
+  staffReadOnly: 'The front desk reads; a clinician answers from here or from the portal.',
+  staffUpdates: '{n} new updates',
+  staffMarkAllRead: 'Mark all as read',
+  staffSomeone: 'Someone',
+  staffLoading: 'Loading…',
+  notifRequestNew: '{name} opened a request',
+  notifRequestAnswered: '{name} answered your request',
+  notifRequestStatus: 'Your request moved',
+  notifRecordingNew: '{name} filed a recording',
+  notifCareLinked: '{name} is now linked to you',
+  notifCareRevoked: '{name} ended the link',
+  notifOrgPending: 'An organization awaits review',
+  notifOrgApproved: 'Your organization was approved',
+  notifTeamJoined: '{name} joined the team',
+  notifClinicianPending: 'A clinician awaits review',
+  notifAccountApproved: 'Your account was approved',
+  notifInvoiceIssued: 'An invoice was issued',
+  notifPastDue: 'The subscription is past due',
+  notifOther: 'An update',
   reqUpdates: '{n} new updates on your requests — tap to clear',
   consultReasonLabel: 'Reason',
   consultReasonPlaceholder: 'Choose a reason…',
@@ -1707,6 +1750,7 @@ export const en = {
 /** Every key the app may ask for. `he.ts` is typed against this. */
 export type TranslationKey = keyof typeof en;
 
+// v1.37.0 — Clinician lite: the staff's inbox, the reply + close, the updates in words (7.4).
 // v1.25.0 — Dual Lead II: the two electrode notes on the limb exam (reference
 //           electrode off / second leg electrode off), the viewer's fusion
 //           switch, the one-line statement of what the fusion did (and, when
