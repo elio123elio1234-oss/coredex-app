@@ -1,9 +1,13 @@
 /* App version — rendered in the visible badge (web CLAUDE.md §8 convention). */
 
-export const APP_VERSION = '0.113.0';
+export const APP_VERSION = '0.114.0';
 export const APP_BUILD_LABEL =
-  'The screening’s “provably theirs” rule now lives in the shared package (the web reads recordings with the same rule since v1.86.0); nothing on the phone looks or behaves differently (LAUNCH_PLAN 7.5). Before that — Clinician lite: with a backend, a staff account’s Chat tab is the inbox — the open requests across their patients, the request with a short reply and a close, the unread updates in words; the patient’s request form is untouched and the demo build keeps it (LAUNCH_PLAN 7.4). Before that — New logo everywhere: the boot splash, the welcome and lock screens, the patient shell, Profile and the exported PDF’s letterhead all draw the 2026-10-10 CYPHIX wordmark. It is lettering only — the round mark and the “MEDICAL” sub-line are not in the supplied artwork and are gone.';
+  'History → a study → ⋯ → “Export FHIR JSON”: the recording as an HL7 FHIR R4 Observation — the samples and the measurements, nothing interpreted — the same document the server’s FHIR API serves, from the shared builder, handed to the share sheet; open to a patient like the PDF (web v1.88.0 has the same item). Before that — the screening’s “provably theirs” rule now lives in the shared package (the web reads recordings with the same rule since v1.86.0); nothing on the phone looks or behaves differently (LAUNCH_PLAN 7.5). Before that — Clinician lite: with a backend, a staff account’s Chat tab is the inbox — the open requests across their patients, the request with a short reply and a close, the unread updates in words; the patient’s request form is untouched and the demo build keeps it (LAUNCH_PLAN 7.4). Before that — New logo everywhere: the boot splash, the welcome and lock screens, the patient shell, Profile and the exported PDF’s letterhead all draw the 2026-10-10 CYPHIX wordmark. It is lettering only — the round mark and the “MEDICAL” sub-line are not in the supplied artwork and are gone.';
 
+// v0.114.0 - EXPORT FHIR JSON (LAUNCH_PLAN 7.3's follow-up). JS only - OTA. The study viewer's
+//            ⋯ menu gains "Export FHIR JSON": ecgObservationFromStored from @cyphix/shared →
+//            application/fhir+json through the OS share sheet; the exportFhir viewer feature on
+//            the PDF's permission. Data only - no interpretation. Web v1.88.0 = the same item.
 // v0.113.0 - SCREENING CONTEXT FROM SHARED (LAUNCH_PLAN 7.5). JS only - OTA. patientContext.ts
 //            re-exports @cyphix/shared ecg/screeningContext (byte-identical logic); the web's
 //            Interpretation panel + reminders paid the two PARITY IOUs. No screen changed.

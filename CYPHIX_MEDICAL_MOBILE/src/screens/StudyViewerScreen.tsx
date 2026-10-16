@@ -83,6 +83,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   buildRecordingCsv,
   buildRecordingEdf,
+  ecgObservationFromStored,
+  FHIR_JSON,
   LIMB_LEAD_ORDER,
   recordingFilename,
   STANDARD_MM_PER_SEC,
@@ -586,7 +588,7 @@ export default function StudyViewerScreen() {
     });
 
 
-  const runExport = async (kind: 'csv' | 'edf' | 'pdf') => {
+  const runExport = async (kind: 'csv' | 'edf' | 'pdf' | 'fhir') => {
     if (!recording || exporting) return;
     setExporting(true);
     try {
@@ -607,6 +609,16 @@ export default function StudyViewerScreen() {
           buildRecordingEdf(recording),
           'application/octet-stream',
           tr('histExportEdf'),
+        );
+      } else if (kind === 'fhir') {
+        /* One Observation from the shared builder — the document the server's
+           FHIR API serves, from the phone, through the share sheet. Data only:
+           the samples and the measurements; nothing in it interprets. */
+        await shareFile(
+          recordingFilename(recording, 'fhir.json'),
+          JSON.stringify(ecgObservationFromStored(recording, { includeWaveform: true }), null, 2),
+          FHIR_JSON,
+          tr('histExportFhir'),
         );
       } else {
         /* The report re-runs the whole chain from RAW rather than taking
@@ -691,6 +703,17 @@ export default function StudyViewerScreen() {
             hint: tr('histExportEdfHint'),
             icon: 'pulse-outline' as const,
             onSelect: () => void runExport('edf'),
+          },
+        ]
+      : []),
+    ...(features.has('exportFhir')
+      ? [
+          {
+            id: 'fhir',
+            label: tr('histExportFhir'),
+            hint: tr('histExportFhirHint'),
+            icon: 'code-slash-outline' as const,
+            onSelect: () => void runExport('fhir'),
           },
         ]
       : []),
@@ -1799,6 +1822,9 @@ const styles = StyleSheet.create({
   annAt: { flexShrink: 0, fontSize: 12, fontVariant: ['tabular-nums'] },
 });
 
+// v5.7.0 - "Export FHIR JSON" in the ⋯ menu (0.114.0): the recording as a FHIR R4 Observation
+//          from the shared builder, shared as application/fhir+json (UTI public.json); gated by
+//          the new exportFhir feature (the PDF's permission); audited like the other exports.
 // v5.6.0 - Full screen RELEASES the orientation instead of imposing landscape
 //           (`OrientationLock.DEFAULT`), at the user's instruction. The forced
 //           rotation answered "show me more" with "and turn your phone", and it

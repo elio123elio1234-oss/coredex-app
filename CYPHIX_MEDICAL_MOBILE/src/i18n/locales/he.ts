@@ -456,6 +456,8 @@ export const he: Record<TranslationKey, string> = {
   histExportEdf: 'ייצוא EDF+',
   histExportEdfHint: 'עבור EDFbrowser / MNE / WFDB',
   histExportFailed: 'לא הצלחנו לייצא את ההקלטה.',
+  histExportFhir: 'ייצוא FHIR JSON',
+  histExportFhirHint: 'HL7 FHIR R4 Observation — למערכת מידע רפואית',
   printReport: 'שיתוף דוח PDF',
   pdfHint: 'הדף להדפסה, בקנה 25 mm/s',
   /* ── תצוגה מקדימה של הדוח (v0.56.0) ── */
@@ -849,6 +851,7 @@ export const he: Record<TranslationKey, string> = {
   vfCompare: 'השוואת הקלטות',
   vfExportPdf: 'ייצוא PDF',
   vfExportRaw: 'ייצוא נתונים גולמיים',
+  vfExportFhir: 'ייצוא FHIR JSON',
   vfDelete: 'מחיקת הקלטות',
 
   /* ── בדיקות — מסך בחירת הבדיקה, אותו נוסח כמו בווב ── */
@@ -1649,4 +1652,5 @@ export const he: Record<TranslationKey, string> = {
 // v1.33.0 — Care links: the care-team rows, disconnect, the join sheet, the banner (Hebrew).
 // v1.34.0 — Requests are real: outcomes, statuses, the detail sheet, the updates banner;
 //           authErrAccountPending (Hebrew).
+// v1.36.0 — "Export FHIR JSON" + its viewer-feature label (Hebrew, 0.114.0).
 // v1.35.0 — Two-factor sign-in: the Settings row + sheet, the sign-in code step, three error codes (Hebrew).

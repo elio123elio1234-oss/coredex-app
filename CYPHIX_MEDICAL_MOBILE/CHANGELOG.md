@@ -1,5 +1,35 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.114.0 - 2026-10-16 - "Export FHIR JSON" in the study viewer
+
+**JS only — OTA onto runtime 0.45.0 (build 17).** No new package.
+
+**Why.** LAUNCH_PLAN 7.3 built the FHIR R4 Observation builder in
+`@cyphix/shared` and the server's read-only FHIR API, and left "a
+share-as-FHIR button" as a follow-up. This is it, on the phone (the web
+got the same item in v1.88.0, from a mirror of the same builder): a
+person takes ONE recording out as the document an EHR reads, without an
+API key and without the server — the phone builds it.
+
+**What.** History → a study → ⋯ → **Export FHIR JSON**: `shareFile`
+hands `cyphix-ecg-<when>.fhir.json` (`application/fhir+json`, UTI
+`public.json` so iOS offers Files and Mail) to the OS share sheet —
+an `Observation` with LOINC 11524-6, a component per measured metric, a
+`SampledData` per lead (integer microvolts, `factor` 0.001, `period`
+1000/sampleRate), the device, the note, the simulated / insufficient
+tags. **Data, not a judgement:** the document carries what was recorded
+and measured; nothing in it interprets the recording (the phone's
+interpretation stays switched off, `INTERPRETATION_ENABLED = false`).
+Audited `recording:export` / `fhir`; the honest blocking overlay shows
+while it builds, like the other exports; a failure says so in a banner.
+
+**Who.** A new viewer feature `exportFhir` on the PDF's permission
+(`ecg:export:pdf`) — the same right, a copy of your own recording, in
+the structured form GDPR Art. 20 names — so a patient has it. Raw CSV /
+EDF+ stay on the clinical roles.
+
+🔬 Not run on a device: typechecks and bundles.
+
 ## v0.113.0 - 2026-10-16 - the screening context rule comes from shared; the web paid its two IOUs
 
 **JS only — OTA onto runtime 0.45.0 (build 17), update group 0430ac02-2c54-4964-b887-2bda64f54b81 on channel production.** No new package, no

@@ -494,6 +494,8 @@ export const en = {
   histExportEdf: 'Export EDF+',
   histExportEdfHint: 'For EDFbrowser / MNE / WFDB',
   histExportFailed: 'Could not export this recording.',
+  histExportFhir: 'Export FHIR JSON',
+  histExportFhirHint: 'HL7 FHIR R4 Observation — for an EHR',
   printReport: 'Share PDF report',
   pdfHint: 'The printable sheet, at 25 mm/s',
   /* ── Report preview (v0.56.0) ── */
@@ -947,6 +949,7 @@ export const en = {
   vfCompare: 'Compare studies',
   vfExportPdf: 'Export PDF',
   vfExportRaw: 'Export raw data',
+  vfExportFhir: 'Export FHIR JSON',
   vfDelete: 'Delete recordings',
 
   /* ── Tests tab — the test PICKER, same copy as the web TestsPage.
@@ -1851,5 +1854,6 @@ export type TranslationKey = keyof typeof en;
 //           (server v0.16.0).
 // v1.34.0 — Requests are real: sent / not-sent outcomes, the four statuses, the detail sheet,
 //           the updates banner (server v0.17.0); authErrAccountPending (server v0.18.0).
+// v1.36.0 — "Export FHIR JSON" (the study viewer's ⋯ menu) + its viewer-feature label (0.114.0).
 // v1.35.0 — Two-factor sign-in: the Settings row + sheet (the key, open-in-app, codes, turn off),
 //           the sign-in code step, three error codes (server v0.24.0).

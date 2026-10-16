@@ -38,6 +38,7 @@ export type ViewerFeatureId =
   | 'compare'
   | 'exportPdf'
   | 'exportRaw'
+  | 'exportFhir'
   | 'delete';
 
 export interface ViewerFeatureSpec {
@@ -102,6 +103,16 @@ export const VIEWER_FEATURES: Record<ViewerFeatureId, ViewerFeatureSpec> = {
       'Unfiltered sample-level data for research or a second-opinion tool. ' +
       'Leaves the system entirely, so it follows the clinical roles.',
   },
+  exportFhir: {
+    id: 'exportFhir',
+    permission: 'ecg:export:pdf',
+    labelKey: 'vfExportFhir',
+    rationale:
+      'The same right as the PDF — a copy of your own recording — in the ' +
+      'structured, machine-readable form the law names (GDPR Art. 20) and an ' +
+      'EHR reads (HL7 FHIR R4 Observation). Data, not a judgement: the ' +
+      'samples and the measurements, no interpretation.',
+  },
   delete: {
     id: 'delete',
     permission: 'recording:delete',
@@ -114,4 +125,5 @@ export const VIEWER_FEATURES: Record<ViewerFeatureId, ViewerFeatureSpec> = {
 
 export const VIEWER_FEATURE_IDS = Object.keys(VIEWER_FEATURES) as ViewerFeatureId[];
 
+// v1.1.0 — exportFhir: the FHIR R4 Observation export, open to the patient like the PDF (0.114.0; web v1.88.0).
 // v1.0.0 — Viewer tool → RBAC permission map, ported from web verbatim.
