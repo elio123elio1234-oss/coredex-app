@@ -19,7 +19,8 @@ const T_MV = 0.55;
 const T_DECISIVE_MV = 0.9;
 const T_R_RATIO = 0.75;
 /** The late-stage picture: wide QRS and the atria electrically silent. */
-const LATE_QRS_MS = 120;
+/** Exported (not used by the rule today) so the web's verbatim mirror compiles under its unused-locals rule — 7.5. */
+export const LATE_QRS_MS = 120;
 const LATE_P_PRESENT_PCT = 30;
 
 export const rule: ScreeningRule = {
@@ -54,4 +55,5 @@ export const rule: ScreeningRule = {
   },
 };
 
+// v1.0.1 — LATE_QRS_MS exported (unused-locals on the web mirror); no rule change.
 // v1.0.0 — Peaked T waves; escalates to urgent with a wide QRS and absent P.

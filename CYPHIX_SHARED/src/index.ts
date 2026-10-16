@@ -164,6 +164,10 @@ export * from './ecg/limbLeads';
    blind spots six limb leads structurally cannot cover. */
 export * from './types/ecgScreening';
 export * from './ecg/screening';
+/* WHO a screening may be personalised for (7.5): the 'provably theirs' rule,
+   lifted from the phone so its Findings tab, its PDF and the web's
+   Interpretation panel apply one rule. */
+export * from './ecg/screeningContext';
 
 /* Report GEOMETRY, in millimetres. Not signal maths, but the same rule
    applies for a different reason: a trace measured off the web's printed
@@ -228,6 +232,8 @@ export * from './ecg/ecgIdentitySummary';
 export * from './ecg/identityGhost';
 export * from './ecg/measurementStats';
 
+// v1.37.0 — Exports ecg/screeningContext (the screening context rule lifted from the phone) —
+//           LAUNCH_PLAN 7.5 (the web gets Interpretation + Reminders).
 // v1.36.0 — Exports fhir/contract (FHIR R4 outbound: routes, codes, the ECG Observation
 //           builder, API keys); legal/documents v1.1.0 (the DPA as an organization's
 //           document); org/contract v1.3.0 (registration consents carry the DPA) — 7.3.

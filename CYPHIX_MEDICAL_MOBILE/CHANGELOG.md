@@ -1,5 +1,27 @@
 # CHANGELOG - CYPHIX Medical Mobile
 
+## v0.113.0 - 2026-10-16 - the screening context rule comes from shared; the web paid its two IOUs
+
+**JS only — OTA onto runtime 0.45.0 (build 17), update group 0430ac02-2c54-4964-b887-2bda64f54b81 on channel production.** No new package, no
+screen changed.
+
+**Why.** LAUNCH_PLAN 7.5. The web app now reads a recording the way this
+phone has since v0.46.0 (an Interpretation panel: the verdict, the
+findings, the blind spots) and lets a patient set measurement reminders
+(v1.86.0). Two of the rows this ledger has carried as "⏳ pending" on the
+web since then are paid. The one piece of phone logic the web needed
+that was not already in `@cyphix/shared` — the "provably theirs" rule
+that decides whether a patient's sex and age may personalise a screening
+— was lifted there verbatim (`ecg/screeningContext.ts`), and
+`features/history/patientContext.ts` now re-exports it, so the Findings
+tab, the History digest backfill, the PDF export and the web apply ONE
+rule. Byte-identical logic; `tsc` passes.
+
+**What the web does differently, on purpose** (PARITY.md): a browser can
+only remind while CYPHIX is open in a tab — it arms timers and shows a
+system Notification when allowed, an in-app banner otherwise. The phone
+hands a daily trigger to the OS and remains the answer for "anywhere".
+
 ## v0.112.0 - 2026-10-16 - clinician lite: the staff's inbox in the Chat tab
 
 **JS only — OTA onto runtime 0.45.0 (build 17), update group 343ec8a2-e53f-4ee9-b533-e33e9f84b694 on channel production.** No new package.
