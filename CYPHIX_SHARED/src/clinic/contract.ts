@@ -131,10 +131,20 @@ export interface RequestReplyInput {
   attachment?: ChatAttachment;
 }
 
+/** `assignee=me` — the caller's own; `assignee=none` — unassigned. */
+export const REQUEST_ASSIGNEE_ME = 'me';
+export const REQUEST_ASSIGNEE_NONE = 'none';
+
 export interface RequestsQuery {
   /** A status, or `open` for new + in-progress. Absent = all. */
   status?: RequestStatus | 'open';
   patientId?: string;
+  /** Who it is assigned to (server v0.28.0; LAUNCH_PLAN 4.4's debt):
+      REQUEST_ASSIGNEE_ME (the caller), REQUEST_ASSIGNEE_NONE (nobody), or a
+      user id. Absent = anyone's. The server filters AND counts by it, so
+      `total` and the pages are of the matching requests — the web inbox
+      used to filter the returned page and say so. */
+  assignee?: string;
   limit?: number;
   offset?: number;
 }
@@ -225,6 +235,8 @@ export const CLINIC_PERMISSIONS = [
 ] as const;
 export type ClinicPermission = (typeof CLINIC_PERMISSIONS)[number];
 
+// v1.4.0 — RequestsQuery.assignee ('me' | 'none' | a user id) + REQUEST_ASSIGNEE_ME/NONE: the
+//          inbox's who-filter runs on the server (4.4's debt; server v0.28.0).
 // v1.3.0 — NotificationKind gains 'invoice:issued' / 'subscription:past_due' (billing, 6.1).
 // v1.2.0 — NotificationKind gains 'org:pending' / 'org:approved' / 'team:joined'; resourceType
 //          gains 'Organization' (LAUNCH_PLAN 4.1).
