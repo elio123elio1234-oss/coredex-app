@@ -1,6 +1,2 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="15" fill="#0D2041"/>
-  <path d="M8 34 H22 l4 -13 l6 24 l4 -16 l3 5 h9"
-        fill="none" stroke="#2FD8CE" stroke-width="3.4"
-        stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 76 80"><path fill="#C7362C" d="M65.36 19.19 C60.25 7.51 49.44 0.68 34.81 0.68 C14.92 0.68 0.31 15.76 0.31 36.3 C0.31 56.84 14.92 71.92 34.81 71.92 C49.47 71.92 60.29 65.07 65.39 53.35 L58.74 50.81 C54.64 60.21 46.19 65.69 34.81 65.69 C19.51 65.69 7.47 52.74 7.47 36.3 C7.47 19.86 19.51 6.91 34.81 6.91 C46.09 6.91 54.5 12.31 58.63 21.57Z" stroke="#C7362C" stroke-width="5" stroke-linejoin="round"/></svg>
+<!-- v0.6.0 — the red C from the CYPHIX wordmark -->

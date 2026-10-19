@@ -1,35 +1,32 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Reveal from "./Reveal";
+import { ArrowRight, Check, Mail, Phone, Pin } from "./Icons";
 import { CAPTCHA_POLICY_URL, LEADS_URL } from "../config/api";
 
 /* ==================================================================
-   ContactForm — the "Request access" form every CTA on the page points
-   at (#contact). Posts a LEAD to the CYPHIX server (`POST /api/v1/leads`,
-   v0.23.0): name, work e-mail, who you are, an optional organization
-   and message. The server thanks the sender by e-mail and tells the
-   team; the form only has to say "received".
+   ContactForm — "Request the deck", the page's one action (#contact).
+   Posts a LEAD to the CYPHIX server (`POST /api/v1/leads`, v0.23.0):
+   name, work e-mail, fund or company, an optional message. The server
+   thanks the sender by e-mail and tells the team; the form only has to
+   say "received".
+
+   The lead contract has no "investor" type yet (shared contact/contract
+   LeadOrgType = clinic | hospital | practice | patient | other), so an
+   investor's request goes in as `orgType: "other"` with the fund in
+   `organization` and `source: "landing"`. Adding the type is a shared +
+   server change, tracked in the CHANGELOG.
 
    Bot protection is the server's call: it asks `GET /auth/captcha` and
    renders Cloudflare's Turnstile widget ONLY when the policy names a
-   provider — nothing is loaded otherwise, and the form is exactly a
-   form. The limits mirror the server's schema (shared contact/contract
-   LEAD_LIMITS), so a refusal is rare and explained.
-
-   No medical details belong here, and the form says so: a lead is a
-   business contact, kept in the clear.
+   provider — nothing is loaded otherwise. The limits mirror the
+   server's schema (LEAD_LIMITS), so a refusal is rare and explained.
    ================================================================== */
 
-type OrgType = "clinic" | "hospital" | "practice" | "patient" | "other";
-const ORG_TYPES: Array<{ id: OrgType; label: string }> = [
-  { id: "clinic", label: "A clinic" },
-  { id: "hospital", label: "A hospital" },
-  { id: "practice", label: "A private practice" },
-  { id: "patient", label: "A patient / an individual" },
-  { id: "other", label: "Other" },
-];
 const LIMITS = { nameMin: 2, nameMax: 80, organizationMax: 120, messageMax: 1000 } as const;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+const EMAIL = "elio123elio1234@gmail.com";
+const PHONE = "+972 54-398-9698";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
@@ -74,7 +71,6 @@ function loadTurnstile(): Promise<TurnstileApi> {
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [orgType, setOrgType] = useState<OrgType | "">("");
   const [organization, setOrganization] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -117,7 +113,7 @@ export default function ContactForm() {
           "error-callback": () => setCaptchaToken(null),
         });
       })
-      .catch(() => setError("The verification widget could not load — please try again later."));
+      .catch(() => setError("The verification widget could not load. Please try again later."));
     return () => {
       cancelled = true;
     };
@@ -126,7 +122,6 @@ export default function ContactForm() {
   const problems = {
     name: name.trim().length < LIMITS.nameMin || name.trim().length > LIMITS.nameMax,
     email: !EMAIL_RE.test(email.trim()),
-    orgType: orgType === "",
     organization: organization.length > LIMITS.organizationMax,
     message: message.length > LIMITS.messageMax,
   };
@@ -146,7 +141,7 @@ export default function ContactForm() {
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
-          orgType,
+          orgType: "other",
           organization: organization.trim() || undefined,
           message: message.trim() || undefined,
           source: "landing",
@@ -171,48 +166,66 @@ export default function ContactForm() {
       }
       setError(
         res.status === 429
-          ? "Too many requests from this address — please try again in a few minutes."
-          : detail || "Something went wrong — please try again.",
+          ? "Too many requests from this address. Please try again in a few minutes."
+          : detail || "Something went wrong. Please try again, or write to us directly.",
       );
       setStatus("error");
     } catch {
-      setError("We could not reach the server — please check your connection and try again.");
+      setError("We could not reach the server. Check your connection, or write to us directly.");
       setStatus("error");
     }
   };
 
+  const bad = (k: keyof typeof problems) => (touched && problems[k] ? " is-invalid" : "");
+
   return (
     <section className="section contact" id="contact" aria-labelledby="contact-title">
-      <div className="container">
-        <div className="section-head">
+      <div className="wrap contact-grid">
+        <div className="contact-copy">
           <Reveal as="div">
-            <span className="section-eyebrow">Get in touch</span>
-            <h2 id="contact-title">Request access</h2>
+            <h2 id="contact-title" className="display">
+              Request the deck.
+            </h2>
           </Reveal>
-          <Reveal className="section-sub" as="div" delay={0.06}>
-            Tell us who you are and what you are looking for. Someone from the team
-            will be in touch within a few days.
+          <Reveal as="div" delay={0.08}>
+            <p className="body-lg">
+              Tell us who you are. We will send the deck and find a time to talk.
+            </p>
+          </Reveal>
+          <Reveal as="div" delay={0.14}>
+            <ul className="direct">
+              <li>
+                <Mail />
+                <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
+              </li>
+              <li>
+                <Phone />
+                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
+              </li>
+              <li>
+                <Pin />
+                <span>Kiryat Ono, Israel</span>
+              </li>
+            </ul>
           </Reveal>
         </div>
 
-        <Reveal className="contact-card card" as="div" delay={0.12}>
+        <Reveal as="div" className="contact-panel" delay={0.1} y={30}>
           {status === "sent" ? (
             <div className="contact-sent" role="status">
               <span className="contact-check" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Check width={22} height={22} />
               </span>
-              <h3>Thank you, {name.trim()}.</h3>
+              <h3>Thank you, {name.trim().split(/\s+/)[0]}.</h3>
               <p>
-                We received your request and sent a confirmation to <strong>{email.trim()}</strong>.
-                We will be in touch within a few days.
+                Your request is in, and a confirmation is on its way to{" "}
+                <strong>{email.trim()}</strong>. We will be in touch within a few days.
               </p>
             </div>
           ) : (
-            <form className="contact-form" onSubmit={submit} noValidate data-status={status}>
-              <div className="field-row">
-                <label className={`field${touched && problems.name ? " is-invalid" : ""}`}>
+            <form className="form" onSubmit={submit} noValidate data-status={status}>
+              <div className="form-row">
+                <label className={`field${bad("name")}`}>
                   <span>Full name</span>
                   <input
                     name="name"
@@ -223,7 +236,7 @@ export default function ContactForm() {
                     required
                   />
                 </label>
-                <label className={`field${touched && problems.email ? " is-invalid" : ""}`}>
+                <label className={`field${bad("email")}`}>
                   <span>Work e-mail</span>
                   <input
                     name="email"
@@ -236,34 +249,19 @@ export default function ContactForm() {
                   />
                 </label>
               </div>
-              <div className="field-row">
-                <label className={`field${touched && problems.orgType ? " is-invalid" : ""}`}>
-                  <span>I am</span>
-                  <select name="orgType" value={orgType} onChange={(e) => setOrgType(e.target.value as OrgType)} required>
-                    <option value="" disabled>
-                      Choose one…
-                    </option>
-                    {ORG_TYPES.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>
-                    Organization <em>optional</em>
-                  </span>
-                  <input
-                    name="organization"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    autoComplete="organization"
-                    maxLength={LIMITS.organizationMax}
-                  />
-                </label>
-              </div>
-              <label className="field">
+              <label className={`field${bad("organization")}`}>
+                <span>
+                  Fund or company <em>optional</em>
+                </span>
+                <input
+                  name="organization"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                  autoComplete="organization"
+                  maxLength={LIMITS.organizationMax}
+                />
+              </label>
+              <label className={`field${bad("message")}`}>
                 <span>
                   Message <em>optional</em>
                 </span>
@@ -273,16 +271,13 @@ export default function ContactForm() {
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
                   maxLength={LIMITS.messageMax}
-                  placeholder="How many patients, which setting, what you would like to see…"
+                  placeholder="What would you like to see first: the prototype, the data, the plan?"
                 />
               </label>
-              <p className="form-note">
-                This form is for access requests only — please do not include medical details.
-              </p>
-              {siteKey && <div ref={widgetRef} className="contact-captcha" />}
+              {siteKey && <div ref={widgetRef} className="form-captcha" />}
               {touched && invalid && (
                 <p className="form-error" role="alert">
-                  Please give your name, a valid e-mail address, and tell us who you are.
+                  Please add your name and a valid e-mail address.
                 </p>
               )}
               {touched && !invalid && needsCaptcha && (
@@ -295,11 +290,12 @@ export default function ContactForm() {
                   {error}
                 </p>
               )}
-              <div className="contact-actions">
+              <div className="form-actions">
                 <button type="submit" className="btn btn-primary" disabled={status === "sending"}>
-                  {status === "sending" ? "Sending…" : "Request access"}
+                  {status === "sending" ? "Sending…" : "Request the deck"}
+                  {status !== "sending" && <ArrowRight />}
                 </button>
-                <span className="contact-privacy">We use your details only to answer this request.</span>
+                <span className="form-note">We use your details only to answer this request.</span>
               </div>
             </form>
           )}
@@ -309,5 +305,7 @@ export default function ContactForm() {
   );
 }
 
+// v0.6.0 — re-cut for investors: name · e-mail · fund · message, "Request the deck", direct e-mail / phone;
+//          posts orgType "other" until the lead contract has an investor type
 // v0.1.0 — the "Request access" form: posts a lead to the API, Turnstile only when the
 //          server's policy asks for it, a sent state, honest errors (LAUNCH_PLAN 5.4, L1)

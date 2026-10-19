@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "createdAt": "2026-10-19T21:23:51.331Z",
+        "reason": "brief-pinned: Geist Mono is the face embedded in the user's one-pager PDF (fonts: Sora + GeistMono-Regular); the request asks for the page to match the one-pager"
+      }
+    ]
+  }
+}

@@ -9,3 +9,10 @@ dist-ssr
 !.env.example
 npm-debug.log*
 dist-single
+
+# Impeccable runtime state (decision sketches, review captures, caches)
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/build/
+.impeccable/hook.cache.json
+# v0.6.0 — Impeccable runtime folders ignored

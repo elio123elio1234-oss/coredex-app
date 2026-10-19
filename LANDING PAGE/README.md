@@ -1,14 +1,15 @@
 # CYPHIX — Landing Page
 
-Investor-facing landing page for the CYPHIX wrist-ECG concept. **Design base:**
-the layout, motion, and WebGL are in place; real content is injected later.
+Investor-facing home page for CYPHIX, a wearable 6-lead ECG on the watch you
+already wear. It is the PDF one-pager at web scale. Since v0.6.0 the hero
+zooms **out of a live 6-lead display into the watch**.
 
 ## Stack
 
 - **Vite + React + TypeScript** (static SPA)
-- **framer-motion** for entrance + scroll reveals
-- Hand-written **WebGL** aurora background (no 3D library)
-- System font stack; no external fonts, no runtime dependencies beyond React
+- **framer-motion** for scroll progress, reveals and count-ups
+- Canvas for the ECG traces (`EcgTrace`), no chart library
+- **Sora** + **Geist Mono** self-hosted from `src/assets/fonts` (no external requests)
 
 ## Run locally
 
@@ -21,40 +22,48 @@ npm run preview    # serve the production build
 
 ## Deploy (Vercel)
 
-Zero-config — Vercel auto-detects Vite (`vercel.json` pins it explicitly).
+Zero-config (`vercel.json` pins Vite). Deploying is the owner's call:
 
 ```bash
 vercel        # preview
 vercel --prod # production
 ```
 
-## The "Request access" form (v0.4.0)
+## The "Request the deck" form
 
 `src/components/ContactForm.tsx` posts a lead to the CYPHIX API
 (`POST {API_BASE_URL}/api/v1/leads`, see `src/config/api.ts`; the production
-server by default, `VITE_API_BASE_URL` to override). The server decides whether
-a CAPTCHA is needed (`GET /api/v1/auth/captcha`); the Turnstile widget is
-rendered only when it says so. The route answers any origin, so the page can
-be deployed anywhere.
+server by default, `VITE_API_BASE_URL` to override) with `orgType: "other"`
+and `source: "landing"`. The server decides whether a CAPTCHA is needed
+(`GET /api/v1/auth/captcha`); the Turnstile widget is rendered only when it
+says so.
 
 ## Structure
 
 ```
 src/
-  App.tsx                 shell: header · hero · sections · footer
-  index.css               design system (tokens, layout, responsive)
+  App.tsx                 bar · hero scene · need · six leads · stage · market · team · form · footer
+  index.css               the whole design system (tokens, sections, compact, reduced motion)
+  lib/
+    heroScene.ts          geometry of the zoom (layout per viewport + one frame per scroll value)
+    ecgModel.ts           illustrative dipole model; III/aVR/aVL/aVF derived from I and II
   components/
-    Header.tsx            scroll-aware fixed header
-    Hero.tsx              headline, CTAs, showcase
-    WristVisual.tsx       hand → arrow → report (staged entrance)
-    EcgReportCard.tsx     recreated 6-lead ECG report card
-    MeshBackground.tsx    WebGL aurora (GLSL)
-    Sections.tsx          placeholder scaffolding (stats/features/CTA)
-    Footer.tsx            brand + version badge
-    Logo.tsx              Cyphix wordmark (from brand SVG)
-public/
-  assets/hand-wrist.png   hero render (transparent PNG)
-  favicon.svg
+    HeroScene.tsx         the sticky "out of the screen" scene + callouts
+    EcgTrace.tsx          canvas leads: "sweep" (monitor) or "scroll" (watch strip)
+    Header.tsx            red wordmark, anchors, the deck pill, scroll hairline
+    Need / Leads / Stage / Market / Team / ContactForm / Footer
+    CountUp, Reveal, Icons, Logo
+  assets/img              WebP renders + portraits (from the user's one-pager materials)
+  assets/fonts            Sora + Geist Mono variable woff2 (OFL)
+PRODUCT.md                product truth for design work (Impeccable)
+DESIGN.md                 the visual system as built (Impeccable)
+.impeccable/surfaces/     the page's surface brief + direction contract
 ```
 
-Reference: `Landing page hand section-handoff` (Claude Design export).
+## Changing the hero
+
+The watch render's display rectangle is hard-coded in `WATCH.screen` in
+`src/lib/heroScene.ts` (image px of `watch-front.webp`). If the render is
+replaced, re-measure it, or the live display will no longer land on the
+watch's screen.
+<!-- v0.6.0 — the investor redesign: stack, structure, and how the hero finds the watch screen -->

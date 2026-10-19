@@ -1,5 +1,117 @@
 # Changelog — CYPHIX Landing
 
+## v0.6.0 — 2026-10-20 — the investor redesign: "out of the screen"
+
+**Why.** The user asked for a professional, venture-style home page for
+investors, "minimalistic as in my one-pager", with the CYPHIX wordmark in
+red, and the design and motion carrying it. The v0.3–v0.5 page was a
+"design base": a WebGL aurora, a hand photo and a recreated report card,
+with placeholder sections. None of that was the one-pager's world, and
+the content spoke to clinics, not investors. This version replaces the
+look entirely and keeps what worked: the lead form, the API wiring and
+the wordmark.
+
+Built with the **Impeccable** design skill (`npx impeccable install`,
+project scope in `Coredex_App/.claude`). Its process ran in this order:
+`PRODUCT.md` from a short product interview, a structural roll, and a
+direction contract in `.impeccable/surfaces/src-app-tsx.md`. Of the dealt
+structures, the user picked **"Out of the screen"**.
+
+**What**
+
+- **The hero is the device.** You land inside a dark CYPHIX display with
+  six live limb leads (I, II, III, aVR, aVL, aVF) and the headline
+  "Clinical Depth. / Wearable Ease." under them. Scrolling zooms out until
+  that live display *is* the screen of the frontal watch render. The watch
+  then steps right while the module render arrives on its left, and the
+  one-pager's four callouts (Strap, Cyphix module, Your watch, 6-lead ECG)
+  draw in. The geometry is pure arithmetic in `src/lib/heroScene.ts`: one
+  uniform scale plus a clip-path crop, so the canvas never re-allocates
+  mid-zoom. The display rect was measured off the render
+  (56, 296, 486 × 538 px, radius ≈ 108).
+- **The traces are honest.** `src/lib/ecgModel.ts` projects one synthetic
+  cardiac dipole onto leads I and II, then derives III, aVR, aVL and aVF
+  with Einthoven's and Goldberger's equations. Every trace is labelled
+  illustrative (on the display, in the plate caption and in the footer).
+  No copy interprets a signal.
+- **Sections in the one-pager's order:**
+  - **The need:** "1 in 3" in coral, and a full-bleed Lead II strip on a
+    faint coral millimetre grid.
+  - **The trade-off:** "Wearable ease ~~or~~ and clinical depth": the
+    "or" is struck through and becomes "and" on view.
+  - **Six leads:** the real app's limb-lead screen, drifting against the
+    scroll, beside "Adhesive patches / Wires / Professional setup" being
+    struck through one by one.
+  - **Where we are:** the exploded render, then the four milestones on a
+    line that draws to a pulsing "Next" dot.
+  - **Market:** TAM/SAM as the one-pager's nested circles (equal-area
+    ratio, √(2.76/4.53)), with leader lines and count-up figures, and the
+    **$1.9M** seed ask beside them.
+  - **The team:** both portraits.
+  - **Request the deck:** the form, plus direct e-mail, phone and city.
+- **The world.**
+  - Ground `#F1F3F6` with soft coral and blue light.
+  - Navy `#0B1A30`, coral `#F2574C`, and red `#C7362C` for the wordmark
+    and the one action (white on red is 5.3:1).
+  - **Sora** + **Geist Mono**, the one-pager's own faces, self-hosted as
+    variable woff2 (34 KB + 23 KB), so the page makes no Google request.
+  - Selection, caret, focus ring and scrollbar are themed. A coral
+    scroll hairline runs under the bar, and the favicon is the red C.
+- **Investor form.** Name, work e-mail, fund or company, message. The lead
+  contract has no investor type yet, so the form posts `orgType: "other"`
+  with the fund in `organization` (see "Not done").
+- **Assets** were taken from the user's own materials:
+  - From the one-pager PDF: the module render, the app screen.
+  - From the investor-site reference bundle (`One-pager design
+    variations.zip`): the frontal watch, the exploded view, both
+    portraits.
+  - All converted to WebP; the largest is 70 KB.
+- **Reduced motion:** the display stands still, and the device pair
+  becomes a plain figure. Every reveal starts from visible content.
+- Removed: `Hero`, `WristVisual`, `EcgReportCard`, `ScaleToFit`,
+  `Sections` and `hand-wrist.png`.
+
+**Verified, and what that means.** `tsc --noEmit` and `vite build` are
+clean (98 KB gzipped JS, 6 KB CSS). Headless Chrome ran two capture
+rounds at 1440×900, 1280×720 and 390×844 @2x, covering the hero, five
+points of the zoom and every section. It found no horizontal overflow and
+no page errors. The only console error is the pre-existing CORS refusal
+of `GET /auth/captcha` from localhost; the form already tolerates it.
+None of this proves how the zoom *feels* on a real trackpad or phone.
+
+**Finish review.** The Impeccable finish reviewer ran against the
+screenshots and the direction contract. Its agents were installed
+mid-session and do not register until a new session, so it ran as a
+general-purpose agent that loaded the reviewer's own definition. It
+returned "fix" with 8 items:
+- the mobile end plate left a dead band below the pair;
+- at 1280×720 the hero headline was smaller than the next heading;
+- mono type was used beyond its roles;
+- the mobile market chart had orphaned dots;
+- the strip label collided with the trace;
+- a "·" was left alone at the start of a wrapped line;
+- the traces lost their "illustrative" label during the zoom;
+- the heading-left / body-right template repeated six times.
+
+All 8 were fixed in two rounds, and the four follow-ups were resolved.
+Its last pass left one item: the founder's role line overflowed on
+phones. That was fixed after the review budget ran out (the credential
+gets its own line on a phone) and checked by a recapture, but the
+reviewer did not score it again. `DESIGN.md` + `.impeccable/design.json`
+describe the system as built, written by the Impeccable documenter.
+Shipped images carry their origin in `*.webp.json` sidecars. The
+detector's "overused font" note on Geist Mono is ignored for that one
+value, because it is the one-pager's own face.
+
+**Not done / follow-ups**
+
+- **Not deployed.** No Vercel project exists for this page; `vercel --prod`
+  is the user's call.
+- An `investor` value for `LeadOrgType` needs a shared + server change.
+- Hebrew / RTL (LAUNCH_PLAN L4) is still open.
+- The Turnstile policy probe is CORS-refused from origins other than the
+  server's allow-list; once deployed, check it from the real domain.
+
 ## v0.5.0 — 2026-10-10 — the new CYPHIX wordmark
 
 **Why.** The brand changed; the header and the footer were still drawing

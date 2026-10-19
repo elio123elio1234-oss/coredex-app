@@ -1,0 +1,662 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T21:39:04.667Z",
+  "title": "Design System: CYPHIX Landing",
+  "extensions": {
+    "colorMeta": {
+      "red": {
+        "role": "primary",
+        "displayName": "Wordmark Red",
+        "canonical": "oklch(55.3% 0.184 28.6)",
+        "tonalRamp": [
+          "oklch(15% 0.067 28.6)",
+          "oklch(25% 0.111 28.6)",
+          "oklch(35% 0.155 28.6)",
+          "oklch(48% 0.184 28.6)",
+          "oklch(60% 0.178 28.6)",
+          "oklch(72% 0.124 28.6)",
+          "oklch(84% 0.071 28.6)",
+          "oklch(95% 0.022 28.6)"
+        ]
+      },
+      "red-deep": {
+        "role": "primary",
+        "displayName": "Pressed Red",
+        "canonical": "oklch(48.8% 0.164 28.8)",
+        "tonalRamp": [
+          "oklch(15% 0.067 28.8)",
+          "oklch(25% 0.111 28.8)",
+          "oklch(35% 0.155 28.8)",
+          "oklch(48% 0.164 28.8)",
+          "oklch(60% 0.164 28.8)",
+          "oklch(72% 0.124 28.8)",
+          "oklch(84% 0.071 28.8)",
+          "oklch(95% 0.022 28.8)"
+        ]
+      },
+      "coral": {
+        "role": "secondary",
+        "displayName": "Live Coral",
+        "canonical": "oklch(66.3% 0.192 27.6)",
+        "tonalRamp": [
+          "oklch(15% 0.067 27.6)",
+          "oklch(25% 0.111 27.6)",
+          "oklch(35% 0.155 27.6)",
+          "oklch(48% 0.192 27.6)",
+          "oklch(60% 0.178 27.6)",
+          "oklch(72% 0.124 27.6)",
+          "oklch(84% 0.071 27.6)",
+          "oklch(95% 0.022 27.6)"
+        ]
+      },
+      "ink-lift": {
+        "role": "neutral",
+        "displayName": "Lifted Navy",
+        "canonical": "oklch(31.4% 0.082 260.1)",
+        "tonalRamp": [
+          "oklch(15% 0.067 260.1)",
+          "oklch(25% 0.082 260.1)",
+          "oklch(35% 0.082 260.1)",
+          "oklch(48% 0.082 260.1)",
+          "oklch(60% 0.082 260.1)",
+          "oklch(72% 0.082 260.1)",
+          "oklch(84% 0.071 260.1)",
+          "oklch(95% 0.022 260.1)"
+        ],
+        "note": "Literal in src/index.css (.btn-ink:hover), not a :root custom property."
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Cool Sheet",
+        "canonical": "oklch(96.3% 0.005 258.3)",
+        "tonalRamp": [
+          "oklch(15% 0.005 258.3)",
+          "oklch(25% 0.005 258.3)",
+          "oklch(35% 0.005 258.3)",
+          "oklch(48% 0.005 258.3)",
+          "oklch(60% 0.005 258.3)",
+          "oklch(72% 0.005 258.3)",
+          "oklch(84% 0.005 258.3)",
+          "oklch(95% 0.005 258.3)"
+        ]
+      },
+      "ground-2": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "oklch(93.9% 0.009 258.3)",
+        "tonalRamp": [
+          "oklch(15% 0.009 258.3)",
+          "oklch(25% 0.009 258.3)",
+          "oklch(35% 0.009 258.3)",
+          "oklch(48% 0.009 258.3)",
+          "oklch(60% 0.009 258.3)",
+          "oklch(72% 0.009 258.3)",
+          "oklch(84% 0.009 258.3)",
+          "oklch(95% 0.009 258.3)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "oklch(100.0% 0.000 0)",
+        "tonalRamp": [
+          "oklch(15% 0.000 0)",
+          "oklch(25% 0.000 0)",
+          "oklch(35% 0.000 0)",
+          "oklch(48% 0.000 0)",
+          "oklch(60% 0.000 0)",
+          "oklch(72% 0.000 0)",
+          "oklch(84% 0.000 0)",
+          "oklch(95% 0.000 0)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Navy Ink",
+        "canonical": "oklch(21.8% 0.048 257.9)",
+        "tonalRamp": [
+          "oklch(15% 0.048 257.9)",
+          "oklch(25% 0.048 257.9)",
+          "oklch(35% 0.048 257.9)",
+          "oklch(48% 0.048 257.9)",
+          "oklch(60% 0.048 257.9)",
+          "oklch(72% 0.048 257.9)",
+          "oklch(84% 0.048 257.9)",
+          "oklch(95% 0.022 257.9)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "oklch(37.4% 0.047 261.7)",
+        "tonalRamp": [
+          "oklch(15% 0.047 261.7)",
+          "oklch(25% 0.047 261.7)",
+          "oklch(35% 0.047 261.7)",
+          "oklch(48% 0.047 261.7)",
+          "oklch(60% 0.047 261.7)",
+          "oklch(72% 0.047 261.7)",
+          "oklch(84% 0.047 261.7)",
+          "oklch(95% 0.022 261.7)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Pale Slate",
+        "canonical": "oklch(49.3% 0.045 259.2)",
+        "tonalRamp": [
+          "oklch(15% 0.045 259.2)",
+          "oklch(25% 0.045 259.2)",
+          "oklch(35% 0.045 259.2)",
+          "oklch(48% 0.045 259.2)",
+          "oklch(60% 0.045 259.2)",
+          "oklch(72% 0.045 259.2)",
+          "oklch(84% 0.045 259.2)",
+          "oklch(95% 0.022 259.2)"
+        ]
+      },
+      "hair": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(11, 26, 48, 0.13)",
+        "tonalRamp": [
+          "oklch(15% 0.048 257.9)",
+          "oklch(25% 0.048 257.9)",
+          "oklch(35% 0.048 257.9)",
+          "oklch(48% 0.048 257.9)",
+          "oklch(60% 0.048 257.9)",
+          "oklch(72% 0.048 257.9)",
+          "oklch(84% 0.048 257.9)",
+          "oklch(95% 0.022 257.9)"
+        ],
+        "note": "Alpha of Navy Ink; the ramp is Navy Ink's."
+      },
+      "hair-2": {
+        "role": "neutral",
+        "displayName": "Faint Hairline",
+        "canonical": "rgba(11, 26, 48, 0.07)",
+        "tonalRamp": [
+          "oklch(15% 0.048 257.9)",
+          "oklch(25% 0.048 257.9)",
+          "oklch(35% 0.048 257.9)",
+          "oklch(48% 0.048 257.9)",
+          "oklch(60% 0.048 257.9)",
+          "oklch(72% 0.048 257.9)",
+          "oklch(84% 0.048 257.9)",
+          "oklch(95% 0.022 257.9)"
+        ],
+        "note": "Alpha of Navy Ink; the ramp is Navy Ink's."
+      },
+      "display": {
+        "role": "neutral",
+        "displayName": "Display Black",
+        "canonical": "oklch(17.7% 0.011 260.6)",
+        "tonalRamp": [
+          "oklch(15% 0.011 260.6)",
+          "oklch(25% 0.011 260.6)",
+          "oklch(35% 0.011 260.6)",
+          "oklch(48% 0.011 260.6)",
+          "oklch(60% 0.011 260.6)",
+          "oklch(72% 0.011 260.6)",
+          "oklch(84% 0.011 260.6)",
+          "oklch(95% 0.011 260.6)"
+        ]
+      },
+      "display-text": {
+        "role": "neutral",
+        "displayName": "Screen Grey",
+        "canonical": "oklch(81.1% 0.021 257.5)",
+        "tonalRamp": [
+          "oklch(15% 0.021 257.5)",
+          "oklch(25% 0.021 257.5)",
+          "oklch(35% 0.021 257.5)",
+          "oklch(48% 0.021 257.5)",
+          "oklch(60% 0.021 257.5)",
+          "oklch(72% 0.021 257.5)",
+          "oklch(84% 0.021 257.5)",
+          "oklch(95% 0.021 257.5)"
+        ],
+        "note": "Literal in src/index.css (.hero-lede), not a :root custom property."
+      },
+      "display-muted": {
+        "role": "neutral",
+        "displayName": "Screen Dim",
+        "canonical": "oklch(66.7% 0.030 260.3)",
+        "tonalRamp": [
+          "oklch(15% 0.030 260.3)",
+          "oklch(25% 0.030 260.3)",
+          "oklch(35% 0.030 260.3)",
+          "oklch(48% 0.030 260.3)",
+          "oklch(60% 0.030 260.3)",
+          "oklch(72% 0.030 260.3)",
+          "oklch(84% 0.030 260.3)",
+          "oklch(95% 0.022 260.3)"
+        ],
+        "note": "Literal in src/index.css (.screen-meta), not a :root custom property."
+      },
+      "trace-salmon": {
+        "role": "tertiary",
+        "displayName": "Trace Salmon (lead I)",
+        "canonical": "oklch(76.2% 0.142 29.1)",
+        "tonalRamp": [
+          "oklch(15% 0.067 29.1)",
+          "oklch(25% 0.111 29.1)",
+          "oklch(35% 0.142 29.1)",
+          "oklch(48% 0.142 29.1)",
+          "oklch(60% 0.142 29.1)",
+          "oklch(72% 0.124 29.1)",
+          "oklch(84% 0.071 29.1)",
+          "oklch(95% 0.022 29.1)"
+        ],
+        "note": "Defined in TRACE_COLORS in src/components/HeroScene.tsx, not in CSS."
+      },
+      "trace-peach": {
+        "role": "tertiary",
+        "displayName": "Trace Peach (lead II)",
+        "canonical": "oklch(81.4% 0.110 57.3)",
+        "tonalRamp": [
+          "oklch(15% 0.067 57.3)",
+          "oklch(25% 0.110 57.3)",
+          "oklch(35% 0.110 57.3)",
+          "oklch(48% 0.110 57.3)",
+          "oklch(60% 0.110 57.3)",
+          "oklch(72% 0.110 57.3)",
+          "oklch(84% 0.071 57.3)",
+          "oklch(95% 0.022 57.3)"
+        ],
+        "note": "Defined in TRACE_COLORS in src/components/HeroScene.tsx, not in CSS."
+      },
+      "trace-butter": {
+        "role": "tertiary",
+        "displayName": "Trace Butter (lead III)",
+        "canonical": "oklch(87.2% 0.108 92.2)",
+        "tonalRamp": [
+          "oklch(15% 0.067 92.2)",
+          "oklch(25% 0.108 92.2)",
+          "oklch(35% 0.108 92.2)",
+          "oklch(48% 0.108 92.2)",
+          "oklch(60% 0.108 92.2)",
+          "oklch(72% 0.108 92.2)",
+          "oklch(84% 0.071 92.2)",
+          "oklch(95% 0.022 92.2)"
+        ],
+        "note": "Defined in TRACE_COLORS in src/components/HeroScene.tsx, not in CSS."
+      },
+      "trace-mint": {
+        "role": "tertiary",
+        "displayName": "Trace Mint (lead aVR)",
+        "canonical": "oklch(85.3% 0.083 160.8)",
+        "tonalRamp": [
+          "oklch(15% 0.067 160.8)",
+          "oklch(25% 0.083 160.8)",
+          "oklch(35% 0.083 160.8)",
+          "oklch(48% 0.083 160.8)",
+          "oklch(60% 0.083 160.8)",
+          "oklch(72% 0.083 160.8)",
+          "oklch(84% 0.071 160.8)",
+          "oklch(95% 0.022 160.8)"
+        ],
+        "note": "Defined in TRACE_COLORS in src/components/HeroScene.tsx, not in CSS."
+      },
+      "trace-sky": {
+        "role": "tertiary",
+        "displayName": "Trace Sky (lead aVL)",
+        "canonical": "oklch(82.2% 0.082 231.5)",
+        "tonalRamp": [
+          "oklch(15% 0.067 231.5)",
+          "oklch(25% 0.082 231.5)",
+          "oklch(35% 0.082 231.5)",
+          "oklch(48% 0.082 231.5)",
+          "oklch(60% 0.082 231.5)",
+          "oklch(72% 0.082 231.5)",
+          "oklch(84% 0.071 231.5)",
+          "oklch(95% 0.022 231.5)"
+        ],
+        "note": "Defined in TRACE_COLORS in src/components/HeroScene.tsx, not in CSS."
+      },
+      "trace-lavender": {
+        "role": "tertiary",
+        "displayName": "Trace Lavender (lead aVF)",
+        "canonical": "oklch(77.5% 0.113 295.9)",
+        "tonalRamp": [
+          "oklch(15% 0.067 295.9)",
+          "oklch(25% 0.111 295.9)",
+          "oklch(35% 0.113 295.9)",
+          "oklch(48% 0.113 295.9)",
+          "oklch(60% 0.113 295.9)",
+          "oklch(72% 0.113 295.9)",
+          "oklch(84% 0.071 295.9)",
+          "oklch(95% 0.022 295.9)"
+        ],
+        "note": "Defined in TRACE_COLORS in src/components/HeroScene.tsx, not in CSS."
+      },
+      "trace-quiet": {
+        "role": "neutral",
+        "displayName": "Quiet Trace",
+        "canonical": "oklch(72.2% 0.030 258.4)",
+        "tonalRamp": [
+          "oklch(15% 0.030 258.4)",
+          "oklch(25% 0.030 258.4)",
+          "oklch(35% 0.030 258.4)",
+          "oklch(48% 0.030 258.4)",
+          "oklch(60% 0.030 258.4)",
+          "oklch(72% 0.030 258.4)",
+          "oklch(84% 0.030 258.4)",
+          "oklch(95% 0.022 258.4)"
+        ],
+        "note": "Defined inline in src/components/Need.tsx, not in CSS."
+      },
+      "wash-blue": {
+        "role": "tertiary",
+        "displayName": "Blue Light",
+        "canonical": "oklch(70.3% 0.101 259.9)",
+        "tonalRamp": [
+          "oklch(15% 0.067 259.9)",
+          "oklch(25% 0.101 259.9)",
+          "oklch(35% 0.101 259.9)",
+          "oklch(48% 0.101 259.9)",
+          "oklch(60% 0.101 259.9)",
+          "oklch(72% 0.101 259.9)",
+          "oklch(84% 0.071 259.9)",
+          "oklch(95% 0.022 259.9)"
+        ],
+        "note": "Never solid: used as a radial wash at 14 to 16% alpha."
+      }
+    },
+    "typographyMeta": {
+      "display-hero": {
+        "displayName": "Display Hero",
+        "purpose": "The two-line headline on the display only; compact clamp(34px, 10.6vw, 54px)."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Every section heading; the need statistic and trade-off line at clamp(34 to 36px, 4.6vw, 66px)."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "The seed ask in red; TAM and SAM at clamp(36px, 3.8vw, 54px). Tabular figures that count up once."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The struck 'left out' list, in Pale Slate."
+      },
+      "statement": {
+        "displayName": "Statement",
+        "purpose": "The sentence under the device pair; 20px on the reduced-motion plate."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Person names; callout labels at 14.5px; the sent-state heading at 26px."
+      },
+      "body-lg": {
+        "displayName": "Body Large",
+        "purpose": "The paragraph beside each section heading, Slate, max 34em."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base copy, inputs, milestone text."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Figure descriptions (15px), form notes and callout subs (13px), footer small print (13px, 1.65, max 62ch)."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Pill labels; 14px in the bar."
+      },
+      "label": {
+        "displayName": "Label (Geist Mono)",
+        "purpose": "Captions, figure labels, lead names and the illustrative notes, uppercase. Never a heading or an eyebrow."
+      }
+    },
+    "shadows": [
+      {
+        "name": "action-glow",
+        "value": "0 12px 24px -14px rgba(199, 54, 44, 0.8)",
+        "purpose": "Red pool under the primary button; hover 0 16px 28px -14px rgba(199, 54, 44, 0.9)."
+      },
+      {
+        "name": "lifted-sheet",
+        "value": "0 1px 2px rgba(11, 26, 48, 0.04), 0 32px 64px -32px rgba(11, 26, 48, 0.28)",
+        "purpose": "The contact panel, the only raised surface."
+      },
+      {
+        "name": "object-shadow",
+        "value": "drop-shadow(0 34px 44px rgba(11, 26, 48, 0.24))",
+        "purpose": "A filter on the cut-out phone render."
+      },
+      {
+        "name": "floor-shadow",
+        "value": "radial-gradient(closest-side, rgba(11, 26, 48, 0.24), transparent)",
+        "purpose": "A 28px-tall ellipse under the module and watch renders."
+      },
+      {
+        "name": "marker-lift",
+        "value": "0 2px 8px rgba(11, 26, 48, 0.28)",
+        "purpose": "Callout dots over the renders."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 4px rgba(11, 26, 48, 0.08)",
+        "purpose": "A focused input."
+      },
+      {
+        "name": "bar-rule",
+        "value": "0 1px 0 rgba(11, 26, 48, 0.07)",
+        "purpose": "The bar's moved state, with backdrop-filter: saturate(1.4) blur(14px) over rgba(241, 243, 246, 0.95)."
+      },
+      {
+        "name": "live-pulse",
+        "value": "0 0 0 0 rgba(242, 87, 76, 0.55) to 0 0 0 9px rgba(242, 87, 76, 0), 1.8s ease-out infinite",
+        "purpose": "The recording dot and the next milestone."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The shared curve (--ease-out): arrows, underlines, callouts, strike-throughs, headline rise, leads wipe, count-up."
+      },
+      {
+        "name": "ease-reveal",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1), 0.7s, rise 22px",
+        "purpose": "The Reveal component's fade-and-rise into view (a second, near-identical ease-out)."
+      },
+      {
+        "name": "ease-track",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1), 2s",
+        "purpose": "The milestone line; dots and text land 0.4s apart."
+      },
+      {
+        "name": "scene-zoom",
+        "value": "cubic ease-in-out on scroll progress; phase A 0.06 to 0.5, phase B 0.56 to 0.8",
+        "purpose": "The hero's zoom out of the display into the watch, then the pair (src/lib/heroScene.ts)."
+      },
+      {
+        "name": "hover-colour",
+        "value": "0.2s to 0.25s ease",
+        "purpose": "Colour and background changes on links, fields and buttons."
+      },
+      {
+        "name": "nudge",
+        "value": "0.4s ease-out, 3px",
+        "purpose": "Arrow icons in buttons and links."
+      },
+      {
+        "name": "progress-spring",
+        "value": "spring, stiffness 220, damping 40",
+        "purpose": "The coral scroll-progress line under the bar."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "durations 0.001ms, delays 0",
+        "purpose": "Every animation collapses; traces draw one still strip; the hero becomes a still display plus a figure."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "max-width: 899px"
+      },
+      {
+        "name": "short-laptop",
+        "value": "viewport height 760px or less (hero leads band 42%)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action, \"Request the deck\": a red pill with a red glow and an arrow that slides on hover.",
+      "html": "<a class=\"ds-btn-primary\" href=\"#contact\">Request the deck <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4.5 12h15M13.5 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 22px 0 24px; border: 0; border-radius: 999px; background: var(--red, #c7362c); color: #fff; font: 500 15.5px/1 var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); letter-spacing: -0.005em; text-decoration: none; white-space: nowrap; cursor: pointer; box-shadow: 0 12px 24px -14px rgba(199, 54, 44, 0.8); transition: background-color 0.25s ease, box-shadow 0.3s ease, transform 0.3s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-primary svg { transition: transform 0.4s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-primary:hover { background: var(--red-deep, #a92b22); box-shadow: 0 16px 28px -14px rgba(199, 54, 44, 0.9); } .ds-btn-primary:hover svg { transform: translateX(3px); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid var(--coral, #f2574c); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ink Button (bar)",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "The bar's navy pill, the only button in the navigation.",
+      "html": "<a class=\"ds-btn-ink\" href=\"#contact\">Request the deck <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4.5 12h15M13.5 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-btn-ink { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 15px 0 18px; border: 0; border-radius: 999px; background: var(--ink, #0b1a30); color: #fff; font: 500 14px/1 var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); letter-spacing: -0.005em; text-decoration: none; white-space: nowrap; transition: background-color 0.25s ease, transform 0.3s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-ink svg { transition: transform 0.4s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-ink:hover { background: #17305a; } .ds-btn-ink:hover svg { transform: translateX(3px); } .ds-btn-ink:active { transform: translateY(1px); } .ds-btn-ink:focus-visible { outline: 2px solid var(--coral, #f2574c); outline-offset: 3px; }"
+    },
+    {
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "A boxless secondary action whose arrow drops on hover; on the display it is set in #d5dce6 and turns white.",
+      "html": "<a class=\"ds-btn-link\" href=\"#device\">See the device <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 4.5v15M6 13.5l6 6 6-6\"/></svg></a>",
+      "css": ".ds-btn-link { display: inline-flex; align-items: center; gap: 8px; padding: 12px 2px; font: 500 15px/1 var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); color: var(--ink, #0b1a30); text-decoration: none; border-radius: 8px; } .ds-btn-link svg { transition: transform 0.4s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-link:hover svg { transform: translateY(3px); } .ds-btn-link:focus-visible { outline: 2px solid var(--coral, #f2574c); outline-offset: 3px; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "The fixed 72px bar in its moved state: red wordmark, four anchors whose coral underline draws in from the left, the ink pill, and the coral progress line at its foot.",
+      "html": "<header class=\"ds-bar\"><a class=\"ds-bar-brand\" href=\"#top\" aria-label=\"Cyphix\"><svg viewBox=\"0 0 346 72\" role=\"img\" aria-label=\"Cyphix\"><path fill=\"currentColor\" d=\"M65.36 19.19 C60.25 7.51 49.44 0.68 34.81 0.68 C14.92 0.68 0.31 15.76 0.31 36.3 C0.31 56.84 14.92 71.92 34.81 71.92 C49.47 71.92 60.29 65.07 65.39 53.35 L58.74 50.81 C54.64 60.21 46.19 65.69 34.81 65.69 C19.51 65.69 7.47 52.74 7.47 36.3 C7.47 19.86 19.51 6.91 34.81 6.91 C46.09 6.91 54.5 12.31 58.63 21.57Z M67.26 1.88 L75.36 1.88 L97.81 37.25 L120.03 1.88 L128.09 1.88 L101.42 44.33 L101.42 70.72 L94.22 70.72 L94.22 44.34Z M132.75 27.44 L132.75 24.68 C132.75 10 141.97 1.28 157.5 1.28 C173.03 1.28 182.26 10 182.26 24.68 C182.26 36.78 172.74 45.54 159.57 45.54 L154.27 45.54 C145.7 45.54 139.96 51.05 139.96 59.27 L139.96 70.72 L132.6 70.72 L132.6 59.27 C132.6 47.14 141.15 39.24 154.27 39.24 L159.57 39.24 C168.22 39.24 174.9 32.89 174.9 24.68 C174.9 13.86 168.51 7.58 157.5 7.58 C146.49 7.58 140.11 13.86 140.11 24.68 L140.11 27.44Z M201.59 32.17 L201.59 1.88 L194.43 1.88 L194.43 70.72 L201.59 70.72 L201.59 38.44 L243.38 38.44 L243.38 70.72 L250.54 70.72 L250.54 1.88 L243.38 1.88 L243.38 32.17Z M267.67 1.88 L274.82 1.88 L274.82 70.72 L267.67 70.72Z M344.19 1.88 L335.66 1.88 L315.17 29.47 L294.7 1.88 L286.03 1.88 L310.83 35.31 L284.54 70.72 L293.08 70.72 L315.1 41.06 L337.09 70.72 L345.77 70.72 L319.44 35.22Z\"/></svg></a><nav class=\"ds-bar-nav\" aria-label=\"Sections\"><a href=\"#device\">Device</a><a href=\"#stage\">Stage</a><a href=\"#market\">Market</a><a href=\"#team\">Team</a></nav><a class=\"ds-bar-cta\" href=\"#contact\">Request the deck <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4.5 12h15M13.5 6l6 6-6 6\"/></svg></a><span class=\"ds-bar-progress\" aria-hidden=\"true\"></span></header>",
+      "css": ".ds-bar { position: relative; height: 72px; padding: 0 48px; display: flex; align-items: center; gap: 36px; background: rgba(241, 243, 246, 0.95); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); box-shadow: 0 1px 0 rgba(11, 26, 48, 0.07); font-family: var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); } .ds-bar-brand { display: inline-flex; padding: 6px 0; color: var(--red, #c7362c); border-radius: 6px; } .ds-bar-brand svg { height: 19px; width: auto; } .ds-bar-nav { margin-left: auto; display: flex; gap: 32px; } .ds-bar-nav a { position: relative; padding: 8px 0; font-size: 14.5px; color: var(--ink-2, #33415a); text-decoration: none; transition: color 0.2s ease; } .ds-bar-nav a::after { content: \"\"; position: absolute; left: 0; right: 0; bottom: 3px; height: 1px; background: var(--coral, #f2574c); transform: scaleX(0); transform-origin: 100% 50%; transition: transform 0.45s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-bar-nav a:hover { color: var(--ink, #0b1a30); } .ds-bar-nav a:hover::after { transform: scaleX(1); transform-origin: 0 50%; } .ds-bar-nav a:focus-visible, .ds-bar-brand:focus-visible, .ds-bar-cta:focus-visible { outline: 2px solid var(--coral, #f2574c); outline-offset: 3px; border-radius: 8px; } .ds-bar-cta { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 15px 0 18px; border-radius: 999px; background: var(--ink, #0b1a30); color: #fff; font: 500 14px/1 var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); text-decoration: none; white-space: nowrap; transition: background-color 0.25s ease; } .ds-bar-cta:hover { background: #17305a; } .ds-bar-progress { position: absolute; left: 0; bottom: 0; width: 27%; height: 2px; background: var(--coral, #f2574c); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "A filled field with its label above: Cool Sheet at rest, white with a navy border and halo on focus, a red border on a pale tint when invalid.",
+      "html": "<label class=\"ds-field\"><span>Fund or company <em>optional</em></span><input placeholder=\"Northwind Ventures\" /></label>",
+      "css": ".ds-field { display: grid; gap: 8px; font-family: var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); } .ds-field > span { font-size: 13.5px; font-weight: 500; color: var(--ink-2, #33415a); } .ds-field em { margin-left: 6px; font-size: 12.5px; font-style: normal; font-weight: 400; color: var(--ink-3, #52627b); } .ds-field input { width: 100%; padding: 14px 16px; border: 1px solid transparent; border-radius: 14px; background: var(--ground, #f1f3f6); color: var(--ink, #0b1a30); font: 400 16px/1.45 var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); caret-color: var(--coral, #f2574c); transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; } .ds-field input::placeholder { color: var(--ink-3, #52627b); } .ds-field input:hover { background: #eaedf2; } .ds-field input:focus, .ds-field input:focus-visible { outline: none; background: #fff; border-color: var(--ink, #0b1a30); box-shadow: 0 0 0 4px rgba(11, 26, 48, 0.08); } .ds-field.is-invalid input { border-color: var(--red, #c7362c); background: #fff6f5; }"
+    },
+    {
+      "name": "Caption and Badge",
+      "kind": "chip",
+      "refersTo": "caption",
+      "description": "Mono labels that name the evidence beside them, and the build badge in a hairline pill.",
+      "html": "<div class=\"ds-captions\"><span class=\"ds-caption\">Concept rendering · module, strap, watch</span><span class=\"ds-badge\">v0.6.0</span></div>",
+      "css": ".ds-captions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; } .ds-caption { font-family: var(--mono, 'Geist Mono', ui-monospace, monospace); font-size: 11.5px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.5; color: var(--ink-3, #52627b); } .ds-badge { padding: 4px 10px; border: 1px solid var(--hair, rgba(11, 26, 48, 0.13)); border-radius: 999px; font-family: var(--mono, 'Geist Mono', ui-monospace, monospace); font-size: 11px; letter-spacing: 0.08em; color: var(--ink-3, #52627b); }"
+    },
+    {
+      "name": "Contact Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "The page's only card and only lifted surface: a white sheet holding the deck-request form (sent state shown).",
+      "html": "<div class=\"ds-panel\"><span class=\"ds-panel-check\" aria-hidden=\"true\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m5 12.5 4.5 4.5L19 7.5\"/></svg></span><p class=\"ds-panel-title\">Thank you, Dana.</p><p class=\"ds-panel-copy\">Your request is in. We will be in touch within a few days.</p></div>",
+      "css": ".ds-panel { padding: clamp(24px, 3.4vw, 44px); border-radius: 28px; background: var(--paper, #ffffff); box-shadow: 0 1px 2px rgba(11, 26, 48, 0.04), 0 32px 64px -32px rgba(11, 26, 48, 0.28); font-family: var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); } .ds-panel-check { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 20px; border-radius: 50%; background: rgba(242, 87, 76, 0.12); color: var(--red, #c7362c); } .ds-panel-title { margin: 0 0 10px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--ink, #0b1a30); } .ds-panel-copy { margin: 0; font-size: 16px; line-height: 1.6; color: var(--ink-2, #33415a); }"
+    },
+    {
+      "name": "The Display",
+      "kind": "custom",
+      "refersTo": "display-screen",
+      "description": "The single dark object: the CYPHIX screen with a pulsing recording dot, the mono illustrative label, lead labels in their trace colours over a faint grid, and the coral second line of the headline. The build draws the traces on a canvas; static strokes stand in here.",
+      "html": "<div class=\"ds-display\"><div class=\"ds-display-head\"><div class=\"ds-display-brand\"><span class=\"ds-display-name\">CYPHIX</span><span class=\"ds-display-sub\">6-lead ECG <i class=\"ds-rec\" aria-hidden=\"true\"></i></span></div><span class=\"ds-display-meta\">Illustrative signal · not patient data</span></div><ol class=\"ds-display-leads\" aria-hidden=\"true\"><li style=\"color:#ff8c7c\">I</li><li style=\"color:#f8b07a\">II</li><li style=\"color:#eed37f\">III</li><li style=\"color:#9ee0bd\">aVR</li><li style=\"color:#8dcff1\">aVL</li><li style=\"color:#bca7f6\">aVF</li></ol><p class=\"ds-display-title\">Clinical Depth.<br><span>Wearable Ease.</span></p></div>",
+      "css": ".ds-display { position: relative; padding: 32px; border-radius: 40px; background: var(--display, #0e1116); color: #fff; font-family: var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); overflow: hidden; } .ds-display::before { content: \"\"; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(110% 80% at 24% -10%, rgba(255, 255, 255, 0.06), transparent 60%); } .ds-display-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; } .ds-display-brand { display: flex; flex-direction: column; gap: 6px; } .ds-display-name { font-weight: 600; font-size: 27px; line-height: 1; letter-spacing: 0.01em; } .ds-display-sub { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; line-height: 1.2; color: #a2acbb; } .ds-rec { width: 8px; height: 8px; border-radius: 50%; background: var(--coral, #f2574c); animation: ds-pulse 1.8s ease-out infinite; } @keyframes ds-pulse { 0% { box-shadow: 0 0 0 0 rgba(242, 87, 76, 0.55); } 70% { box-shadow: 0 0 0 9px rgba(242, 87, 76, 0); } 100% { box-shadow: 0 0 0 0 rgba(242, 87, 76, 0); } } .ds-display-meta { padding-top: 5px; font-family: var(--mono, 'Geist Mono', ui-monospace, monospace); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; color: #8a95a7; } .ds-display-leads { margin: 28px 0; padding: 0; list-style: none; font-family: var(--mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; letter-spacing: 0.04em; background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px); background-size: 24px 24px; } .ds-display-leads li { height: 28px; display: flex; align-items: center; } .ds-display-leads li::after { content: \"\"; flex: 1; height: 1.9px; margin-left: 20px; border-radius: 1px; background: currentColor; } .ds-display-title { margin: 0; font-weight: 500; font-size: 48px; line-height: 0.98; letter-spacing: -0.04em; } .ds-display-title span { color: var(--coral, #f2574c); } @media (prefers-reduced-motion: reduce) { .ds-rec { animation: none; } }"
+    },
+    {
+      "name": "Leader-line Callout",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The one-pager's annotation device: a navy hairline drawn from a coral marker dot to a label. The build drives the draw from scroll progress; here it draws on hover.",
+      "html": "<div class=\"ds-callout-stage\"><div class=\"ds-callout\"><span class=\"ds-callout-dot\"></span><span class=\"ds-callout-line\"></span><span class=\"ds-callout-label\"><b>Your watch</b><small>Connects to any watch</small></span></div></div>",
+      "css": ".ds-callout-stage { padding: 24px; background: var(--ground, #f1f3f6); font-family: var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); } .ds-callout { display: flex; align-items: center; } .ds-callout-dot { flex: none; box-sizing: border-box; width: 12px; height: 12px; border-radius: 50%; background: var(--coral, #f2574c); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(11, 26, 48, 0.28); } .ds-callout-line { width: 96px; height: 1px; background: var(--ink, #0b1a30); transform: scaleX(0.35); transform-origin: 0 50%; transition: transform 0.6s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-callout:hover .ds-callout-line { transform: scaleX(1); } .ds-callout-label { margin-left: 14px; display: flex; flex-direction: column; gap: 3px; white-space: nowrap; } .ds-callout-label b { font-size: 14.5px; font-weight: 600; line-height: 1.25; color: var(--ink, #0b1a30); } .ds-callout-label small { font-size: 13px; color: var(--ink-3, #52627b); }"
+    },
+    {
+      "name": "Milestone Line",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Where we are: navy-filled done dots on a drawn navy line over a hairline track, ending at the pulsing coral next step under a red label.",
+      "html": "<ol class=\"ds-milestones\"><li class=\"is-done\"><i aria-hidden=\"true\"></i><span>Working prototype</span></li><li class=\"is-done\"><i aria-hidden=\"true\"></i><span>Patent pending on the core technology</span></li><li class=\"is-next\"><i aria-hidden=\"true\"></i><span><b>Next step</b>A wearable strap, ready for its first trial.</span></li></ol>",
+      "css": ".ds-milestones { --gap: 24px; position: relative; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); font-family: var(--sans, 'Sora', ui-sans-serif, system-ui, sans-serif); } .ds-milestones::before, .ds-milestones::after { content: \"\"; position: absolute; left: 0; top: 7px; height: 1px; } .ds-milestones::before { right: 0; background: var(--hair, rgba(11, 26, 48, 0.13)); } .ds-milestones::after { width: calc((100% - 2 * var(--gap)) * 0.6667 + 2 * var(--gap)); height: 2px; margin-top: -0.5px; background: var(--ink, #0b1a30); } .ds-milestones li { position: relative; padding-top: 34px; } .ds-milestones i { position: absolute; left: 0; top: 0; box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%; background: var(--ground, #f1f3f6); border: 2px solid rgba(11, 26, 48, 0.22); } .ds-milestones .is-done i { background: var(--ink, #0b1a30); border-color: var(--ink, #0b1a30); } .ds-milestones .is-next i { background: var(--coral, #f2574c); border-color: var(--coral, #f2574c); animation: ds-ms-pulse 1.8s ease-out infinite; } @keyframes ds-ms-pulse { 0% { box-shadow: 0 0 0 0 rgba(242, 87, 76, 0.55); } 70% { box-shadow: 0 0 0 9px rgba(242, 87, 76, 0); } 100% { box-shadow: 0 0 0 0 rgba(242, 87, 76, 0); } } .ds-milestones span { display: block; max-width: 15em; font-size: 16px; line-height: 1.45; color: var(--ink-2, #33415a); } .ds-milestones .is-next span { color: var(--ink, #0b1a30); font-weight: 500; } .ds-milestones b { display: block; margin-bottom: 4px; font-size: 14px; font-weight: 600; color: var(--red, #c7362c); } @media (prefers-reduced-motion: reduce) { .ds-milestones .is-next i { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The One-Pager, at Web Scale",
+    "overview": "The page is the PDF one-pager grown to a screen: a cool off-white sheet lit by two soft washes of coral and blue, navy ink set in Sora, hairline rules, pill buttons, and concept renders annotated with leader-line callouts. It reads as the same company as the PDF and the deck. Density is low and deliberate. Each section makes one claim and puts its evidence beside it, and the white space is the one-pager's margin at a larger size.\n\nAgainst that light sheet there is exactly one dark object: the CYPHIX display. The visitor lands inside it, six limb leads sweeping in their pastel render colours, and scrolls out until it is the screen of the watch. Everything else on the page is drawn, not filled: lines write themselves, strike-throughs strike, and the stage timeline draws its own track. The motion grammar is exponential ease-out from visible defaults, and every animated element has a still, legible reduced-motion form.\n\nThe system is clinical without being cold. Coral marks what is live, red marks the brand and the one action, and mono type marks what is measured. It refuses decoration that the one-pager does not carry: no dark sections, no card grids, no eyebrows over headings, no glyph icons.",
+    "keyCharacteristics": [
+      "One cool light ground (#f1f3f6) with radial coral and blue light washes; no section changes the ground colour.",
+      "One dark object, the display (#0e1116), which carries the only saturated multi-colour on the page: the six trace pastels.",
+      "Sora 400 to 600 for everything set; Geist Mono only for leads, measurements, captions and figure labels.",
+      "Hairlines separate, pills act, generous radii (20 to 40px) hold figures and the one panel.",
+      "Lines draw in (scaleX, clip-path, pen sweep) on exponential ease-out; nothing bounces.",
+      "Every trace is labelled illustrative and every render a concept rendering, within sight of it."
+    ],
+    "rules": [
+      {
+        "name": "The One Dark Object Rule",
+        "body": "Display Black belongs to the display alone, at hero scale and at watch scale. No section, band, card, panel or footer goes dark.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Means Act Rule",
+        "body": "Red is the wordmark, the primary action, the ask, \"Next step\" and errors. Nothing decorative is red.",
+        "section": "colors"
+      },
+      {
+        "name": "The Coral Is Alive Rule",
+        "body": "Coral marks what is live or what changes. As text it appears only at display size (34px and up) on the light ground, because it holds 3.0:1 there; on the display it holds 5.6:1.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pastels Stay On The Screen Rule",
+        "body": "The six trace colours are set only inside the display, one per lead, in the order I, II, III, aVR, aVL, aVF. A trace on the light ground is Quiet Trace grey.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono Is Measurement Rule",
+        "body": "Geist Mono sets lead names, measurements, captions, figure labels and the build badge. It never sets a heading, a sentence or a button, and a mono caption never sits above a section heading as an eyebrow.",
+        "section": "typography"
+      },
+      {
+        "name": "The Medium Display Rule",
+        "body": "Headlines are Sora 500 with negative tracking between -0.035em and -0.045em; 600 is for figures, names and labels. The set weights run 400 to 600; scale and tracking, not heaviness, carry the hierarchy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Objects Cast, Surfaces Don't Rule",
+        "body": "Renders, the one action and the one panel cast shadows. Sections, bands, figure tiles and the display are flat.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Moved Bar Rule",
+        "body": "The bar has no surface over the hero. Once the page moves 8px it takes the ground at 95% with backdrop-filter: saturate(1.4) blur(14px) and a Faint Hairline under it, never a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the page on one ground, Cool Sheet (#f1f3f6), and add depth with radial coral and blue washes at 7 to 16%, never with a second ground colour.",
+      "Do set every heading in Sora 500 with -0.035em to -0.045em tracking, and every lead name, measurement, caption and figure label in Geist Mono 11 to 12px, uppercase, 0.12em.",
+      "Do use Wordmark Red (#c7362c) only for the wordmark, the primary action, the ask figure, \"Next step\" and errors, and Live Coral (#f2574c) for what is live: the recording dot, pen glow, focus ring, caret, progress line, underlines, strike-throughs and markers.",
+      "Do make actions full pills (999px) at 52px (40px in the bar), and separate content with 1px hairlines at 13% or 7% navy.",
+      "Do bring lines in by drawing them (scaleX or clip-path from an origin) on the shared ease-out, cubic-bezier(0.16, 1, 0.3, 1); the milestone track's 2s ease-in-out is the one paced exception. Give every animated element a still, complete reduced-motion form.",
+      "Do caption every trace \"illustrative\" and every render \"concept rendering\" within sight of it, in the mono Label style.",
+      "Do keep text on the light sheet at Pale Slate (#52627b, 5.6:1) or darker."
+    ],
+    "donts": [
+      "Don't add a second dark surface: no dark section, band, card or footer. Display Black (#0e1116) is the display's alone.",
+      "Don't set the six trace pastels anywhere outside the display; a trace on the light ground is Quiet Trace (#9aa6b8).",
+      "Don't set coral text below display size (34px) on the light ground; it holds only 3.0:1 there.",
+      "Don't use Geist Mono for headings, sentences or buttons, and don't put a mono caption above a section heading as an eyebrow; captions label figures, data and renders.",
+      "Don't give sections, bands, figure tiles or the display a drop shadow; only renders, the primary button and the contact panel cast one.",
+      "Don't annotate a trace with a finding, marker or verdict; traces carry lead names and the \"illustrative\" label only.",
+      "Don't use icon fonts, emoji or library icons; icons are authored line SVG at a 1.6 stroke in currentColor.",
+      "Don't reach past Sora 600 for emphasis; use size, tracking or Navy Ink instead."
+    ]
+  }
+}

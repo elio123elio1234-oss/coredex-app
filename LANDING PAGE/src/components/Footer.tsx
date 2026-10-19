@@ -1,25 +1,30 @@
 import Logo from "./Logo";
-import { APP_VERSION, APP_BUILD_LABEL } from "../config/version";
+import { APP_VERSION } from "../config/version";
+
+/* The close: wordmark, the honest small print, the build badge. */
 
 export default function Footer() {
   return (
-    <footer className="footer" id="footer">
-      <div className="container footer-inner">
-        <a className="brand" href="#top" aria-label="CYPHIX home">
-          <Logo className="brand-logo" />
+    <footer className="foot" id="footer">
+      <div className="wrap foot-inner">
+        <a className="foot-brand" href="#top" aria-label="Cyphix — back to top">
+          <Logo className="foot-logo" />
         </a>
-
-        <div className="footer-meta">
-          © {new Date().getFullYear()} CYPHIX · Concept preview
+        <p className="foot-note">
+          Product images are concept renderings; electrodes are shown in coral. Cyphix is in
+          development and is not available for sale. Traces on this page are illustrative and
+          synthetic, not patient data.
+        </p>
+        <div className="foot-meta">
+          <span>© {new Date().getFullYear()} Cyphix · Kiryat Ono, Israel</span>
+          <span className="badge" title="Build version">
+            v{APP_VERSION}
+          </span>
         </div>
-
-        <span className="footer-badge" title={APP_BUILD_LABEL}>
-          v{APP_VERSION}
-        </span>
       </div>
     </footer>
   );
 }
 
-// v0.4.0 — #contact moved to the form; the footer is #footer
-// v0.1.0 — footer with brand, copyright, visible version badge
+// v0.6.0 — wordmark, concept / in-development / illustrative-signal small print, version badge
+// v0.1.0 — brand + version badge
