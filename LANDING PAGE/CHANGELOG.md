@@ -1,5 +1,33 @@
 # Changelog — CYPHIX Landing
 
+## v0.6.1 — 2026-10-21 — deployed; the thank-you stops promising an e-mail
+
+**Deployed for the first time:** **https://cyphix-landing.vercel.app**. The
+Vercel project is `cyphix-landing` in `elio123elio1234-5098s-projects`, and
+this folder is linked to it (`.vercel/`, ignored). Redeploy with
+`vercel deploy --prod --yes --scope elio123elio1234-5098s-projects`.
+
+**Why the copy changed.** v0.4.0–v0.6.0 thanked the sender with "a
+confirmation is on its way to <e-mail>". The production server's `/healthz`
+reports `"email":"off"`: the Resend key was never pasted into Render. So no
+confirmation is sent, and the team is not mailed either. The promise was
+false on the day the page went public, so it is gone. The sent state now
+reads "Your request is in. We will reply to <e-mail> within a few days."
+
+**Checked live.**
+- The page, the bundle (`"0.6.1"`) and the favicon serve.
+- A phone-size capture of the live site shows no overflow.
+- A CORS preflight for `POST /api/v1/leads` from the new origin answers
+  204 and allows it; no lead was written.
+- `GET /auth/captcha` is still refused from this origin. That is harmless
+  while the server's captcha is off. If Turnstile is ever switched on, add
+  this origin to the server's CORS for that route, or the form cannot get
+  the site key.
+
+**Where leads go today:** the web cockpit's `/admin/leads`
+(cyphixweb.vercel.app). No e-mail arrives until `RESEND_API_KEY` is set on
+Render.
+
 ## v0.6.0 — 2026-10-20 — the investor redesign: "out of the screen"
 
 **Why.** The user asked for a professional, venture-style home page for

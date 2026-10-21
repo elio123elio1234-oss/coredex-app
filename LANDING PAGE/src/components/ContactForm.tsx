@@ -217,9 +217,11 @@ export default function ContactForm() {
                 <Check width={22} height={22} />
               </span>
               <h3>Thank you, {name.trim().split(/\s+/)[0]}.</h3>
+              {/* No "confirmation e-mail" promise: the server only mails when its
+                  provider is configured (/healthz "email"), and today it is off. */}
               <p>
-                Your request is in, and a confirmation is on its way to{" "}
-                <strong>{email.trim()}</strong>. We will be in touch within a few days.
+                Your request is in. We will reply to <strong>{email.trim()}</strong> within a few
+                days.
               </p>
             </div>
           ) : (
@@ -305,6 +307,7 @@ export default function ContactForm() {
   );
 }
 
+// v0.6.1 — the sent state no longer promises a confirmation e-mail the server may not send
 // v0.6.0 — re-cut for investors: name · e-mail · fund · message, "Request the deck", direct e-mail / phone;
 //          posts orgType "other" until the lead contract has an investor type
 // v0.1.0 — the "Request access" form: posts a lead to the API, Turnstile only when the
