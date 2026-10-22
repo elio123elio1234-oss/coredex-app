@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import Reveal from "./Reveal";
 import { ArrowRight, Check, Mail, Phone, Pin } from "./Icons";
 import { CAPTCHA_POLICY_URL, LEADS_URL } from "../config/api";
 
@@ -182,35 +181,29 @@ export default function ContactForm() {
     <section className="section contact" id="contact" aria-labelledby="contact-title">
       <div className="wrap contact-grid">
         <div className="contact-copy">
-          <Reveal as="div">
-            <h2 id="contact-title" className="display">
-              Request the deck.
-            </h2>
-          </Reveal>
-          <Reveal as="div" delay={0.08}>
-            <p className="body-lg">
-              Tell us who you are. We will send the deck and find a time to talk.
-            </p>
-          </Reveal>
-          <Reveal as="div" delay={0.14}>
-            <ul className="direct">
-              <li>
-                <Mail />
-                <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
-              </li>
-              <li>
-                <Phone />
-                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-              </li>
-              <li>
-                <Pin />
-                <span>Kiryat Ono, Israel</span>
-              </li>
-            </ul>
-          </Reveal>
+          <h2 id="contact-title" className="h2">
+            Request the deck.
+          </h2>
+          <p className="body-lg">
+            Tell us who you are. We will send the deck and find a time to talk.
+          </p>
+          <ul className="direct">
+            <li>
+              <Mail />
+              <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
+            </li>
+            <li>
+              <Phone />
+              <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
+            </li>
+            <li>
+              <Pin />
+              <span>Kiryat Ono, Israel</span>
+            </li>
+          </ul>
         </div>
 
-        <Reveal as="div" className="contact-panel" delay={0.1} y={30}>
+        <div className="contact-panel">
           {status === "sent" ? (
             <div className="contact-sent" role="status">
               <span className="contact-check" aria-hidden="true">
@@ -301,12 +294,13 @@ export default function ContactForm() {
               </div>
             </form>
           )}
-        </Reveal>
+        </div>
       </div>
     </section>
   );
 }
 
+// v0.7.0 — no reveal wrappers; the heading takes the page's h2 voice
 // v0.6.1 — the sent state no longer promises a confirmation e-mail the server may not send
 // v0.6.0 — re-cut for investors: name · e-mail · fund · message, "Request the deck", direct e-mail / phone;
 //          posts orgType "other" until the lead contract has an investor type

@@ -39,8 +39,9 @@ Wearable Ease.**
 - It sits beside the PDF one-pager and the pitch deck and must read as the same company.
 - The primary action is the existing "Request access" form, re-labelled for
   investors: it posts a lead to the CYPHIX API (`POST /api/v1/leads`, `source:
-  "landing"`), the server e-mails the team. Bot protection (Turnstile) appears only
-  when the server's policy names a provider.
+  "landing"`). Leads land in the web cockpit's `/admin/leads`; the server sends no
+  e-mail until a Resend key is configured, so the page never promises one. Bot
+  protection (Turnstile) appears only when the server's policy names a provider.
 
 ## Capabilities and Constraints
 
@@ -55,8 +56,8 @@ Wearable Ease.**
   labelled as such. The device is in development and not for sale.
 - Language: English first. A Hebrew/RTL version was planned in LAUNCH_PLAN (L4) and is
   still open.
-- Stack: existing Vite + React + TypeScript SPA in this folder, deployed to Vercel by
-  the user (`vercel --prod` is the user's call).
+- Stack: existing Vite + React + TypeScript SPA in this folder, live on Vercel at
+  https://cyphix-landing.vercel.app (project `cyphix-landing`).
 
 ## Brand Commitments
 
@@ -65,6 +66,12 @@ Wearable Ease.**
 - The PDF one-pager (`Cyphix-One-Pager-phone-test-3.pdf`, 2026-10) is the binding visual
   reference: the user asked for the page to be "minimalistic as in my one-pager".
 - Voice: calm, precise, clinical-grade, confident; short declarative sentences.
+- **Professional canon (standing, 2026-10-22).** The user rejected v0.6's scroll-driven
+  ECG display as "over simulation … doesn't seem like a professional company did it".
+  The page plays a medtech company's homepage straight, at the craft level of Withings
+  ScanWatch, Neko Health and Apple Watch pages: real renders and the real app screen
+  lead, the page holds still after one quiet arrival, and nothing simulates a live
+  signal.
 
 ## Evidence on Hand
 
@@ -88,4 +95,5 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 2. Honest stage: every claim is one the one-pager already makes.
 3. Data, never verdicts.
 4. One company across the PDF, the deck and the page.
+<!-- v0.7.0 — the professional-canon commitment; lead delivery and hosting brought up to date -->
 <!-- v0.6.0 — product truth for the investor page (Impeccable init, 2026-10-19) -->

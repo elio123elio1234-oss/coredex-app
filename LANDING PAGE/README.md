@@ -1,14 +1,14 @@
 # CYPHIX — Landing Page
 
 Investor-facing home page for CYPHIX, a wearable 6-lead ECG on the watch you
-already wear. It is the PDF one-pager at web scale. Since v0.6.0 the hero
-zooms **out of a live 6-lead display into the watch**.
+already wear. Since v0.7.0 it is the PDF one-pager played straight as a company
+homepage: real renders, still sections, one quiet arrival on load and no
+simulated signal. Live at **https://cyphix-landing.vercel.app**.
 
 ## Stack
 
 - **Vite + React + TypeScript** (static SPA)
-- **framer-motion** for scroll progress, reveals and count-ups
-- Canvas for the ECG traces (`EcgTrace`), no chart library
+- Plain CSS for the one load arrival (no animation library)
 - **Sora** + **Geist Mono** self-hosted from `src/assets/fonts` (no external requests)
 
 ## Run locally
@@ -22,11 +22,11 @@ npm run preview    # serve the production build
 
 ## Deploy (Vercel)
 
-Zero-config (`vercel.json` pins Vite). Deploying is the owner's call:
+Zero-config (`vercel.json` pins Vite). The folder is linked to the Vercel
+project `cyphix-landing`:
 
 ```bash
-vercel        # preview
-vercel --prod # production
+vercel deploy --prod --yes --scope elio123elio1234-5098s-projects
 ```
 
 ## The "Request the deck" form
@@ -42,19 +42,16 @@ says so.
 
 ```
 src/
-  App.tsx                 bar · hero scene · need · six leads · stage · market · team · form · footer
-  index.css               the whole design system (tokens, sections, compact, reduced motion)
-  lib/
-    heroScene.ts          geometry of the zoom (layout per viewport + one frame per scroll value)
-    ecgModel.ts           illustrative dipole model; III/aVR/aVL/aVF derived from I and II
+  App.tsx                 bar · hero · need · product · stage · market · team · form · footer
+  index.css               the whole design system (tokens, sections, tablet, phone, the arrival)
   components/
-    HeroScene.tsx         the sticky "out of the screen" scene + callouts
-    EcgTrace.tsx          canvas leads: "sweep" (monitor) or "scroll" (watch strip)
-    Header.tsx            red wordmark, anchors, the deck pill, scroll hairline
-    Need / Leads / Stage / Market / Team / ContactForm / Footer
-    CountUp, Reveal, Icons, Logo
+    Hero.tsx              headline, the product pair with its callouts, the facts row
+    Need.tsx              1 in 3, then the three-way comparison
+    Product.tsx           exploded render, wear · record · send, the app's limb-lead view
+    Header / Stage / Market / Team / ContactForm / Footer / Icons / Logo
   assets/img              WebP renders + portraits (from the user's one-pager materials)
   assets/fonts            Sora + Geist Mono variable woff2 (OFL)
+public/og.jpg             the 1200×630 link-preview card
 PRODUCT.md                product truth for design work (Impeccable)
 DESIGN.md                 the visual system as built (Impeccable)
 .impeccable/surfaces/     the page's surface brief + direction contract
@@ -62,8 +59,9 @@ DESIGN.md                 the visual system as built (Impeccable)
 
 ## Changing the hero
 
-The watch render's display rectangle is hard-coded in `WATCH.screen` in
-`src/lib/heroScene.ts` (image px of `watch-front.webp`). If the render is
-replaced, re-measure it, or the live display will no longer land on the
-watch's screen.
+The product pair lives in a 1200 × 520 frame (`Hero.tsx`). Each callout dot
+is a point on a render mapped into that frame. If a render is replaced,
+re-measure the strap, electrode, case and screen points, or the dots will
+miss the product.
+<!-- v0.7.0 — the professional rebuild: no animation library, the frame-mapped callouts, the og card, the deploy command -->
 <!-- v0.6.0 — the investor redesign: stack, structure, and how the hero finds the watch screen -->

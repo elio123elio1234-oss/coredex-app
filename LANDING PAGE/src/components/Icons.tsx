@@ -52,4 +52,11 @@ export const Check = (p: P) => (
   </svg>
 );
 
+export const Dash = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M7.5 12h9" />
+  </svg>
+);
+
+// v0.7.0 — Dash for the comparison's "no" mark
 // v0.6.0 — arrow, mail, phone, pin and check icons (authored, one stroke weight)

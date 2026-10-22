@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.6.1";
+export const APP_VERSION = "0.7.0";
 export const APP_BUILD_LABEL =
-  "Deployed to cyphix-landing.vercel.app; the form's thank-you no longer promises an e-mail";
+  "The professional rebuild: a still company page in the one-pager's world; no simulated ECG, one load arrival";
 
+// v0.7.0 — the professional rebuild (user: "over simulation"): product pair, comparison, annotated product, stage, market, team, og card
 // v0.6.1 — first deployment (cyphix-landing.vercel.app); honest sent-state copy
 // v0.6.0 — investor redesign: "out of the screen" hero, need, six leads, stage, market, team, request the deck
 // v0.5.0 — the new CYPHIX wordmark (header + footer)

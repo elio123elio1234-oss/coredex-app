@@ -1,5 +1,70 @@
 # Changelog — CYPHIX Landing
 
+## v0.7.0 — 2026-10-22 — the professional rebuild: a still company page
+
+**Why.** On seeing v0.6.1 live, the user wrote: "its cute but over
+simulation and doesn't seem like a professional company did it". They were
+right. v0.6.0 opened inside a dark live-sweeping 6-lead display that zoomed
+into the watch over 330svh of scroll-jacking. A second simulated Lead II
+strip ran under the need, and the counters, strike-throughs, timeline and
+callouts all drew themselves. That reads as a tech demo, not a medtech
+company. The v0.6.0 entry called the scene the page's "memorable moment";
+for an investor arriving cold it was noise in front of the facts.
+
+**What it is now.** The PDF one-pager, played straight as a company homepage
+at the craft level of the Withings ScanWatch, Neko Health and Apple Watch
+pages (recorded in PRODUCT.md as a standing "Professional canon" commitment):
+- **Hero:** "Clinical Depth. / Wearable Ease." centred, the one-pager lede, the
+  red "Request the deck" and a "How it works" link. Below sit the real module
+  and watch renders with the one-pager's four leader-line callouts. The pair's
+  size follows the viewport's height, so most of the product shows above the
+  fold on a laptop.
+- **Need:** one band. "1 in 3 deaths…" sits beside the need line and the
+  trade-off, with a three-way comparison under it (Smartwatch ECG · Holter
+  and clinic ECG · Cyphix). Every cell restates the one-pager. On phones each
+  capability becomes its own block.
+- **Product:** the exploded concept render on the page's ground, annotated
+  with the hero's leader-line device (module, strap, watch). On phones it is
+  cropped to the module and strap. Beside the real app's limb-lead screen:
+  "Sent straight to the clinician."
+- **Stage, Market, Team, Request the deck:** the same facts, now still.
+  - The stage line marks done and next with its dots alone.
+  - The market discs stand on a floor shadow, as in the one-pager.
+  - The team is set as portrait-and-name rows. The founder's standing photo is
+    zoomed to head-and-shoulders so both portraits frame alike.
+- **Footer:** a company footer (map, contact, small print, badge).
+- **Link-preview card:** `public/og.jpg` plus `og:image` and twitter meta, so a
+  pasted link shows the headline and the product.
+
+**Motion.** One arrival on load: the headline rises, the renders settle and
+the callouts draw once. After that the page holds still apart from hover
+feedback. Reduced motion shows the final frame.
+
+**Removed:** `HeroScene`, `EcgTrace`, `ecgModel`, `heroScene`, `CountUp`,
+`Reveal`, `Leads`, the scroll-progress line, and the `framer-motion`
+dependency. The JS bundle drops from 298 kB to 166 kB, measured against the
+live v0.6.1. The footer no longer says traces are synthetic, because the page
+draws none; the only traces are inside the renders and the app screenshot.
+
+**Built with Impeccable.** The direction contract is in
+`.impeccable/surfaces/src-app-tsx.md`. The build was captured at 1440, 1280×720
+and 390 and checked with `impeccable detect`.
+
+The finish reviewer judged that it "now reads as a restrained medtech company
+homepage" and kept the hero as built. It returned eight fixes for the
+sections below the hero, all applied:
+- a dead product tile;
+- one layout repeated five times;
+- duplicated stage facts;
+- two uncited accent uses;
+- an empty team column;
+- tracking below the -0.04em floor;
+- a wrap on phones;
+- DESIGN.md.
+
+DESIGN.md and `.impeccable/design.json` were re-derived from the build by the
+documenter.
+
 ## v0.6.1 — 2026-10-21 — deployed; the thank-you stops promising an e-mail
 
 **Deployed for the first time:** **https://cyphix-landing.vercel.app**. The
