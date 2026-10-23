@@ -1,5 +1,39 @@
 # Changelog — CYPHIX Landing
 
+## v0.10.1 — 2026-10-23 — the bracelet is an oval you could wear
+
+**Why.** The user, looking at v0.10.0 on their phone: "does that look like
+something you can put on your hand? Why did you close it in a straight line?
+Look at the reference and match it. It looks like half an arch."
+
+They were right. v0.10.0 closed the strap by sweeping a link between its two
+cut ends. The slate strap is shaped to hold a flat watch: near where the watch
+sits it runs almost straight. A link continuing that line closed the loop into
+a "D", with a long straight front.
+
+**The reference.** The team's own closed band, `woven_band_band` in the OBJ.
+It is the strap worn without a watch: an oval about 71 × 49 mm outside,
+rounded across the front like a wrist.
+
+**What changed.**
+- **The strap bends to that oval as it closes.** `bendToBracelet` in `studio.ts`
+  turns the woven band's centreline into a table, its radius every 5° from the
+  loop centre. It measures the slate strap's own centreline by casting rays to
+  its inner and outer faces at every degree, then moves each point of the
+  strap, the link and the RA electrode along the radius by the difference
+  between the two. The band keeps its thickness.
+- **It is a GPU morph tied to the closing.** The link grows from both cut ends
+  while the strap curls into the oval, and both run backwards before the
+  analog watch clicks in.
+- **The bend fades out before the module** (112° to 140°), so the module and
+  its hinges don't move.
+- **The bent strap's normals come from the bent surface.** Turning the
+  original normals left a dark crease where the curvature changes fastest.
+- **The spring-bar levers hide while the strap is closed;** they only matter
+  with a watch in the strap.
+- `scene-strap.webp` and `gemini/refs/ref-3-strap-closed-bracelet.png` are
+  re-rendered.
+
 ## v0.10.0 — 2026-10-23 — four ways to wear it; More than an ECG
 
 **Why.** The user liked v0.9.0 ("perfect") and caught a miss: the product

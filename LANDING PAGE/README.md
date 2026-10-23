@@ -83,12 +83,15 @@ DESIGN.md                 the visual system as built (Impeccable)
 - `contour`, the Cyphix watch, moved from the OBJ's far right onto the same origin
 
 The scene moves the groups by name. The closing band that turns the strap into a
-bracelet is built at load time from the strap's own cut ends (`studio.ts`). If the
+bracelet is built at load time from the strap's own cut ends. As it closes, the whole
+strap bends to the oval of the team's own closed band (`woven_band_band` in the OBJ,
+kept as a centreline table, `CLOSED_BAND` in `studio.ts`). If the
 model changes, re-export the same four groups, and re-render the stills
 (`render-hero`, `render-module`, `scene-*`, `sensors-*`; the pins in `Sensors.tsx`
 are projected part centres). Their sidecars record each one's angle
 and light. The callout dots in `Product.tsx` are points projected from the model
 into `render-module.webp`; re-project them if that render changes.
+<!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->
 <!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
 <!-- v0.8.0 — the 3D model, the closing scene, three.js, how to re-render -->

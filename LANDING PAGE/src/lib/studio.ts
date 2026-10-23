@@ -251,6 +251,125 @@ function planarUV(mesh: THREE.Mesh, square = false) {
   return (umax - umin) / (vmax - vmin);
 }
 
+/* ---------- the bracelet: the strap bent to the team's closed band ---------- */
+
+/** The team's own closed band (`woven_band_band` in the OBJ, the strap worn without a watch):
+    its centreline radius around the loop centre (u = -22 mm, y = 0), every 5° from the front
+    (0°) to where it meets the module (140°), in mm. An oval, about 71 x 49 mm outside. */
+const CLOSED_BAND = [
+  23, 23.07, 23.27, 23.59, 24.07, 24.59, 25.25, 26.06, 26.94, 27.86, 28.88, 29.89, 31, 31.86, 32.64,
+  33.29, 33.65, 33.88, 34.01, 34.09, 34.12, 34, 33.69, 33.18, 32.5, 31.68, 30.84, 29.64, 28.77,
+];
+const LOOP_U = -0.022;
+
+/** Morph targets that bend the strap (its halves, the closing link, the parts riding on the
+    band) from its own shape, made to hold a flat watch, to the closed band's oval. Each point
+    moves along the radius from the loop centre by the difference of the two centrelines at its
+    angle, so the band keeps its thickness; normals turn with the curve. The bend fades out
+    before the module (112° to 140°), so the module and its hinges stay put. */
+function bendToBracelet(root: THREE.Object3D, band: THREE.Mesh[], riders: THREE.Mesh[]) {
+  root.updateMatrixWorld(true);
+  const P = new THREE.Vector3();
+  const polar = (v: THREE.Vector3) => {
+    const u = v.dot(FACE) - LOOP_U;
+    return [Math.atan2(v.y, u), Math.hypot(u, v.y)];
+  };
+  // the strap's own centreline, closed by the straight link: at every degree, rays across the
+  // middle of the band find its inner face (from the centre out) and its outer face (from
+  // outside in); the centreline is halfway between them
+  const ray = new THREE.Raycaster();
+  const O = new THREE.Vector3().copy(FACE).multiplyScalar(LOOP_U);
+  const D = new THREE.Vector3();
+  const raw = new Array(181).fill(NaN);
+  for (let k = 0; k <= 180; k++) {
+    const q = (k * Math.PI) / 180;
+    D.copy(FACE).multiplyScalar(Math.cos(q)).setY(Math.sin(q));
+    ray.set(O, D);
+    const inner = ray.intersectObjects(band, false)[0];
+    ray.set(P.copy(O).addScaledVector(D, 0.2), D.clone().negate());
+    const outer = ray.intersectObjects(band, false)[0];
+    if (inner && outer) raw[k] = (inner.distance + 0.2 - outer.distance) / 2;
+  }
+  for (let k = 0; k <= 180; k++)
+    if (Number.isNaN(raw[k])) {
+      let a = k, b = k;
+      while (a > 0 && Number.isNaN(raw[a])) a--;
+      while (b < 180 && Number.isNaN(raw[b])) b++;
+      raw[k] = Number.isNaN(raw[a]) ? raw[b] : Number.isNaN(raw[b]) ? raw[a] : raw[a] + ((raw[b] - raw[a]) * (k - a)) / (b - a);
+    }
+  const cur = raw.map((v, k) => (raw[Math.max(0, k - 1)] + v + raw[Math.min(180, k + 1)]) / 3);
+  const at = (table: number[], deg: number) => {
+    const k = Math.min(table.length - 1.001, Math.max(0, deg));
+    const i = Math.floor(k);
+    return table[i] + (table[i + 1] - table[i]) * (k - i);
+  };
+  const weight = (deg: number) => {
+    const t = Math.min(1, Math.max(0, (140 - deg) / 28));
+    return t * t * (3 - 2 * t);
+  };
+  // radial offset and tangent turn at an angle (degrees, 0..180)
+  const offset = (deg: number) => {
+    const w = weight(deg);
+    if (!w) return 0;
+    return w * (at(CLOSED_BAND, deg / 5) / 1000 - at(cur, deg));
+  };
+  const heading = (deg: number, bent: boolean) => {
+    const point = (d: number) => {
+      const r = at(cur, d) + (bent ? offset(d) : 0);
+      const q = (d * Math.PI) / 180;
+      return [r * Math.cos(q), r * Math.sin(q)];
+    };
+    const a = point(Math.max(0, deg - 1)), b = point(Math.min(180, deg + 1));
+    return Math.atan2(b[1] - a[1], b[0] - a[0]);
+  };
+  const turn = new Array(181).fill(0).map((_, k) => heading(k, true) - heading(k, false));
+
+  const N = new THREE.Vector3();
+  for (const m of [...band, ...riders]) {
+    const isBand = band.includes(m);
+    const geo = m.geometry;
+    const pos = geo.attributes.position;
+    const nor = geo.attributes.normal;
+    const inv = m.matrixWorld.clone().invert();
+    const toWorld = new THREE.Matrix3().getNormalMatrix(m.matrixWorld);
+    const toLocal = new THREE.Matrix3().getNormalMatrix(inv);
+    const tp = new Float32Array(pos.count * 3);
+    const tn = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      P.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+      const [t, r] = polar(P);
+      const deg = (Math.abs(t) * 180) / Math.PI;
+      const across = P.dot(ACROSS);
+      const r2 = r + offset(deg);
+      P.copy(FACE).multiplyScalar(LOOP_U + r2 * Math.cos(t)).setY(r2 * Math.sin(t)).addScaledVector(ACROSS, across);
+      P.applyMatrix4(inv);
+      tp.set([P.x, P.y, P.z], i * 3);
+      if (nor) {
+        N.fromBufferAttribute(nor, i).applyMatrix3(toWorld).normalize();
+        const phi = Math.sign(t) * at(turn, deg);
+        const nu = N.dot(FACE), ny = N.y, na = N.dot(ACROSS);
+        const c = Math.cos(phi), sn = Math.sin(phi);
+        N.copy(FACE).multiplyScalar(nu * c - ny * sn).setY(nu * sn + ny * c).addScaledVector(ACROSS, na);
+        N.applyMatrix3(toLocal).normalize();
+        tn.set([N.x, N.y, N.z], i * 3);
+      }
+    }
+    geo.morphAttributes.position = [new THREE.Float32BufferAttribute(tp, 3)];
+    if (nor && isBand) {
+      // the band's own bent surface gives its normals (turning the original ones creased it
+      // where the curvature changes fastest, near the old watch ends)
+      const bent = new THREE.BufferGeometry();
+      bent.setAttribute("position", new THREE.Float32BufferAttribute(tp, 3));
+      bent.setIndex(geo.index);
+      bent.computeVertexNormals();
+      geo.morphAttributes.normal = [bent.attributes.normal as THREE.BufferAttribute];
+    } else if (nor) geo.morphAttributes.normal = [new THREE.Float32BufferAttribute(tn, 3)];
+    m.updateMorphTargets();
+    m.morphTargetInfluences![0] = 0;
+  }
+  return (g: number) => [...band, ...riders].forEach((m) => (m.morphTargetInfluences![0] = g));
+}
+
 /* ---------- the closing link ---------- */
 
 /** A band swept between the strap's two cut ends (where a watch's lug housings sit), so the
@@ -533,7 +652,21 @@ export function dressModel(root: THREE.Object3D): Dressed {
   siliconeGrain(linkMat, 1 / band.matrixWorld.getMaxScaleOnAxis());
   const { link, close } = closingLink(root, linkMat);
   root.add(link);
-  return { strap, smartwatch, analog, contour, link, closeLink: close };
+  const mesh = (n: string) => root.getObjectByName(n) as THREE.Mesh;
+  const bend = bendToBracelet(
+    root,
+    [mesh("strap_12_half"), mesh("strap_6_half"), link.children[0] as THREE.Mesh],
+    ["electrode_RA", "electrode_RA_seam"].map(mesh),
+  );
+  // the spring-bar levers only matter with a watch in the strap; a closed bracelet has none
+  const levers = [mesh("quick_release_tab_12"), mesh("quick_release_tab_6")];
+  // closing grows the link from both cut ends and bends the whole strap to the closed band's oval
+  const closeLink = (g: number) => {
+    close(g);
+    bend(g);
+    levers.forEach((m) => (m.visible = g < 0.02));
+  };
+  return { strap, smartwatch, analog, contour, link, closeLink };
 }
 
 /* ---------- contact shadow ---------- */
@@ -628,6 +761,7 @@ export function contactShadow(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
   };
 }
 
+// v0.10.1 — the bracelet is the team's closed band: the strap bends to its oval as it closes (it was a "D", straight across the front)
 // v0.10.0 — the link closes by growing from both cut ends (indexed inward, drawn by range)
 // v0.10.0 — four ways to wear it: the Contour (the Cyphix watch) and its face; each watch keeps its own housings; the strap alone closes with a swept link
 // v0.8.0 — review round 2: front-high fill, bright polished electrodes against satin titanium, silicone grain, a true contact shadow (height-limited)
