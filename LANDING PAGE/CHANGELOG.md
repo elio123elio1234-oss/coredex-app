@@ -1,5 +1,49 @@
 # Changelog — CYPHIX Landing
 
+## v0.14.0 — 2026-10-23 — two sections out; the page made for phones
+
+**Why.** The user: "Take down 'Why Cyphix' and 'Built for a $4.53B market',
+both of them. Then add mobile support, so it looks normal on a small screen
+too."
+
+**What changed.**
+- **"Why Cyphix" and "Built for a $4.53B market" are removed.**
+  `Compare.tsx` and `Market.tsx` are deleted, along with their styles,
+  including the phone layouts of the table and the market chart. The footer's
+  "Market" and "Why Cyphix" links are gone too.
+  - The figures stay as product truth in `PRODUCT.md`.
+  - The announcement still names the $1.9M round.
+  - The facts band still shows $4.53B.
+- **The phone pass.** I audited the page at 360 × 740, 375 × 667 and
+  390 × 844 with motion on (the live strap scene included), and fixed what
+  didn't hold:
+  - **The announcement** wrapped onto two lines at 360 and 375. Under 420 px
+    it now keeps to "Now raising a $1.9M seed round". Its link repeated the
+    bar's button directly below it, so it is hidden there.
+  - **The bar's button** was a desktop button, 224 px wide next to an 82 px
+    logo. On phones it is 40 px tall, 12 px type, with tighter tracking.
+  - **The hero** starts higher: top padding 64 → 44 px, the chip's gap
+    32 → 24 px, the lede's margins 24/40 → 20/32. The tablet and the hand
+    start to show on the first screen.
+  - **The chip** goes from 11.5 to 12 px.
+  - **Tap areas.**
+    - The footer links were 19 px tall; they are now 35 px.
+    - "See how it works" grows from 26 to 42 px.
+    - The bar and footer logos grow to 45 px or more.
+    - The contact e-mail and phone keep their hairline underline, with an
+      invisible area that extends the touch target to 47 px.
+- **Desktop is unchanged** apart from the two removed sections.
+
+**Checked.**
+- At 360, 375 and 390 with motion on:
+  - nothing runs past the screen's edge;
+  - no text is under 12 px apart from the version badge;
+  - every link is at least 32 px tall, the contact links through their
+    invisible area;
+  - the strap scene plays through all four states.
+- At 1440 the page flows from "Who it's for" to "Where we are" to "The team".
+- The design detector reports no findings.
+
 ## v0.13.4 — 2026-10-23 — the hand, a touch higher
 
 **Why.** The user: "raise the hand a tiny bit."

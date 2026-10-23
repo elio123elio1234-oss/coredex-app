@@ -5,9 +5,7 @@ import Need from "./components/Need";
 import Product from "./components/Product";
 import HowItWorks from "./components/HowItWorks";
 import WhoFor from "./components/WhoFor";
-import Compare from "./components/Compare";
 import Stage from "./components/Stage";
-import Market from "./components/Market";
 import Team from "./components/Team";
 import OneStrap from "./components/OneStrap";
 import ContactForm from "./components/ContactForm";
@@ -24,9 +22,7 @@ export default function App() {
         <Product />
         <HowItWorks />
         <WhoFor />
-        <Compare />
         <Stage />
-        <Market />
         <Team />
         <OneStrap />
         <ContactForm />
@@ -36,6 +32,7 @@ export default function App() {
   );
 }
 
+// v0.14.0 — "Why Cyphix" and the market section removed (the user)
 // v0.13.0 — "More than an ECG" removed (the user)
 // v0.10.0 — "More than an ECG" (the module's sensors) follows how it works
 // v0.9.0 — AliveCor-style order: slate hero → facts band → need split → our solution → how it works → who it's for → why Cyphix → stage → market → team → one strap, any watch → request the deck

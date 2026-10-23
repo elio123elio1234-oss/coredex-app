@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.13.4";
+export const APP_VERSION = "0.14.0";
 export const APP_BUILD_LABEL =
-  "Hero: the hand a touch higher (about 25 px at 1440), same size and place; the tablet untouched";
+  "Why Cyphix and the market section removed; phones: one-line announcement, compact bar button, thumb-sized links";
 
+// v0.14.0 — "Why Cyphix" and "Built for a $4.53B market" removed; the phone pass
 // v0.13.4 — the hand a touch higher (a longer forearm slice at the same scale)
 // v0.13.3 — the hand a touch back to the right; the tablet untouched
 // v0.13.2 — only the hand moves (translateX); the tablet back at its v0.13.0 place

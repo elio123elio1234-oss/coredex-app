@@ -38,12 +38,6 @@ export default function Footer() {
           <h2 id="foot-investors">Investors</h2>
           <ul>
             <li>
-              <a href="#market">Market</a>
-            </li>
-            <li>
-              <a href="#why">Why Cyphix</a>
-            </li>
-            <li>
               <a href="#contact">Request the deck</a>
             </li>
           </ul>
@@ -78,6 +72,7 @@ export default function Footer() {
   );
 }
 
+// v0.14.0 — the "Market" and "Why Cyphix" links go with their sections
 // v0.13.0 — the "Sensors" link goes with the section
 // v0.10.0 — the page map lists the sensors
 // v0.9.0 — AliveCor-style footer: wordmark, Company / Investors / Contact columns, pale legal band with the badge
