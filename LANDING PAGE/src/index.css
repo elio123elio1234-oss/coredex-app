@@ -429,11 +429,13 @@ section[id] {
 /* the raised forearm rises from the band's lower edge at its v0.11.0 scale (the whole arm
    was band - 56 px tall; this asset is its upper 76 %), so the hand sits lower without growing;
    the system, the CYPHIX app on a tablet, stands behind it on the left, as on AliveCor */
+/* desktop: the pair is placed, not centred, so the hand's position is explicit. The tablet starts
+   just left of the column (clear of the copy), the hand covers its right side */
 .hero-media.is-arm {
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  padding: 0 var(--gutter);
+  justify-content: flex-start;
+  padding: 0;
 }
 .hero-arm {
   position: relative;
@@ -446,9 +448,15 @@ section[id] {
 .hero-system {
   flex: none;
   align-self: center;
-  width: clamp(260px, 28vw, 460px);
+  width: min(26.5vw, 460px);
   height: auto;
-  margin: 12% -20% 0 0;
+  margin: 12% calc(-1 * min(7.3vw, 126px)) 0 calc(-1 * min(2vw, 30px));
+}
+/* small laptops: the copy runs closer to the column, so the tablet starts at the column's edge */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .hero-system {
+    margin-left: 0;
+  }
 }
 .hero-media .media-note,
 .split-media .media-note {
@@ -1547,15 +1555,15 @@ section[id] {
     max-height: none;
   }
   .hero-media.is-arm {
-    padding-top: 24px;
+    justify-content: center;
+    padding: 24px var(--gutter) 0;
   }
   .hero-arm {
     height: 365px;
   }
   .hero-system {
     width: min(48vw, 380px);
-    margin-top: 0;
-    margin-right: -13%;
+    margin: 0 -17% 0 0;
   }
   .split-media {
     min-height: 360px;
@@ -1645,7 +1653,7 @@ section[id] {
   }
   .hero-system {
     width: 54vw;
-    margin-right: -15%;
+    margin-right: -19%;
   }
   .rule-head .h2 {
     white-space: normal;
@@ -1822,7 +1830,8 @@ section[id] {
   }
 }
 
-/* v0.13.0 — "More than an ECG" removed; the hand further over the user's new, wider tablet
+/* v0.13.1 — the hero pair is placed, not centred: the hand sits about 110 px further left on desktop, further over the tablet everywhere
+   v0.13.0 — "More than an ECG" removed; the hand further over the user's new, wider tablet
    v0.12.1 — the hand overlaps the tablet's right side; the tablet's drop shadow (a grey haze on the slate) is gone
    v0.12.0 — the hero forearm back at its v0.11.0 scale, lower, with the CYPHIX tablet behind it; the user's four watches, the hovered one grows; "More than an ECG" shows data (strip, heart rate, skin temperature), drawn in once
    v0.11.1 — the forearm alone, shorter and lower in the band (150 px clear above the fingertips on desktop)

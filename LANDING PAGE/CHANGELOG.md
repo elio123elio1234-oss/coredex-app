@@ -1,5 +1,37 @@
 # Changelog — CYPHIX Landing
 
+## v0.13.1 — 2026-10-23 — the hand, clearly further left
+
+**Why.** The user: "move the hand further left. It doesn't look like you
+moved it at all."
+
+They were right.
+- v0.12.1 and v0.13.0 moved the hand by making the tablet overlap it more.
+  The tablet and the hand were centred as a pair, so the hand moved only half
+  of each change.
+- v0.13.0 also made the tablet larger, which cancelled most of what was left.
+  The hand moved 28 px at 1440, which is not visible.
+
+**What changed.**
+- **On desktop the pair is placed, not centred.**
+  - The tablet starts 2vw left of the media column, still at least 40 px clear
+    of the copy. On laptops narrower than 1200 px it starts at the column's
+    edge.
+  - It is `min(26.5vw, 460px)` wide.
+  - The hand overlaps its right side by `min(7.3vw, 126px)`.
+- **The hand is 113 px further left at 1440 × 900** (from x = 1081 to 968), and
+  120 px further left at 1280 × 720. At 1920 the pair ends at the content's
+  right edge, under the header's button.
+- **On tablets and phones the pair stays centred.** The overlap grew from
+  −13 % to −17 % on tablets and from −15 % to −19 % on phones.
+
+**Checked.**
+- In headless Chrome at 1920, 1440, 1280, 1100, 1024, 820 and 390 px wide:
+  - no sideways scroll;
+  - the arm meets the band's bottom edge;
+  - the tablet is at least 40 px from the copy.
+- The design detector reports no findings.
+
 ## v0.13.0 — 2026-10-23 — no sensors section; the user's physician beside "1 in 3"; the new tablet
 
 **Why.** The user asked for four changes:
