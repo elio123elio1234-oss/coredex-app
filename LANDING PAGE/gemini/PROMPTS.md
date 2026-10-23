@@ -19,6 +19,8 @@
 
 ## 1 · Hero — יד עם השעון והרצועה
 
+> ✅ **סופק (2026-10-23):** המשתמש הביא תמונה משלו מ-ChatGPT — יד מורמת, המודול בצד הפנימי של פרק כף היד. היא בדף כ-`src/assets/photos/hero-wrist.webp`, לצד הרינדור. הפרומפט נשאר כאן לתיעוד.
+
 - **מקום בדף:** החלק העליון, מימין, על הרקע הכהה.
 - **שם קובץ:** `hero-wrist.jpg`
 - **יחס:** 4:5 (לאורך)
@@ -70,5 +72,6 @@ Photorealistic documentary photograph for a medical-technology website, 16:10. I
 
 ---
 
+<!-- v0.11.0 — prompt 1 supplied by the user (ChatGPT image), now in the hero -->
 <!-- v0.10.0 — prompt 3 shows the four ways to wear it (smartwatch, closed bracelet, analog, the Cyphix watch); refs 3–5 re-rendered -->
 <!-- v0.9.0 — four Gemini image prompts for the AliveCor-style page, with product references from the 3D model -->

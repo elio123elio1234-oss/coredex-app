@@ -1,5 +1,38 @@
 # Changelog — CYPHIX Landing
 
+## v0.11.0 — 2026-10-23 — the hero: the user's wrist, hand raised, beside the render
+
+**Why.** The user sent their own image for the hero, made in ChatGPT and
+shared by link: a forearm wearing the Cyphix strap, with the module on the
+inside of the wrist showing its three outer electrodes. They asked:
+- "make it look like the hand is facing up, not at an angle";
+- "next to it, add the current rendering of the product, so they understand
+  this is the back part".
+
+**What changed.**
+- **The image.** It was downloaded from the share link's `og:image`
+  (1774 × 887 PNG with a transparent background) and prepared:
+  - the matte's faint haze removed (it showed as specks on dark backgrounds);
+  - the subject made opaque (it came in at 99 %);
+  - turned 90° so the hand points straight up;
+  - cropped with the forearm's cut on the bottom edge;
+  - saved as `src/assets/photos/hero-wrist.webp` (670 × 1768, 132 kB), with a
+    provenance sidecar.
+
+  It fills the `hero` slot in `src/config/photos.ts`.
+- **The hero's right side is a pair.**
+  - The forearm rises from the slate band's lower edge, sized to the band's
+    height at every width. On a phone it is 420 px tall.
+  - Beside it sits `render-hero` (the strap on a smartwatch), with a two-line
+    key: "On top: your watch. / Underneath, against the wrist: the Cyphix
+    module."
+  - The note reads "Concept imagery and rendering".
+- **The Gemini hero prompt** (`gemini/PROMPTS.md` §1) is marked as supplied.
+
+**Checked.** In headless Chrome at 1440 × 900, 1280 × 720, 820 × 1180 and
+390 × 844: no sideways scroll, and the forearm's bottom meets the band's bottom
+edge exactly.
+
 ## v0.10.1 — 2026-10-23 — the bracelet is an oval you could wear
 
 **Why.** The user, looking at v0.10.0 on their phone: "does that look like

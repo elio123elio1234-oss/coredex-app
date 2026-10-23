@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.10.1";
+export const APP_VERSION = "0.11.0";
 export const APP_BUILD_LABEL =
-  "The bracelet is an oval, bent to the team's own closed band (it was a D, straight across the front)";
+  "The hero is the user's own wrist image, hand raised, beside the render: the module underneath, the watch on top";
 
+// v0.11.0 — the user's wrist image in the hero (ChatGPT, turned hand-up), paired with the render
 // v0.10.1 — the strap alone bends to the oval of the team's closed band as it closes
 // v0.10.0 — the user's four configurations: the Contour watch from their 3D file, the strap closes into a bracelet; the sensors section (ECG, PPG, temperature)
 // v0.9.0 — the user's reference alivecor.com: announcement, slate hero, facts band, splits, navy card, icon rows; gemini/PROMPTS.md
