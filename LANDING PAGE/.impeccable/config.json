@@ -7,7 +7,7 @@
         "rule": "overused-font",
         "value": "geist mono",
         "createdAt": "2026-10-19T21:23:51.331Z",
-        "reason": "brief-pinned: Geist Mono is the face embedded in the user's one-pager PDF (fonts: Sora + GeistMono-Regular); the request asks for the page to match the one-pager"
+        "reason": "brief-pinned: the user's one-pager PDF embeds exactly Sora + GeistMono-Regular, and the brief asks the page to match the one-pager; Geist Mono is limited to the TAM/SAM/Seed-ask labels and the build badge"
       }
     ]
   }

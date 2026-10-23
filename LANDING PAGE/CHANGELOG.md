@@ -1,5 +1,88 @@
 # Changelog — CYPHIX Landing
 
+## v0.8.0 — 2026-10-23 — the 3D model leads: "One strap. Any watch."
+
+**Why.** On v0.7 the user wrote (in Hebrew): "I still don't like it at all! It still
+looks unprofessional." They asked whether we had their 3D modelling materials, and
+described the scene they wanted near the end: the watch rotates as you scroll,
+becomes only the strap, then an analog watch, so "one strap on any watch" is
+understood. v0.7 fixed the motion problem but kept the one-pager's flat concept
+renders, and those renders were the weakest thing on the page.
+
+**The model.** `Downloads/cyphix-ecg-straps (1).obj` (three-d-stage export,
+2026-09-27) holds four assemblies side by side:
+- the smartwatch with the Cyphix strap and module;
+- the strap alone;
+- an analog watch on the same strap;
+- a "Contour" watch.
+
+The strap, smartwatch and analog parts were split by name and bounding box and
+moved onto one origin; the analog sits 0.224 m along x in the export, so it is
+shifted back by that much. They got PBR materials named after the export's own
+(aluminium, brushed titanium, polished steel electrodes, slate silicone,
+sapphire), plus a static CYPHIX 6-lead screen on the display. The result is
+`public/models/cyphix.glb`: 930 KB with meshopt, 70k triangles. Every product
+image on the page is now rendered from it with three.js in one studio light.
+
+**What changed.**
+- **Hero:** copy left, the strap on the smartwatch right (`render-hero.webp`), a
+  three-quarter view showing the CYPHIX screen and the module's electrodes, on a
+  white studio glow with a floor shadow.
+- **Product:** the strap from behind (`render-module.webp`), with leader-line
+  callouts on the module's electrodes, the watch and the band. The exploded
+  concept render is retired.
+- **The user's scene** (`OneStrap.tsx`, `lib/strapScene.ts`), between Team and the
+  form. A 400vh section holds a sticky dark stage, and the GLB renders live in
+  WebGL, driven only by scroll:
+  - the strap turns to show the electrodes;
+  - the smartwatch lifts out and fades ("One strap.");
+  - the analog watch drops into the same strap ("Any watch.").
+
+  The copy fades per phase, a three-step indicator sits underneath, and the
+  header turns dark over the stage. three.js loads in its own lazy chunk
+  (151 kB gzip) only when the section is near, so the first load is unchanged.
+  Reduced motion, or no WebGL, shows the three states as stills.
+- **Share card:** `og.jpg` rebuilt on the new render.
+
+**The product studio (finish-review round).** The reviewer judged the first
+renders as "a CAD viewport, not a studio product shot". They also flagged the
+watch's ghosted fade as "a CG ghost". `src/lib/studio.ts` now dresses the model
+the same way for the stills and the live scene:
+- **Environment:** a photographer's set baked to PMREM, with an overhead
+  softbox, key and rim strips, a kicker and a warm bounce.
+- **Materials:** silicone with sheen; clearcoated aluminium; mirror-polished
+  electrodes; clearcoat glass over the screen.
+- **Screen and dial:** the real CYPHIX wordmark on the watch screen (the first
+  pass drew a generic "CYPHIX" in Arial), and an analog dial with indices and a
+  seconds sub-dial.
+- **Lug adapters:** they move from the watch to the strap, so the strap alone
+  ends in finished adapters, not cut slabs, and the analog watch clips into
+  those same adapters.
+
+A second review round made the electrodes bright polished stainless against a
+satin titanium module, with a front-high fill so they catch light. It added an
+object-space silicone grain to the band. The light plates' shadow became a true
+contact shadow: height-limited, lighter, and rendered as its own layer under the
+product so it never darkens the band.
+
+The stills add a GTAO pass and a soft contact shadow. In the scene nothing
+fades any more. The smartwatch unclips and rises out of frame, opaque; the
+analog comes down and clicks in. The copy windows run back to back, so the
+stage is never without a line.
+
+**State at commit.**
+- **Deployment:** not deployed. Production stays on v0.7.0.
+- **Finish review:** three rounds. Wordmark, analog dial, band ends, physical
+  exit, copy windows, tall stages, the seed reference, DESIGN.md and the shadow
+  regression are all resolved.
+- **Still partial:** on the light renders the electrode faces read as even grey.
+  Strip lights for their reflection angle were being placed when the user
+  pointed at alivecor.com as the style to follow, and that became v0.9.
+
+**Removed:** `watch-front.webp`, `watch-module.webp`, `exploded.webp` and their
+sidecars. Every new raster carries a provenance sidecar that names the model,
+the angle, the light and the studio.
+
 ## v0.7.0 — 2026-10-22 — the professional rebuild: a still company page
 
 **Why.** On seeing v0.6.1 live, the user wrote: "its cute but over

@@ -52,8 +52,11 @@ Wearable Ease.**
 - Stage: working prototype; technological & algorithmic proof of feasibility; patent
   pending on the core technology; Israel Innovation Authority · Tnufa programme.
   Next step: a wearable strap ready for its first trial.
-- Product renderings are concept renderings (electrodes shown in coral) and must be
-  labelled as such. The device is in development and not for sale.
+- Product renderings are concept renderings and must be labelled as such. The device is
+  in development and not for sale. Since v0.8.0 every product image is rendered from the
+  team's own 3D model (three-d-stage export `cyphix-ecg-straps (1).obj`, 2026-09-27:
+  smartwatch + strap, strap alone, analog watch + strap, a "Contour" watch), shipped as
+  `public/models/cyphix.glb`; its electrodes are steel, not coral.
 - Language: English first. A Hebrew/RTL version was planned in LAUNCH_PLAN (L4) and is
   still open.
 - Stack: existing Vite + React + TypeScript SPA in this folder, live on Vercel at
@@ -70,8 +73,10 @@ Wearable Ease.**
   ECG display as "over simulation … doesn't seem like a professional company did it".
   The page plays a medtech company's homepage straight, at the craft level of Withings
   ScanWatch, Neko Health and Apple Watch pages: real renders and the real app screen
-  lead, the page holds still after one quiet arrival, and nothing simulates a live
-  signal.
+  lead, and nothing simulates a live signal. On 2026-10-23 the user still found v0.7
+  unprofessional. They asked for one product-driven motion of their own: near the end,
+  the watch rotates as you scroll, becomes only the strap, then an analog watch ("one
+  strap on any watch").
 
 ## Evidence on Hand
 
@@ -83,8 +88,8 @@ Public (all confirmed for the website on 2026-10-19):
 - Team: **Elio El Hassrouny**, Founder & CEO, ex-Samsung R&D; **Dr. Tamir Wolf, MD**,
   External Clinical Advisor. Portraits from the one-pager.
 - Contact: elio123elio1234@gmail.com · +972 54-398-9698 · Kiryat Ono, Israel.
-- Assets: two concept renders (module side, watch-face side), the phone app's
-  "Limb Leads" screen, both portraits (all extracted from the one-pager PDF).
+- Assets: the team's 3D model of the strap (see above), the phone app's "Limb Leads"
+  screen, both portraits. The one-pager's two flat concept renders are retired.
 
 Absent — never fabricate: customers, pilots, clinical results, accuracy figures,
 regulatory clearances, investors, press, testimonials, revenue, pricing.
@@ -95,5 +100,6 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 2. Honest stage: every claim is one the one-pager already makes.
 3. Data, never verdicts.
 4. One company across the PDF, the deck and the page.
+<!-- v0.8.0 — the 3D model is the product imagery; the user's "one strap, any watch" scene -->
 <!-- v0.7.0 — the professional-canon commitment; lead delivery and hosting brought up to date -->
 <!-- v0.6.0 — product truth for the investor page (Impeccable init, 2026-10-19) -->

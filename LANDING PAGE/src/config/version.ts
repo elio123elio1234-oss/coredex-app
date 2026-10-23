@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.7.0";
+export const APP_VERSION = "0.8.0";
 export const APP_BUILD_LABEL =
-  "The professional rebuild: a still company page in the one-pager's world; no simulated ECG, one load arrival";
+  "The 3D model leads: a hero render of the strap, a module close-up, and the closing 'One strap. Any watch.' scroll scene";
 
+// v0.8.0 — the team's 3D model replaces the flat concept renders; the live "One strap. Any watch." scene near the end
 // v0.7.0 — the professional rebuild (user: "over simulation"): product pair, comparison, annotated product, stage, market, team, og card
 // v0.6.1 — first deployment (cyphix-landing.vercel.app); honest sent-state copy
 // v0.6.0 — investor redesign: "out of the screen" hero, need, six leads, stage, market, team, request the deck

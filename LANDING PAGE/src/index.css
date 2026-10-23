@@ -328,25 +328,44 @@ section[id] {
 .bar-cta {
   margin-left: 6px;
 }
+.bar.is-dark.is-moved {
+  background: rgba(10, 13, 19, 0.74);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.bar.is-dark .bar-nav a {
+  color: #b7c0cf;
+}
+.bar.is-dark .bar-nav a:hover {
+  color: #fff;
+}
+.bar.is-dark .btn-ink {
+  background: #fff;
+  color: var(--ink);
+}
+.bar.is-dark .btn-ink:hover {
+  background: #e4e8ef;
+}
 
 /* ---------- hero ---------- */
 
 .hero {
-  overflow-x: clip; /* the renders' entrance slide never widens a phone's page */
-  padding-top: calc(var(--bar) + clamp(40px, 7vh, 88px));
+  overflow-x: clip;
+  padding: calc(var(--bar) + clamp(16px, 3vh, 40px)) 0 clamp(40px, 6vh, 80px);
   background:
-    radial-gradient(34% 30% at 50% 74%, rgba(242, 87, 76, 0.1), transparent 72%),
-    radial-gradient(40% 46% at 96% 0%, rgba(122, 160, 222, 0.16), transparent 72%);
+    radial-gradient(38% 52% at 72% 52%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(40% 46% at 100% 0%, rgba(122, 160, 222, 0.16), transparent 72%),
+    var(--ground);
 }
-.hero-copy {
-  display: flex;
-  flex-direction: column;
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
-  text-align: center;
+  gap: 24px clamp(32px, 5vw, 80px);
+  min-height: calc(100svh - var(--bar) - clamp(56px, 9vh, 120px));
 }
 .hero-title {
   margin: 0;
-  font-size: clamp(44px, min(6vw, 9.4vh), 92px);
+  font-size: clamp(44px, min(5vw, 9.4vh), 76px);
   font-weight: 550;
   line-height: 1.02;
   letter-spacing: -0.04em;
@@ -355,13 +374,14 @@ section[id] {
   display: block;
   overflow: hidden;
   padding-bottom: 0.06em;
+  white-space: nowrap;
 }
 .hero-title .line > span {
   display: inline-block;
 }
 .hero-lede {
   margin: clamp(20px, 3vh, 28px) 0 0;
-  max-width: 41em;
+  max-width: 31em;
   font-size: clamp(16.5px, 1.3vw, 19px);
   line-height: 1.6;
   color: var(--ink-2);
@@ -369,65 +389,33 @@ section[id] {
 .hero-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
   gap: 12px 28px;
   margin-top: clamp(28px, 4vh, 40px);
 }
-
-/* The product pair, placed in a 1200 × 520 frame so the renders and the
-   one-pager's callouts scale as one figure. */
-.hero-figure-wrap {
-  margin-top: clamp(36px, 6vh, 72px);
-}
 .hero-figure {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+}
+.hero-product {
   position: relative;
-  /* sized by the viewport's height too, so the pair shows most of itself above the fold */
-  width: min(100%, clamp(760px, calc((100svh - 470px) * 2.4), 1200px));
-  margin: 0 auto;
-  aspect-ratio: 1200 / 520;
-  container-type: inline-size;
 }
-.hf-render {
-  position: absolute;
+.hero-product img {
+  position: relative;
   z-index: 1;
-  height: auto;
-  max-width: none;
+  width: auto;
+  height: min(calc(100svh - var(--bar) - 150px), 720px);
+  min-height: 380px;
+  max-width: 100%;
+  object-fit: contain;
 }
-.hf-module {
-  left: 12.5%;
-  top: 1.92%;
-  width: 34.26%;
+.hero-figure .fig-caption {
+  margin-top: 6px;
 }
-.hf-watch {
-  left: 57.5%;
-  top: 2.88%;
-  width: 26.24%;
-}
-.hf-floor {
-  position: absolute;
-  top: 93%;
-  height: 7%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(11, 26, 48, 0.2), transparent);
-}
-.hf-floor.is-module {
-  left: 15%;
-  width: 30%;
-}
-.hf-floor.is-watch {
-  left: 58%;
-  width: 24%;
-}
-.hf-lines {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
+
+/* ---------- leader-line callouts (the module close-up) ---------- */
+
 .co-line {
   fill: none;
   stroke: var(--ink);
@@ -440,34 +428,6 @@ section[id] {
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 2px 3px rgba(11, 26, 48, 0.3));
-}
-.co-label {
-  position: absolute;
-  z-index: 2;
-  transform: translateY(-50%);
-  display: grid;
-  gap: 1px;
-  font-size: clamp(12px, 1.2cqw, 15px);
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-.co-label.is-left {
-  text-align: right;
-}
-.co-label small {
-  font-size: 0.86em;
-  font-weight: 400;
-  color: var(--ink-3);
-  letter-spacing: 0;
-}
-.hero-tags {
-  display: none;
-}
-.hero-caption {
-  margin-top: 14px;
-  text-align: center;
 }
 
 /* ---------- sections ---------- */
@@ -609,51 +569,62 @@ section[id] {
 .product-head .h2 {
   max-width: 15em;
 }
-.xf-wrap {
+.mf-wrap {
   margin: 0;
 }
-.xf {
+.mf {
   position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+  aspect-ratio: 1234 / 764;
 }
-.xf-img img {
-  width: 100%;
+.mf-img {
+  position: absolute;
+  left: 22.69%;
+  top: 0;
+  width: 54.62%;
+  height: auto;
+  max-width: none;
 }
-.xf-lines {
+.mf-lines {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   overflow: visible;
   pointer-events: none;
 }
-.xf-label {
+.mf-label {
   position: absolute;
-  max-width: 240px;
-}
-.xf-label.is-left {
+  z-index: 1;
+  max-width: 220px;
   transform: translateY(-50%);
+}
+.mf-label.is-left {
   text-align: right;
 }
-.xf-label h3,
-.xf-legend h3 {
+.mf-label h3,
+.mf-legend h3 {
   margin: 0 0 4px;
   font-size: 15.5px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.xf-label p,
-.xf-legend p {
+.mf-label p,
+.mf-legend p {
   margin: 0;
   font-size: 14.5px;
   line-height: 1.5;
   color: var(--ink-2);
 }
-.xf-legend {
+.mf-legend {
   display: none;
 }
-.xf-wrap > .fig-caption {
+.mf-wrap > .fig-caption {
   display: block;
-  margin-top: 20px;
+  margin-top: 16px;
+  text-align: center;
 }
 .app-row {
   display: grid;
@@ -910,6 +881,175 @@ section[id] {
   font-size: 15px;
   line-height: 1.5;
   color: var(--ink-2);
+}
+
+/* ---------- "One strap. Any watch." ---------- */
+
+.strap-scene {
+  position: relative;
+  margin-top: var(--section);
+  color: #eef1f6;
+  background: #0a0d13;
+}
+.strap-scene.is-live,
+.strap-scene.is-idle {
+  height: 400vh;
+}
+.ss-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  background:
+    radial-gradient(46% 60% at 66% 52%, rgba(122, 160, 222, 0.16), transparent 70%),
+    radial-gradient(70% 50% at 50% 110%, rgba(242, 87, 76, 0.08), transparent 70%),
+    linear-gradient(180deg, #0a0d13 0%, #111725 100%);
+}
+.ss-canvas {
+  position: absolute;
+  inset: 0;
+}
+.ss-canvas canvas {
+  display: block;
+}
+.ss-copy {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  align-items: center;
+  pointer-events: none;
+}
+.ss-step {
+  grid-area: 1 / 1;
+  max-width: 26rem;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.ss-title {
+  margin: 0;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 550;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: #fff;
+}
+.ss-text {
+  margin: 18px 0 0;
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: #b7c0cf;
+}
+.ss-steps {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(24px, 5vh, 48px);
+  z-index: 1;
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #6f7a8c;
+  white-space: nowrap;
+}
+.ss-steps li {
+  position: relative;
+  padding-top: 14px;
+  transition: color 0.4s ease;
+}
+.ss-steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background-color 0.4s ease;
+}
+.ss-steps li.is-on {
+  color: #fff;
+}
+.ss-steps li.is-on::before {
+  background: var(--coral);
+}
+.ss-note {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(24px, 5vh, 48px);
+  z-index: 1;
+  margin: 0;
+  font-size: 12.5px;
+  color: #6f7a8c;
+}
+.ss-loading {
+  position: absolute;
+  left: 66%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* reduced motion, or no WebGL: the three states as stills */
+.strap-scene.is-still {
+  padding: clamp(80px, 10vw, 140px) 0;
+  background: linear-gradient(180deg, #0a0d13 0%, #111725 100%);
+}
+.ss-still-title {
+  margin: 0;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 550;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: #fff;
+}
+.ss-still-title span {
+  color: #b7c0cf;
+}
+.ss-still-text {
+  margin: 18px 0 0;
+  max-width: 34em;
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: #b7c0cf;
+}
+.ss-stills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: clamp(40px, 5vw, 64px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ss-stills li {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ss-stills img {
+  width: 100%;
+}
+.strap-scene.is-still .ss-note {
+  position: static;
+  margin-top: 24px;
+}
+.strap-scene + .contact {
+  margin-top: 0;
 }
 
 /* ---------- contact ---------- */
@@ -1169,28 +1309,21 @@ section[id] {
   .hero-actions {
     animation: fade-up 0.9s var(--ease) 0.32s both;
   }
-  .hf-module {
-    animation: settle-left 1.5s var(--ease) 0.3s both;
+  .hero-product {
+    animation: settle 1.5s var(--ease) 0.25s both;
   }
-  .hf-watch {
-    animation: settle-right 1.5s var(--ease) 0.38s both;
+  .hero-figure .fig-caption {
+    animation: fade 1.2s ease 0.8s both;
   }
-  .hf-floor,
-  .hero-caption {
-    animation: fade 1.2s ease 0.6s both;
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
   }
-  .co-line {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    animation: draw 0.8s var(--ease) 1.15s forwards;
-  }
-  .co-dot {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: pop 0.5s var(--ease) 1.55s both;
-  }
-  .co-label {
-    animation: fade 0.6s ease 1.3s both;
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 @keyframes rise {
@@ -1211,47 +1344,12 @@ section[id] {
     transform: none;
   }
 }
-@keyframes settle-left {
-  from {
-    opacity: 0;
-    transform: translateX(-22px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes settle-right {
-  from {
-    opacity: 0;
-    transform: translateX(22px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes fade {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
-  }
-}
-@keyframes draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: scale(0.2);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -1282,12 +1380,20 @@ section[id] {
   .contact-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* the exploded render's callouts become a legend under it */
-  .xf-lines,
-  .xf-label {
+  /* the module close-up's callouts become a legend under it */
+  .mf {
+    aspect-ratio: auto;
+    max-width: 420px;
+  }
+  .mf-img {
+    position: static;
+    width: 100%;
+  }
+  .mf-lines,
+  .mf-label {
     display: none;
   }
-  .xf-legend {
+  .mf-legend {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px 24px;
@@ -1295,9 +1401,26 @@ section[id] {
     padding: 0;
     list-style: none;
   }
-  .xf-legend li {
+  .mf-legend li {
     padding-top: 16px;
     border-top: 1px solid var(--hair);
+  }
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    padding-top: 24px;
+  }
+  .hero-product img {
+    height: min(60vh, 560px);
+    min-height: 0;
+  }
+  .ss-step {
+    align-self: start;
+    margin-top: calc(var(--bar) + 24px);
+    max-width: 30rem;
+  }
+  .ss-note {
+    display: none;
   }
   .foot-top {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1330,47 +1453,20 @@ section[id] {
   }
   .hero-actions {
     flex-direction: column;
+    align-items: flex-start;
     gap: 4px;
   }
 
-  /* the pair becomes two renders side by side, tagged underneath */
-  .hero-figure {
-    display: grid;
-    grid-template-columns: 1.16fr 0.84fr;
-    align-items: end;
-    gap: 10px;
+  .hero-product img {
+    height: auto;
     width: 100%;
-    aspect-ratio: auto;
+    max-height: 460px;
   }
-  .hf-render {
-    position: static;
-    width: 100%;
+  .ss-stills {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .hf-floor,
-  .hf-lines,
-  .co-label {
-    display: none;
-  }
-  .hero-tags {
-    display: grid;
-    grid-template-columns: 1.16fr 0.84fr;
-    gap: 10px;
-    margin: 18px 0 0;
-    padding: 0;
-    list-style: none;
-    font-size: 13.5px;
-    font-weight: 600;
-    line-height: 1.35;
-    text-align: center;
-  }
-  .hero-tags small {
-    display: block;
-    font-size: 12.5px;
-    font-weight: 400;
-    color: var(--ink-3);
-  }
-  .hero-caption {
-    margin-top: 12px;
+  .ss-steps {
+    gap: 18px;
   }
 
   /* the comparison becomes one block per capability: the question, then three answers */
@@ -1426,22 +1522,8 @@ section[id] {
     height: 22px;
   }
 
-  .xf {
-    aspect-ratio: auto;
-  }
-  .xf-img {
-    overflow: hidden;
-    aspect-ratio: 1000 / 832;
-  }
-  .xf-img img {
-    width: 150.6%;
-    max-width: none;
-  }
-  .xf-legend {
+  .mf-legend {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .xf-legend .is-wide {
-    display: none;
   }
   .is-long {
     display: none;
@@ -1539,6 +1621,7 @@ section[id] {
   }
 }
 
-/* v0.7.0 — finish-review fixes: exploded render annotated on the ground, need band merged, no facts strip, -0.04em floor
+/* v0.8.0 — the 3D model leads: split hero with its render, module close-up with callouts, the dark "One strap. Any watch." stage
+   v0.7.0 — finish-review fixes: exploded render annotated on the ground, need band merged, no facts strip, -0.04em floor
    v0.7.0 — the professional rebuild: a static company page in the one-pager's world; one load arrival, no simulated signal
    v0.6.0 — the "out of the screen" system (retired) */

@@ -50,7 +50,7 @@ export default function Footer() {
         </div>
         <div className="foot-bottom">
           <p className="foot-note">
-            Product images are concept renderings; electrodes are shown in coral. Cyphix is in
+            Product images are concept renderings from the Cyphix 3D model. Cyphix is in
             development and is not available for sale.
           </p>
           <div className="foot-meta">
@@ -65,6 +65,7 @@ export default function Footer() {
   );
 }
 
+// v0.8.0 — small print names the 3D model (the coral-electrode line was the retired renders' truth)
 // v0.7.0 — a company footer: brand and tagline, page map, contact, small print, build badge
 // v0.6.0 — wordmark, concept / in-development / illustrative-signal small print, version badge
 // v0.1.0 — brand + version badge

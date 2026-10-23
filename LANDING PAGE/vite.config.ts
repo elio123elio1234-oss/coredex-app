@@ -16,5 +16,9 @@ export default defineConfig({
     sourcemap: false,
     outDir: single ? "dist-single" : "dist",
     assetsInlineLimit: single ? 100_000_000 : 4096,
+    // three.js lives in its own lazy chunk (lib/strapScene), loaded only near the closing scene
+    chunkSizeWarningLimit: 700,
   },
 });
+
+// v0.8.0 — the lazy three.js chunk is expected; warning limit raised to 700 kB

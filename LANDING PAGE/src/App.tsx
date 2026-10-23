@@ -5,6 +5,7 @@ import Product from "./components/Product";
 import Stage from "./components/Stage";
 import Market from "./components/Market";
 import Team from "./components/Team";
+import OneStrap from "./components/OneStrap";
 import ContactForm from "./components/ContactForm";
 import Footer from "./components/Footer";
 
@@ -19,6 +20,7 @@ export default function App() {
         <Stage />
         <Market />
         <Team />
+        <OneStrap />
         <ContactForm />
       </main>
       <Footer />
@@ -26,6 +28,7 @@ export default function App() {
   );
 }
 
+// v0.8.0 — the 3D model leads: hero render → need → module close-up → stage → market → team → "One strap. Any watch." scene → request the deck
 // v0.7.0 — the professional rebuild: hero (headline + product pair) → need and comparison → product → stage → market → team → request the deck
 // v0.6.0 — the investor page: out-of-the-screen hero → need → six leads → stage → market → team → request the deck
 // v0.4.0 — the "Request access" form (#contact) sits between the sections and the footer

@@ -1,57 +1,38 @@
-import exploded from "../assets/img/exploded.webp";
+import moduleRender from "../assets/img/render-module.webp";
 import appLeads from "../assets/img/app-limb-leads.webp";
 
-/* The product: the exploded concept render annotated with the hero's
-   leader-line callouts (what each part does), then the real app's
-   limb-lead screen beside how the recording reaches the clinician.
+/* The product: the strap from behind, rendered from the team's 3D model,
+   with leader-line callouts on the module's electrodes, the watch and the
+   band; then the real app's limb-lead screen beside how the recording
+   reaches the clinician.
 
-   The callouts live in the render's own empty space (1506 × 832 image
-   px), each with a short hero-length leader: the module's from its round
-   coral electrode down into the clear area under the plate, the strap's
-   from the upper strap half down into the band between the two halves,
-   the watch's from its lower bezel left into the space under the strap.
+   The render (674 × 764 css px) sits in the middle of a frame with 280
+   units of room on each side for labels. Each dot is a point projected from
+   the model into the render (electrode LL2, the watch's back sensor, the
+   lower band's surface), so the callouts stay on the product at every width.
    Below 1024 px the labels become a legend under the image. */
 
 type Part = {
   id: string;
   dot: [number, number];
-  /** where the leader ends: the label hangs below it ("below") or sits to its left ("left") */
-  end: [number, number];
-  place: "below" | "left";
+  side: "left" | "right";
   title: string;
   text: string;
-  /** dropped on phones, where the image is cropped to the module and strap */
-  wide?: boolean;
 };
 
-const IMG = { w: 1506, h: 832 };
+const IMG = { w: 674, h: 764 };
+const FRAME = { w: IMG.w + 560, h: IMG.h, x: 280 };
 
 const PARTS: Part[] = [
   {
     id: "module",
-    dot: [78, 335],
-    end: [78, 492],
-    place: "below",
+    dot: [491, 480],
+    side: "right",
     title: "Cyphix module",
-    text: "Coral electrodes capture six limb leads when symptoms occur.",
+    text: "Its electrodes sit on the outside of the band.",
   },
-  {
-    id: "strap",
-    dot: [620, 215],
-    end: [620, 288],
-    place: "below",
-    title: "Strap",
-    text: "The band of the watch you already wear.",
-  },
-  {
-    id: "watch",
-    dot: [1225, 780],
-    end: [1100, 780],
-    place: "left",
-    title: "Your watch",
-    text: "Connects to any watch.",
-    wide: true,
-  },
+  { id: "watch", dot: [280, 333], side: "left", title: "Your watch", text: "Connects to any watch." },
+  { id: "strap", dot: [271, 591], side: "left", title: "Strap", text: "The band of the watch you already wear." },
 ];
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`;
@@ -71,34 +52,35 @@ export default function Product() {
           </p>
         </header>
 
-        <figure className="xf-wrap">
-          <div className="xf">
-            <div className="xf-img">
-              <img
-                src={exploded}
-                width={1506}
-                height={832}
-                alt="Exploded concept rendering: the Cyphix module with its coral electrodes and housing, the strap, and the watch."
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-            <svg className="xf-lines" viewBox={`0 0 ${IMG.w} ${IMG.h}`} aria-hidden="true">
+        <figure className="mf-wrap">
+          <div className="mf">
+            <img
+              className="mf-img"
+              src={moduleRender}
+              width={1348}
+              height={1528}
+              alt="The Cyphix strap from behind: the module's three large electrodes on the band, beside the back of the watch."
+              loading="lazy"
+              decoding="async"
+            />
+            <svg className="mf-lines" viewBox={`0 0 ${FRAME.w} ${FRAME.h}`} aria-hidden="true">
+              {PARTS.map((p) => {
+                const x = p.dot[0] + FRAME.x;
+                const end = p.side === "right" ? FRAME.x + IMG.w + 28 : FRAME.x - 28;
+                return <path key={p.id} className="co-line" d={`M${x} ${p.dot[1]} H${end}`} />;
+              })}
               {PARTS.map((p) => (
-                <path key={p.id} className="co-line" d={`M${p.dot[0]} ${p.dot[1]} L${p.end[0]} ${p.end[1]}`} />
-              ))}
-              {PARTS.map((p) => (
-                <circle key={p.id} className="co-dot" cx={p.dot[0]} cy={p.dot[1]} r={7.5} />
+                <circle key={p.id} className="co-dot" cx={p.dot[0] + FRAME.x} cy={p.dot[1]} r={6} />
               ))}
             </svg>
             {PARTS.map((p) => (
               <div
                 key={p.id}
-                className={`xf-label is-${p.place}`}
+                className={`mf-label is-${p.side}`}
                 style={
-                  p.place === "below"
-                    ? { left: pct(p.end[0], IMG.w), top: pct(p.end[1] + 10, IMG.h) }
-                    : { right: pct(IMG.w - p.end[0] + 10, IMG.w), top: pct(p.end[1], IMG.h) }
+                  p.side === "right"
+                    ? { left: pct(FRAME.x + IMG.w + 40, FRAME.w), top: pct(p.dot[1], FRAME.h) }
+                    : { right: pct(FRAME.w - FRAME.x + 40, FRAME.w), top: pct(p.dot[1], FRAME.h) }
                 }
               >
                 <h3>{p.title}</h3>
@@ -106,15 +88,15 @@ export default function Product() {
               </div>
             ))}
           </div>
-          <ul className="xf-legend">
+          <ul className="mf-legend">
             {PARTS.map((p) => (
-              <li key={p.id} className={p.wide ? "is-wide" : undefined}>
+              <li key={p.id}>
                 <h3>{p.title}</h3>
                 <p>{p.text}</p>
               </li>
             ))}
           </ul>
-          <figcaption className="fig-caption">Concept rendering · module, strap and watch</figcaption>
+          <figcaption className="fig-caption">Concept rendering from the Cyphix 3D model</figcaption>
         </figure>
 
         <div className="app-row">
@@ -143,4 +125,6 @@ export default function Product() {
   );
 }
 
-// v0.7.0 — the exploded render on the ground; short leader-line callouts set in its own empty space (module, strap, watch); the app's limb-lead view beside "sent straight to the clinician"
+// v0.8.0 — re-rendered in the product studio (AO, contact shadow); dots re-projected, the strap's on the band surface
+// v0.8.0 — the strap from behind, rendered from the team's 3D model, with callouts on module, watch and band (the exploded concept render is retired)
+// v0.7.0 — the exploded render on the ground; short leader-line callouts set in its own empty space (module, strap, watch)
