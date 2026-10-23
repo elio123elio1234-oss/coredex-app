@@ -1,5 +1,31 @@
 # Changelog — CYPHIX Landing
 
+## v0.13.2 — 2026-10-23 — only the hand moves
+
+**Why.** The user: "You move the hand and the iPad! I asked only for the hand."
+
+v0.13.1 was wrong. To move the hand it re-placed the whole pair, so the tablet
+moved left about 110 px along with the hand. The user had asked for the hand
+alone.
+
+**What changed.**
+- **The tablet is back exactly where v0.13.0 had it,** at the same size and
+  margins. Checked by its box at four widths: (802, 430, 403 × 227) at 1440,
+  (731, 347, 358 × 202) at 1280, (178, 658) at 820 and (38, 690) at 390.
+- **Only the hand moves,** with a `translateX` on `.hero-arm` that changes
+  nothing else in the layout:
+  - desktop: `min(7vw, 110px)`, 101 px at 1440 and 89 px at 1280;
+  - tablets: 8vw, 66 px at 820;
+  - phones: 10vw, 39 px at 390.
+- The hand now covers more of the tablet's right side, and the traces on the
+  left stay clear.
+
+**Checked.** In headless Chrome at 1440 × 900, 1280 × 720, 820 × 1180 and
+390 × 844:
+- the tablet's box matches v0.13.0 to the pixel;
+- the arm meets the band's bottom edge;
+- there is no sideways scroll.
+
 ## v0.13.1 — 2026-10-23 — the hand, clearly further left
 
 **Why.** The user: "move the hand further left. It doesn't look like you

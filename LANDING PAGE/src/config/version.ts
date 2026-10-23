@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.13.1";
+export const APP_VERSION = "0.13.2";
 export const APP_BUILD_LABEL =
-  "Hero: the hand sits clearly further left (113 px at 1440), the pair placed rather than centred";
+  "Hero: only the hand moves left, about 100 px over the tablet; the tablet is back exactly where it was";
 
+// v0.13.2 — only the hand moves (translateX); the tablet back at its v0.13.0 place
 // v0.13.1 — the hero pair is placed, not centred: the hand moves about 110 px left on desktop
 // v0.13.0 — "More than an ECG" removed; the "home" slot holds the user's physician image; the new tablet image; the hand further left
 // v0.12.1 — the hand moves left onto the tablet's right side; the tablet's drop shadow is removed
