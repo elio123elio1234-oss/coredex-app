@@ -1,5 +1,29 @@
 # Changelog — CYPHIX Landing
 
+## v0.13.4 — 2026-10-23 — the hand, a touch higher
+
+**Why.** The user: "raise the hand a tiny bit."
+
+The forearm's lower end is a hard cut that sits on the band's bottom edge.
+Shifting the image up would have shown that cut floating above the edge.
+
+**What changed.**
+- **A little more forearm, at the same scale.**
+  - `hero-wrist.webp` is cut from the v0.11.0 original (670 × 1768) to its
+    upper 1404 rows instead of 1344.
+  - The CSS keeps the same scale: the height factor goes from 0.76 to 0.7939,
+    365 to 381 px on tablets and 319 to 333 px on phones.
+  - The hand rises 25 px at 1440, 19 at 1280, 16 at 820 and 14 at 390. Its
+    width and x are unchanged.
+- **Nothing else moves.** On tablets and phones the extra height comes out of
+  the media's top padding (24 to 8 or 10 px), and the tablet gets the same top
+  margin. The band's height and the tablet's box are unchanged.
+
+**Checked.** In headless Chrome at four widths:
+- the tablet's box and the hero's height are unchanged to the pixel;
+- only the hand's top moved;
+- there is no sideways scroll.
+
 ## v0.13.3 — 2026-10-23 — the hand, a touch to the right
 
 **Why.** The user: "now move the hand a tiny bit to the right."

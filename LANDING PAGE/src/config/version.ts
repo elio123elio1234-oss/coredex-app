@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.13.3";
+export const APP_VERSION = "0.13.4";
 export const APP_BUILD_LABEL =
-  "Hero: the hand a touch back to the right (24 px at 1440); the tablet untouched";
+  "Hero: the hand a touch higher (about 25 px at 1440), same size and place; the tablet untouched";
 
+// v0.13.4 — the hand a touch higher (a longer forearm slice at the same scale)
 // v0.13.3 — the hand a touch back to the right; the tablet untouched
 // v0.13.2 — only the hand moves (translateX); the tablet back at its v0.13.0 place
 // v0.13.1 — the hero pair is placed, not centred: the hand moves about 110 px left on desktop

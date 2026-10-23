@@ -20,7 +20,7 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
     src: heroWrist,
     alt: "A raised forearm, palm toward the viewer, wearing the Cyphix strap: on the inside of the wrist, the module with its three steel electrodes.",
     w: 670,
-    h: 1344,
+    h: 1404,
   },
   // the user's own image (ChatGPT): a physician reviewing a CYPHIX recording; the laptop stays in frame
   home: {
@@ -32,6 +32,7 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
   },
 };
 
+// v0.13.4 — the forearm 60 rows longer (670 x 1404), so the hand sits a touch higher
 // v0.13.0 — the "home" slot (beside "1 in 3") holds the user's physician image
 // v0.12.0 — the "group" slot is gone: the user's four-watch image is wired in Product.tsx
 // v0.11.1 — the forearm cropped shorter (the hand sat too high)
