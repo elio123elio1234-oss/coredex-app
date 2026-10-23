@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.12.0";
+export const APP_VERSION = "0.12.1";
 export const APP_BUILD_LABEL =
-  "Hero: the forearm at its first size, lower, with the CYPHIX tablet behind it; the user's four watches grow on hover; More than an ECG shows charts";
+  "Hero: the hand overlaps the tablet's right side, and the grey shadow behind the tablet is gone";
 
+// v0.12.1 — the hand moves left onto the tablet's right side; the tablet's drop shadow is removed
 // v0.12.0 — the hero forearm back at its v0.11.0 size and lower, beside the user's tablet image; the user's four-watch image with a hover grow; the sensors section as charts
 // v0.11.1 — the hero forearm alone, cropped shorter (the user: the hand sat too high; the watch beside it looked unnatural)
 // v0.11.0 — the user's wrist image in the hero (ChatGPT, turned hand-up), paired with the render

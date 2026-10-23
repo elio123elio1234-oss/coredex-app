@@ -1,5 +1,27 @@
 # Changelog — CYPHIX Landing
 
+## v0.12.1 — 2026-10-23 — the hand over the tablet's edge, no grey behind it
+
+**Why.** The user: "move the hand a little to the left, so it comes up a bit
+onto the iPad's right side, and remove the grey background you made behind
+the iPad."
+
+The grey was the tablet's drop shadow. On the slate band it read as a haze
+around the device rather than as depth. The image itself is cut clean.
+
+**What changed.**
+- **The drop shadow is gone.** The tablet sits flat on the slate, as on
+  AliveCor.
+- **The hand overlaps the tablet's right side.**
+  - The tablet's negative margin went from −4 % to −11 % of the column, −9 %
+    on phones.
+  - The pair stays centred, so the hand moves left and the palm and thumb
+    cover the tablet's side panel.
+  - The ECG traces stay clear.
+
+**Checked.** In headless Chrome at 1440 × 900, 1280 × 720, 820 × 1180 and
+390 × 844: no sideways scroll, and the arm still meets the band's bottom edge.
+
 ## v0.12.0 — 2026-10-23 — the hand at its first size, the system beside it, the user's watches, the vitals as charts
 
 **Why.** The user, on v0.11.1, asked for four changes:

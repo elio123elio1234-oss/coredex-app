@@ -448,8 +448,7 @@ section[id] {
   align-self: center;
   width: clamp(260px, 25vw, 420px);
   height: auto;
-  margin: 12% -4% 0 0;
-  filter: drop-shadow(0 28px 36px rgba(8, 12, 20, 0.45));
+  margin: 12% -11% 0 0;
 }
 .hero-media .media-note,
 .split-media .media-note {
@@ -1828,7 +1827,7 @@ section[id] {
   }
   .hero-system {
     width: 52vw;
-    margin-right: -3%;
+    margin-right: -9%;
   }
   .rule-head .h2 {
     white-space: normal;
@@ -2011,7 +2010,8 @@ section[id] {
   }
 }
 
-/* v0.12.0 — the hero forearm back at its v0.11.0 scale, lower, with the CYPHIX tablet behind it; the user's four watches, the hovered one grows; "More than an ECG" shows data (strip, heart rate, skin temperature), drawn in once
+/* v0.12.1 — the hand overlaps the tablet's right side; the tablet's drop shadow (a grey haze on the slate) is gone
+   v0.12.0 — the hero forearm back at its v0.11.0 scale, lower, with the CYPHIX tablet behind it; the user's four watches, the hovered one grows; "More than an ECG" shows data (strip, heart rate, skin temperature), drawn in once
    v0.11.1 — the forearm alone, shorter and lower in the band (150 px clear above the fingertips on desktop)
    v0.11.0 — the hero pair: the user's raised forearm (bottom-anchored, sized to the band) beside the render, with its two-line key
    v0.10.0 — muted labels on the dark stages lifted to #8f98a8 (AA); the card and footer note measure under 80 characters
