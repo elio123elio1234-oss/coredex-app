@@ -1,5 +1,32 @@
 # Changelog — CYPHIX Landing
 
+## v0.15.0 — 2026-10-24 — "How it works" removed
+
+**Why.** The user: "Take out the How it works part as well."
+
+**What changed.**
+- **The section is gone.** `HowItWorks.tsx` is deleted, with its module render
+  (`render-module.webp`, now unused) and that render's frame style.
+- **Everything that pointed at it went too:**
+  - "How it works" in the top nav, which now reads Product · Stage · Team;
+  - the footer link;
+  - "See how it works ↓" at the foot of the "Our solution" card, with its
+    style.
+
+  The card now ends on its paragraph.
+- **The list-row styles stay.** "Who it's for" shares them.
+
+The page now runs: hero, facts band, "1 in 3", "Our solution", "Who it's for",
+"Where we are", "The team", the "One strap. Any watch." scene, and "Request
+the deck".
+
+**Checked.**
+- At 1440 and 390:
+  - no `#how` remains;
+  - "Our solution" leads straight into "Who it's for";
+  - no sideways scroll.
+- The design detector reports no findings.
+
 ## v0.14.0 — 2026-10-23 — two sections out; the page made for phones
 
 **Why.** The user: "Take down 'Why Cyphix' and 'Built for a $4.53B market',

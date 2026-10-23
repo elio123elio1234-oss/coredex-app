@@ -615,19 +615,6 @@ section[id] {
   line-height: 1.65;
   color: #dbe4f0;
 }
-.card-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 28px;
-  font-weight: 600;
-  color: var(--sky);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.card-link:hover {
-  color: #fff;
-}
 
 /* ---------- sections, heading with a rule, list rows ---------- */
 
@@ -689,14 +676,6 @@ section[id] {
 }
 .rows-media img {
   width: 100%;
-}
-.rows-media.is-render {
-  padding: clamp(16px, 3vw, 40px);
-  background: var(--mist-2);
-}
-.rows-media.is-render img {
-  max-height: 560px;
-  object-fit: contain;
 }
 .rows-media.is-app img {
   filter: drop-shadow(0 24px 32px rgba(11, 26, 48, 0.18));
@@ -1390,9 +1369,6 @@ section[id] {
   .hero-lede {
     margin: 20px 0 32px;
   }
-  .card-link {
-    padding: 8px 0;
-  }
   /* the contact links keep their hairline under the text; the touch area grows around them */
   .direct a {
     position: relative;
@@ -1516,7 +1492,8 @@ section[id] {
   }
 }
 
-/* v0.14.0 — "Why Cyphix" and the market section removed (their styles with them); the phone pass: one-line announcement, a compact bar button, a tighter hero top, 12 px chip, thumb-sized links
+/* v0.15.0 — "How it works" removed: its module render style and the card's link style with it
+   v0.14.0 — "Why Cyphix" and the market section removed (their styles with them); the phone pass: one-line announcement, a compact bar button, a tighter hero top, 12 px chip, thumb-sized links
    v0.13.4 — the hand a touch higher: 60 more rows of forearm at the same scale (about 25 px at 1440); width and x unchanged.
    Stacked layouts take the extra height from the top padding (24 to 8 / 10 px) and give the tablet the same top margin, so the band and the tablet stay put
    v0.13.3 — the hand a touch back to the right (76 px left of centre-pair at 1440 instead of 101); the tablet untouched

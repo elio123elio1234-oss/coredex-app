@@ -59,12 +59,12 @@ says so.
 
 ```
 src/
-  App.tsx                 bar · hero · facts · need · solution · how · who · stage · team · one strap · form · footer
+  App.tsx                 bar · hero · facts · need · solution · who · stage · team · one strap · form · footer
   index.css               the whole design system (tokens, sections, tablet, phone, the arrival)
   components/
     Hero.tsx              headline beside the 3D render of the strap on a smartwatch
     Need.tsx              1 in 3, then the three-way comparison
-    Product.tsx           the strap from behind with callouts, the app's limb-lead view
+    Product.tsx           "Our solution": the user's four watches (hover grows one) under the navy card
     OneStrap.tsx          "One strap. Any watch." — sticky dark stage, lazy WebGL, still fallback
     Header / Stage / Team / ContactForm / Footer / Icons / Logo
   lib/strapScene.ts       the scroll-driven three.js scene (turn, lift, hold, drop)
@@ -91,9 +91,9 @@ bracelet is built at load time from the strap's own cut ends. As it closes, the 
 strap bends to the oval of the team's own closed band (`woven_band_band` in the OBJ,
 kept as a centreline table, `CLOSED_BAND` in `studio.ts`). If the
 model changes, re-export the same four groups, and re-render the stills
-(`render-hero`, `render-module`, `scene-*`). Their sidecars record each one's angle
-and light. The callout dots in `Product.tsx` are points projected from the model
-into `render-module.webp`; re-project them if that render changes.
+(`render-hero`, `scene-*`). Their sidecars record each one's angle
+and light.
+<!-- v0.15.0 — HowItWorks.tsx and render-module.webp removed at the user's request -->
 <!-- v0.14.0 — Compare.tsx ("Why Cyphix") and Market.tsx removed at the user's request -->
 <!-- v0.13.0 — Sensors.tsx and lib/vitals.ts removed; the user's images in the hero, beside "1 in 3" and in "Our solution" -->
 <!-- v0.12.0 — the user's images in the hero and "Our solution"; the sensors section as charts (lib/vitals.ts) -->

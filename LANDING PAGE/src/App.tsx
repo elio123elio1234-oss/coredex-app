@@ -3,7 +3,6 @@ import Hero from "./components/Hero";
 import Facts from "./components/Facts";
 import Need from "./components/Need";
 import Product from "./components/Product";
-import HowItWorks from "./components/HowItWorks";
 import WhoFor from "./components/WhoFor";
 import Stage from "./components/Stage";
 import Team from "./components/Team";
@@ -20,7 +19,6 @@ export default function App() {
         <Facts />
         <Need />
         <Product />
-        <HowItWorks />
         <WhoFor />
         <Stage />
         <Team />
@@ -32,6 +30,7 @@ export default function App() {
   );
 }
 
+// v0.15.0 — "How it works" removed (the user)
 // v0.14.0 — "Why Cyphix" and the market section removed (the user)
 // v0.13.0 — "More than an ECG" removed (the user)
 // v0.10.0 — "More than an ECG" (the module's sensors) follows how it works

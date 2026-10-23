@@ -24,9 +24,6 @@ export default function Footer() {
               <a href="#solution">Product</a>
             </li>
             <li>
-              <a href="#how">How it works</a>
-            </li>
-            <li>
               <a href="#stage">Stage</a>
             </li>
             <li>
@@ -72,6 +69,7 @@ export default function Footer() {
   );
 }
 
+// v0.15.0 — the "How it works" link goes with its section
 // v0.14.0 — the "Market" and "Why Cyphix" links go with their sections
 // v0.13.0 — the "Sensors" link goes with the section
 // v0.10.0 — the page map lists the sensors

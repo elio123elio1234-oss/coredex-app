@@ -9,7 +9,6 @@ import { ArrowRight, Phone } from "./Icons";
 
 const LINKS = [
   { href: "#solution", label: "Product" },
-  { href: "#how", label: "How it works" },
   { href: "#stage", label: "Stage" },
   { href: "#team", label: "Team" },
 ];
@@ -66,6 +65,7 @@ export default function Header() {
   );
 }
 
+// v0.15.0 — "How it works" leaves the nav with its section
 // v0.9.0 — AliveCor-style: navy announcement bar, white sticky bar with links, phone and a solid uppercase button
 // v0.8.0 — turns dark over the closing scene's stage
 // v0.7.0 — Product · Stage · Market · Team; no scroll-progress line; the bar's wrap matches the page's
