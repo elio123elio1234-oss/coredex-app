@@ -426,37 +426,18 @@ section[id] {
   max-height: calc(100svh - var(--bar) - 150px);
   object-fit: contain;
 }
-/* the pair: the raised forearm rises from the band's lower edge, the render beside it */
-.hero-media.is-pair {
+/* the raised forearm rises from the band's lower edge, the fingertips well below its top */
+.hero-media.is-arm {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: clamp(20px, 3.5vw, 56px);
-  padding: 40px var(--gutter) 0;
+  padding: 0 var(--gutter);
 }
 .hero-arm {
   display: block;
   flex: none;
   width: auto;
-  height: calc(clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 56px);
-}
-.hero-media.is-pair .hero-side {
-  align-self: center;
-  width: clamp(220px, 22vw, 340px);
-}
-.hero-media.is-pair .hero-render {
-  width: 100%;
-  max-height: none;
-}
-.hero-key {
-  margin: 18px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--sky);
-}
-.hero-key strong {
-  font-weight: 600;
-  color: #fff;
+  height: calc(clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 150px);
 }
 .hero-media .media-note,
 .split-media .media-note {
@@ -1637,14 +1618,11 @@ section[id] {
     width: min(80%, 460px);
     max-height: none;
   }
-  .hero-media.is-pair {
-    padding-top: 16px;
+  .hero-media.is-arm {
+    padding-top: 24px;
   }
   .hero-arm {
-    height: 480px;
-  }
-  .hero-media.is-pair .hero-side {
-    width: min(40vw, 300px);
+    height: 420px;
   }
   .split-media {
     min-height: 360px;
@@ -1725,19 +1703,8 @@ section[id] {
   .hero-render {
     width: 92%;
   }
-  .hero-media.is-pair {
-    gap: 14px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
   .hero-arm {
-    height: 420px;
-  }
-  .hero-media.is-pair .hero-side {
-    width: 46vw;
-  }
-  .hero-key {
-    font-size: 12.5px;
+    height: 360px;
   }
   .rule-head .h2 {
     white-space: normal;
@@ -1914,7 +1881,8 @@ section[id] {
   }
 }
 
-/* v0.11.0 — the hero pair: the user's raised forearm (bottom-anchored, sized to the band) beside the render, with its two-line key
+/* v0.11.1 — the forearm alone, shorter and lower in the band (150 px clear above the fingertips on desktop)
+   v0.11.0 — the hero pair: the user's raised forearm (bottom-anchored, sized to the band) beside the render, with its two-line key
    v0.10.0 — muted labels on the dark stages lifted to #8f98a8 (AA); the card and footer note measure under 80 characters
    v0.10.0 — four ways to wear it (four renders across, 2 x 2 on phones; the scene runs 560vh); "More than an ECG" on the dark studio with pinned module faces
    v0.9.0 — the AliveCor reference in Cyphix's colours: announcement, white sticky bar, slate hero, navy facts, splits, full-bleed photo with a navy card, list rows with line icons, pale bands

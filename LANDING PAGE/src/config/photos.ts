@@ -16,9 +16,10 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
     src: heroWrist,
     alt: "A raised forearm, palm toward the viewer, wearing the Cyphix strap: on the inside of the wrist, the module with its three steel electrodes.",
     w: 670,
-    h: 1768,
+    h: 1344,
   },
 };
 
+// v0.11.1 — the forearm cropped shorter (the hand sat too high)
 // v0.11.0 — the hero slot holds the user's wrist image (the module on the inside of the wrist)
 // v0.9.0 — the four Gemini photo slots (hero wrist, home moment, three watches, clinic), empty until supplied

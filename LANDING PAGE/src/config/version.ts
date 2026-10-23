@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.11.0";
+export const APP_VERSION = "0.11.1";
 export const APP_BUILD_LABEL =
-  "The hero is the user's own wrist image, hand raised, beside the render: the module underneath, the watch on top";
+  "The hero is the user's raised forearm alone: cropped shorter so the hand sits lower; the render beside it is gone";
 
+// v0.11.1 — the hero forearm alone, cropped shorter (the user: the hand sat too high; the watch beside it looked unnatural)
 // v0.11.0 — the user's wrist image in the hero (ChatGPT, turned hand-up), paired with the render
 // v0.10.1 — the strap alone bends to the oval of the team's closed band as it closes
 // v0.10.0 — the user's four configurations: the Contour watch from their 3D file, the strap closes into a bracelet; the sensors section (ECG, PPG, temperature)

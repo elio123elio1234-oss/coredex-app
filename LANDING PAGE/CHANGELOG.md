@@ -1,5 +1,22 @@
 # Changelog — CYPHIX Landing
 
+## v0.11.1 — 2026-10-23 — the forearm alone, lower in the band
+
+**Why.** The user: "the hand reaches too high; cut some of its bottom. And
+remove the watch: it doesn't look natural there, and it's further down the
+page anyway."
+
+**What changed.**
+- **The forearm is shorter.** The lower quarter is cropped away
+  (`hero-wrist.webp` is now 670 × 1344), and the image is sized to the band's
+  height minus 150 px, so the fingertips sit well below the band's top. The hand
+  is larger than before; the module and a little forearm stay above the bottom
+  edge.
+- **The render and its two-line key are out of the hero.** The figure shows
+  only the forearm, with the note "Concept imagery". The render still shows
+  under "Our solution" and in the closing scene, and it stands in for the hero
+  photo only when no photo is supplied.
+
 ## v0.11.0 — 2026-10-23 — the hero: the user's wrist, hand raised, beside the render
 
 **Why.** The user sent their own image for the hero, made in ChatGPT and
