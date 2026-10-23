@@ -6,10 +6,12 @@
    Product.tsx imports its four cuts directly, so it has no slot here. */
 
 import heroWrist from "../assets/photos/hero-wrist.webp";
+import homeClinician from "../assets/photos/home-clinician.webp";
 
 export type PhotoSlot = "hero" | "home" | "clinic";
 
-export type Photo = { src: string; alt: string; w: number; h: number };
+/** `focus` is the CSS object-position that keeps the subject in frame when the slot crops the photo. */
+export type Photo = { src: string; alt: string; w: number; h: number; focus?: string };
 
 /** Generated photographs, by slot, as the user supplies them. */
 export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
@@ -20,8 +22,17 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
     w: 670,
     h: 1344,
   },
+  // the user's own image (ChatGPT): a physician reviewing a CYPHIX recording; the laptop stays in frame
+  home: {
+    src: homeClinician,
+    alt: "A physician at his desk reviews a CYPHIX 6-lead recording on a laptop: the limb leads, the scan history and the frontal-plane axis.",
+    w: 1672,
+    h: 941,
+    focus: "14% 50%",
+  },
 };
 
+// v0.13.0 — the "home" slot (beside "1 in 3") holds the user's physician image
 // v0.12.0 — the "group" slot is gone: the user's four-watch image is wired in Product.tsx
 // v0.11.1 — the forearm cropped shorter (the hand sat too high)
 // v0.11.0 — the hero slot holds the user's wrist image (the module on the inside of the wrist)

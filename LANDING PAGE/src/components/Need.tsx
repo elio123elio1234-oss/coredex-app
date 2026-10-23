@@ -11,7 +11,15 @@ export default function Need() {
     <section className="split" id="need" aria-labelledby="need-title">
       {photo ? (
         <figure className="split-media is-photo">
-          <img src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} loading="lazy" decoding="async" />
+          <img
+            src={photo.src}
+            alt={photo.alt}
+            width={photo.w}
+            height={photo.h}
+            style={{ objectPosition: photo.focus }}
+            loading="lazy"
+            decoding="async"
+          />
           <figcaption className="media-note">Concept imagery</figcaption>
         </figure>
       ) : (
@@ -33,6 +41,7 @@ export default function Need() {
   );
 }
 
+// v0.13.0 — the user's image fills the slot (a physician reviewing a recording), cropped to keep the laptop
 // v0.9.0 — interim panel is the "1 in 3" figure on navy, not a repeated render
 // v0.9.0 — AliveCor-style split: photo slot "home" left, the need right (the comparison moved to Compare)
 // v0.7.0 — explicit table roles (the phone layout re-displays the rows); the need, then the trade-off as a three-way comparison

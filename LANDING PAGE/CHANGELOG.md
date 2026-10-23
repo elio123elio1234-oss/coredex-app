@@ -1,5 +1,45 @@
 # Changelog — CYPHIX Landing
 
+## v0.13.0 — 2026-10-23 — no sensors section; the user's physician beside "1 in 3"; the new tablet
+
+**Why.** The user asked for four changes:
+- "Let's delete the More than an ECG section."
+- "Where it says 1 in 3, put this image in the rectangle": a ChatGPT image of
+  a physician reviewing a CYPHIX recording on a laptop.
+- "Instead of the iPad there now, use this": a new ChatGPT tablet image.
+- "Move the hand a little more to the left."
+
+**What changed.**
+- **"More than an ECG" is gone.** The section, its charts and their data
+  (`Sensors.tsx`, `lib/vitals.ts`) are removed, along with their styles and
+  the footer's "Sensors" link. The sensors themselves remain product truth in
+  `PRODUCT.md`.
+- **The "1 in 3" frame holds the user's image.**
+  - The "home" photo slot now holds `home-clinician.webp`. It replaces the
+    coral "1 in 3" figure on navy, which only ever stood in until a photo
+    arrived.
+  - The frame crops the photo at `object-position: 14% 50%`, so the laptop and
+    its CYPHIX logo stay in frame on a phone. `Photo` gained an optional
+    `focus` for this.
+  - "Concept imagery" sits on a small ink chip, so it reads over the white
+    coat.
+- **The hero's tablet is the user's new image.**
+  - `hero-system.webp` is now 1000 × 563, wider than before. It is cut to the
+    device, without a shadow.
+  - At 28vw it shows at about the old one's height.
+- **The hand sits further left, over the tablet's right side.**
+  - The tablet's overlap is −20 % of the column (−13 % on tablets, −15 % on
+    phones), so the palm covers the side panel and the traces stay clear.
+  - At 1440 × 900 the arm starts 28 px further left than in v0.12.1.
+
+**Checked.**
+- In headless Chrome at 1440 × 900, 1280 × 720, 820 × 1180 and 390 × 844:
+  - no sideways scroll;
+  - the arm meets the band's bottom edge;
+  - `#sensors` is gone;
+  - the laptop stays in frame at every size.
+- The design detector reports no findings.
+
 ## v0.12.1 — 2026-10-23 — the hand over the tablet's edge, no grey behind it
 
 **Why.** The user: "move the hand a little to the left, so it comes up a bit

@@ -27,9 +27,6 @@ export default function Footer() {
               <a href="#how">How it works</a>
             </li>
             <li>
-              <a href="#sensors">Sensors</a>
-            </li>
-            <li>
               <a href="#stage">Stage</a>
             </li>
             <li>
@@ -81,6 +78,7 @@ export default function Footer() {
   );
 }
 
+// v0.13.0 — the "Sensors" link goes with the section
 // v0.10.0 — the page map lists the sensors
 // v0.9.0 — AliveCor-style footer: wordmark, Company / Investors / Contact columns, pale legal band with the badge
 // v0.8.0 — small print names the 3D model (the coral-electrode line was the retired renders' truth)

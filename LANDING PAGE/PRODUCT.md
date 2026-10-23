@@ -92,9 +92,9 @@ Wearable Ease.**
   - a PPG optical sensor with green LEDs, for continuous heart rate;
   - a skin-temperature sensor.
 
-  The page shows what they measure as illustrative charts: a 6-lead strip, a day
-  of heart rate and a night of skin temperature. Each is labelled illustrative.
-  None is a reading of a real person, and none carries a verdict.
+  The page has no section of its own for them since v0.13.0, when the user
+  removed "More than an ECG". If they return, they are shown as measurements,
+  never as a reading of a real person or a verdict.
 
 ## Evidence on Hand
 
@@ -118,6 +118,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 2. Honest stage: every claim is one the one-pager already makes.
 3. Data, never verdicts.
 4. One company across the PDF, the deck and the page.
+<!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
 <!-- v0.10.0 — the four configurations and the module's sensors -->
 <!-- v0.8.0 — the 3D model is the product imagery; the user's "one strap, any watch" scene -->

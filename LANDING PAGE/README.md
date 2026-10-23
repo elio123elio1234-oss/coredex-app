@@ -13,11 +13,12 @@ watch.", showing the four ways to wear it:
 3. An analog watch clicks into the same strap.
 4. The Cyphix watch (the team's Contour) takes its place.
 
-Since v0.12.0, "More than an ECG" shows what the module measures as charts: a 6-lead
-strip, a day of heart rate and a night of skin temperature. The data is illustrative,
-built in `src/lib/vitals.ts`. The hero holds the user's own images (the raised forearm
-and the CYPHIX app on a tablet), and "Our solution" shows the user's four-watch image,
-cut per watch.
+The user's own images carry the page:
+- the hero: the raised forearm, and the CYPHIX app on a tablet;
+- beside "1 in 3": a physician reviewing a recording;
+- "Our solution": the four-watch image, cut per watch.
+
+The "More than an ECG" section was removed in v0.13.0.
 
 ## Stack
 
@@ -65,8 +66,6 @@ src/
     Need.tsx              1 in 3, then the three-way comparison
     Product.tsx           the strap from behind with callouts, the app's limb-lead view
     OneStrap.tsx          "One strap. Any watch." — sticky dark stage, lazy WebGL, still fallback
-    Sensors.tsx           "More than an ECG" — a 6-lead strip, a day of heart rate, a night of skin temperature
-  lib/vitals.ts           the illustrative data behind those charts (fixed anchors, seeded noise)
     Header / Stage / Market / Team / ContactForm / Footer / Icons / Logo
   lib/strapScene.ts       the scroll-driven three.js scene (turn, lift, hold, drop)
   assets/img              renders of the 3D model (with provenance sidecars) + portraits + app screen
@@ -95,6 +94,7 @@ model changes, re-export the same four groups, and re-render the stills
 (`render-hero`, `render-module`, `scene-*`). Their sidecars record each one's angle
 and light. The callout dots in `Product.tsx` are points projected from the model
 into `render-module.webp`; re-project them if that render changes.
+<!-- v0.13.0 — Sensors.tsx and lib/vitals.ts removed; the user's images in the hero, beside "1 in 3" and in "Our solution" -->
 <!-- v0.12.0 — the user's images in the hero and "Our solution"; the sensors section as charts (lib/vitals.ts) -->
 <!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->

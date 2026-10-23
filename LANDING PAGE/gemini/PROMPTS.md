@@ -34,6 +34,8 @@ Photorealistic studio product photograph for a medical-technology website hero. 
 
 ## 2 · רגע בבית — "1 in 3 deaths…"
 
+> ✅ **סופק (2026-10-23):** המשתמש הביא תמונה משלו מ-ChatGPT: רופא בוחן הקלטת CYPHIX על לפטופ, במקום רגע בבית. היא בדף ליד "1 in 3" (`src/assets/photos/home-clinician.webp`). הפרומפט נשאר כאן לתיעוד.
+
 - **מקום בדף:** החלק החצוי (תמונה משמאל, טקסט מימין), מיד אחרי פס המספרים.
 - **שם קובץ:** `home-moment.jpg`
 - **יחס:** 1:1 (ריבוע)
@@ -74,6 +76,7 @@ Photorealistic documentary photograph for a medical-technology website, 16:10. I
 
 ---
 
+<!-- v0.13.0 — prompt 2 supplied by the user (ChatGPT, a physician reviewing a recording), now beside "1 in 3" -->
 <!-- v0.12.0 — prompt 3 supplied by the user (ChatGPT, four watches), now under "Our solution" -->
 <!-- v0.11.0 — prompt 1 supplied by the user (ChatGPT image), now in the hero -->
 <!-- v0.10.0 — prompt 3 shows the four ways to wear it (smartwatch, closed bracelet, analog, the Cyphix watch); refs 3–5 re-rendered -->

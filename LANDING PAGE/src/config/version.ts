@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.12.1";
+export const APP_VERSION = "0.13.0";
 export const APP_BUILD_LABEL =
-  "Hero: the hand overlaps the tablet's right side, and the grey shadow behind the tablet is gone";
+  "More than an ECG removed; the user's physician image beside 1 in 3; the user's new tablet in the hero, the hand further over it";
 
+// v0.13.0 — "More than an ECG" removed; the "home" slot holds the user's physician image; the new tablet image; the hand further left
 // v0.12.1 — the hand moves left onto the tablet's right side; the tablet's drop shadow is removed
 // v0.12.0 — the hero forearm back at its v0.11.0 size and lower, beside the user's tablet image; the user's four-watch image with a hover grow; the sensors section as charts
 // v0.11.1 — the hero forearm alone, cropped shorter (the user: the hand sat too high; the watch beside it looked unnatural)
