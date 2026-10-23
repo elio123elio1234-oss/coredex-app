@@ -3,7 +3,9 @@
 Investor-facing home page for CYPHIX, a wearable 6-lead ECG on the watch you
 already wear. Live at **https://cyphix-landing.vercel.app**.
 
-Since v0.8.0 every product image is rendered from the team's own 3D model
+Since v0.9.0 the page follows alivecor.com's structure in Cyphix's colours, with four
+photograph slots generated in Gemini (prompts and reference images in `gemini/`;
+wire one in via `src/config/photos.ts`). Since v0.8.0 every product image is rendered from the team's own 3D model
 (`public/models/cyphix.glb`). The page closes on a live WebGL scene, "One strap. Any
 watch.": the watch turns as you scroll, lifts out of the strap, and an analog watch
 drops into the same strap.
@@ -74,6 +76,7 @@ model changes, re-export the same three groups, and re-render the stills
 (`render-hero`, `render-module`, `scene-*`). Their sidecars record each one's angle
 and light. The callout dots in `Product.tsx` are points projected from the model
 into `render-module.webp`; re-project them if that render changes.
+<!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
 <!-- v0.8.0 — the 3D model, the closing scene, three.js, how to re-render -->
 <!-- v0.7.0 — the professional rebuild: no animation library, the frame-mapped callouts, the og card, the deploy command -->
 <!-- v0.6.0 — the investor redesign: stack, structure, and how the hero finds the watch screen -->

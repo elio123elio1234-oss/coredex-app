@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.8.0";
+export const APP_VERSION = "0.9.0";
 export const APP_BUILD_LABEL =
-  "The 3D model leads: a hero render of the strap, a module close-up, and the closing 'One strap. Any watch.' scroll scene";
+  "AliveCor-style layout in Cyphix colours; four photo slots with Gemini prompts (renders stand in until the photos arrive)";
 
+// v0.9.0 — the user's reference alivecor.com: announcement, slate hero, facts band, splits, navy card, icon rows; gemini/PROMPTS.md
 // v0.8.0 — the team's 3D model replaces the flat concept renders; the live "One strap. Any watch." scene near the end
 // v0.7.0 — the professional rebuild (user: "over simulation"): product pair, comparison, annotated product, stage, market, team, og card
 // v0.6.1 — first deployment (cyphix-landing.vercel.app); honest sent-state copy

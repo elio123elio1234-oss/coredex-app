@@ -1,4 +1,6 @@
-/* The page's few icons — authored SVG, one 1.6 stroke, currentColor. */
+/* The page's icons — authored SVG, currentColor. Small UI glyphs at a 1.6
+   stroke; the larger "line" icons beside list rows and facts at 1.4 on a
+   48 box, in the AliveCor-style navy. */
 import type { SVGProps } from "react";
 
 type P = SVGProps<SVGSVGElement>;
@@ -13,6 +15,7 @@ const base = {
   strokeLinejoin: "round" as const,
   "aria-hidden": true,
 };
+const line = { ...base, width: 48, height: 48, viewBox: "0 0 48 48", strokeWidth: 1.4 };
 
 export const ArrowRight = (p: P) => (
   <svg {...base} {...p}>
@@ -23,6 +26,12 @@ export const ArrowRight = (p: P) => (
 export const ArrowDown = (p: P) => (
   <svg {...base} {...p}>
     <path d="M12 4.5v15M6 13.5l6 6 6-6" />
+  </svg>
+);
+
+export const Chevron = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="m9 5.5 6.5 6.5L9 18.5" />
   </svg>
 );
 
@@ -58,5 +67,64 @@ export const Dash = (p: P) => (
   </svg>
 );
 
+/* ---------- line icons (48 box) ---------- */
+
+/** A watch on its strap, a small module on the band. */
+export const LineWatch = (p: P) => (
+  <svg {...line} {...p}>
+    <path d="M18 9.5 19.5 3h9L30 9.5M18 38.5 19.5 45h9l1.5-6.5" />
+    <rect x="13" y="9.5" width="22" height="29" rx="6" />
+    <path d="M17.5 24h3l2-5 3.5 10 2-5h2.5" />
+    <path d="M35 21v6" />
+  </svg>
+);
+
+/** Record: a finger on the module, a pulse leaving it. */
+export const LinePulse = (p: P) => (
+  <svg {...line} {...p}>
+    <path d="M4 26h8l3-8 5 16 4-12 3 4h7" />
+    <circle cx="40" cy="26" r="4" />
+  </svg>
+);
+
+/** Send: a recording travelling to the clinician. */
+export const LineSend = (p: P) => (
+  <svg {...line} {...p}>
+    <path d="M6 22.5 42 7 30.5 41l-7-13.5L6 22.5Z" />
+    <path d="M23.5 27.5 42 7" />
+  </svg>
+);
+
+export const LinePerson = (p: P) => (
+  <svg {...line} {...p}>
+    <circle cx="24" cy="16" r="8" />
+    <path d="M8 42c1.5-8.5 8-13 16-13s14.5 4.5 16 13" />
+  </svg>
+);
+
+export const LineStethoscope = (p: P) => (
+  <svg {...line} {...p}>
+    <path d="M10 5v12a8 8 0 0 0 16 0V5" />
+    <path d="M7 5h6M23 5h6" />
+    <path d="M18 25v5a9 9 0 0 0 18 0v-3" />
+    <circle cx="36" cy="23" r="4" />
+  </svg>
+);
+
+export const LineClinic = (p: P) => (
+  <svg {...line} {...p}>
+    <circle cx="24" cy="24" r="19" />
+    <path d="M20 13h8v7h7v8h-7v7h-8v-7h-7v-8h7z" />
+  </svg>
+);
+
+export const LineShield = (p: P) => (
+  <svg {...line} {...p}>
+    <path d="M24 4 39 9.5v12c0 10-6.5 17.5-15 22.5C15.5 39 9 31.5 9 21.5v-12L24 4Z" />
+    <path d="m17 24 5 5 9-10" />
+  </svg>
+);
+
+// v0.9.0 — line icons for the AliveCor-style rows and facts (watch, pulse, send, person, stethoscope, clinic, shield), chevron
 // v0.7.0 — Dash for the comparison's "no" mark
 // v0.6.0 — arrow, mail, phone, pin and check icons (authored, one stroke weight)

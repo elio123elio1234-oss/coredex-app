@@ -1,5 +1,49 @@
 # Changelog — CYPHIX Landing
 
+## v0.9.0 — 2026-10-23 — AliveCor's grammar, for Cyphix; four Gemini photo slots
+
+**Why.** While v0.8 was in review, the user (in Hebrew) pointed at
+https://alivecor.com/: "do it like that but for my product. Where a
+visualisation image is needed, write me a prompt for Gemini's image model and
+we'll put the image there."
+
+**What follows AliveCor.** The structure and component language, played in
+Cyphix's own colours and words:
+- **Top of the page:** a navy announcement bar ("Now raising a $1.9M seed round |
+  Request the deck"), then a white sticky bar with the wordmark, four links, the
+  phone number and a solid uppercase button.
+- **Hero:** a slate band with a notice chip ("In development · Not for sale"), a
+  two-line headline (second line coral) and the product on the right.
+- **Facts band:** navy, with line icons and the $4.53B market.
+- **"1 in 3" split:** photograph left, statement right.
+- **"Our solution":** a full-bleed photograph under a navy card.
+- **"How it works" and "Who it's for":** list rows with line icons beside an image,
+  each under a heading with a hairline rule.
+- **"Why Cyphix":** the comparison on a pale band.
+- **Kept from earlier versions:** the stage line, the market band, the team, the
+  user's "One strap. Any watch." scene and the form.
+- **Footer:** link columns over a pale legal band.
+
+**The photographs.** `gemini/PROMPTS.md` holds the four prompts, with a slot, a
+file name, an aspect ratio and the reference images to attach for each:
+- hero wrist;
+- home moment;
+- three people, three watches, one strap;
+- clinic.
+
+`gemini/refs/` holds the 3D-model renders Gemini must match. Until the photos
+arrive, every slot shows a real asset in its place (a render, the app screen,
+or the "1 in 3" figure), so the page is complete today. Wiring a photo in is
+one line in `src/config/photos.ts`. Generated people are labelled "Concept
+imagery" and are never presented as customers.
+
+**Not claimed, unlike the reference:** AliveCor shows user counts, publication
+counts and "doctor-recommended". Cyphix has none of these, so the facts band
+uses only what the one-pager states.
+
+**Review state.** Not yet through the finish review. That runs once the
+photographs are in, because they change three of the page's biggest surfaces.
+
 ## v0.8.0 — 2026-10-23 — the 3D model leads: "One strap. Any watch."
 
 **Why.** On v0.7 the user wrote (in Hebrew): "I still don't like it at all! It still
