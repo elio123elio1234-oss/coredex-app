@@ -443,7 +443,7 @@ section[id] {
   width: auto;
   height: calc((clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 56px) * 0.76);
   /* only the hand moves left, over the tablet; the tablet keeps its place */
-  transform: translateX(calc(-1 * min(7vw, 110px)));
+  transform: translateX(calc(-1 * min(5.3vw, 84px)));
 }
 .hero-system {
   flex: none;
@@ -1554,7 +1554,7 @@ section[id] {
   }
   .hero-arm {
     height: 365px;
-    transform: translateX(-8vw);
+    transform: translateX(-6vw);
   }
   .hero-system {
     width: min(48vw, 380px);
@@ -1645,7 +1645,7 @@ section[id] {
   }
   .hero-arm {
     height: 319px;
-    transform: translateX(-10vw);
+    transform: translateX(-7.5vw);
   }
   .hero-system {
     width: 54vw;
@@ -1826,7 +1826,8 @@ section[id] {
   }
 }
 
-/* v0.13.2 — the tablet back exactly where v0.13.0 had it; only the hand moves left (translateX: 101 px at 1440, 7vw capped at 110 px; 8vw tablets, 10vw phones)
+/* v0.13.3 — the hand a touch back to the right (76 px left of centre-pair at 1440 instead of 101); the tablet untouched
+   v0.13.2 — the tablet back exactly where v0.13.0 had it; only the hand moves left (translateX: 101 px at 1440, 7vw capped at 110 px; 8vw tablets, 10vw phones)
    v0.13.1 — the hero pair is placed, not centred: the hand sits about 110 px further left on desktop, further over the tablet everywhere
    v0.13.0 — "More than an ECG" removed; the hand further over the user's new, wider tablet
    v0.12.1 — the hand overlaps the tablet's right side; the tablet's drop shadow (a grey haze on the slate) is gone

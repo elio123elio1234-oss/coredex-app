@@ -1,5 +1,21 @@
 # Changelog — CYPHIX Landing
 
+## v0.13.3 — 2026-10-23 — the hand, a touch to the right
+
+**Why.** The user: "now move the hand a tiny bit to the right."
+
+**What changed.** The hand's shift to the left is about a quarter smaller:
+- desktop: from `min(7vw, 110px)` to `min(5.3vw, 84px)`, so the hand moves
+  24 px right at 1440 and 21 px at 1280;
+- tablets: from 8vw to 6vw, 17 px at 820;
+- phones: from 10vw to 7.5vw, 10 px at 390.
+
+Only the hand moved.
+
+**Checked.** In headless Chrome at four widths, the tablet's box is unchanged
+to the pixel, the arm meets the band's bottom edge, and there is no sideways
+scroll.
+
 ## v0.13.2 — 2026-10-23 — only the hand moves
 
 **Why.** The user: "You move the hand and the iPad! I asked only for the hand."
