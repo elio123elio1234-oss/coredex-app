@@ -1,12 +1,15 @@
 import heroRender from "../assets/img/render-hero.webp";
+import heroSystem from "../assets/photos/hero-system.webp";
 import { PHOTOS } from "../config/photos";
 import { ArrowRight } from "./Icons";
 
 /* The opening, AliveCor-style: a slate band; on the left a notice chip,
    the two-line headline (the second line in coral) and the action; on the
    right the product: the user's raised forearm with the module on the
-   inside of the wrist, rising from the band's lower edge (until a photo is
-   supplied, the render of the team's 3D model stands in). */
+   inside of the wrist, rising from the band's lower edge, and behind it on
+   the left the system, the CYPHIX app on a tablet, as AliveCor stands its
+   tablet behind the hand (until a photo is supplied, the render of the
+   team's 3D model stands in). */
 
 export default function Hero() {
   const photo = PHOTOS.hero;
@@ -28,7 +31,17 @@ export default function Hero() {
       </div>
       <figure className={`hero-media${photo ? " is-arm" : ""}`}>
         {photo ? (
-          <img className="hero-arm" src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} decoding="async" />
+          <>
+            <img
+              className="hero-system"
+              src={heroSystem}
+              width={1000}
+              height={670}
+              alt="The CYPHIX app on a tablet: a 6-lead ECG recording, leads I, II, III, aVR, aVL and aVF, with its heart rate and frontal-plane axis beside it."
+              decoding="async"
+            />
+            <img className="hero-arm" src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} decoding="async" />
+          </>
         ) : (
           <img
             className="hero-render"
@@ -45,6 +58,7 @@ export default function Hero() {
   );
 }
 
+// v0.12.0 — the forearm at its v0.11.0 size, lower in the band; the user's tablet image of the system behind it
 // v0.11.1 — the forearm alone (the render beside it looked staged, and it appears further down the page)
 // v0.11.0 — the user's raised-forearm image beside the render: the module underneath, the watch on top
 // v0.9.0 — AliveCor-style slate hero: chip, two-line headline, solid button; product media on the right (photo slot "hero")

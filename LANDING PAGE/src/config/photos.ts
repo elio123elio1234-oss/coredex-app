@@ -1,11 +1,13 @@
-/* The page's four photograph slots (prompts in gemini/PROMPTS.md).
+/* The page's photograph slots (prompts in gemini/PROMPTS.md).
    Until a generated photo is dropped into src/assets/photos/ and imported
    here, each slot shows its interim: a render of the team's 3D model, or
-   the real app screen. Swapping one in is a one-line change per slot. */
+   the real app screen. Swapping one in is a one-line change per slot.
+   The four-watch image for "Our solution" came from the user as one strip;
+   Product.tsx imports its four cuts directly, so it has no slot here. */
 
 import heroWrist from "../assets/photos/hero-wrist.webp";
 
-export type PhotoSlot = "hero" | "home" | "group" | "clinic";
+export type PhotoSlot = "hero" | "home" | "clinic";
 
 export type Photo = { src: string; alt: string; w: number; h: number };
 
@@ -20,6 +22,7 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
   },
 };
 
+// v0.12.0 — the "group" slot is gone: the user's four-watch image is wired in Product.tsx
 // v0.11.1 — the forearm cropped shorter (the hand sat too high)
 // v0.11.0 — the hero slot holds the user's wrist image (the module on the inside of the wrist)
 // v0.9.0 — the four Gemini photo slots (hero wrist, home moment, three watches, clinic), empty until supplied

@@ -47,6 +47,8 @@ Photorealistic lifestyle photograph for a medical-technology website. A woman in
 
 ## 3 · ארבעה אנשים, ארבע דרכים לענוד — "One strap. Any watch."
 
+> ✅ **סופק (2026-10-23):** המשתמש הביא מ-ChatGPT תמונה של ארבעת השעונים (בלי אנשים). היא בדף תחת "Our solution", חתוכה לתמונה לכל שעון (`src/assets/photos/wear-*.webp`). הפרומפט נשאר כאן לתיעוד.
+
 - **מקום בדף:** הפס הרחב לכל רוחב המסך, עם הכרטיס הכחול שעולה עליו.
 - **שם קובץ:** `any-watch-group.jpg`
 - **יחס:** 21:9 (רחב מאוד). אם אין 21:9, אפשר 16:9.
@@ -72,6 +74,7 @@ Photorealistic documentary photograph for a medical-technology website, 16:10. I
 
 ---
 
+<!-- v0.12.0 — prompt 3 supplied by the user (ChatGPT, four watches), now under "Our solution" -->
 <!-- v0.11.0 — prompt 1 supplied by the user (ChatGPT image), now in the hero -->
 <!-- v0.10.0 — prompt 3 shows the four ways to wear it (smartwatch, closed bracelet, analog, the Cyphix watch); refs 3–5 re-rendered -->
 <!-- v0.9.0 — four Gemini image prompts for the AliveCor-style page, with product references from the 3D model -->

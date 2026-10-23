@@ -426,7 +426,9 @@ section[id] {
   max-height: calc(100svh - var(--bar) - 150px);
   object-fit: contain;
 }
-/* the raised forearm rises from the band's lower edge, the fingertips well below its top */
+/* the raised forearm rises from the band's lower edge at its v0.11.0 scale (the whole arm
+   was band - 56 px tall; this asset is its upper 76 %), so the hand sits lower without growing;
+   the system, the CYPHIX app on a tablet, stands behind it on the left, as on AliveCor */
 .hero-media.is-arm {
   display: flex;
   align-items: flex-end;
@@ -434,10 +436,20 @@ section[id] {
   padding: 0 var(--gutter);
 }
 .hero-arm {
+  position: relative;
+  z-index: 1;
   display: block;
   flex: none;
   width: auto;
-  height: calc(clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 150px);
+  height: calc((clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 56px) * 0.76);
+}
+.hero-system {
+  flex: none;
+  align-self: center;
+  width: clamp(260px, 25vw, 420px);
+  height: auto;
+  margin: 12% -4% 0 0;
+  filter: drop-shadow(0 28px 36px rgba(8, 12, 20, 0.45));
 }
 .hero-media .media-note,
 .split-media .media-note {
@@ -445,6 +457,11 @@ section[id] {
   right: 16px;
   bottom: 12px;
   color: rgba(255, 255, 255, 0.55);
+}
+/* the forearm stands at the right: the note moves to the free corner */
+.hero-media.is-arm .media-note {
+  right: auto;
+  left: var(--gutter);
 }
 
 /* ---------- facts band ---------- */
@@ -540,18 +557,34 @@ section[id] {
 }
 .solution-stills {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 507fr 466fr 528fr 513fr;
   align-items: center;
-  gap: 8px;
-  max-width: 1280px;
+  gap: clamp(8px, 1.6vw, 24px);
+  max-width: 1240px;
   height: 100%;
   margin: 0 auto;
   padding: 0 var(--gutter) clamp(60px, 8vw, 120px);
 }
 .solution-stills img {
+  position: relative;
   width: 100%;
   max-height: 100%;
   object-fit: contain;
+  transform-origin: 50% 55%;
+  transition:
+    transform 0.7s var(--ease),
+    filter 0.7s var(--ease);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .solution-stills:has(img:hover) img:not(:hover) {
+    transform: scale(0.96);
+    filter: brightness(0.78) saturate(0.9);
+  }
+  .solution-stills img:hover {
+    z-index: 1;
+    transform: scale(1.12);
+    filter: drop-shadow(0 22px 30px rgba(8, 12, 20, 0.4));
+  }
 }
 .solution-card {
   position: relative;
@@ -690,80 +723,159 @@ section[id] {
   line-height: 1.6;
   color: #b7c0cf;
 }
-.sensors-grid {
+.vitals {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-  gap: 48px clamp(40px, 6vw, 96px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: clamp(48px, 5vw, 64px) clamp(40px, 5vw, 80px);
 }
-.sensors-views {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(12px, 2.5vw, 40px);
-}
-.sensors-view {
+.vital {
   margin: 0;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
-.sensors-img {
-  position: relative;
+.vital-ecg {
+  grid-row: span 2;
 }
-.sensors-img img {
-  display: block;
-  width: 100%;
-  height: auto;
+.vital-head {
+  margin-bottom: 28px;
 }
-.sensors-view figcaption {
-  margin-top: 14px;
-  text-align: center;
-  font-size: 14px;
-  color: #8f98a8;
-}
-.pin {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  margin: -13px 0 0 -13px;
-  border: 1.5px solid rgba(255, 255, 255, 0.92);
-  border-radius: 50%;
-  background: rgba(10, 13, 19, 0.72);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.pin.is-key {
-  position: static;
-  margin: 1px 0 0;
-}
-.sensors-list {
-  display: grid;
-  gap: 36px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.sensors-list li {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-.sensors-list h3 {
-  margin: 0 0 6px;
+.vital-head h3 {
+  margin: 0 0 8px;
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: #fff;
 }
-.sensors-list p {
+.vital-head p {
   margin: 0;
-  max-width: 28em;
+  max-width: 30em;
   font-size: 16.5px;
   line-height: 1.6;
   color: #b7c0cf;
+}
+.vital-scale {
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #8f98a8;
+}
+/* the strip on paper scale: 1 mm and 5 mm squares, the calibration pulse, six leads */
+.ecg-plot {
+  position: relative;
+}
+.ecg-plot svg,
+.trend-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ecg-grid-minor {
+  fill: none;
+  stroke: rgba(168, 191, 223, 0.07);
+  stroke-width: 0.08;
+}
+.ecg-grid-major {
+  fill: none;
+  stroke: rgba(168, 191, 223, 0.16);
+  stroke-width: 0.12;
+}
+.ecg-trace {
+  fill: none;
+  stroke: #eef2f8;
+  stroke-width: 1.4px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.ecg-lead {
+  position: absolute;
+  left: calc(8 / 108 * 100% + 6px);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--sky);
+}
+/* trends: horizontal rules with their values in a right gutter, the hours beneath */
+.trend {
+  --tone: var(--coral);
+}
+.trend.is-sky {
+  --tone: var(--sky);
+}
+.trend-plot {
+  position: relative;
+  aspect-ratio: 520 / 250;
+  margin-right: 40px;
+}
+.trend-grid {
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.trend-fill-top {
+  stop-color: var(--tone);
+  stop-opacity: 0.26;
+}
+.trend-fill-end {
+  stop-color: var(--tone);
+  stop-opacity: 0;
+}
+.trend-line {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.trend-y,
+.trend-unit,
+.trend-x span {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #8f98a8;
+}
+.trend-y {
+  left: calc(100% + 12px);
+  transform: translateY(-50%);
+}
+.trend-unit {
+  top: 0;
+  left: calc(100% + 12px);
+  transform: translateY(-160%);
+}
+.trend-x {
+  position: relative;
+  height: 12px;
+  margin: 14px 40px 0 0;
+}
+.trend-x span {
+  top: 0;
+  transform: translateX(-50%);
+}
+.trend-x span:first-child {
+  transform: none;
+}
+.trend-x span:last-child {
+  transform: translateX(-100%);
+}
+/* one arrival: each plot draws in from the left as the section comes into view */
+.vitals.is-armed .ecg-plot svg,
+.vitals.is-armed .trend-plot svg {
+  clip-path: inset(-2% 100% -2% 0);
+}
+.vitals.is-in .ecg-plot svg,
+.vitals.is-in .trend-plot svg {
+  clip-path: inset(-2% 0 -2% 0);
+  transition: clip-path 1.8s var(--ease);
+}
+.vitals.is-in .vital:nth-child(2) svg {
+  transition-delay: 0.18s;
+}
+.vitals.is-in .vital:nth-child(3) svg {
+  transition-delay: 0.36s;
 }
 .sensors-note {
   margin: clamp(36px, 4vw, 56px) 0 0;
@@ -1595,11 +1707,11 @@ section[id] {
   }
 }
 @media (max-width: 1023px) {
-  .sensors-grid {
+  .vitals {
     grid-template-columns: minmax(0, 1fr);
   }
-  .sensors-views {
-    max-width: 640px;
+  .vital-ecg {
+    grid-row: auto;
   }
   .bar-nav {
     gap: 22px;
@@ -1622,7 +1734,11 @@ section[id] {
     padding-top: 24px;
   }
   .hero-arm {
-    height: 420px;
+    height: 365px;
+  }
+  .hero-system {
+    width: min(48vw, 380px);
+    margin-top: 0;
   }
   .split-media {
     min-height: 360px;
@@ -1703,8 +1819,16 @@ section[id] {
   .hero-render {
     width: 92%;
   }
+  .hero-media.is-arm {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
   .hero-arm {
-    height: 360px;
+    height: 319px;
+  }
+  .hero-system {
+    width: 52vw;
+    margin-right: -3%;
   }
   .rule-head .h2 {
     white-space: normal;
@@ -1722,9 +1846,15 @@ section[id] {
   }
   .solution-stills {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;
+    gap: 12px 8px;
     height: auto;
-    padding: 12px 8px 64px;
+    padding: 24px 16px 72px;
+  }
+  .ecg-minor {
+    display: none;
+  }
+  .ecg-lead {
+    font-size: 11px;
   }
   .solution-card {
     margin-top: -56px;
@@ -1881,7 +2011,8 @@ section[id] {
   }
 }
 
-/* v0.11.1 — the forearm alone, shorter and lower in the band (150 px clear above the fingertips on desktop)
+/* v0.12.0 — the hero forearm back at its v0.11.0 scale, lower, with the CYPHIX tablet behind it; the user's four watches, the hovered one grows; "More than an ECG" shows data (strip, heart rate, skin temperature), drawn in once
+   v0.11.1 — the forearm alone, shorter and lower in the band (150 px clear above the fingertips on desktop)
    v0.11.0 — the hero pair: the user's raised forearm (bottom-anchored, sized to the band) beside the render, with its two-line key
    v0.10.0 — muted labels on the dark stages lifted to #8f98a8 (AA); the card and footer note measure under 80 characters
    v0.10.0 — four ways to wear it (four renders across, 2 x 2 on phones; the scene runs 560vh); "More than an ECG" on the dark studio with pinned module faces

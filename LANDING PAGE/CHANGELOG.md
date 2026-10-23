@@ -1,5 +1,72 @@
 # Changelog — CYPHIX Landing
 
+## v0.12.0 — 2026-10-23 — the hand at its first size, the system beside it, the user's watches, the vitals as charts
+
+**Why.** The user, on v0.11.1, asked for four changes:
+- "Now it's too big. You only had to move the hand down a little from where
+  it was. Look at AliveCor's proportions again."
+- "Next to the hand, as they do there, add this image that shows my system"
+  (a ChatGPT image of the CYPHIX app on an iPad).
+- "Where the four watches are, use this instead" (a ChatGPT image of the four
+  ways to wear it). Hovering over a watch should make it grow a little more
+  than the others, with an animation that is easy on the eye.
+- "More than an ECG: I don't want to see the modules there. I want graphs of
+  the other measurements, something beautiful."
+
+v0.11.1 had cut the lower quarter of the forearm and then sized what was left
+to the band, which also made the hand bigger. The cut was right; the scaling
+was not.
+
+**What changed.**
+- **The hero hand is back at its v0.11.0 size, lower.**
+  - The arm is sized as the whole forearm was in v0.11.0 (band − 56 px), times
+    the 76 % that remains after the cut. The hand is as large as it was there,
+    and its fingertips sit about 230 px below the band's top at 1440 × 900.
+  - That is AliveCor's proportion: their device top sits about a third of the
+    way down their hero.
+- **The system stands behind the hand, on the left, as AliveCor stands its
+  tablet.**
+  - The user's iPad image (`src/assets/photos/hero-system.webp`), cut to the
+    device, sits a little below the band's middle, with a soft drop shadow.
+  - The thumb overlaps its edge only.
+  - "Concept imagery" moved to the free corner on the left.
+  - The image mirrors the team's own web app: limb leads, heart rate,
+    frontal-plane axis and regularity, which are the measurements the app
+    displays.
+- **Our solution shows the user's four watches.**
+  - The strip is cut into one image per watch (`wear-*.webp`), with a shared
+    top and bottom so their scale stays as in the source.
+  - Under a pointer, the watch grows (×1.12, with a soft shadow) and the other
+    three step back (×0.96, slightly dimmed). It eases over 0.7 s.
+  - The effect runs only where there is hover and motion is welcome.
+  - The `group` photo slot is gone. Its Gemini prompt (§3) is marked as
+    supplied.
+- **More than an ECG shows the data instead of the parts.**
+  - **A 6-lead strip** at paper scale (25 mm/s, 10 mm/mV, 1 mm and 5 mm
+    squares, a 1 mV calibration pulse per row). Leads I and II are modelled;
+    III, aVR, aVL and aVF are derived from them by Einthoven's and
+    Goldberger's relations, as a real limb-lead recording is.
+  - **A day of heart rate** in coral, every five minutes, from about 55 bpm at
+    night to an early-evening peak near 140.
+  - **A night of skin temperature** in sky blue, from 22:00 to 08:00.
+  - All three come from fixed anchors and a seeded noise source
+    (`src/lib/vitals.ts`), so every visitor sees the same figures.
+  - The section says plainly: "Illustrative data, drawn for this page: not a
+    recording." There is no verdict anywhere.
+  - Each plot draws in once, left to right, as the section arrives. Nothing
+    loops or streams.
+  - The module renders `sensors-wrist` and `sensors-outer` and their pins are
+    removed.
+
+**Checked.**
+- In headless Chrome at 1440 × 900, 1280 × 720, 820 × 1180 and 390 × 844:
+  - no sideways scroll;
+  - the arm meets the band's bottom edge;
+  - the tablet and the arm fit inside the gutters;
+  - the strip's rows don't overlap;
+  - the hovered watch grows and the others step back.
+- The design detector reports no findings.
+
 ## v0.11.1 — 2026-10-23 — the forearm alone, lower in the band
 
 **Why.** The user: "the hand reaches too high; cut some of its bottom. And

@@ -1,36 +1,30 @@
-import smartStill from "../assets/img/scene-smart.webp";
-import strapStill from "../assets/img/scene-strap.webp";
-import analogStill from "../assets/img/scene-analog.webp";
-import cyphixStill from "../assets/img/scene-cyphix.webp";
-import { PHOTOS } from "../config/photos";
+import wearSmart from "../assets/photos/wear-smart.webp";
+import wearBracelet from "../assets/photos/wear-bracelet.webp";
+import wearAnalog from "../assets/photos/wear-analog.webp";
+import wearCyphix from "../assets/photos/wear-cyphix.webp";
 import { ArrowDown } from "./Icons";
 
-/* "Our solution", AliveCor-style: a full-bleed photograph (the Gemini
-   "four wrists, four ways to wear it" once supplied; until then the strap on
-   a smartwatch, closed into a bracelet, on an analog watch, and the Cyphix
-   watch, rendered from the 3D model) with a navy card rising over its lower edge. */
+/* "Our solution", AliveCor-style: the four ways to wear it across the slate
+   band (the user's own image, cut into one image per watch at a shared scale),
+   with a navy card rising over its lower edge. Under a pointer, the watch it
+   rests on grows and the others step back. */
 
-const STILLS = [
-  { src: smartStill, alt: "The Cyphix strap on a smartwatch." },
-  { src: strapStill, alt: "The Cyphix strap on its own, closed into a bracelet." },
-  { src: analogStill, alt: "The same Cyphix strap on an analog watch." },
-  { src: cyphixStill, alt: "The Cyphix watch, with the electrodes built into its band." },
+const WEAR = [
+  { src: wearSmart, w: 507, alt: "The Cyphix strap on a smartwatch: the module with its electrodes on the band, the watch showing CYPHIX 6-lead ECG." },
+  { src: wearBracelet, w: 466, alt: "The Cyphix strap on its own, closed into a bracelet." },
+  { src: wearAnalog, w: 528, alt: "The same Cyphix strap on an analog watch." },
+  { src: wearCyphix, w: 513, alt: "The Cyphix watch: our own screen, with the module built into its band." },
 ];
 
 export default function Product() {
-  const photo = PHOTOS.group;
   return (
     <section className="solution" id="solution" aria-labelledby="solution-title">
-      <figure className={`solution-media${photo ? " is-photo" : " is-render"}`}>
-        {photo ? (
-          <img src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} loading="lazy" decoding="async" />
-        ) : (
-          <div className="solution-stills">
-            {STILLS.map((s) => (
-              <img key={s.alt} src={s.src} alt={s.alt} width={1200} height={1200} loading="lazy" decoding="async" />
-            ))}
-          </div>
-        )}
+      <figure className="solution-media is-render">
+        <div className="solution-stills">
+          {WEAR.map((s) => (
+            <img key={s.alt} src={s.src} alt={s.alt} width={s.w} height={621} loading="lazy" decoding="async" />
+          ))}
+        </div>
       </figure>
       <div className="wrap">
         <div className="solution-card">
@@ -50,6 +44,7 @@ export default function Product() {
   );
 }
 
+// v0.12.0 — the user's four-watch image (cut per watch) replaces the renders; the hovered watch grows
 // v0.10.0 — four stills: smartwatch, bracelet, analog, the Cyphix watch
 // v0.9.0 — "Our solution": full-bleed photo slot "group" (interim: three renders) under a navy card
 // v0.8.0 — re-rendered in the product studio (AO, contact shadow); dots re-projected, the strap's on the band surface
