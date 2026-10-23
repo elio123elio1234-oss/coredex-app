@@ -77,6 +77,22 @@ Wearable Ease.**
   unprofessional. They asked for one product-driven motion of their own: near the end,
   the watch rotates as you scroll, becomes only the strap, then an analog watch ("one
   strap on any watch").
+- **Four ways to wear it (the user, 2026-10-23).** In the team's order:
+  1. on a smartwatch;
+  2. the strap on its own, **closed like a bracelet**, never shown open with
+     adapters;
+  3. on an analog watch, "turning an analog watch into a smart one";
+  4. the **Cyphix watch** (the model's `contour_*` assembly), with Cyphix's own
+     screen and the electrodes built into its band.
+
+  Every place that lists the configurations lists all four.
+- **Sensors in the module** (all in the team's model):
+  - steel ECG electrodes, two on the wrist side and three on the outer face,
+    plus one on the strap: the 6 limb leads;
+  - a PPG optical sensor with green LEDs, for continuous heart rate;
+  - a skin-temperature sensor.
+
+  The page shows them as measurements, never as readings or verdicts.
 
 ## Evidence on Hand
 
@@ -100,6 +116,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 2. Honest stage: every claim is one the one-pager already makes.
 3. Data, never verdicts.
 4. One company across the PDF, the deck and the page.
+<!-- v0.10.0 — the four configurations and the module's sensors -->
 <!-- v0.8.0 — the 3D model is the product imagery; the user's "one strap, any watch" scene -->
 <!-- v0.7.0 — the professional-canon commitment; lead delivery and hosting brought up to date -->
 <!-- v0.6.0 — product truth for the investor page (Impeccable init, 2026-10-19) -->

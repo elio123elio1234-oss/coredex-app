@@ -9,7 +9,7 @@ const ROWS = [
   {
     icon: LineWatch,
     lead: "Wear it.",
-    text: "The Cyphix module sits on the strap of the watch you already wear, and connects to any watch.",
+    text: "The Cyphix module sits on the strap: on the smartwatch or analog watch you already wear, or on its own as a bracelet. The Cyphix watch has it built in.",
   },
   {
     icon: LinePulse,
@@ -60,4 +60,5 @@ export default function HowItWorks() {
   );
 }
 
+// v0.10.0 — "Wear it" names the four ways to wear it
 // v0.9.0 — AliveCor-style list: wear · record · send with line icons, the module render beside it

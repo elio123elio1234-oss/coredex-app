@@ -1,24 +1,28 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
-import { dressModel, studioEnvironment } from "./studio";
+import { FACE, dressModel, studioEnvironment } from "./studio";
 
 /* ==================================================================
    "One strap. Any watch." — the closing scene, rendered live from the
    team's own 3D model (public/models/cyphix.glb: "strap", "smartwatch",
-   "analog" on one origin), dressed in the shared product studio.
+   "analog" and "contour", the Cyphix watch, on one origin), dressed in the
+   shared product studio. Four ways to wear it, in the team's order:
 
    Scroll progress p (0..1) drives everything; nothing runs on a timer
-   and a frame is drawn only when p or the size changes. The watches move
-   physically and stay opaque:
-     0.00–0.30  the strap turns to show the module's electrodes
-     0.30–0.44  back to a three-quarter front, the module still in view
-     0.44–0.48  the smartwatch unclips from the strap's adapters
-     0.47–0.56  and rises out of frame
-     0.56–0.66  the strap alone
-     0.66–0.76  the analog watch comes down from above
-     0.76–0.80  and clicks into the same adapters
-     0.80–1.00  hold
+   and a frame is drawn only when p or the size changes. Every part moves
+   physically and stays opaque:
+     0.00–0.24  on a smartwatch, the strap turns to show the module's electrodes
+     0.24–0.34  back to a three-quarter front, the module still in view
+     0.34–0.37  the smartwatch unclips, with its lug housings
+     0.365–0.43 and rises out of frame
+     0.43–0.52  the strap closes: a band grows from both cut ends and meets in the middle
+     0.60–0.66  and opens again
+     0.68–0.735 the analog watch comes down
+     0.735–0.765 and clicks into the same strap
+     0.83–0.89  the strap and the analog watch rise out together
+     0.885–0.95 the Cyphix watch, its electrodes in its own band, comes down
+     0.95–1.00  hold
    ================================================================== */
 
 export type StrapScene = {
@@ -29,22 +33,23 @@ export type StrapScene = {
 
 const MODEL_URL = "/models/cyphix.glb";
 
-/** The watches' face normal in the model's own space (the export kept a 45° presentation yaw). */
-const FACE = new THREE.Vector3(-Math.SQRT1_2, 0, Math.SQRT1_2);
 const UNCLIP = 0.012; // metres out of the adapters along the face normal
-const RISE = 0.17; // metres up, enough to leave the frame
+const RISE = 0.17; // metres up, enough for a watch to leave the frame
+const RISE_ALL = 0.23; // the whole strap loop needs more
 const TAU = Math.PI * 2;
 const Y0 = 0.6; // three-quarter front: the module stays in view beside the watch
 
 /** [progress, yaw, pitch] — a monotone cubic through these, so the turn never stutters at a key. */
 const KEYS: [number, number, number][] = [
   [0.0, Y0, 0.2],
-  [0.3, Y0 + Math.PI, 0.32],
-  [0.44, Y0 + TAU, 0.22],
-  [0.56, Y0 + TAU + 0.12, 0.26],
-  [0.66, Y0 + TAU + 0.3, 0.36],
-  [0.8, Y0 + TAU + 0.42, 0.26],
-  [1.0, Y0 + TAU + 0.5, 0.24],
+  [0.24, Y0 + Math.PI, 0.32],
+  [0.34, Y0 + TAU, 0.22],
+  [0.43, Y0 + TAU + 0.1, 0.28],
+  [0.52, Y0 + TAU + 0.18, 0.36], // a little from above: the closed loop reads as a bracelet
+  [0.62, Y0 + TAU + 0.26, 0.32],
+  [0.765, Y0 + TAU + 0.36, 0.26],
+  [0.89, Y0 + TAU + 0.44, 0.26],
+  [1.0, Y0 + TAU + 0.56, 0.24],
 ];
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -124,7 +129,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
 
   const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(MODEL_URL);
   const root = gltf.scene;
-  const { smartwatch, analog } = dressModel(root);
+  const { strap, smartwatch, analog, contour, link, closeLink } = dressModel(root);
   const presenter = new THREE.Group();
   presenter.rotation.y = Math.PI / 4; // undo the export's presentation yaw: the faces point at the camera at yaw 0
   presenter.add(root);
@@ -163,16 +168,31 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
     const up = upInRoot();
 
     // the smartwatch: unclip, then rise out of frame
-    const out = easeInOut(span(0.44, 0.48, p));
-    const rise = easeInCubic(span(0.47, 0.56, p));
+    const out = easeInOut(span(0.34, 0.37, p));
+    const rise = easeInCubic(span(0.365, 0.43, p));
     smartwatch.position.copy(FACE).multiplyScalar(out * UNCLIP).addScaledVector(up, rise * RISE);
     smartwatch.visible = rise < 0.999;
 
-    // the analog: down from above, then click into the adapters
-    const fall = 1 - easeOutCubic(span(0.66, 0.76, p));
-    const clip = 1 - easeInOut(span(0.76, 0.8, p));
-    analog.position.copy(FACE).multiplyScalar(clip * UNCLIP).addScaledVector(up, fall * RISE);
-    analog.visible = p > 0.655;
+    // the strap alone closes into a bracelet, then opens again for the analog
+    const closed = easeInOut(span(0.43, 0.52, p)) * (1 - easeInOut(span(0.6, 0.66, p)));
+    closeLink(closed);
+    link.visible = closed > 0.001;
+
+    // the strap with the analog watch leaves together for the Cyphix watch
+    const away = easeInCubic(span(0.83, 0.89, p));
+    strap.position.copy(up).multiplyScalar(away * RISE_ALL);
+    strap.visible = away < 0.999;
+
+    // the analog: down from above, then click into the same strap
+    const fall = 1 - easeOutCubic(span(0.68, 0.735, p));
+    const clip = 1 - easeInOut(span(0.735, 0.765, p));
+    analog.position.copy(FACE).multiplyScalar(clip * UNCLIP).addScaledVector(up, fall * RISE + away * RISE_ALL);
+    analog.visible = p > 0.675 && away < 0.999;
+
+    // the Cyphix watch: one piece, its electrodes in its own band
+    const arrive = 1 - easeOutCubic(span(0.885, 0.95, p));
+    contour.position.copy(up).multiplyScalar(arrive * RISE_ALL);
+    contour.visible = p > 0.88;
 
     renderer.render(scene, camera);
   };
@@ -222,4 +242,6 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   };
 }
 
+// v0.10.0 — the strap closes by growing from its cut ends, not by a dropped-in link
+// v0.10.0 — four ways to wear it: smartwatch → the strap closes into a bracelet → analog → the Cyphix watch (the Contour)
 // v0.8.0 — the "One strap. Any watch." scene: studio-dressed GLB; the watch unclips and rises out, the analog comes down and clicks in, all opaque

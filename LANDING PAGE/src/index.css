@@ -535,7 +535,7 @@ section[id] {
 }
 .solution-stills {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
   max-width: 1280px;
@@ -564,7 +564,7 @@ section[id] {
 }
 .solution-card p {
   margin: 0;
-  max-width: 46em;
+  max-width: 40em;
   font-size: clamp(16.5px, 1.3vw, 19px);
   line-height: 1.65;
   color: #dbe4f0;
@@ -660,6 +660,111 @@ section[id] {
   margin-top: 12px;
 }
 
+/* ---------- more than an ECG: the module's two faces, pinned, on the dark studio ---------- */
+
+.sensors {
+  margin-top: var(--section);
+  padding: var(--section) 0;
+  background: linear-gradient(180deg, #0a0d13 0%, #111725 100%);
+  color: #fff;
+}
+.sensors-head {
+  max-width: 40rem;
+  margin-bottom: clamp(40px, 5vw, 72px);
+}
+.sensors-title {
+  margin: 0;
+  font-size: clamp(36px, 4.2vw, 56px);
+  font-weight: 550;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+.sensors-lede {
+  margin: 18px 0 0;
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: #b7c0cf;
+}
+.sensors-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 48px clamp(40px, 6vw, 96px);
+  align-items: center;
+}
+.sensors-views {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 2.5vw, 40px);
+}
+.sensors-view {
+  margin: 0;
+}
+.sensors-img {
+  position: relative;
+}
+.sensors-img img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sensors-view figcaption {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 14px;
+  color: #8f98a8;
+}
+.pin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  background: rgba(10, 13, 19, 0.72);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.pin.is-key {
+  position: static;
+  margin: 1px 0 0;
+}
+.sensors-list {
+  display: grid;
+  gap: 36px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sensors-list li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.sensors-list h3 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.sensors-list p {
+  margin: 0;
+  max-width: 28em;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: #b7c0cf;
+}
+.sensors-note {
+  margin: clamp(36px, 4vw, 56px) 0 0;
+  font-size: 12.5px;
+  color: #8f98a8;
+}
 /* ---------- why Cyphix: the comparison on a pale band ---------- */
 
 .compare-band {
@@ -1040,7 +1145,7 @@ section[id] {
 }
 .strap-scene.is-live,
 .strap-scene.is-idle {
-  height: 400vh;
+  height: 560vh;
 }
 .ss-stage {
   position: sticky;
@@ -1099,7 +1204,7 @@ section[id] {
   list-style: none;
   transform: translateX(-50%);
   font-size: 13px;
-  color: #6f7a8c;
+  color: #8f98a8;
   white-space: nowrap;
 }
 .ss-steps li {
@@ -1131,7 +1236,7 @@ section[id] {
   z-index: 1;
   margin: 0;
   font-size: 12.5px;
-  color: #6f7a8c;
+  color: #8f98a8;
 }
 .ss-loading {
   position: absolute;
@@ -1175,7 +1280,7 @@ section[id] {
 }
 .ss-stills {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin: clamp(40px, 5vw, 64px) 0 0;
   padding: 0;
@@ -1420,7 +1525,7 @@ section[id] {
 }
 .foot-note {
   margin: 0;
-  max-width: 82ch;
+  max-width: 56ch;
   font-size: 13.5px;
   line-height: 1.65;
   color: var(--blue);
@@ -1485,6 +1590,12 @@ section[id] {
   }
 }
 @media (max-width: 1023px) {
+  .sensors-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sensors-views {
+    max-width: 640px;
+  }
   .bar-nav {
     gap: 22px;
   }
@@ -1593,17 +1704,19 @@ section[id] {
     height: 44px;
   }
   .solution-media {
-    height: 260px;
+    height: auto;
   }
   .solution-stills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0;
-    padding: 0 8px 56px;
+    height: auto;
+    padding: 12px 8px 64px;
   }
   .solution-card {
     margin-top: -56px;
   }
   .ss-stills {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ss-steps {
     gap: 18px;
@@ -1754,7 +1867,9 @@ section[id] {
   }
 }
 
-/* v0.9.0 — the AliveCor reference in Cyphix's colours: announcement, white sticky bar, slate hero, navy facts, splits, full-bleed photo with a navy card, list rows with line icons, pale bands
+/* v0.10.0 — muted labels on the dark stages lifted to #8f98a8 (AA); the card and footer note measure under 80 characters
+   v0.10.0 — four ways to wear it (four renders across, 2 x 2 on phones; the scene runs 560vh); "More than an ECG" on the dark studio with pinned module faces
+   v0.9.0 — the AliveCor reference in Cyphix's colours: announcement, white sticky bar, slate hero, navy facts, splits, full-bleed photo with a navy card, list rows with line icons, pale bands
    v0.8.0 — the 3D model leads: split hero with its render, module close-up with callouts, the dark "One strap. Any watch." stage
    v0.7.0 — the professional rebuild: a static company page in the one-pager's world
    v0.6.0 — the "out of the screen" system (retired) */

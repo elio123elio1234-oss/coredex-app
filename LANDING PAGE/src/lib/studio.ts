@@ -9,12 +9,18 @@ import * as THREE from "three";
      lights left and right, a low warm bounce — so polished metal shows
      long crisp highlights instead of a grey room.
    - dressModel: real materials by the export's material names, the
-     CYPHIX wordmark on the watch screen, an analog dial with indices,
-     and the strap's lug adapters moved from the smartwatch to the strap
-     (so the strap alone has finished ends and any watch clips into them).
+     CYPHIX app on the smartwatch screen, the Cyphix watch face on the
+     Contour, an analog dial with indices. Each watch keeps its own lug
+     housings; without a watch the strap closes with a link swept from its
+     own cut ends, so the strap alone is a bracelet, not an open band.
    - contactShadow: a soft shadow under the product from a blurred depth
      render seen from below.
    ================================================================== */
+
+/** The watches' face normal in the model's own space (the export kept a 45° presentation yaw). */
+export const FACE = new THREE.Vector3(-Math.SQRT1_2, 0, Math.SQRT1_2);
+/** Across the band, perpendicular to the strap loop. */
+const ACROSS = new THREE.Vector3(Math.SQRT1_2, 0, Math.SQRT1_2);
 
 /** The CYPHIX wordmark (mirrors src/components/Logo.tsx, viewBox 0 0 346 72). */
 const WORDMARK =
@@ -110,6 +116,51 @@ function screenTexture() {
   return tex;
 }
 
+/** The Cyphix watch's own face (the Contour): the wordmark, the time, and the three
+    measurements it carries, as labels only (no values: nothing on the page simulates a reading). */
+function contourFaceTexture(aspect: number) {
+  const W = 600;
+  const H = Math.round(W / aspect);
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#030405";
+  g.fillRect(0, 0, W, H);
+  g.textAlign = "center";
+  // everything stays well inside the glass opening (the display runs under the bezel)
+  g.save();
+  const s = 150 / 346;
+  g.translate(W / 2 - 75, H * 0.25);
+  g.scale(s, s);
+  g.fillStyle = "#ffffff";
+  g.fill(new Path2D(WORDMARK));
+  g.restore();
+  g.fillStyle = "#ffffff";
+  g.font = "300 150px Sora, Arial, sans-serif";
+  g.fillText("10:09", W / 2, H * 0.52);
+  g.fillStyle = "#8f98a8";
+  g.font = "500 30px Sora, Arial, sans-serif";
+  g.fillText("FRI 23", W / 2, H * 0.6);
+  ["ECG", "HR", "TEMP"].forEach((t, i) => {
+    const x = W * (0.3 + i * 0.2);
+    const y = H * 0.73;
+    g.strokeStyle = i === 0 ? "#f2574c" : "#3a404b";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.arc(x, y, 46, 0, Math.PI * 2);
+    g.stroke();
+    g.fillStyle = i === 0 ? "#ffffff" : "#b7c0cf";
+    g.font = "600 23px Sora, Arial, sans-serif";
+    g.fillText(t, x, y + 8);
+  });
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 function dialTexture() {
   const N = 1024;
   const c = document.createElement("canvas");
@@ -166,7 +217,7 @@ function dialTexture() {
   return tex;
 }
 
-/** Planar UVs across a flat part (display, dial), facing its averaged normal. */
+/** Planar UVs across a flat part (display, dial), facing its averaged normal; returns width / height. */
 function planarUV(mesh: THREE.Mesh, square = false) {
   const geo = mesh.geometry;
   const pos = geo.attributes.position;
@@ -197,13 +248,186 @@ function planarUV(mesh: THREE.Mesh, square = false) {
     out[2 * i + 1] = 1 - (a[2 * i + 1] - vmin) / (vmax - vmin);
   }
   geo.setAttribute("uv", new THREE.BufferAttribute(out, 2));
+  return (umax - umin) / (vmax - vmin);
+}
+
+/* ---------- the closing link ---------- */
+
+/** A band swept between the strap's two cut ends (where a watch's lug housings sit), so the
+    strap alone closes into a bracelet. The cut's size and tilt are read from the strap mesh
+    itself; the sweep leaves each end along the strap's own direction, so the joins are smooth,
+    and its round-edged section matches the strap's (22 x 2.8 mm in the team's model).
+    Its segments are indexed from both ends inward, so `close(g)` grows the band from the two
+    cut ends until they meet in the middle (g = 1, the default: closed). */
+function closingLink(root: THREE.Object3D, material: THREE.Material) {
+  const half = root.getObjectByName("strap_12_half") as THREE.Mesh;
+  root.updateMatrixWorld(true);
+  const pos = half.geometry.attributes.position;
+  const P = new THREE.Vector3();
+  const pts: [number, number, number][] = [];
+  for (let i = 0; i < pos.count; i++) {
+    P.fromBufferAttribute(pos, i).applyMatrix4(half.matrixWorld);
+    const u = P.dot(FACE);
+    if (u > -0.01) pts.push([u, P.y, P.dot(ACROSS)]); // the watch end of the half, not the module end
+  }
+  const yCut = Math.min(...pts.map((p) => Math.abs(p[1])));
+  const ring = pts.filter((p) => Math.abs(p[1]) < yCut + 0.0006);
+  const us = ring.map((p) => p[0]);
+  const uMin = Math.min(...us);
+  const uMax = Math.max(...us);
+  const uc = (uMin + uMax) / 2;
+  const th = (uMax - uMin) / 2;
+  const hw = Math.max(...ring.map((p) => Math.abs(p[2])));
+  const yc = ring.reduce((a, p) => a + p[1], 0) / ring.length;
+  // the cut is square to the strap, so its tilt in (u, y) is the strap's direction at the end
+  const mu = us.reduce((a, v) => a + v, 0) / us.length;
+  let cov = 0;
+  let vu = 0;
+  ring.forEach((p) => {
+    cov += (p[0] - mu) * (p[1] - yc);
+    vu += (p[0] - mu) ** 2;
+  });
+  const slope = vu ? cov / vu : 0;
+  const sg = Math.sign(yc);
+  const L = 2 * Math.abs(yc);
+  const n = Math.hypot(slope, 1);
+  // a Hermite curve from the cut at +y to its mirror at -y, leaving and arriving along the strap
+  const p0 = [uc, yc];
+  const p1 = [uc, -yc];
+  const t0 = [(sg * slope * L) / n, (-sg * L) / n];
+  const t1 = [(-sg * slope * L) / n, (-sg * L) / n];
+  const curve = (t: number) => {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    const h = [2 * t3 - 3 * t2 + 1, t3 - 2 * t2 + t, -2 * t3 + 3 * t2, t3 - t2];
+    const d = [6 * t2 - 6 * t, 3 * t2 - 4 * t + 1, -6 * t2 + 6 * t, 3 * t2 - 2 * t];
+    const at = (k: number, w: number[]) => w[0] * p0[k] + w[1] * t0[k] + w[2] * p1[k] + w[3] * t1[k];
+    return { c: [at(0, h), at(1, h)], d: [at(0, d), at(1, d)] };
+  };
+  // the section: two flat faces with fully rounded edges, as [a (thickness), b (width), normal a, normal b]
+  const K = 10;
+  const prof: [number, number, number, number][] = [];
+  for (const side of [1, -1]) {
+    for (let k = 0; k <= K; k++) {
+      const q = (k / K) * Math.PI + (side < 0 ? Math.PI : 0);
+      prof.push([th * Math.cos(q), side * (hw - th) + th * Math.sin(q), Math.cos(q), Math.sin(q)]);
+    }
+  }
+  const M = 36;
+  const R = prof.length;
+  const vtx: number[] = [];
+  const nor: number[] = [];
+  const idx: number[] = [];
+  const C = new THREE.Vector3();
+  const N = new THREE.Vector3();
+  const X = new THREE.Vector3();
+  const Q = new THREE.Vector3();
+  for (let i = 0; i <= M; i++) {
+    const { c, d } = curve(i / M);
+    const dl = Math.hypot(d[0], d[1]);
+    // the in-plane normal, square to the curve, on the outside of the loop (+u)
+    let nu = -d[1] / dl;
+    let ny = d[0] / dl;
+    if (nu < 0) {
+      nu = -nu;
+      ny = -ny;
+    }
+    C.copy(FACE).multiplyScalar(c[0]).setY(c[1]);
+    N.copy(FACE).multiplyScalar(nu).setY(ny);
+    for (const [a, b, na, nb] of prof) {
+      X.copy(C).addScaledVector(N, a).addScaledVector(ACROSS, b);
+      vtx.push(X.x, X.y, X.z);
+      Q.copy(N).multiplyScalar(na).addScaledVector(ACROSS, nb).normalize();
+      nor.push(Q.x, Q.y, Q.z);
+    }
+  }
+  const order: number[] = [];
+  for (let k = 0; k < M / 2; k++) order.push(k, M - 1 - k);
+  for (const i of order)
+    for (let j = 0; j < R; j++) {
+      const a = i * R + j;
+      const b = (i + 1) * R + j;
+      const c = (i + 1) * R + ((j + 1) % R);
+      const d = i * R + ((j + 1) % R);
+      idx.push(a, b, c, a, c, d);
+    }
+  // wind the faces outward whatever the model's handedness
+  const A = new THREE.Vector3().fromArray(vtx, 0);
+  const B = new THREE.Vector3().fromArray(vtx, R * 3).sub(A);
+  const D = new THREE.Vector3().fromArray(vtx, 3).sub(A);
+  if (B.cross(D).dot(new THREE.Vector3().fromArray(nor, 0)) < 0)
+    for (let k = 0; k < idx.length; k += 3) [idx[k + 1], idx[k + 2]] = [idx[k + 2], idx[k + 1]];
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(vtx, 3));
+  geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+  geo.setIndex(idx);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.name = "strap_link";
+  mesh.castShadow = true;
+  const link = new THREE.Group();
+  link.name = "link";
+  link.add(mesh);
+  const close = (g: number) => geo.setDrawRange(0, 6 * R * 2 * Math.round(Math.min(1, Math.max(0, g)) * (M / 2)));
+  return { link, close };
+}
+
+/** Rebuilds a flat, convex part (the Contour's display) as a clean panel: the convex outline
+    of its vertices in its own plane, fanned from the centre, every triangle and normal facing
+    `dir`. The simplified mesh had folded wedges that culled away and broke the AO pass. */
+function flatPanel(mesh: THREE.Mesh, dir: THREE.Vector3) {
+  const pos = mesh.geometry.attributes.position;
+  const n = dir.clone().transformDirection(mesh.matrixWorld.clone().invert());
+  const u = new THREE.Vector3(0, 1, 0).cross(n).normalize();
+  const v = n.clone().cross(u).normalize();
+  const P = new THREE.Vector3();
+  const pts: [number, number][] = [];
+  let depth = 0;
+  for (let i = 0; i < pos.count; i++) {
+    P.fromBufferAttribute(pos, i);
+    pts.push([P.dot(u), P.dot(v)]);
+    depth += P.dot(n);
+  }
+  depth /= pos.count;
+  // the convex outline, counter-clockwise in (u, v), which faces +n (Andrew's monotone chain)
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: [number, number][] = [];
+  const upper: [number, number][] = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  for (const p of [...pts].reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  const hull = lower.slice(0, -1).concat(upper.slice(0, -1));
+  const cx = hull.reduce((a, p) => a + p[0], 0) / hull.length;
+  const cy = hull.reduce((a, p) => a + p[1], 0) / hull.length;
+  const ring: [number, number][] = [[cx, cy], ...hull];
+  const vtx: number[] = [];
+  const nor: number[] = [];
+  for (const [x, y] of ring) {
+    P.copy(u).multiplyScalar(x).addScaledVector(v, y).addScaledVector(n, depth);
+    vtx.push(P.x, P.y, P.z);
+    nor.push(n.x, n.y, n.z);
+  }
+  const idx: number[] = [];
+  for (let k = 1; k <= hull.length; k++) idx.push(0, k, k === hull.length ? 1 : k + 1);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(vtx, 3));
+  geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+  geo.setIndex(idx);
+  mesh.geometry.dispose();
+  mesh.geometry = geo;
 }
 
 /* ---------- materials ---------- */
 
-/** Moulded-silicone grain: a fine value-noise bump in the band's own object space,
-    so it stays put as the strap turns (about 0.4 mm cells, a few pixels at page scale). */
-function siliconeGrain(mat: THREE.MeshPhysicalMaterial) {
+/** Moulded-silicone grain: a fine value-noise bump in the band's own object space, so it
+    stays put as the strap turns. The halves' positions are quantized (unit-range, scaled by
+    their node); `k` puts a mesh in metres on the same grain. */
+function siliconeGrain(mat: THREE.MeshPhysicalMaterial, k = 1) {
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", `#include <common>
@@ -223,12 +447,12 @@ function siliconeGrain(mat: THREE.MeshPhysicalMaterial) {
       .replace(
         "#include <normal_fragment_maps>",
         `#include <normal_fragment_maps>
-        vec3 q = vObj * 2600.0;
+        vec3 q = vObj * ${(2600 * k).toFixed(1)};
         vec3 g = vec3(vnoise(q + vec3(0.0, 13.1, 7.7)), vnoise(q + vec3(5.3, 0.0, 2.9)), vnoise(q + vec3(9.1, 4.4, 0.0))) - 0.5;
         normal = normalize(normal + g * 0.07);`,
       );
   };
-  mat.customProgramCacheKey = () => "silicone-grain";
+  mat.customProgramCacheKey = () => `silicone-grain-${k.toFixed(2)}`;
 }
 
 type Spec = THREE.MeshPhysicalMaterialParameters;
@@ -244,9 +468,23 @@ const SPEC: Record<string, Spec> = {
   watch_steel_polished: { color: 0xe0e4ea, metalness: 1, roughness: 0.1 },
   watch_hands_dark_steel: { color: 0x15181d, metalness: 0.9, roughness: 0.2 },
   crystal_sapphire: { color: 0xffffff, metalness: 0, roughness: 0, transparent: true, opacity: 0.12, clearcoat: 1, clearcoatRoughness: 0 },
+  // the Contour, the Cyphix watch: black titanium, an ink fluoroelastomer band, satin electrodes in it
+  contour_titanium_black_polished: { color: 0x3a3d44, metalness: 1, roughness: 0.14, clearcoat: 0.4, clearcoatRoughness: 0.08 },
+  contour_titanium_black_satin: { color: 0x5b5f68, metalness: 1, roughness: 0.34 },
+  contour_split_line: { color: 0x040506, metalness: 0, roughness: 0.6 },
+  contour_sapphire_lens: { color: 0x030405, metalness: 0, roughness: 0.02, clearcoat: 1, clearcoatRoughness: 0.01 },
+  contour_fluoroelastomer_ink: { color: 0x22262f, metalness: 0, roughness: 0.5, sheen: 0.6, sheenColor: new THREE.Color(0x8d9ab0), sheenRoughness: 0.55, clearcoat: 0.15, clearcoatRoughness: 0.5 },
 };
 
-export type Dressed = { strap: THREE.Object3D; smartwatch: THREE.Object3D; analog: THREE.Object3D };
+export type Dressed = {
+  strap: THREE.Object3D;
+  smartwatch: THREE.Object3D;
+  analog: THREE.Object3D;
+  contour: THREE.Object3D;
+  link: THREE.Object3D;
+  /** 0: the strap open at its cut ends; 1: closed into a bracelet */
+  closeLink: (g: number) => void;
+};
 
 export function dressModel(root: THREE.Object3D): Dressed {
   const get = (name: string) => {
@@ -257,11 +495,10 @@ export function dressModel(root: THREE.Object3D): Dressed {
   const strap = get("strap");
   const smartwatch = get("smartwatch");
   const analog = get("analog");
-
-  // the lug adapters belong to the strap: the strap alone keeps finished ends, any watch clips in
-  const adapters = smartwatch.children.filter((o) => /^strap_(housing|channel)_(12|6)/.test(o.name));
-  adapters.forEach((o) => strap.attach(o));
-  analog.children.filter((o) => /^strap_(housing|channel)/.test(o.name)).forEach((o) => (o.visible = false));
+  const contour = get("contour");
+  root.updateMatrixWorld(true);
+  flatPanel(get("contour_display") as THREE.Mesh, FACE);
+  get("contour_glass").removeFromParent(); // the display's own clearcoat is the cover glass
 
   const screen = screenTexture();
   const dial = dialTexture();
@@ -273,6 +510,9 @@ export function dressModel(root: THREE.Object3D): Dressed {
     let mat: THREE.Material;
     if (mesh.name === "watch_display") {
       mat = new THREE.MeshPhysicalMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: screen, emissiveIntensity: 1.05, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.02 });
+    } else if (mesh.name === "contour_display") {
+      const face = contourFaceTexture(planarUV(mesh));
+      mat = new THREE.MeshPhysicalMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: face, emissiveIntensity: 1.0, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.02 });
     } else if (mesh.name.startsWith("analog_dial")) {
       planarUV(mesh, true);
       mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: dial, roughness: 0.5, metalness: 0, sheen: 0.3, sheenColor: new THREE.Color(0xffffff) });
@@ -285,7 +525,15 @@ export function dressModel(root: THREE.Object3D): Dressed {
     mesh.material = mat;
     mesh.castShadow = true;
   });
-  return { strap, smartwatch, analog };
+  root.updateMatrixWorld(true);
+  const band = root.getObjectByName("strap_12_half") as THREE.Mesh;
+  // double-sided: while it grows, its open front edge shows silicone, not a hole
+  const linkMat = new THREE.MeshPhysicalMaterial({ ...SPEC.strap_silicone_slate, side: THREE.DoubleSide });
+  linkMat.name = "strap_silicone_slate";
+  siliconeGrain(linkMat, 1 / band.matrixWorld.getMaxScaleOnAxis());
+  const { link, close } = closingLink(root, linkMat);
+  root.add(link);
+  return { strap, smartwatch, analog, contour, link, closeLink: close };
 }
 
 /* ---------- contact shadow ---------- */
@@ -380,5 +628,7 @@ export function contactShadow(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
   };
 }
 
+// v0.10.0 — the link closes by growing from both cut ends (indexed inward, drawn by range)
+// v0.10.0 — four ways to wear it: the Contour (the Cyphix watch) and its face; each watch keeps its own housings; the strap alone closes with a swept link
 // v0.8.0 — review round 2: front-high fill, bright polished electrodes against satin titanium, silicone grain, a true contact shadow (height-limited)
 // v0.8.0 — the product studio: softbox environment, dressed materials (real wordmark on the screen, analog dial), lug adapters on the strap, contact shadow

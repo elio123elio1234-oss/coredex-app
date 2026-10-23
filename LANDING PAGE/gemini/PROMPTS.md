@@ -43,15 +43,16 @@ Photorealistic lifestyle photograph for a medical-technology website. A woman in
 
 ---
 
-## 3 · שלושה אנשים, שלושה שעונים, אותה רצועה — "One strap. Any watch."
+## 3 · ארבעה אנשים, ארבע דרכים לענוד — "One strap. Any watch."
 
 - **מקום בדף:** הפס הרחב לכל רוחב המסך, עם הכרטיס הכחול שעולה עליו.
 - **שם קובץ:** `any-watch-group.jpg`
 - **יחס:** 21:9 (רחב מאוד). אם אין 21:9, אפשר 16:9.
-- **לצרף:** `ref-1-strap-on-smartwatch.png`, `ref-3-strap-alone.png`, `ref-4-strap-on-analog-watch.png`
+- **לצרף:** `ref-1-strap-on-smartwatch.png`, `ref-3-strap-closed-bracelet.png`, `ref-4-strap-on-analog-watch.png`, `ref-5-cyphix-watch.png`
+- **שימו לב:** ארבע האפשרויות לפי הסדר שלך: על שעון חכם, הרצועה לבד סגורה כמו צמיד (בלי שעון ובלי מתאמים), על שעון אנלוגי, ושעון CYPHIX עם המסך שלנו.
 
 ```
-Photorealistic wide lifestyle photograph for a medical-technology website, 21:9. Three adults sit side by side on a sofa in a bright, modern home with plants and white walls, smiling naturally at the camera, each raising one forearm to show their watch: on the left a woman in her forties with a rectangular smartwatch; in the middle a man in his late sixties with a classic analog watch with a white dial and a silver case; on the right a woman in her thirties with a round sports watch. All three wear the identical Cyphix ECG strap from the attached references — a slate-blue silicone band with a slim brushed-titanium module carrying polished electrode plates — clearly the same strap on three different watches. Reproduce the strap exactly; the watches differ, the strap does not. Diverse ethnicities, natural clothing in soft neutral tones (denim, cream knitwear, grey). Soft daylight, warm and optimistic, shallow depth of field with the wrists and faces in focus. Keep the lower 40% of the frame visually calm (laps and sofa), because text will be overlaid there. No text, no logos, no watermark.
+Photorealistic wide lifestyle photograph for a medical-technology website, 21:9. Four adults sit side by side on a long sofa in a bright, modern home with plants and white walls, smiling naturally, each raising one forearm toward the camera to show what they wear on the wrist. From left to right: (1) a woman in her forties wearing a rectangular silver smartwatch on the Cyphix ECG strap, as in reference 1; (2) a man in his thirties wearing the Cyphix strap on its own, with no watch, closed into a seamless bracelet, as in reference 3 — a continuous slate-blue silicone band with the slim titanium module and its polished electrode plates, and no lugs, adapters or open ends; (3) a man in his late sixties wearing a classic analog watch with a white dial and a polished steel case on the same Cyphix strap, as in reference 4; (4) a woman in her fifties wearing the Cyphix watch from reference 5: a rectangular black-titanium smartwatch on its own dark ink-blue band, its screen showing the time. Wrists 1 to 3 wear the identical slate-blue Cyphix strap and module; reproduce them exactly — the watches differ, the strap does not. Reproduce the Cyphix watch exactly as in reference 5. Diverse ethnicities, natural clothing in soft neutral tones (denim, cream knitwear, grey). Soft daylight, warm and optimistic, shallow depth of field with the wrists and faces in focus. Keep the lower 40% of the frame visually calm (laps and sofa), because text will be overlaid there. No text other than the time on the watch screens, no logos, no watermark.
 ```
 
 ---
@@ -69,4 +70,5 @@ Photorealistic documentary photograph for a medical-technology website, 16:10. I
 
 ---
 
+<!-- v0.10.0 — prompt 3 shows the four ways to wear it (smartwatch, closed bracelet, analog, the Cyphix watch); refs 3–5 re-rendered -->
 <!-- v0.9.0 — four Gemini image prompts for the AliveCor-style page, with product references from the 3D model -->

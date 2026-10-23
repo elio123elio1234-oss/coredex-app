@@ -1,5 +1,72 @@
 # Changelog — CYPHIX Landing
 
+## v0.10.0 — 2026-10-23 — four ways to wear it; More than an ECG
+
+**Why.** The user liked v0.9.0 ("perfect") and caught a miss: the product
+comes in four configurations, not three:
+- on a smartwatch;
+- the strap on its own, which must be **closed like a bracelet**, "don't leave
+  it open with adapters";
+- on an analog watch, "turning an analog watch into a smart one";
+- the **Cyphix watch**, "the screen itself is ours too".
+
+They also asked whether to add the other sensors, "FULL VITALS": the 6-lead limb
+ECG, temperature, and PPG for continuous pulse. They weren't sure it was needed.
+Decided: yes, as one quiet section, because every one of those sensors is
+already in their 3D model.
+
+**What was wrong in v0.9.** The team's OBJ always held all four
+configurations side by side:
+- the smartwatch on the slate strap;
+- a closed band;
+- the analog watch on a green strap;
+- `contour_*`, a complete Cyphix watch in black titanium, with an ink band, the
+  electrodes in the band, and its own PPG and temperature sensors.
+
+The v0.8 conversion kept only the strap, the smartwatch and the analog head,
+and it moved the smartwatch's lug housings onto the strap. That is why the
+strap on its own looked like an open band with adapters.
+
+**What changed.**
+- **The model.** `public/models/cyphix.glb` now carries the fourth assembly,
+  `contour`, the team's own Cyphix watch, on the same origin. It is 1.6 MB, up
+  from 0.93 MB, because the Contour's case is a dense, unwelded surface.
+- **The studio** (`src/lib/studio.ts`):
+  - Each watch keeps its own lug housings.
+  - Without a watch, the strap closes with a band swept between its two cut
+    ends. The cut's size and tilt are read from the strap mesh, and the band
+    leaves each end along the strap's own direction, so the joins are smooth.
+  - The Contour gets its own face: the wordmark, the time, and the labels
+    ECG / HR / TEMP, with no values.
+  - Its display is rebuilt as a clean panel. The simplifier had folded some
+    of its wedges, which culled away and broke the AO pass. Its coplanar
+    cover glass is dropped; the display's clearcoat stands in for it.
+- **The scene** (`src/lib/strapScene.ts`, 560vh) runs in the team's order:
+  1. On the smartwatch, the strap turns.
+  2. The watch lifts out, and the strap closes into a bracelet: the band grows
+     from both cut ends and meets in the middle.
+  3. It opens again. The analog watch clicks in: "the same strap makes it a
+     smart one".
+  4. The strap and the analog watch rise out together, and the Cyphix watch
+     comes down: "Or ours."
+- **The renders.** There are four scene stills (`scene-cyphix.webp` is new),
+  used both in "Our solution" (2 × 2 on phones) and in the reduced-motion
+  fallback.
+- **"More than an ECG."** A new dark band after "How it works" shows the
+  module's wrist side and outer face, rendered from the model, with numbered
+  pins at each part's projected centre:
+  1. 6-lead ECG electrodes, on both faces and on the strap;
+  2. the PPG optical sensor, for continuous heart rate;
+  3. the skin-temperature sensor.
+- **Copy.** "Our solution", "Wear it", the scene steps and the footer map now
+  name the four ways to wear it.
+- **Gemini.** Prompt 3 is now four wrists: smartwatch, closed bracelet, analog,
+  and the Cyphix watch. Refs 3–5 are re-rendered: `ref-3-strap-closed-bracelet`,
+  `ref-4-…`, and the new `ref-5-cyphix-watch`.
+
+**Not done.** The Impeccable finish review stays deferred until the Gemini
+photos are in, as planned in v0.9.0. DESIGN.md is still at v0.8.
+
 ## v0.9.0 — 2026-10-23 — AliveCor's grammar, for Cyphix; four Gemini photo slots
 
 **Why.** While v0.8 was in review, the user (in Hebrew) pointed at

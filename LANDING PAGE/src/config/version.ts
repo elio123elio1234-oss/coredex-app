@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.9.0";
+export const APP_VERSION = "0.10.0";
 export const APP_BUILD_LABEL =
-  "AliveCor-style layout in Cyphix colours; four photo slots with Gemini prompts (renders stand in until the photos arrive)";
+  "Four ways to wear it (smartwatch, the strap closed into a bracelet, analog, the Cyphix watch from the team's model) and More than an ECG: the module's sensors";
 
+// v0.10.0 — the user's four configurations: the Contour watch from their 3D file, the strap closes into a bracelet; the sensors section (ECG, PPG, temperature)
 // v0.9.0 — the user's reference alivecor.com: announcement, slate hero, facts band, splits, navy card, icon rows; gemini/PROMPTS.md
 // v0.8.0 — the team's 3D model replaces the flat concept renders; the live "One strap. Any watch." scene near the end
 // v0.7.0 — the professional rebuild (user: "over simulation"): product pair, comparison, annotated product, stage, market, team, og card
