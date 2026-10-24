@@ -1,5 +1,83 @@
 # Changelog — CYPHIX Landing
 
+## v0.27.0 — 2026-10-24 — the closing scene becomes a journey
+
+**Why.** The user, after v0.26.0:
+
+> "There's an improvement, but not enough. I really want to create emotion at
+> this point. I need to tell a story, not just rotating watches. Maybe
+> changing scenes, really going on a journey with the product, and making it
+> a bit bigger, like Apple does with their products… a clean, modern
+> journey. Give me a special idea I didn't think of."
+
+The idea comes from a fact. The six limb leads point along twelve directions,
+30° apart: the hexaxial reference that doctors draw them on, and the axis
+wheel in the CYPHIX app. Those are the twelve hours of a watch face:
+
+- I at 3, II at 5, aVF at 6, III at 7, aVR at 10, aVL at 2.
+
+Every watch face already has the shape of a 6-lead ECG. The user approved
+building it ("build it and I'll tell you").
+
+**What changed: five chapters on one sticky stage (900vh, was 560vh).**
+1. **The moment** (night).
+   - A close-up of the module's electrodes in a dark room. A sweep of light
+     crosses the polished steel (the studio environment turns as it comes
+     up).
+   - Copy: "A flutter. Then nothing." / "By morning, it's gone." (the Need
+     section's own words: the ECG may be normal by the time care is reached).
+2. **The strap.**
+   - The camera pulls back first, then the product turns to a three-quarter
+     front: "Unless it was on the wrist."
+   - The product now fills about 88 % of the stage height (was 72 %).
+   - Then the user's four ways to wear it, in the team's order, with the
+     same moves as before.
+3. **Six leads.**
+   - The camera comes round to the analog face, straight on.
+   - The twelve hours light up one after another. The six lead axes then
+     grow from the centre past the case, coral, each named at its pole, with
+     their opposite poles dashed and a faint warm glow behind.
+   - Copy: "Every watch face has twelve directions." / "A 6-lead ECG reads
+     the heart along them."
+   - The axes are an SVG overlay, placed each frame on the dial's projected
+     centre and radius (`StrapScene.dial()`). Their labels are in pixels, so
+     the type stays sharp.
+4. **Ours.** The analog and the strap rise out as the Cyphix watch rises in
+   from below, so the stage is never empty.
+5. **Your clinician** (day).
+   - Light opens out of the watch, a soft circle that grows until the stage
+     is day.
+   - The CYPHIX app on the tablet rises into it: the hero's own tablet, its
+     illustrative recording labelled, with the same axis wheel as chapter 3.
+   - Copy: "The moment, in your clinician's hands." / "Recorded when it
+     happens, sent straight to the clinician."
+   - The bar turns light with the stage.
+
+**Supporting changes.**
+- **Chapter indicator:** five chapters (bars only on phones).
+- **Readable copy:** a scrim keeps the copy's side of the night stage dark,
+  so the product can pass behind the words.
+- **Phones and portrait tablets** (narrower than 1.15:1) get the vertical
+  layout: copy on top, product and tablet below.
+- **HeroTablet:** gives its clip a unique id per instance, since the tablet
+  now appears twice.
+- **Kept from v0.26.0:** the idle prebuild, every shader compiled up front,
+  and the glide.
+- **Nothing simulates a live signal or reads one:** the axes are geometry.
+
+**Also: the footer's bottom band is white.** The user: "the background of the
+bottom bar must be white like the other bars; it looks bluish."
+- `.foot-band` `--mist-2` → `var(--paper)`.
+- A hairline parts it from the white glass area above.
+- The small print is 8.3:1 and the badge 6.2:1.
+
+**Checked** (headless Chrome, software WebGL):
+- Frames at 1440 × 900 and 390 × 844, across every chapter.
+- No sideways scroll.
+- The scene is ready about 3 s after load, while still at the top.
+- Scrolling the whole journey, the longest block is 97 ms.
+- No page errors.
+
 ## v0.26.0 — 2026-10-24 — the 3D scene scrolls smoothly
 
 **Why.** The user, about "One strap. Any watch.":

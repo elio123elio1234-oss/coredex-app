@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.26.0";
+export const APP_VERSION = "0.27.0";
 export const APP_BUILD_LABEL =
-  "The 3D scene scrolls smoothly: built ahead of time while the page is idle, no freeze when a watch first appears, and it glides with the scroll in the same frame as the text";
+  "The 3D scene is a five-chapter journey: night on the electrodes, the strap, the six leads on a watch's twelve hours, our watch, and day at the clinician; the footer's bottom band is white";
 
+// v0.27.0 — the closing journey; the footer's bottom band white
 // v0.26.0 — the 3D scene: built ahead at idle, precompiled, gliding with the scroll
 // v0.25.0 — the hero hand replaced by the user's more natural one
 // v0.24.5 — white behind the hands (the red trial withdrawn)

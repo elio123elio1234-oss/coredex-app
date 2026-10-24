@@ -842,7 +842,7 @@ section[id] {
 }
 .strap-scene.is-live,
 .strap-scene.is-idle {
-  height: 560vh;
+  height: 900vh;
 }
 .ss-stage {
   position: sticky;
@@ -860,6 +860,123 @@ section[id] {
 }
 .ss-canvas canvas {
   display: block;
+}
+/* the six-leads chapter: a faint warm glow behind the dial, the lead axes drawn over it */
+.ss-heart {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(242, 87, 76, 0.2), rgba(242, 87, 76, 0.05) 60%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.ss-leads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.ss-ring {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1;
+}
+.ss-tick {
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0;
+}
+.ss-axis-pos {
+  stroke: var(--coral);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.ss-axis-neg {
+  stroke: rgba(255, 255, 255, 0.32);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 7;
+}
+.ss-lead {
+  font: 600 clamp(15px, 1.5vw, 21px) / 1 var(--sans);
+  fill: #fff;
+  opacity: 0;
+}
+.ss-hub {
+  fill: #fff;
+}
+/* the copy's side of the night stage stays dark, so the product can pass behind the words */
+.ss-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(10, 13, 19, 0.82) 0%, rgba(10, 13, 19, 0.55) 30%, rgba(10, 13, 19, 0) 48%);
+  pointer-events: none;
+}
+/* the last chapter: day, and the clinician's screen */
+.ss-day {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 60% at 70% 50%, #ffffff, transparent 70%),
+    linear-gradient(180deg, #f4f6f9 0%, #e7ecf3 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.ss-clinic {
+  --rise: 48px;
+  position: absolute;
+  top: 50%;
+  right: var(--edge);
+  width: min(48vw, 660px);
+  opacity: 0;
+  transform: translateY(calc(-50% + var(--rise)));
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.ss-clinic .hero-system {
+  width: 100%;
+  margin: 0;
+  transform: none;
+  filter: drop-shadow(0 30px 40px rgba(11, 26, 48, 0.18));
+}
+.ss-step.is-day .ss-title {
+  color: var(--ink);
+}
+.ss-step.is-day .ss-text {
+  color: var(--ink-2);
+}
+.ss-stage.is-day .ss-steps {
+  color: var(--ink-3);
+}
+.ss-stage.is-day .ss-steps li.is-on {
+  color: var(--ink);
+}
+.ss-stage.is-day .ss-steps li::before {
+  background: rgba(11, 26, 48, 0.14);
+}
+.ss-stage.is-day .ss-steps li.is-on::before {
+  background: var(--coral);
+}
+.ss-stage.is-day .ss-note {
+  color: var(--ink-3);
+}
+/* tall stages (the scene's own test: narrower than 1.15:1) hold the product under the copy */
+@media (max-aspect-ratio: 23/20) {
+  .ss-scrim {
+    background: linear-gradient(180deg, rgba(10, 13, 19, 0.85) 0%, rgba(10, 13, 19, 0.5) 30%, rgba(10, 13, 19, 0) 44%);
+  }
+  .ss-clinic {
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: 12svh;
+    width: min(90vw, 620px);
+    transform: translate(-50%, var(--rise));
+  }
 }
 .ss-copy {
   position: relative;
@@ -906,6 +1023,7 @@ section[id] {
 }
 .ss-steps li {
   position: relative;
+  min-width: 44px;
   padding-top: 14px;
   transition: color 0.4s ease;
 }
@@ -1259,8 +1377,10 @@ section[id] {
   color: var(--ink);
   text-decoration: underline;
 }
+/* white like every other bar; a hairline parts it from the glass area above */
 .foot-band {
-  background: var(--mist-2);
+  background: var(--paper);
+  border-top: 1px solid var(--hair);
 }
 .foot-band-inner {
   display: flex;
@@ -1500,7 +1620,20 @@ section[id] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ss-steps {
-    gap: 18px;
+    gap: 10px;
+  }
+  /* phones: the chapters as bars only */
+  .ss-steps span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .ss-steps li {
+    min-width: 40px;
+    padding-top: 0;
   }
 
   .milestones {
@@ -1565,7 +1698,8 @@ section[id] {
   }
 }
 
-/* v0.24.5 — trying white behind the hands: white glass, dark text, the red wordmark; the hands' brightness filter off
+/* v0.27.0 — the journey: 900vh, the six-leads overlay and its warm glow, the day scene with the clinician's tablet, five chapters (bars only on phones)
+   v0.24.5 — trying white behind the hands: white glass, dark text, the red wordmark; the hands' brightness filter off
    v0.24.4 — trying the logo's red behind the hands (red glass, the hands a shade deeper), for the user to compare
    v0.24.3 — the grey goes behind the hands (the user meant that, not the bottom band): the glass area in the hero's slate; the bottom band back to v0.24.1
    v0.24.2 — the footer's small-print band in the hero's grey (slate), its note and badge in sky

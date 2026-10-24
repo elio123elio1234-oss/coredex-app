@@ -1,3 +1,4 @@
+import { useId } from "react";
 import frame from "../assets/img/tablet-frame.webp";
 import { WORDMARK_PATH } from "./Logo";
 import { AXIS, BPM, GRID, PAPER, STRIPS, WHEEL } from "../lib/tabletScreen";
@@ -16,6 +17,8 @@ const chevron = (x: number, y: number, s: number) =>
   `M${x + 3.5 * s} ${y + 6 * s}L${x + 8 * s} ${y + 10.5 * s}L${x + 12.5 * s} ${y + 6 * s}`;
 
 function Screen() {
+  // the tablet appears twice on the page (the hero, the journey's last chapter): one clip id each
+  const clip = `tablet-paper-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   return (
     <svg
       className="hero-system-screen"
@@ -70,12 +73,12 @@ function Screen() {
 
       {/* the paper and the six leads */}
       <defs>
-        <clipPath id="tablet-paper">
+        <clipPath id={clip}>
           <rect width={PAPER.w} height={PAPER.h} rx="11" />
         </clipPath>
       </defs>
       <rect x="38.5" y="177.5" width="925" height="680" rx="12" fill="#fbfcfe" stroke={LINE} />
-      <g transform={`translate(${PAPER.x} ${PAPER.y})`} clipPath="url(#tablet-paper)">
+      <g transform={`translate(${PAPER.x} ${PAPER.y})`} clipPath={`url(#${clip})`}>
         <path d={GRID.minor} stroke="#edf2f8" strokeWidth="0.6" />
         <path d={GRID.major} stroke="#d9e3f0" strokeWidth="1" />
         {STRIPS.map((s) => (
@@ -157,4 +160,5 @@ export default function HeroTablet() {
   );
 }
 
+// v0.27.0 — a unique clip id per instance (the journey's last chapter shows the tablet too)
 // v0.19.0 — the tablet's screen drawn live (vectors) under the user's frame; it shipped as a 1000 px raster in v0.18.0

@@ -86,6 +86,15 @@ Wearable Ease.**
      screen and the electrodes built into its band.
 
   Every place that lists the configurations lists all four.
+- **The closing journey (the user, 2026-10-24):**
+  - The ask: "I really want to create emotion at this point… tell a story… a
+    journey with the product", the product larger, Apple-style.
+  - The scene became five chapters: the moment, the strap, six leads, ours,
+    your clinician.
+  - Its idea is a fact: the six limb leads point along twelve directions
+    30° apart, the twelve hours of a watch face (the hexaxial reference:
+    I 3, II 5, aVF 6, III 7, aVR 10, aVL 2).
+  - The lead axes are drawn as geometry, never as a signal or a reading.
 - **Sensors in the module** (all in the team's model):
   - steel ECG electrodes, two on the wrist side and three on the outer face,
     plus one on the strap: the 6 limb leads;
@@ -120,6 +129,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 4. One company across the PDF, the deck and the page.
 <!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
+<!-- v0.27.0 — the closing journey and its six-leads idea -->
 <!-- v0.10.0 — the four configurations and the module's sensors -->
 <!-- v0.8.0 — the 3D model is the product imagery; the user's "one strap, any watch" scene -->
 <!-- v0.7.0 — the professional-canon commitment; lead delivery and hosting brought up to date -->
