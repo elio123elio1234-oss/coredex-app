@@ -1,5 +1,15 @@
 # Changelog — CYPHIX Landing
 
+## v0.17.1 — 2026-10-24 — the stage, not the amount
+
+**Why.** The user: "Why does the top say 'Now raising a $1.9M seed round'? We
+only need our stage, not the number. The 1.9 million is really unnecessary."
+
+**What changed.** The announcement now reads "Now raising our seed round |
+Request the deck". The amount appeared nowhere else on the page: the market
+section that held the ask was removed in v0.14.0, and `og.jpg` carries no
+figure. `PRODUCT.md` keeps the ask as background truth.
+
 ## v0.17.0 — 2026-10-24 — black electrodes, and the hand a touch higher
 
 **Why.** The user sent the same forearm with the module's electrodes in black

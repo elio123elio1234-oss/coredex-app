@@ -36,7 +36,7 @@ export default function Header() {
   return (
     <>
       <p className="announce">
-        Now raising a $1.9M seed round <span aria-hidden="true">|</span>{" "}
+        Now raising our seed round <span aria-hidden="true">|</span>{" "}
         <a href="#contact">Request the deck</a>
       </p>
       <header className={`bar${dark ? " is-dark" : ""}`}>
@@ -65,6 +65,7 @@ export default function Header() {
   );
 }
 
+// v0.17.1 — the announcement names the stage, not the amount (the user)
 // v0.15.0 — "How it works" leaves the nav with its section
 // v0.9.0 — AliveCor-style: navy announcement bar, white sticky bar with links, phone and a solid uppercase button
 // v0.8.0 — turns dark over the closing scene's stage
