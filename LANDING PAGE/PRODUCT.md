@@ -86,20 +86,26 @@ Wearable Ease.**
      screen and the electrodes built into its band.
 
   Every place that lists the configurations lists all four.
-- **The closing journey (the user, 2026-10-24):**
-  - The ask: "I really want to create emotion at this point… tell a story… a
-    journey with the product", the product larger, Apple-style.
-  - The scene became five chapters: the moment, the strap, six leads, ours,
-    your clinician.
-  - Its idea is a fact: the six limb leads point along twelve directions
-    30° apart, the twelve hours of a watch face (the hexaxial reference:
-    I 3, II 5, aVF 6, III 7, aVR 10, aVL 2).
-  - The lead axes are drawn as geometry, never as a signal or a reading.
+- **The dark moment (the user, 2026-10-24).**
+  - **What the user wants:** emotion and a story, the product large,
+    Apple's language ("clean, professional, emotional, elegant", after
+    apple.com/iphone-duo). The scroll should carry it, with the whole screen
+    going dark for a moment; no clicks between the variations.
+  - **What the user rejected:**
+    - lines over the product (the six-lead axes over the analog dial,
+      v0.27–v0.28);
+    - theatrical scenes (the camera's falls, cranes and slide-outs).
+  - **The shape:**
+    - centred copy (an eyebrow, a large headline, brighter key phrases)
+      over the product, large;
+    - the product rises into view, then each way to wear it is a chapter
+      that arrives with a soft dissolve;
+    - the day comes back with the clinician's screen.
   - **One sanctioned live trace (the user, 2026-10-24):** "in the final scene
     with the iPad, let's make the ECG signals be created live, in a gentle
     loop, not too fast."
-    - The journey's last tablet writes its illustrative recording like a
-      monitor's pen: a 10 s strip in 10 s, looping.
+    - The clinician's tablet at the end writes its illustrative recording
+      like a monitor's pen: a 10 s strip in 10 s, looping.
     - It is labelled "Illustrative recording." and nothing reads it.
     - Everywhere else the canon holds: no simulated live signals.
 - **Sensors in the module** (all in the team's model):
@@ -136,6 +142,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 4. One company across the PDF, the deck and the page.
 <!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
+<!-- v0.29.0 — the dark moment, calm (lines and theatrics withdrawn; the scroll, not clicks) -->
 <!-- v0.28.0 — the one sanctioned live trace (the journey's last tablet) -->
 <!-- v0.27.0 — the closing journey and its six-leads idea -->
 <!-- v0.10.0 — the four configurations and the module's sensors -->

@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.28.0";
+export const APP_VERSION = "0.29.0";
 export const APP_BUILD_LABEL =
-  "The journey: a camera move per change (a slide, a crane, a fall), a clean dial for the six leads, morning rising from below, live traces on the clinician's tablet; Instagram and LinkedIn in the bar";
+  "The dark moment, calm: centred Apple-style copy over the product, large; it rises in, each way to wear it arrives with a soft dissolve; no lines or theatrics; the day and the clinician's live screen at the end";
 
+// v0.29.0 — the dark moment, calm, in the manner of a product page
 // v0.28.0 — the journey's transitions, clean dial, sunrise, live traces; Instagram and LinkedIn
 // v0.27.0 — the closing journey; the footer's bottom band white
 // v0.26.0 — the 3D scene: built ahead at idle, precompiled, gliding with the scroll

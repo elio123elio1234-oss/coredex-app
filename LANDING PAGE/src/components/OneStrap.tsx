@@ -1,115 +1,112 @@
-import { useEffect, useRef, useState } from "react";
-import type { StrapScene } from "../lib/strapScene";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { StrapStory } from "../lib/strapStory";
 import HeroTablet from "./HeroTablet";
 import stillSmart from "../assets/img/scene-smart.webp";
 import stillStrap from "../assets/img/scene-strap.webp";
 import stillAnalog from "../assets/img/scene-analog.webp";
 import stillCyphix from "../assets/img/scene-cyphix.webp";
 
-/* "One strap. Any watch." — the closing journey, near the end of the page.
-   A tall section with a sticky stage; scroll progress through it drives the
-   live 3D model (lib/strapScene) and everything around it, in five chapters:
+/* "One strap. Any watch." — the page's one dark moment, near its end. As the
+   section arrives the whole screen goes dark; the scroll carries a calm
+   story, in the manner of a product page: centred copy (an eyebrow, a large
+   headline, a line whose key phrases are set brighter) over the product,
+   large, live from the team's 3D model (lib/strapStory). Each way to wear
+   it is a chapter that arrives with a soft dissolve; nothing is drawn over
+   the product. Then the day comes back with the clinician's screen, its
+   illustrative recording writing itself in a gentle loop.
 
-     the moment    night: a close-up of the electrodes, found by a sweep of
-                   light; a symptom comes and goes
-     the strap     the product revealed, near full height, then the user's
-                   four ways to wear it, in the team's order
-     six leads     the analog face, straight on: the six lead axes of a
-                   6-lead ECG (the hexaxial reference) drawn over its twelve
-                   hours, which is exactly where they fall, 30 degrees apart
-     ours          the Cyphix watch
-     your clinician day: the canvas gives way to the CYPHIX app on a tablet
-
-   The model is built ahead of time, once the page has loaded and the browser
-   is idle (or as the section nears, if that comes first), so nothing is
-   still loading or compiling on arrival. The model, the copy and the overlay
-   glide to the scroll position together in one frame loop. Nothing here
-   simulates a live signal or reads one: the lead axes are geometry, and the
-   tablet shows an illustrative recording, labelled. Reduced motion, or no
-   WebGL, shows the four ways to wear it as stills. */
+   The model is built ahead of time, once the page has loaded and the
+   browser is idle (or as the section nears), so nothing is loading on
+   arrival; the scene and the copy glide to the scroll position together in
+   one frame loop. Reduced motion, or no WebGL, shows the same story still. */
 
 type Mode = "idle" | "live" | "still";
+type Step = { from: number; to: number; eyebrow: string; title: string; text: ReactNode; day?: boolean };
 
-/* Contiguous windows: one line always holds the stage. */
-const STEPS = [
-  { from: -0.1, to: 0.07, title: "A flutter. Then nothing.", text: "Symptoms are often transient." },
+/* contiguous windows: one line always holds the stage (the day's waits for the light) */
+const STEPS: Step[] = [
   {
-    from: 0.07,
-    to: 0.15,
-    title: "By morning, it's gone.",
-    text: "By the time a patient reaches care, the ECG may be normal.",
+    from: -0.1,
+    to: 0.18,
+    eyebrow: "One strap. Any watch.",
+    title: "Catch the moment.",
+    text: (
+      <>
+        Symptoms are often transient. <strong>A 6-lead ECG on the strap of the watch you already wear</strong> is
+        there when it happens.
+      </>
+    ),
   },
   {
-    from: 0.15,
-    to: 0.29,
-    title: "Unless it was on the wrist.",
-    text: "A 6-lead ECG module on the strap of the watch you already wear.",
-  },
-  {
-    from: 0.29,
-    to: 0.37,
+    from: 0.18,
+    to: 0.36,
+    eyebrow: "On your smartwatch",
     title: "It lives in the strap.",
-    text: "The Cyphix module and its electrodes sit on the band, not inside the watch.",
-  },
-  { from: 0.37, to: 0.52, title: "One strap.", text: "Without a watch, the strap closes into a bracelet. Cyphix is still there." },
-  { from: 0.52, to: 0.645, title: "Any watch.", text: "Clip in an analog watch, and the same strap makes it a smart one." },
-  {
-    from: 0.645,
-    to: 0.715,
-    title: "Every watch face has twelve directions.",
-    text: "Twelve hours, thirty degrees apart.",
+    text: (
+      <>
+        The Cyphix module and its <strong>electrodes</strong> sit on the band, <strong>not inside the watch.</strong>
+      </>
+    ),
   },
   {
-    from: 0.715,
-    to: 0.795,
-    title: "A 6-lead ECG reads the heart along them.",
-    text: "Leads I, II, III, aVR, aVL and aVF: six views of the heart, from the strap you already wear.",
+    from: 0.36,
+    to: 0.52,
+    eyebrow: "As a bracelet",
+    title: "One strap.",
+    text: (
+      <>
+        Without a watch, the strap closes into a bracelet. <strong>Cyphix is still there.</strong>
+      </>
+    ),
   },
-  { from: 0.795, to: 0.9, title: "Or ours.", text: "The Cyphix watch: our own screen, with the electrodes built into its band." },
   {
-    from: 0.915, // once the light has reached the copy
+    from: 0.52,
+    to: 0.68,
+    eyebrow: "On an analog watch",
+    title: "Any watch.",
+    text: (
+      <>
+        Clip in an analog watch, and <strong>the same strap makes it a smart one.</strong>
+      </>
+    ),
+  },
+  {
+    from: 0.68,
+    to: 0.86,
+    eyebrow: "The Cyphix watch",
+    title: "Or ours.",
+    text: (
+      <>
+        Our own screen, with <strong>the electrodes built into its band.</strong>
+      </>
+    ),
+  },
+  {
+    from: 0.895,
     to: 1.01,
-    title: "The moment, in your clinician's hands.",
-    text: "Recorded when it happens, sent straight to the clinician.",
+    eyebrow: "Your clinician",
+    title: "The moment, in their hands.",
+    text: (
+      <>
+        Recorded when it happens and <strong>sent straight to the clinician.</strong> Cyphix records and displays;{" "}
+        <strong>the reading stays with the clinician.</strong>
+      </>
+    ),
     day: true,
   },
 ];
-const CHAPTERS = [
-  { label: "The moment", from: -0.1, to: 0.15 },
-  { label: "The strap", from: 0.15, to: 0.645 },
-  { label: "Six leads", from: 0.645, to: 0.795 },
-  { label: "Ours", from: 0.795, to: 0.905 },
-  { label: "Your clinician", from: 0.905, to: 1.01 },
-];
 /* each line eases out upward and the next eases in from below, over this much progress */
-const FADE = 0.026;
-const DRIFT = 22; // px
+const FADE = 0.022;
+const DRIFT = 18; // px
 /* seconds: how quickly the scene catches up with the scroll; short enough to feel attached, long
    enough to turn a wheel step into a glide */
 const GLIDE = 0.15;
-/* the camera's fall to the Cyphix watch (mirrors FALL in lib/strapScene, which loads lazily) */
-const FALL = [0.785, 0.845];
-
-/* The hexaxial reference: each lead's positive pole, in degrees, 0 = lead I (the patient's left,
-   drawn to the right), positive clockwise. On a watch face, 0 degrees is three o'clock, so the
-   poles land on the hours: I 3, II 5, aVF 6, III 7, aVR 10, aVL 2. In the order they are drawn. */
-const LEADS: [string, number][] = [
-  ["I", 0],
-  ["II", 60],
-  ["III", 120],
-  ["aVR", -150],
-  ["aVL", -30],
-  ["aVF", 90],
-];
-const RING = [0.68, 0.705]; // the twelve hours light up, one after another
-const AXES = [0.705, 0.75]; // then the six leads, one after another
-const OUT = [0.77, 0.79]; // and all of it fades as the camera pulls away
 
 const STILLS = [
-  { src: stillSmart, label: "On your smartwatch", alt: "The Cyphix strap on a smartwatch, its screen showing a 6-lead ECG." },
+  { src: stillSmart, label: "On your smartwatch", alt: "The Cyphix strap on a smartwatch, the module and its electrodes on the band." },
   { src: stillStrap, label: "As a bracelet", alt: "The Cyphix strap on its own, closed into a bracelet, with the module and its electrodes." },
   { src: stillAnalog, label: "On an analog watch", alt: "The same Cyphix strap on an analog watch." },
-  { src: stillCyphix, label: "The Cyphix watch", alt: "The Cyphix watch in black titanium, its face showing the time, with the electrodes built into its band." },
+  { src: stillCyphix, label: "The Cyphix watch", alt: "The Cyphix watch in black titanium, with the electrodes built into its band." },
 ];
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -118,7 +115,6 @@ const smooth = (a: number, b: number, v: number) => {
   const t = span(a, b, v);
   return t * t * (3 - 2 * t);
 };
-const rad = (d: number) => (d * Math.PI) / 180;
 
 function webglAvailable() {
   try {
@@ -129,37 +125,36 @@ function webglAvailable() {
   }
 }
 
+function Copy({ s }: { s: Step }) {
+  return (
+    <>
+      <p className="st-eyebrow">{s.eyebrow}</p>
+      <p className="st-title">{s.title}</p>
+      <p className="st-text">{s.text}</p>
+    </>
+  );
+}
+
 export default function OneStrap() {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const dayRef = useRef<HTMLDivElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const scrimRef = useRef<HTMLDivElement>(null);
-  const heartRef = useRef<HTMLDivElement>(null);
-  const wheelRef = useRef<SVGGElement>(null);
   const clinicRef = useRef<HTMLDivElement>(null);
   const copyRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const chapterRefs = useRef<(HTMLLIElement | null)[]>([]);
   const [mode, setMode] = useState<Mode>("idle");
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce || !webglAvailable()) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !webglAvailable()) {
       setMode("still");
       return;
     }
     const section = sectionRef.current;
     const stage = stageRef.current;
     const host = hostRef.current;
-    const wheel = wheelRef.current;
-    if (!section || !stage || !host || !wheel) return;
-    const ring = wheel.querySelector<SVGCircleElement>(".ss-ring")!;
-    const ticks = Array.from(wheel.querySelectorAll<SVGLineElement>(".ss-tick"));
-    const axes = Array.from(wheel.querySelectorAll<SVGGElement>(".ss-axis"));
-    const hub = wheel.querySelector<SVGCircleElement>(".ss-hub")!;
+    if (!section || !stage || !host) return;
 
-    let scene: StrapScene | null = null;
+    let story: StrapStory | null = null;
     let disposed = false;
     let raf = 0;
     let shown = 0; // the progress on screen, gliding toward the scroll's
@@ -168,14 +163,11 @@ export default function OneStrap() {
     let clinicShown = false;
 
     // the pinned stage's own height, not the window's: a phone's address bar changes the window
-    // as it hides, and the scene used to jump with it
+    // as it hides, and the scene would jump with it
     const measure = () => {
       const r = section.getBoundingClientRect();
       const travel = r.height - stage.clientHeight;
-      return {
-        p: travel > 0 ? clamp01(-r.top / travel) : 0,
-        inView: r.bottom > 0 && r.top < window.innerHeight,
-      };
+      return { p: travel > 0 ? clamp01(-r.top / travel) : 0, inView: r.bottom > 0 && r.top < window.innerHeight };
     };
 
     const copy = (p: number) => {
@@ -191,128 +183,56 @@ export default function OneStrap() {
           el.setAttribute("aria-hidden", o < 0.5 ? "true" : "false");
         }
       });
-      CHAPTERS.forEach((c, i) => chapterRefs.current[i]?.classList.toggle("is-on", p >= c.from && p < c.to));
     };
 
-    // the six leads over the analog's twelve hours, centred on the dial as the camera sees it
-    const leads = (p: number) => {
-      const dial = scene?.dial();
-      const fade = 1 - smooth(OUT[0], OUT[1], p);
-      if (!dial || p < RING[0] || fade <= 0) {
-        wheel.style.opacity = "0";
-        if (heartRef.current) heartRef.current.style.opacity = "0";
-        return;
-      }
-      const w = stage.clientWidth;
-      const h = stage.clientHeight;
-      // reach past the case, but keep every label inside the stage, clear of the bar and the chapters
-      const room = Math.min(dial.x, w - dial.x, dial.y - 80, h - dial.y - 76) - 30;
-      const R = Math.max(40, Math.min(dial.r * 1.55, room / 1.14));
-      wheel.style.opacity = String(fade);
-      // drawn in pixels about the dial's centre (a scaled group would scale the labels' type too)
-      wheel.setAttribute("transform", `translate(${dial.x.toFixed(1)} ${dial.y.toFixed(1)})`);
-      const at = (deg: number, r: number) => [(Math.cos(rad(deg)) * r).toFixed(1), (Math.sin(rad(deg)) * r).toFixed(1)];
-      const lit = span(RING[0], RING[1], p);
-      ring.setAttribute("r", R.toFixed(1));
-      ring.style.opacity = String(0.22 * lit);
-      // the twelve hours, lit on the dial itself where its printed marks were
-      ticks.forEach((t, i) => {
-        const [x1, y1] = at(i * 30, dial.r * (i % 3 === 0 ? 0.62 : 0.7));
-        const [x2, y2] = at(i * 30, dial.r * 0.86);
-        t.setAttribute("x1", x1);
-        t.setAttribute("y1", y1);
-        t.setAttribute("x2", x2);
-        t.setAttribute("y2", y2);
-        t.style.opacity = String(clamp01(lit * 12 - i));
-      });
-      const drawn = span(AXES[0], AXES[1], p) * LEADS.length;
-      axes.forEach((g, i) => {
-        const k = clamp01(drawn - i);
-        const e = 1 - (1 - k) ** 3;
-        const [, deg] = LEADS[i];
-        const [pos, neg, label] = Array.from(g.children) as SVGElement[];
-        const [px, py] = at(deg, R * e);
-        const [nx, ny] = at(deg + 180, R * e);
-        const [lx, ly] = at(deg, R * 1.14);
-        pos.setAttribute("x2", px);
-        pos.setAttribute("y2", py);
-        neg.setAttribute("x2", nx);
-        neg.setAttribute("y2", ny);
-        label.setAttribute("x", lx);
-        label.setAttribute("y", ly);
-        pos.style.opacity = neg.style.opacity = k > 0 ? "1" : "0";
-        label.style.opacity = String(clamp01(k * 2 - 1));
-      });
-      hub.style.opacity = String(lit);
-      const heart = heartRef.current;
-      if (heart) {
-        heart.style.opacity = String(fade * span(RING[0], AXES[1], p));
-        heart.style.transform = `translate(${(dial.x - R * 1.4).toFixed(1)}px, ${(dial.y - R * 1.4).toFixed(1)}px)`;
-        heart.style.width = heart.style.height = `${(R * 2.8).toFixed(1)}px`;
-      }
-    };
-
-    // the camera's fall: the backdrop's glows move with it, so the drop reads as the camera's
-    const backdrop = (p: number) => {
-      const el = backdropRef.current;
-      if (el) el.style.transform = `translateY(${(-smooth(FALL[0], FALL[1], p) * 0.4 * stage.clientHeight).toFixed(1)}px)`;
-    };
-
-    // night into day: morning rises from below the stage, a soft straight edge climbing until the
-    // stage is day ("by morning", the story began), and the clinician's screen rises in it
+    // the day comes back: morning rises from below the stage with a soft straight edge, the canvas
+    // gives way, and the clinician's screen rises into it
     const day = (p: number) => {
-      const light = smooth(0.885, 0.93, p);
+      const light = smooth(0.85, 0.9, p);
       const EDGE = 38; // % of the stage the edge is soft over
-      const top = light * (100 + EDGE); // where the edge has climbed to, from the bottom
+      const top = light * (100 + EDGE);
       const sky = dayRef.current;
       if (sky) {
-        const mask =
-          light >= 1
-            ? "none"
-            : `linear-gradient(to top, #000 ${(top - EDGE).toFixed(1)}%, transparent ${top.toFixed(1)}%)`;
+        const mask = light >= 1 ? "none" : `linear-gradient(to top, #000 ${(top - EDGE).toFixed(1)}%, transparent ${top.toFixed(1)}%)`;
         sky.style.opacity = light > 0 ? "1" : "0";
         sky.style.maskImage = mask;
         sky.style.setProperty("-webkit-mask-image", mask);
       }
-      host.style.opacity = String(1 - smooth(0.92, 0.935, p));
-      if (scrimRef.current) scrimRef.current.style.opacity = String(1 - light);
-      const rise = smooth(0.905, 0.95, p);
+      host.style.opacity = String(1 - smooth(0.88, 0.9, p));
+      const rise = smooth(0.89, 0.95, p);
       const clinic = clinicRef.current;
       // the traces write themselves from an empty strip each time the clinician's screen arrives
       if (rise > 0 && !clinicShown) clinic?.querySelector<SVGSVGElement>("svg.hero-system-screen")?.setCurrentTime(0);
       clinicShown = rise > 0;
       if (clinic) {
         clinic.style.opacity = String(rise);
-        clinic.style.setProperty("--rise", `${((1 - rise) * 48).toFixed(1)}px`);
+        clinic.style.setProperty("--rise", `${((1 - rise) * 56).toFixed(1)}px`);
         clinic.setAttribute("aria-hidden", rise < 0.5 ? "true" : "false");
       }
       const nowDay = light > 0.5;
       if (nowDay !== isDay) {
         isDay = nowDay;
         stage.classList.toggle("is-day", isDay);
-        // the bar follows: dark over the night stage, light over the day one
+        // the bar follows: dark over the night stage, light over the day
         if (isDay) section.removeAttribute("data-bar-dark");
         else section.setAttribute("data-bar-dark", "");
         window.dispatchEvent(new Event("scroll"));
       }
     };
 
-    // one loop draws the model, the copy and the overlay together, in the frame of the scroll it read
+    // one loop draws the scene and the copy together, in the frame of the scroll it read
     const tick = (now: number) => {
       raf = 0;
       const { p, inView } = measure();
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60;
       last = now;
-      // off screen, or before the model is ready, there is nothing to glide: jump to the scroll
-      // (a jump, a link or a reload landing mid-scene, snaps: only scrolling glides)
-      if (!inView || !scene || Math.abs(p - shown) > 0.08) shown = p;
+      // off screen, before the model is ready, or a jump (a link, a reload): no glide, just go there
+      if (!inView || !story || Math.abs(p - shown) > 0.08) shown = p;
       else shown += (p - shown) * (1 - Math.exp(-dt / GLIDE));
       if (Math.abs(p - shown) < 1e-4) shown = p;
       if (inView) {
-        scene?.render(shown);
+        story?.render(shown);
         copy(shown);
-        leads(shown);
-        backdrop(shown);
         day(shown);
       }
       if (shown !== p) raf = requestAnimationFrame(tick);
@@ -322,7 +242,7 @@ export default function OneStrap() {
       if (!raf) raf = requestAnimationFrame(tick);
     };
     const onResize = () => {
-      scene?.resize();
+      story?.resize();
       onScroll();
     };
 
@@ -330,24 +250,22 @@ export default function OneStrap() {
     const start = () => {
       if (started || disposed) return;
       started = true;
-      io.disconnect();
-      import("../lib/strapScene")
-        .then((m) => m.createStrapScene(host))
+      near.disconnect();
+      import("../lib/strapStory")
+        .then((m) => m.createStrapStory(host))
         .then((s) => {
           if (disposed) return s.dispose();
-          scene = s;
+          story = s;
           setMode("live");
           onScroll();
         })
         .catch(() => !disposed && setMode("still"));
     };
     // as the section nears, if the idle build below has not started yet
-    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && start(), {
-      rootMargin: "150% 0px",
-    });
-    io.observe(section);
-    // don't wait for the visitor to reach the scene: once the page has loaded, build it when the
-    // browser is idle (not on a data-saver connection, where it waits for the section)
+    const near = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && start(), { rootMargin: "150% 0px" });
+    near.observe(section);
+    // don't wait for the visitor: once the page has loaded, build it when the browser is idle
+    // (not on a data-saver connection, where it waits for the section)
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
     const hasIdle = typeof window.requestIdleCallback === "function"; // Safari has no idle callback
     let idle = 0;
@@ -364,7 +282,7 @@ export default function OneStrap() {
 
     return () => {
       disposed = true;
-      io.disconnect();
+      near.disconnect();
       window.removeEventListener("load", whenIdle);
       if (idle) {
         if (hasIdle) window.cancelIdleCallback(idle);
@@ -373,22 +291,20 @@ export default function OneStrap() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       if (raf) cancelAnimationFrame(raf);
-      scene?.dispose();
+      story?.dispose();
     };
   }, []);
 
   if (mode === "still") {
     return (
       <section className="strap-scene is-still" id="any-watch" aria-labelledby="any-watch-title" data-bar-dark>
-        <div className="wrap ss-still">
-          <h2 id="any-watch-title" className="ss-still-title">
-            One strap. <span>Any watch.</span>
+        <div className="wrap st-still">
+          <p className="st-eyebrow">{STEPS[0].eyebrow}</p>
+          <h2 id="any-watch-title" className="st-title">
+            {STEPS[0].title}
           </h2>
-          <p className="ss-still-text">
-            The Cyphix module and its electrodes sit on the band: on your smartwatch, on an analog
-            watch, or on their own as a bracelet. The Cyphix watch has them built into its band.
-          </p>
-          <ul className="ss-stills">
+          <p className="st-text">{STEPS[0].text}</p>
+          <ul className="st-stills">
             {STILLS.map((s) => (
               <li key={s.label}>
                 <img src={s.src} alt={s.alt} width={1200} height={1200} loading="lazy" decoding="async" />
@@ -396,79 +312,40 @@ export default function OneStrap() {
               </li>
             ))}
           </ul>
-          <p className="ss-note">Concept rendering from the Cyphix 3D model</p>
+          <p className="st-note">Concept rendering from the Cyphix 3D model</p>
         </div>
       </section>
     );
   }
 
   return (
-    <section
-      ref={sectionRef}
-      className={`strap-scene is-${mode}`}
-      id="any-watch"
-      aria-labelledby="any-watch-title"
-      data-bar-dark
-    >
-      <div ref={stageRef} className="ss-stage">
-        <div ref={backdropRef} className="ss-backdrop" aria-hidden="true" />
-        <div ref={heartRef} className="ss-heart" aria-hidden="true" />
-        <div ref={hostRef} className="ss-canvas" />
-        <div ref={scrimRef} className="ss-scrim" aria-hidden="true" />
-        <div ref={dayRef} className="ss-day" aria-hidden="true" />
-        <svg className="ss-leads" aria-hidden="true">
-          <g ref={wheelRef} style={{ opacity: 0 }}>
-            <circle className="ss-ring" r="1" />
-            {Array.from({ length: 12 }, (_, i) => (
-              <line key={i} className="ss-tick" />
-            ))}
-            {LEADS.map(([name]) => (
-              <g key={name} className="ss-axis">
-                <line className="ss-axis-pos" x1="0" y1="0" x2="0" y2="0" />
-                <line className="ss-axis-neg" x1="0" y1="0" x2="0" y2="0" />
-                <text className="ss-lead" textAnchor="middle" dominantBaseline="central">
-                  {name}
-                </text>
-              </g>
-            ))}
-            <circle className="ss-hub" r="4" />
-          </g>
-        </svg>
-        <div ref={clinicRef} className="ss-clinic" aria-hidden="true">
+    <section ref={sectionRef} className={`strap-scene is-${mode}`} id="any-watch" aria-labelledby="any-watch-title" data-bar-dark>
+      <div ref={stageRef} className="st-stage">
+        <div ref={hostRef} className="st-host" />
+        <div ref={dayRef} className="st-day" aria-hidden="true" />
+        <div ref={clinicRef} className="st-clinic" aria-hidden="true">
           <HeroTablet live />
         </div>
-        <div className="wrap ss-copy">
+        <div className="st-copy">
           <h2 id="any-watch-title" className="sr-only">
-            One strap. Any watch. Six leads. To your clinician.
+            One strap. Any watch.
           </h2>
           {STEPS.map((s, i) => (
-            <div
-              key={s.title}
-              className={`ss-step${s.day ? " is-day" : ""}`}
-              ref={(el) => (copyRefs.current[i] = el)}
-            >
-              <p className="ss-title">{s.title}</p>
-              <p className="ss-text">{s.text}</p>
+            <div key={s.title} className={`st-step${s.day ? " is-day" : ""}`} ref={(el) => (copyRefs.current[i] = el)}>
+              <Copy s={s} />
             </div>
           ))}
         </div>
-        <ol className="ss-steps" aria-hidden="true">
-          {CHAPTERS.map((c, i) => (
-            <li key={c.label} ref={(el) => (chapterRefs.current[i] = el)}>
-              <span>{c.label}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="ss-note">Concept rendering from the Cyphix 3D model, rendered live</p>
-        {mode === "idle" && <span className="ss-loading" aria-hidden="true" />}
+        <p className="st-note">Concept rendering from the Cyphix 3D model, rendered live</p>
+        {mode === "idle" && <span className="st-loading" aria-hidden="true" />}
       </div>
     </section>
   );
 }
 
-// v0.28.0 — eased, directional copy fades; a longer glide; the hour marks lit on the dial itself; the backdrop moves with the camera's fall; the day rises from below (the circle of light withdrawn); the clinician's tablet writes its traces live
-// v0.27.0 — the journey in five chapters: the moment (night, the electrodes), the strap, six leads (the hexaxial axes over the analog's twelve hours), ours, your clinician (day, the app on a tablet)
-// v0.26.0 — smooth scroll: built ahead at idle, one frame loop draws the model and the copy, a short glide to the scroll position, progress from the pinned stage's height
+// v0.29.0 — the dark moment, calm, in the manner of a product page (the user, after apple.com/iphone-duo, keeping the dark scroll): centred copy over the product, large; a rise, then a chapter per way to wear it, each arriving with a soft dissolve; no lines, falls or cranes; the day and the clinician's live screen at the end
+// v0.28.0 — eased, directional copy fades; a longer glide; the hour marks lit on the dial itself; the backdrop moves with the camera's fall; the day rises from below; the clinician's tablet writes its traces live
+// v0.27.0 — the journey in five chapters (night, the strap, six leads, ours, your clinician)
+// v0.26.0 — smooth scroll: built ahead at idle, one frame loop, a short glide
 // v0.10.0 — four ways to wear it: smartwatch, the strap closed into a bracelet, analog, the Cyphix watch; four stills
-// v0.8.0 — contiguous copy windows (no empty frame); "One strap." once the watch has left
 // v0.8.0 — the "One strap. Any watch." section: sticky dark stage, lazy WebGL scene, scroll-scrubbed copy, still fallback

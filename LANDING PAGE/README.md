@@ -26,10 +26,11 @@ not generated: `HeroTablet.tsx` draws the CYPHIX screen live as SVG (data in
 
 - **Vite + React + TypeScript** (static SPA)
 - Plain CSS for the one load arrival (no animation library)
-- **three.js 0.169** for the closing scene, in its own lazy chunk (`src/lib/strapScene.ts`),
+- **three.js 0.169** for the closing scene, in its own lazy chunk (`src/lib/strapStory.ts`),
   loading the meshopt-compressed GLB from `public/models/`. It is built ahead of time, once the
   page has loaded and the browser is idle (every shader compiled, every texture uploaded), and it
-  glides to the scroll position in one frame loop with the copy (`OneStrap.tsx`)
+  glides to the scroll position in one frame loop with the copy (`OneStrap.tsx`); chapters
+  change with a soft dissolve
 - **Sora** + **Geist Mono** self-hosted from `src/assets/fonts` (no external requests)
 
 ## Run locally
@@ -69,9 +70,9 @@ src/
     Hero.tsx              headline beside the 3D render of the strap on a smartwatch
     Need.tsx              1 in 3, then the three-way comparison
     Product.tsx           "Our solution": the user's four watches (hover grows one) under the navy card
-    OneStrap.tsx          the closing journey: five chapters on a sticky stage (night → day), the six-lead overlay, still fallback
+    OneStrap.tsx          the page's one dark moment: centred copy over the product, a chapter per way to wear it, the day and the clinician's live screen; still fallback
     Header / Stage / Team / ContactForm / Footer / Icons / Logo
-  lib/strapScene.ts       the scroll-driven three.js scene: macro → product → analog face → Cyphix watch
+  lib/strapStory.ts       the scroll-driven three.js scene: the rise, then a chapter per configuration, dissolving
   assets/img              renders of the 3D model (with provenance sidecars) + portraits + app screen
 public/models/cyphix.glb  the team's 3D model: strap, smartwatch, analog, contour (one origin)
   assets/fonts            Sora + Geist Mono variable woff2 (OFL)
@@ -106,6 +107,7 @@ and light.
 <!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->
 <!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
+<!-- v0.29.0 — the closing scene is the calm dark moment (lib/strapStory) -->
 <!-- v0.27.0 — the closing scene is a five-chapter journey -->
 <!-- v0.26.0 — the closing scene is built ahead at idle and glides with the scroll -->
 <!-- v0.8.0 — the 3D model, the closing scene, three.js, how to re-render -->

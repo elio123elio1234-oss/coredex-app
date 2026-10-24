@@ -161,8 +161,7 @@ function contourFaceTexture(aspect: number) {
   return tex;
 }
 
-/** `markings: false` gives the same face with nothing printed on it (the journey's six-leads chapter). */
-function dialTexture(markings = true) {
+function dialTexture() {
   const N = 1024;
   const c = document.createElement("canvas");
   c.width = c.height = N;
@@ -174,15 +173,6 @@ function dialTexture(markings = true) {
   g.fillStyle = grad;
   g.fillRect(0, 0, N, N);
   g.translate(r, r);
-  if (markings) drawDialMarkings(g, r);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.flipY = false;
-  tex.anisotropy = 8;
-  return tex;
-}
-
-function drawDialMarkings(g: CanvasRenderingContext2D, r: number) {
   // minute track
   g.strokeStyle = "#2a2d33";
   for (let i = 0; i < 60; i++) {
@@ -220,6 +210,11 @@ function drawDialMarkings(g: CanvasRenderingContext2D, r: number) {
     g.lineTo(Math.sin(a) * r * 0.14, r * 0.42 - Math.cos(a) * r * 0.14);
     g.stroke();
   }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false;
+  tex.anisotropy = 8;
+  return tex;
 }
 
 /** Planar UVs across a flat part (display, dial), facing its averaged normal; returns width / height. */
@@ -608,8 +603,6 @@ export type Dressed = {
   link: THREE.Object3D;
   /** 0: the strap open at its cut ends; 1: closed into a bracelet */
   closeLink: (g: number) => void;
-  /** 0: the analog dial as printed; 1: a clean face, its markings dissolved */
-  setDialClean: (v: number) => void;
 };
 
 export function dressModel(root: THREE.Object3D): Dressed {
@@ -628,8 +621,6 @@ export function dressModel(root: THREE.Object3D): Dressed {
 
   const screen = screenTexture();
   const dial = dialTexture();
-  const dialClean = dialTexture(false);
-  const cleanU = { value: 0 };
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
@@ -643,22 +634,7 @@ export function dressModel(root: THREE.Object3D): Dressed {
       mat = new THREE.MeshPhysicalMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: face, emissiveIntensity: 1.0, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.02 });
     } else if (mesh.name.startsWith("analog_dial")) {
       planarUV(mesh, true);
-      const face = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: dial, roughness: 0.5, metalness: 0, sheen: 0.3, sheenColor: new THREE.Color(0xffffff) });
-      // the printed face and a clean one, mixed by `uClean`, so the markings can dissolve
-      face.onBeforeCompile = (shader) => {
-        shader.uniforms.mapClean = { value: dialClean };
-        shader.uniforms.uClean = cleanU;
-        shader.fragmentShader = shader.fragmentShader
-          .replace("#include <common>", "#include <common>\nuniform sampler2D mapClean;\nuniform float uClean;")
-          .replace(
-            "#include <map_fragment>",
-            `#ifdef USE_MAP
-              diffuseColor *= mix( texture2D( map, vMapUv ), texture2D( mapClean, vMapUv ), uClean );
-            #endif`,
-          );
-      };
-      face.customProgramCacheKey = () => "dial-clean";
-      mat = face;
+      mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: dial, roughness: 0.5, metalness: 0, sheen: 0.3, sheenColor: new THREE.Color(0xffffff) });
     } else {
       const spec = SPEC[name];
       mat = spec ? new THREE.MeshPhysicalMaterial(spec) : old;
@@ -690,7 +666,7 @@ export function dressModel(root: THREE.Object3D): Dressed {
     bend(g);
     levers.forEach((m) => (m.visible = g < 0.02));
   };
-  return { strap, smartwatch, analog, contour, link, closeLink, setDialClean: (v: number) => (cleanU.value = v) };
+  return { strap, smartwatch, analog, contour, link, closeLink };
 }
 
 /* ---------- contact shadow ---------- */
@@ -785,7 +761,7 @@ export function contactShadow(renderer: THREE.WebGLRenderer, scene: THREE.Scene,
   };
 }
 
-// v0.28.0 — the analog dial can dissolve its markings to a clean face (setDialClean), for the six-leads chapter
+// v0.29.0 — the analog dial's clean-face mix (v0.28.0) withdrawn with the journey; the light set now dresses the live viewer
 // v0.10.1 — the bracelet is the team's closed band: the strap bends to its oval as it closes (it was a "D", straight across the front)
 // v0.10.0 — the link closes by growing from both cut ends (indexed inward, drawn by range)
 // v0.10.0 — four ways to wear it: the Contour (the Cyphix watch) and its face; each watch keeps its own housings; the strap alone closes with a swept link

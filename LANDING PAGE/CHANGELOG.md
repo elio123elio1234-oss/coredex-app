@@ -1,5 +1,76 @@
 # Changelog — CYPHIX Landing
 
+## v0.29.0 — 2026-10-24 — the dark moment, calm
+
+**Why.** The user, on v0.28.0:
+
+> "No, no, wait. We've drifted far from what I meant: all the lines on the
+> product, and scenes that are too much. Look at what they did here
+> (apple.com/iphone-duo), take ideas from it and do it on my page. Clean.
+> Professional. Moving and elegant."
+
+Then, while it was being built:
+
+> "I will say I actually like the dark background you made, where the whole
+> screen suddenly goes dark for a moment and it's part of the experience,
+> and not clicks I have to press myself between the variations."
+
+**What Apple's page does,** read from 40 captures down its length:
+- light and quiet;
+- one idea per screen: a small eyebrow, a short huge headline, and a
+  paragraph in grey with its key phrases darker;
+- the product large, rising into view under the headline;
+- nothing drawn over the product;
+- changes of pose by a dissolve, not by machinery.
+
+A click-driven "Take a closer look." viewer was built first, then withdrawn
+before shipping on the second message. The scroll carries the story, and the
+screen goes dark for it.
+
+**What changed.**
+- **The stage:** still pinned while the section scrolls (720vh, was 900vh),
+  now black, and calm.
+- **Centred copy, in the manner of a product page:** an eyebrow, a large
+  headline, and a line whose key phrases are set brighter. Each line eases
+  out upward and the next eases in from below.
+- **The product is large and centred under the copy,** live from the 3D
+  model (`lib/strapStory.ts`, replacing `lib/strapScene.ts`).
+- **The chapters:**
+  1. **"Catch the moment."** The smartwatch rises into place from below.
+  2. **"It lives in the strap."** It turns slowly; the camera moves gently in
+     towards the module.
+  3. **"One strap."** The bracelet.
+  4. **"Any watch."** The analog watch.
+  5. **"Or ours."** The Cyphix watch.
+  6. **"The moment, in their hands."**
+     - The day rises from below, white like the page.
+     - The clinician's tablet rises into it, its traces writing live (kept
+       from v0.28.0).
+     - The bar turns light.
+  - Each configuration arrives with a soft 0.7 s dissolve over the last
+    frame of the one before. Within a chapter the product turns slowly with
+    the scroll.
+- **Withdrawn:**
+  - the six-lead axes and hour marks over the analog dial, and its
+    dissolving face (`setDialClean` removed from `studio.ts`);
+  - the night macro;
+  - the slide-out, the crane, the camera's fall and its moving backdrop;
+  - the chapter bars and the scrim.
+- **Kept:**
+  - the idle prebuild, every shader compiled up front;
+  - the glide (0.15 s), and the snap on jumps;
+  - the 1.5x pixel cap;
+  - the stills fallback (now the four renders under the opening headline).
+
+**Checked** (headless Chrome, software WebGL):
+- Frames across the story at 1440 × 900 and 390 × 844: the copy and the
+  product never overlap, and the ending's text and tablet each have their
+  own room.
+- No sideways scroll.
+- The scene is ready at the top, about 4 s after load.
+- Scrolling the whole section, the longest block is 91 ms.
+- The main bundle holds no three.js (181 kB).
+
 ## v0.28.0 — 2026-10-24 — the journey refined; Instagram and LinkedIn
 
 **Why.** The user on v0.27.0: "It's really beautiful!" Then four asks:
