@@ -1,5 +1,25 @@
 # Changelog — CYPHIX Landing
 
+## v0.21.0 — 2026-10-24 — the team in black and white, colour on hover
+
+**Why.** The user: "In The team, on desktop, can our photos be grey-white,
+and only when the mouse goes over them does the colour show?"
+
+**What changed.**
+- On a device with a hovering pointer (`hover: hover` and `pointer: fine`, a
+  desktop or laptop), both portraits rest in black and white
+  (`grayscale(1)`).
+- The portrait under the pointer fades into colour over 0.7 s, with the same
+  easing as its existing slight zoom. The other portrait stays grey.
+- Touch screens have no hover, so phones and tablets keep the portraits in
+  colour rather than hiding it for good.
+
+**Checked.** In headless Chrome:
+- at 1440 both portraits are `grayscale(1)` at rest, and hovering the first
+  turns only that one to `grayscale(0)`;
+- at 390 with touch, there is no filter;
+- the design detector reports no findings.
+
 ## v0.20.1 — 2026-10-24 — the tablet: full size again, a touch to the left
 
 **Why.** The user: "Actually, put it back to the previous size, and move the

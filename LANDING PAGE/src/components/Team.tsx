@@ -67,5 +67,6 @@ export default function Team() {
   );
 }
 
+// v0.21.0 — the portraits rest in black and white on desktop and turn to colour under the pointer (styles in index.css)
 // v0.7.0 — heading over two portrait-and-name rows; the founder's standing shot zoomed to match the advisor's headshot
 // v0.6.0 — the one-pager's team band: heading, then portrait + name + role for each person
