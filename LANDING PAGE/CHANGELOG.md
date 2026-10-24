@@ -1,5 +1,23 @@
 # Changelog — CYPHIX Landing
 
+## v0.24.2 — 2026-10-24 — the bottom band in the hero's grey
+
+**Why.** The user: "let's make the very bottom strip grey, like at the top of
+the page." The grey at the top is the hero's slate (`--slate`, #363a43).
+
+**What changed.**
+- `.foot-band` (the small print and the version badge): `--mist-2` →
+  `var(--slate)`, the same grey as the hero.
+- Its text takes the hero lede's colour, `--sky`, so it reads on the grey the
+  way the hero's paragraph does. The note was `--blue`. The badge is sky too,
+  with a sky hairline border at 35 %.
+- Nothing else moved: the navy glass area above, the layout and the copy.
+
+**Checked.**
+- The band and the hero compute to the same `rgb(54, 58, 67)`.
+- Note and badge contrast on the grey: 6.1:1.
+- No sideways scroll at 1440 or 390.
+
 ## v0.24.1 — 2026-10-24 — the footer on the page's dark navy
 
 **Why.** The user: "it looks light blue, not dark like on my site."

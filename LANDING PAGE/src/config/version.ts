@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.24.1";
+export const APP_VERSION = "0.24.2";
 export const APP_BUILD_LABEL =
-  "Footer: the page's dark navy (the facts band's) behind the heart-hands, seen through navy frosted glass; its text and wordmark white";
+  "Footer: the bottom small-print band in the hero's grey, its text and version badge in the hero's sky blue";
 
+// v0.24.2 — the footer's bottom band in the hero's grey
 // v0.24.1 — the footer on the dark navy, not the lighter announcement blue
 // v0.24.0 — the footer's glass on the page's blue behind the hands
 // v0.23.2 — the Request the deck panel square-cornered

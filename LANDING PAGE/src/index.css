@@ -1262,8 +1262,9 @@ section[id] {
   color: var(--ink);
   text-decoration: underline;
 }
+/* the small-print band in the hero's grey, its text in the hero lede's sky */
 .foot-band {
-  background: var(--mist-2);
+  background: var(--slate);
 }
 .foot-band-inner {
   display: flex;
@@ -1278,17 +1279,17 @@ section[id] {
   max-width: 56ch;
   font-size: 13.5px;
   line-height: 1.65;
-  color: var(--blue);
+  color: var(--sky);
 }
 .badge {
   flex: none;
   padding: 3px 9px;
-  border: 1px solid var(--rule);
+  border: 1px solid rgba(168, 191, 223, 0.35);
   border-radius: 999px;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: var(--ink-3);
+  color: var(--sky);
 }
 
 /* ---------- arrival: the hero once, on load ---------- */
@@ -1568,7 +1569,8 @@ section[id] {
   }
 }
 
-/* v0.24.1 — the footer on the dark navy (the facts band's), not the announcement bar's lighter blue
+/* v0.24.2 — the footer's small-print band in the hero's grey (slate), its note and badge in sky
+   v0.24.1 — the footer on the dark navy (the facts band's), not the announcement bar's lighter blue
    v0.24.0 — the footer's glass on the page's blue (the announcement bar's) behind the hands; its text and wordmark white
    v0.23.2 — the Request the deck panel square-cornered, like the page's other rectangles
    v0.23.1 — the footer's glass is its whole upper area (no card): the text straight on the glass, the area taller so the heart shows
