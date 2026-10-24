@@ -1,5 +1,46 @@
 # Changelog — CYPHIX Landing
 
+## v0.19.0 — 2026-10-24 — the tablet's screen drawn live; the tablet a touch smaller
+
+**Why.** The user: "Is the iPad screen a screenshot of what you made, or is it
+actually drawn on the site? It still looks a bit low quality. Why?" Then:
+"you could even make the iPad a tiny bit smaller."
+
+It was a screenshot. v0.18.0 drew the screen in HTML but shipped it as a
+raster:
+- rendered at 2×;
+- composed with the frame;
+- shrunk to a 1000 px WebP;
+- shrunk again by the browser to about 400 px.
+
+The ECG lines are thin, so each step softened them, and lossy compression
+smeared them further.
+
+**What changed.**
+- **The screen is live SVG.**
+  - `HeroTablet.tsx` draws the CYPHIX recording view as one SVG, 1330 × 888
+    units, with every element at the position measured from v0.18.0's layout.
+    `lib/tabletScreen.ts` holds the same recording, built once at import.
+  - The SVG sits under the user's frame (`tablet-frame.webp`, cropped to the
+    device), whose bezel covers its edges and rounds its corners.
+  - Lines, text and the wordmark (`Logo.tsx` now exports `WORDMARK_PATH`) are
+    vectors, sharp at any size, zoom or pixel density.
+  - The traces are simplified (Ramer–Douglas–Peucker, 0.12 units) so the path
+    data stays small.
+  - The traces are a little heavier (2.2 and 3.2 units, from 1.5 and 2.2), so
+    they read at the tablet's real size.
+- **The tablet is a touch smaller,** `scale(0.92)` from its right edge, the
+  edge under the hand. It shrinks toward the hand and nothing in the layout
+  moves: the hand's box is unchanged at every width.
+- `tools/tablet/` and `hero-system.webp` are removed; the component is the
+  source now.
+
+**Checked.**
+- In headless Chrome at 1440, 1280, 820 and 390 px wide, the hand's box is
+  unchanged and there is no sideways scroll.
+- A 3× close-up at 1440 shows crisp traces, type and wordmark.
+- The design detector reports no findings.
+
 ## v0.18.0 — 2026-10-24 — the hero tablet, built rather than generated
 
 **Why.** The user sent an empty tablet frame and asked: "Inside it, build my

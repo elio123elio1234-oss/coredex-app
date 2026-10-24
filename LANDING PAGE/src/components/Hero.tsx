@@ -1,6 +1,6 @@
 import heroRender from "../assets/img/render-hero.webp";
-import heroSystem from "../assets/photos/hero-system.webp";
 import { PHOTOS } from "../config/photos";
+import HeroTablet from "./HeroTablet";
 import { ArrowRight } from "./Icons";
 
 /* The opening, AliveCor-style: a slate band; on the left a notice chip,
@@ -32,14 +32,7 @@ export default function Hero() {
       <figure className={`hero-media${photo ? " is-arm" : ""}`}>
         {photo ? (
           <>
-            <img
-              className="hero-system"
-              src={heroSystem}
-              width={1000}
-              height={690}
-              alt="The CYPHIX app on a tablet: an illustrative 6-lead recording, leads I, II, III, aVR, aVL and aVF, with the ST segments in II, III and aVF marked in red, and the frontal-plane axis and heart rate beside it."
-              decoding="async"
-            />
+            <HeroTablet />
             <img className="hero-arm" src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} decoding="async" />
           </>
         ) : (
@@ -58,6 +51,7 @@ export default function Hero() {
   );
 }
 
+// v0.19.0 — the tablet is a component: its screen drawn live as vectors (HeroTablet)
 // v0.18.0 — the tablet is built: the user's empty frame with the CYPHIX screen drawn in tools/tablet (1000 x 690)
 // v0.16.0 — the user's third tablet image (1000 x 647); same width and place
 // v0.13.0 — the user's new tablet image (wider, 1000 x 563); the hand further over its right side
