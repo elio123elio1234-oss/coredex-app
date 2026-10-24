@@ -181,8 +181,15 @@ export const STRIPS = LEADS.map((name, row) => {
       st.push(line(simplify(seg, 0.08)));
     }
   }
-  return { name, d: pulse + line(pts).replace(/^M/, "L"), st, labelY: base + 5 };
+  // where the trace is at each sample, for a pen that writes it in time (the live tablet)
+  const ys = v.map((mv) => Math.round(y(mv) * 10) / 10);
+  return { name, d: pulse + line(pts).replace(/^M/, "L"), st, labelY: base + 5, ys };
 });
+
+/* the strip's own time base, for writing it in real time: sample k sits at X0 + k * STEP, and the
+   R peaks fall at BEATS seconds */
+export const TRACE = { x0: X0, x1: X1, step: (X1 - X0) / (SECONDS * FS), fs: FS, seconds: SECONDS };
+export const BEATS = PEAKS.filter((t) => t <= SECONDS);
 
 /* ---------- what the app shows beside it, computed from the trace ---------- */
 
@@ -227,3 +234,4 @@ export const WHEEL = {
 };
 
 // v0.19.0 — the hero tablet's screen as live vectors (it shipped as a raster in v0.18.0)
+// v0.30.0 — each strip's samples (ys), the time base (TRACE) and the beats (BEATS), so the live tablet writes in real time

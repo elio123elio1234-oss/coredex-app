@@ -865,17 +865,20 @@ section[id] {
 
 /* ---------- "One strap. Any watch.": the page's one dark moment ---------- */
 
-/* the whole screen goes dark; centred copy in the manner of a product page (an eyebrow, a large
-   headline, a line whose key phrases are set brighter) over the product, large */
+/* no transitions, only the scroll: the screen goes dark and pins; each product holds with its
+   copy (centred, in the manner of a product page), then moves up and away at the scroll's own
+   speed as the next comes up; last, the white page slides up the same way */
 .strap-scene {
   position: relative;
   margin-top: var(--section);
   color: #f5f5f7;
   background: #000;
 }
+/* 7.5 screens of travel (five holds of 0.7, four moves of 1) plus the stage itself */
 .strap-scene.is-live,
 .strap-scene.is-idle {
-  height: 720vh;
+  height: 850vh;
+  height: 850svh;
 }
 .st-stage {
   position: sticky;
@@ -888,37 +891,25 @@ section[id] {
   position: absolute;
   inset: 0;
 }
-.st-canvas,
-.st-veil {
+.st-canvas {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
 }
-/* the dissolve between chapters: the outgoing frame, fading over the new one */
-.st-veil {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.7s ease;
-}
-.st-copy {
+.st-panel {
   position: absolute;
   left: 0;
   right: 0;
   top: calc(var(--bar) + clamp(20px, 5.5vh, 64px));
   z-index: 2;
-  display: grid;
-  padding: 0 var(--gutter);
-  pointer-events: none;
-}
-.st-step {
-  grid-area: 1 / 1;
-  max-width: 46rem;
+  max-width: calc(46rem + 2 * var(--gutter));
   margin: 0 auto;
+  padding: 0 var(--gutter);
   text-align: center;
-  opacity: 0;
-  will-change: opacity, transform;
+  pointer-events: none;
+  will-change: transform;
 }
 .st-eyebrow {
   margin: 0 0 10px;
@@ -946,39 +937,6 @@ section[id] {
   font-weight: 500;
   color: #f5f5f7;
 }
-/* the day: white like the page, the clinician's screen rising into it */
-.st-day {
-  position: absolute;
-  inset: 0;
-  background: #fff;
-  opacity: 0;
-  pointer-events: none;
-}
-.st-step.is-day .st-eyebrow,
-.st-step.is-day .st-text {
-  color: var(--ink-3);
-}
-.st-step.is-day .st-title,
-.st-step.is-day .st-text strong {
-  color: var(--ink);
-}
-.st-clinic {
-  --rise: 56px;
-  position: absolute;
-  left: 50%;
-  bottom: clamp(20px, 5vh, 56px);
-  /* below the copy: the room left under its two-line headline and its line of text */
-  width: min(880px, 88vw, calc((100svh - var(--bar) - 430px) * 1.45));
-  opacity: 0;
-  transform: translate(-50%, var(--rise));
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-.st-clinic .hero-system {
-  width: 100%;
-  margin: 0;
-  transform: none;
-}
 .st-note {
   position: absolute;
   right: var(--gutter);
@@ -987,10 +945,39 @@ section[id] {
   margin: 0;
   font-size: 12px;
   color: #8e8e93;
-  transition: opacity 0.4s ease;
 }
-.st-stage.is-day .st-note {
-  opacity: 0;
+/* the white page, sliding up over the stage like the next section, with the clinician's screen */
+.st-day {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: #fff;
+  visibility: hidden;
+  will-change: transform;
+}
+.st-panel.is-day {
+  will-change: auto;
+}
+.st-panel.is-day .st-eyebrow,
+.st-panel.is-day .st-text {
+  color: var(--ink-3);
+}
+.st-panel.is-day .st-title,
+.st-panel.is-day .st-text strong {
+  color: var(--ink);
+}
+.st-clinic {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(20px, 5vh, 56px);
+  /* below the copy: the room left under its two-line headline and its line of text */
+  width: min(880px, 88vw, calc((100svh - var(--bar) - 430px) * 1.45));
+  transform: translateX(-50%);
+}
+.st-clinic .hero-system {
+  width: 100%;
+  margin: 0;
+  transform: none;
 }
 .st-loading {
   position: absolute;
@@ -1446,7 +1433,7 @@ section[id] {
   :root {
     --bar: 64px;
   }
-  .st-copy {
+  .st-panel {
     top: calc(var(--bar) + 18px);
   }
   .st-stills {
@@ -1601,7 +1588,8 @@ section[id] {
   }
 }
 
-/* v0.29.0 — "One strap. Any watch.", the page's one dark moment, calm: a black stage, centred copy in the manner of a product page (eyebrow, large headline, brighter key phrases), the chapter dissolve's veil, the white day and the clinician's tablet (the journey's overlays, glows and chapter bars withdrawn)
+/* v0.30.0 — the dark moment as panels: the copy and the white page move with the scroll (the veil, the fades and the sunrise mask withdrawn); 850svh
+   v0.29.0 — "One strap. Any watch.", the page's one dark moment, calm: a black stage, centred copy in the manner of a product page (eyebrow, large headline, brighter key phrases), the chapter dissolve's veil, the white day and the clinician's tablet (the journey's overlays, glows and chapter bars withdrawn)
    v0.28.0 — Instagram and LinkedIn at the bar's right end, beside the phone
    v0.28.0 — the stage's glows on a backdrop layer that moves with the camera's fall; coral hour marks on the clean dial; grey opposite poles
    v0.27.0 — the journey: 900vh, the six-leads overlay and its warm glow, the day scene with the clinician's tablet, five chapters (bars only on phones)

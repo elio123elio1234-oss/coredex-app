@@ -1,5 +1,61 @@
 # Changelog — CYPHIX Landing
 
+## v0.30.0 — 2026-10-24 — only the scroll; the tablet beats
+
+**Why.** The user, on v0.29.0:
+
+> "I don't like the transitions at all, it looks unprofessional. And below,
+> on the iPad, the waves don't look like a signal with a real BPM. It looks
+> like you're just drawing a line, with no real rhythm of the beats."
+
+The dissolve held two different poses of the product on screen at once for
+a moment, a ghost. On a product page, the professional pattern is no effect
+at all: the page scrolls, and pauses on each product.
+
+**What changed: the dark moment is plain scroll.**
+- **The column:** the four ways to wear it (smartwatch, bracelet, analog,
+  Cyphix watch) stand in a column a screen apart. They are four dressed
+  copies of the model, cloned before dressing.
+- **The camera** moves down past them at exactly the scroll's speed, so it
+  reads as the page itself scrolling.
+- **Holds:** 0.7 of a screen on each, with its copy (centred eyebrow,
+  headline, a line with brighter key phrases).
+- **Moves:** one screen between products. The copy moves with its product
+  as if part of the page.
+- **Turning:** each product turns slowly as it passes, 0.32 rad per screen.
+- **The end:** the white page slides up the same way, with "The moment, in
+  their hands." and the clinician's tablet. The bar turns light as it
+  arrives.
+- **The section** is 850svh: 7.5 screens of travel, the progress measured
+  in stage heights.
+- **Withdrawn:** the dissolve veil, the copy's fades and drift, the rise,
+  the push-in and the sunrise mask.
+
+**What changed: the clinician's tablet writes like a monitor.**
+- **Real time on the strip's own time base:** a 10 s strip in 10 s, beats at
+  the recording's own RR intervals, 75 a minute. It is driven by the
+  recording's samples (`tabletScreen` now exports each lead's `ys`, the
+  `TRACE` time base and the `BEATS`), not a wipe.
+- **A pen at the head of each lead** rides the trace, so each QRS is seen
+  being written.
+- **A heart beside the rate** beats on every R peak and settles over a
+  quarter second.
+- **The loop:** from the second pass the last strip stays ahead of the pen,
+  past a small gap.
+- **When it runs:** it starts from an empty strip each time the screen comes
+  into view and stops when it leaves.
+- **Script, not SMIL.** The hero's tablet stays still.
+- **Still the same illustrative recording,** labelled, and nothing reads it.
+
+**Checked** (headless Chrome, software WebGL):
+- Holds and moves at 1440 × 900 and 390 × 844: the outgoing product and copy
+  leave above as the next arrive from below, with no overlap and no ghost.
+- The monitor at 1.5, 4, 7.5, 11.5 and 14 s: two beats written by 1.5 s (as
+  at 75 BPM), the pens at the head, the heart large on a beat, and the
+  erase gap from the second pass.
+- The scene is ready 2.5 s after load, at the top.
+- Scrolling the whole section, the longest block is 69 ms.
+
 ## v0.29.0 — 2026-10-24 — the dark moment, calm
 
 **Why.** The user, on v0.28.0:

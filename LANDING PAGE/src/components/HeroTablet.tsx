@@ -1,7 +1,7 @@
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import frame from "../assets/img/tablet-frame.webp";
 import { WORDMARK_PATH } from "./Logo";
-import { AXIS, BPM, GRID, PAPER, STRIPS, WHEEL } from "../lib/tabletScreen";
+import { AXIS, BEATS, BPM, GRID, PAPER, STRIPS, TRACE, WHEEL } from "../lib/tabletScreen";
 
 /* The tablet beside the forearm: the user's empty frame (a transparent screen
    opening) laid over the CYPHIX recording view, which is drawn live as one SVG
@@ -16,21 +16,74 @@ const LINE = "#e3e9f1";
 const chevron = (x: number, y: number, s: number) =>
   `M${x + 3.5 * s} ${y + 6 * s}L${x + 8 * s} ${y + 10.5 * s}L${x + 12.5 * s} ${y + 6 * s}`;
 
-/* live: the six traces write themselves like a monitor's pen, one 10 s strip in 10 s (real time,
-   unhurried), and loop; after the first pass the last strip stays on screen ahead of the pen, past
-   a small gap. Declarative SMIL, so nothing runs in script. The recording stays the same
-   illustrative one, labelled. */
-const SWEEP = 10; // s
+/* live: the screen writes like a monitor, in real time on the strip's own time base (10 s across,
+   75 beats a minute): a pen at the head of each lead, riding the trace, and a heart beside the rate
+   that beats on every R peak. After the first pass the last strip stays ahead of the pen, past a
+   small gap, and the loop goes on. It starts from an empty strip each time the screen comes into
+   view and stops when it leaves. The recording stays the same illustrative one, labelled. */
 const GAP = 26; // units of the paper
 
+function useMonitor(live: boolean, svg: React.RefObject<SVGSVGElement>) {
+  useEffect(() => {
+    const el = svg.current;
+    if (!live || !el) return;
+    const now = el.querySelector<SVGRectElement>(".tm-now")!;
+    const old = el.querySelector<SVGRectElement>(".tm-old")!;
+    const pens = Array.from(el.querySelectorAll<SVGGElement>(".tm-pen"));
+    const heart = el.querySelector<SVGGElement>(".tm-heart")!;
+    const { x0, x1, seconds, fs } = TRACE;
+    let raf = 0;
+    let t0 = 0;
+    const frame = (ms: number) => {
+      const t = (ms - t0) / 1000;
+      const pass = Math.floor(t / seconds);
+      const s = t - pass * seconds; // seconds into this strip
+      const x = x0 + (s / seconds) * (x1 - x0); // the pen
+      now.setAttribute("width", x.toFixed(1));
+      const ahead = x + GAP;
+      old.setAttribute("x", ahead.toFixed(1));
+      old.setAttribute("width", pass > 0 ? Math.max(0, PAPER.w - ahead).toFixed(1) : "0");
+      const k = Math.min(STRIPS[0].ys.length - 1, Math.round(s * fs));
+      pens.forEach((g, i) => g.setAttribute("transform", `translate(${x.toFixed(1)} ${STRIPS[i].ys[k]})`));
+      // the heart: a beat on every R peak, settling over a quarter second
+      let since = Infinity;
+      for (const b of BEATS) if (b <= s) since = s - b;
+      const beat = since < 2 ? Math.exp(-since / 0.09) : 0;
+      heart.setAttribute("transform", `translate(1252 627) scale(${(1 + 0.3 * beat).toFixed(3)})`);
+      heart.style.opacity = String(0.55 + 0.45 * beat);
+      raf = requestAnimationFrame(frame);
+    };
+    const io = new IntersectionObserver(
+      (es) => {
+        const visible = es.some((e) => e.isIntersecting);
+        if (visible && !raf) {
+          t0 = performance.now(); // from an empty strip
+          raf = requestAnimationFrame(frame);
+        } else if (!visible && raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      },
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [live, svg]);
+}
+
 function Screen({ live }: { live: boolean }) {
-  // the tablet appears twice on the page (the hero, the journey's last chapter): one clip id each
+  // the tablet appears twice on the page (the hero, the closing section): one clip id each
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const clip = `tablet-paper-${uid}`;
   const sweep = `tablet-sweep-${uid}`;
-  const k = ((PAPER.w - GAP) / PAPER.w).toFixed(4);
+  const ref = useRef<SVGSVGElement>(null);
+  useMonitor(live, ref);
   return (
     <svg
+      ref={ref}
       className="hero-system-screen"
       viewBox="0 0 1330 888"
       role="img"
@@ -88,29 +141,9 @@ function Screen({ live }: { live: boolean }) {
         </clipPath>
         {live && (
           <clipPath id={sweep}>
-            {/* this pass, up to the pen */}
-            <rect y="0" height={PAPER.h} x="0" width="0">
-              <animate attributeName="width" from="0" to={PAPER.w} dur={`${SWEEP}s`} repeatCount="indefinite" />
-            </rect>
-            {/* the last pass, ahead of the pen past the gap (from the second pass on) */}
-            <rect y="0" height={PAPER.h} x={GAP} width="0">
-              <animate
-                attributeName="x"
-                values={`${GAP};${PAPER.w};${PAPER.w}`}
-                keyTimes={`0;${k};1`}
-                dur={`${SWEEP}s`}
-                begin={`${SWEEP}s`}
-                repeatCount="indefinite"
-              />
-              <animate
-                attributeName="width"
-                values={`${PAPER.w - GAP};0;0`}
-                keyTimes={`0;${k};1`}
-                dur={`${SWEEP}s`}
-                begin={`${SWEEP}s`}
-                repeatCount="indefinite"
-              />
-            </rect>
+            {/* this pass, up to the pen; the last pass, ahead of it past the gap */}
+            <rect className="tm-now" y="0" height={PAPER.h} x="0" width="0" />
+            <rect className="tm-old" y="0" height={PAPER.h} x="0" width="0" />
           </clipPath>
         )}
       </defs>
@@ -133,6 +166,14 @@ function Screen({ live }: { live: boolean }) {
             {s.name}
           </text>
         ))}
+        {/* the pens, one at the head of each lead */}
+        {live &&
+          STRIPS.map((s) => (
+            <g key={s.name} className="tm-pen" transform="translate(-40 0)">
+              <circle r="11" fill="#13213a" opacity="0.1" />
+              <circle r="4.2" fill="#13213a" />
+            </g>
+          ))}
       </g>
 
       {/* the frontal-plane axis */}
@@ -177,6 +218,14 @@ function Screen({ live }: { live: boolean }) {
           BPM
         </tspan>
       </text>
+      {live && (
+        <g className="tm-heart" transform="translate(1252 627)" opacity="0.55">
+          <path
+            d="M0 9.5C-6.5 4.6-11 1-11-4.2-11-8 -8.1-10.6-4.8-10.6c2.1 0 3.8 1.1 4.8 2.7 1-1.6 2.7-2.7 4.8-2.7 3.3 0 6.2 2.6 6.2 6.4 0 5.2-4.5 8.8-11 13.7Z"
+            fill="#e0352b"
+          />
+        </g>
+      )}
       <rect x="1009" y="670" width="262" height="1" fill={LINE} />
       <text x="1009" y="697" fontSize="12.5" fontWeight="600" letterSpacing="1" fill={INK_3}>
         RHYTHM
@@ -201,6 +250,7 @@ export default function HeroTablet({ live = false }: { live?: boolean }) {
   );
 }
 
+// v0.30.0 — `live` writes like a monitor: a pen per lead riding the trace in real time, a heart on every R peak, from an empty strip each time it comes into view (script, not SMIL)
 // v0.28.0 — `live`: the traces write themselves in a gentle 10 s loop (the journey's last chapter only)
 // v0.27.0 — a unique clip id per instance (the journey's last chapter shows the tablet too)
 // v0.19.0 — the tablet's screen drawn live (vectors) under the user's frame; it shipped as a 1000 px raster in v0.18.0
