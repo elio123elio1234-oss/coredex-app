@@ -1,5 +1,26 @@
 # Changelog — CYPHIX Landing
 
+## v0.24.4 — 2026-10-24 — trial: the logo's red behind the hands
+
+**Why.** The user: "a last attempt, let's try red like the logo, and then I'll
+decide what's most beautiful." It is a trial beside the grey (v0.24.3) and
+the navy (v0.24.1). Whichever the user picks stays.
+
+**What changed.**
+- `.foot-upper` background: `var(--red)` (#c7362c, the wordmark's red).
+- The glass is tinted with the same red, at 62 % with `blur(9px)`. The open
+  area stays exactly the logo's red.
+- **The hands a shade deeper** (`brightness(0.75)` on the image, also in the
+  no-backdrop-filter fallback). Skin is close to red, so on red the lightest
+  skin was what limited the white text. Darkening the hands holds the text
+  above 4.5:1 without drowning them in tint.
+- The text, the wordmark and the focus ring stay white. The layout, the image
+  crop and the pale small-print band are unchanged.
+
+**Checked.**
+- Real contrast, measured on the rendered pixels behind every footer line.
+  Worst cases: 1440: 4.8:1 · 1280: 4.75 · 820: 4.8 · 390: 4.8.
+
 ## v0.24.3 — 2026-10-24 — the grey goes behind the hands
 
 **Why.** The user: "no, no, I meant that the background behind the hands

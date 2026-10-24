@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.24.3";
+export const APP_VERSION = "0.24.4";
 export const APP_BUILD_LABEL =
-  "Footer: the hero's grey behind the heart-hands, seen through grey frosted glass; the bottom small-print band back to its pale colour";
+  "Footer (trial): the logo's red behind the heart-hands, seen through red frosted glass, for the user to compare with the grey and the navy";
 
+// v0.24.4 — trial: the logo's red behind the hands
 // v0.24.3 — the grey behind the hands; the bottom band restored
 // v0.24.2 — the footer's bottom band in the hero's grey
 // v0.24.1 — the footer on the dark navy, not the lighter announcement blue
