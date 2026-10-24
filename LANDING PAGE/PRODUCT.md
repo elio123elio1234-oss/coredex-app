@@ -103,7 +103,9 @@ Wearable Ease.**
       never on screen at once.
     - The stage is the original dark navy with its glows (the user:
       prettier than black).
-    - The white page scrolls up over it with the clinician's screen.
+    - Last, the clinician's screen is lit out of the dark the same way
+      (v0.32.0: the white sheet sliding up was "ugly"), and the page scrolls
+      on.
   - **What the user rejected along the way:**
     - the dissolves of v0.29.0, "unprofessional";
     - the products carried up a column at scroll speed (v0.30.0), which the
@@ -152,6 +154,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 4. One company across the PDF, the deck and the page.
 <!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
+<!-- v0.32.0 — the clinician's screen lit the same way -->
 <!-- v0.31.0 — the product lit out of the dark, in place, on the navy stage -->
 <!-- v0.30.0 — the dark moment as plain scroll; the monitor's pens and heart -->
 <!-- v0.29.0 — the dark moment, calm (lines and theatrics withdrawn; the scroll, not clicks) -->

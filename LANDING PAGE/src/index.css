@@ -867,18 +867,18 @@ section[id] {
 
 /* the screen goes dark and pins; the product stands centred under centred copy (in the manner of
    a product page) and turns in place; between the ways to wear it the light goes out and the next
-   is lit out of the dark; last, the white page scrolls up over the stage */
+   is lit out of the dark; last, the clinician's screen is lit the same way */
 .strap-scene {
   position: relative;
   margin-top: var(--section);
   color: #f5f5f7;
   background: #0a0d13;
 }
-/* six screens of travel plus the stage itself */
+/* 6.6 screens of travel plus the stage itself */
 .strap-scene.is-live,
 .strap-scene.is-idle {
-  height: 700vh;
-  height: 700svh;
+  height: 760vh;
+  height: 760svh;
 }
 /* the dark navy of the original stage (the user: prettier than black), its blue glow now
    behind the product in the middle, the faint warm one at the foot */
@@ -952,34 +952,17 @@ section[id] {
   font-size: 12px;
   color: #8e8e93;
 }
-/* the white page, sliding up over the stage like the next section, with the clinician's screen */
-.st-day {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  background: #fff;
-  visibility: hidden;
-  will-change: transform;
-}
-.st-panel.is-day {
-  opacity: 1;
-  will-change: auto;
-}
-.st-panel.is-day .st-eyebrow,
-.st-panel.is-day .st-text {
-  color: var(--ink-3);
-}
-.st-panel.is-day .st-title,
-.st-panel.is-day .st-text strong {
-  color: var(--ink);
-}
-/* sized and placed by the page to the room under its copy (a phone's whole width) */
+/* the clinician's screen on the stage, sized and placed by the page to the room under its copy (a
+   phone's whole width), lit out of the dark like the watches */
 .st-clinic {
   position: absolute;
   left: 50%;
   top: 50%;
+  z-index: 1;
   width: min(880px, 92vw);
+  opacity: 0;
   transform: translateX(-50%);
+  will-change: opacity;
 }
 .st-clinic .hero-system {
   width: 100%;
@@ -1595,7 +1578,8 @@ section[id] {
   }
 }
 
-/* v0.31.0 — the stage back on the original dark navy with its glows (the user: prettier than black)
+/* v0.32.0 — the clinician's screen on the navy stage, lit out of the dark (the white sheet and its styles withdrawn); 760svh
+   v0.31.0 — the stage back on the original dark navy with its glows (the user: prettier than black)
    v0.31.0 — the product turns in place; the copy fades with its light (700svh); the clinician's screen sized by the page
    v0.30.0 — the dark moment as panels: the copy and the white page move with the scroll (the veil, the fades and the sunrise mask withdrawn); 850svh
    v0.29.0 — "One strap. Any watch.", the page's one dark moment, calm: a black stage, centred copy in the manner of a product page (eyebrow, large headline, brighter key phrases), the chapter dissolve's veil, the white day and the clinician's tablet (the journey's overlays, glows and chapter bars withdrawn)

@@ -1,5 +1,37 @@
 # Changelog — CYPHIX Landing
 
+## v0.32.0 — 2026-10-24 — the clinician's screen, lit out of the dark
+
+**Why.** The user: "The transition from the watches to the iPad is ugly."
+
+The white page slid up over the dark stage like a sheet, a different
+language from the light going out between the watches, and a hard white
+edge crossing the screen.
+
+**What changed.**
+- **The clinician's screen is the fifth way, lit the same way as the
+  watches.**
+  - The Cyphix watch's light goes out and it fades into the navy with its
+    copy.
+  - The tablet is then lit out of the dark on the same stage, its white
+    screen glowing, under "The moment, in their hands." in the stage's
+    light-on-dark type.
+- **The monitor starts from an empty strip** the moment the tablet appears:
+  it is out of the layout while dark, so it has nothing to show until then.
+- **The "rendered live" note** steps aside while the tablet is up.
+- **Then the page simply scrolls on** into "Request the deck".
+- **Sizes:** the section is 760svh (6.6 screens of travel). The tablet is
+  still sized to the room under its copy.
+- **Withdrawn:** the white sheet and its styles, and the bar's mid-section
+  switch to light (the bar now turns light as the section leaves, as
+  elsewhere).
+
+**Checked** (headless Chrome, software WebGL), at 1440 × 900 and 390 × 844:
+- The Cyphix watch dims and fades, then a beat of empty navy, then the
+  tablet comes up with the copy.
+- On the phone the tablet is near the full width.
+- No sideways scroll.
+
 ## v0.31.0 — 2026-10-24 — lit out of the dark, on the navy
 
 **Why.** The user, on v0.30.0, from a phone:
