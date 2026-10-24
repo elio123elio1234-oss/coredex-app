@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
-import { Phone } from "./Icons";
+import { Instagram, LinkedIn, Phone } from "./Icons";
 
 /* The top of the page, AliveCor-style: a navy announcement bar that scrolls
    away, then a white sticky bar — wordmark, section links, the direct line
@@ -14,6 +14,10 @@ const LINKS = [
 ];
 
 const PHONE = "+972 54-398-9698";
+const SOCIAL = [
+  { href: "https://www.instagram.com/cyphix.co/", label: "Cyphix on Instagram", Icon: Instagram },
+  { href: "https://www.linkedin.com/company/cyphixmedical/", label: "Cyphix on LinkedIn", Icon: LinkedIn },
+];
 
 export default function Header() {
   const [dark, setDark] = useState(false);
@@ -51,16 +55,24 @@ export default function Header() {
               </a>
             ))}
           </nav>
-          <a className="bar-phone" href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>
-            <Phone width={17} height={17} />
-            {PHONE}
-          </a>
+          <div className="bar-end">
+            <a className="bar-phone" href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>
+              <Phone width={17} height={17} />
+              {PHONE}
+            </a>
+            {SOCIAL.map(({ href, label, Icon }) => (
+              <a key={href} className="bar-social" href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
+                <Icon width={20} height={20} />
+              </a>
+            ))}
+          </div>
         </div>
       </header>
     </>
   );
 }
 
+// v0.28.0 — Instagram and LinkedIn beside the phone (they stay when the phone number hides)
 // v0.20.0 — the bar's "Request the deck" button removed (the user: three times was too many; the announcement and the hero keep it)
 // v0.17.1 — the announcement names the stage, not the amount (the user)
 // v0.15.0 — "How it works" leaves the nav with its section

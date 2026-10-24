@@ -349,8 +349,39 @@ section[id] {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
   white-space: nowrap;
+}
+/* the right end: the phone, then Instagram and LinkedIn */
+.bar-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.bar-phone {
+  margin-right: 14px;
+}
+.bar-social {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: var(--ink-2);
+  transition: color 0.2s ease;
+}
+.bar-social:hover {
+  color: var(--ink);
+}
+/* the last glyph's edge, not its tap box, meets the page's right edge */
+.bar-social:last-child {
+  margin-right: -10px;
+}
+.bar.is-dark .bar-social {
+  color: #b7c0cf;
+}
+.bar.is-dark .bar-social:hover {
+  color: #fff;
 }
 .bar.is-dark {
   background: rgba(10, 13, 19, 0.88);
@@ -849,10 +880,21 @@ section[id] {
   top: 0;
   height: 100svh;
   overflow: hidden;
+  background: linear-gradient(180deg, #0a0d13 0%, #111725 100%);
+}
+/* the stage's glows, on a taller layer that moves up as the camera falls (the same glows as
+   before: the blue at 66% 52% of the stage, the warm one at 50% 110%) */
+.ss-backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 170%;
   background:
-    radial-gradient(46% 60% at 66% 52%, rgba(122, 160, 222, 0.16), transparent 70%),
-    radial-gradient(70% 50% at 50% 110%, rgba(242, 87, 76, 0.08), transparent 70%),
-    linear-gradient(180deg, #0a0d13 0%, #111725 100%);
+    radial-gradient(46% 35.3% at 66% 30.6%, rgba(122, 160, 222, 0.16), transparent 70%),
+    radial-gradient(70% 29.4% at 50% 64.7%, rgba(242, 87, 76, 0.08), transparent 70%);
+  pointer-events: none;
+  will-change: transform;
 }
 .ss-canvas {
   position: absolute;
@@ -886,8 +928,8 @@ section[id] {
   stroke-width: 1;
 }
 .ss-tick {
-  stroke: #fff;
-  stroke-width: 2.5;
+  stroke: var(--coral);
+  stroke-width: 3;
   stroke-linecap: round;
   opacity: 0;
 }
@@ -897,7 +939,7 @@ section[id] {
   stroke-linecap: round;
 }
 .ss-axis-neg {
-  stroke: rgba(255, 255, 255, 0.32);
+  stroke: rgba(150, 160, 176, 0.55);
   stroke-width: 1.5;
   stroke-dasharray: 5 7;
 }
@@ -907,7 +949,7 @@ section[id] {
   opacity: 0;
 }
 .ss-hub {
-  fill: #fff;
+  fill: var(--coral);
 }
 /* the copy's side of the night stage stays dark, so the product can pass behind the words */
 .ss-scrim {
@@ -1698,7 +1740,9 @@ section[id] {
   }
 }
 
-/* v0.27.0 — the journey: 900vh, the six-leads overlay and its warm glow, the day scene with the clinician's tablet, five chapters (bars only on phones)
+/* v0.28.0 — Instagram and LinkedIn at the bar's right end, beside the phone
+   v0.28.0 — the stage's glows on a backdrop layer that moves with the camera's fall; coral hour marks on the clean dial; grey opposite poles
+   v0.27.0 — the journey: 900vh, the six-leads overlay and its warm glow, the day scene with the clinician's tablet, five chapters (bars only on phones)
    v0.24.5 — trying white behind the hands: white glass, dark text, the red wordmark; the hands' brightness filter off
    v0.24.4 — trying the logo's red behind the hands (red glass, the hands a shade deeper), for the user to compare
    v0.24.3 — the grey goes behind the hands (the user meant that, not the bottom band): the glass area in the hero's slate; the bottom band back to v0.24.1

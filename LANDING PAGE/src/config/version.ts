@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.27.0";
+export const APP_VERSION = "0.28.0";
 export const APP_BUILD_LABEL =
-  "The 3D scene is a five-chapter journey: night on the electrodes, the strap, the six leads on a watch's twelve hours, our watch, and day at the clinician; the footer's bottom band is white";
+  "The journey: a camera move per change (a slide, a crane, a fall), a clean dial for the six leads, morning rising from below, live traces on the clinician's tablet; Instagram and LinkedIn in the bar";
 
+// v0.28.0 — the journey's transitions, clean dial, sunrise, live traces; Instagram and LinkedIn
 // v0.27.0 — the closing journey; the footer's bottom band white
 // v0.26.0 — the 3D scene: built ahead at idle, precompiled, gliding with the scroll
 // v0.25.0 — the hero hand replaced by the user's more natural one

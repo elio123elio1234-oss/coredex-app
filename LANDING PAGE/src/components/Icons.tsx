@@ -48,6 +48,22 @@ export const Phone = (p: P) => (
   </svg>
 );
 
+/* the two social marks, drawn as line glyphs in the page's own stroke, not in the brands' colours */
+export const Instagram = (p: P) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+    <circle cx="12" cy="12" r="3.9" />
+    <circle cx="17.1" cy="6.9" r="0.95" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const LinkedIn = (p: P) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+    <path d="M8.2 10.6v5.9M8.2 7.7v.01M11.6 16.5v-5.9M11.6 13.4c0-1.7 1-2.8 2.4-2.8s2.2 1 2.2 2.8v3.1" />
+  </svg>
+);
+
 export const Pin = (p: P) => (
   <svg {...base} {...p}>
     <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" />
@@ -128,3 +144,4 @@ export const LineShield = (p: P) => (
 // v0.9.0 — line icons for the AliveCor-style rows and facts (watch, pulse, send, person, stethoscope, clinic, shield), chevron
 // v0.7.0 — Dash for the comparison's "no" mark
 // v0.6.0 — arrow, mail, phone, pin and check icons (authored, one stroke weight)
+// v0.28.0 — Instagram and LinkedIn, as line glyphs for the top bar

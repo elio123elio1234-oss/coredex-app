@@ -16,9 +16,19 @@ const LINE = "#e3e9f1";
 const chevron = (x: number, y: number, s: number) =>
   `M${x + 3.5 * s} ${y + 6 * s}L${x + 8 * s} ${y + 10.5 * s}L${x + 12.5 * s} ${y + 6 * s}`;
 
-function Screen() {
+/* live: the six traces write themselves like a monitor's pen, one 10 s strip in 10 s (real time,
+   unhurried), and loop; after the first pass the last strip stays on screen ahead of the pen, past
+   a small gap. Declarative SMIL, so nothing runs in script. The recording stays the same
+   illustrative one, labelled. */
+const SWEEP = 10; // s
+const GAP = 26; // units of the paper
+
+function Screen({ live }: { live: boolean }) {
   // the tablet appears twice on the page (the hero, the journey's last chapter): one clip id each
-  const clip = `tablet-paper-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const clip = `tablet-paper-${uid}`;
+  const sweep = `tablet-sweep-${uid}`;
+  const k = ((PAPER.w - GAP) / PAPER.w).toFixed(4);
   return (
     <svg
       className="hero-system-screen"
@@ -76,21 +86,52 @@ function Screen() {
         <clipPath id={clip}>
           <rect width={PAPER.w} height={PAPER.h} rx="11" />
         </clipPath>
+        {live && (
+          <clipPath id={sweep}>
+            {/* this pass, up to the pen */}
+            <rect y="0" height={PAPER.h} x="0" width="0">
+              <animate attributeName="width" from="0" to={PAPER.w} dur={`${SWEEP}s`} repeatCount="indefinite" />
+            </rect>
+            {/* the last pass, ahead of the pen past the gap (from the second pass on) */}
+            <rect y="0" height={PAPER.h} x={GAP} width="0">
+              <animate
+                attributeName="x"
+                values={`${GAP};${PAPER.w};${PAPER.w}`}
+                keyTimes={`0;${k};1`}
+                dur={`${SWEEP}s`}
+                begin={`${SWEEP}s`}
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="width"
+                values={`${PAPER.w - GAP};0;0`}
+                keyTimes={`0;${k};1`}
+                dur={`${SWEEP}s`}
+                begin={`${SWEEP}s`}
+                repeatCount="indefinite"
+              />
+            </rect>
+          </clipPath>
+        )}
       </defs>
       <rect x="38.5" y="177.5" width="925" height="680" rx="12" fill="#fbfcfe" stroke={LINE} />
       <g transform={`translate(${PAPER.x} ${PAPER.y})`} clipPath={`url(#${clip})`}>
         <path d={GRID.minor} stroke="#edf2f8" strokeWidth="0.6" />
         <path d={GRID.major} stroke="#d9e3f0" strokeWidth="1" />
+        <g clipPath={live ? `url(#${sweep})` : undefined}>
+          {STRIPS.map((s) => (
+            <g key={s.name}>
+              <path d={s.d} fill="none" stroke="#13213a" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+              {s.st.map((d, i) => (
+                <path key={i} d={d} fill="none" stroke="#e0352b" strokeWidth="3.2" strokeLinejoin="round" strokeLinecap="round" />
+              ))}
+            </g>
+          ))}
+        </g>
         {STRIPS.map((s) => (
-          <g key={s.name}>
-            <path d={s.d} fill="none" stroke="#13213a" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-            {s.st.map((d, i) => (
-              <path key={i} d={d} fill="none" stroke="#e0352b" strokeWidth="3.2" strokeLinejoin="round" strokeLinecap="round" />
-            ))}
-            <text x="10" y={s.labelY} fontSize="15" fontWeight="600" fill={INK}>
-              {s.name}
-            </text>
-          </g>
+          <text key={s.name} x="10" y={s.labelY} fontSize="15" fontWeight="600" fill={INK}>
+            {s.name}
+          </text>
         ))}
       </g>
 
@@ -151,14 +192,15 @@ function Screen() {
   );
 }
 
-export default function HeroTablet() {
+export default function HeroTablet({ live = false }: { live?: boolean }) {
   return (
     <div className="hero-system">
-      <Screen />
+      <Screen live={live} />
       <img className="hero-system-frame" src={frame} width={1385} height={955} alt="" decoding="async" />
     </div>
   );
 }
 
+// v0.28.0 — `live`: the traces write themselves in a gentle 10 s loop (the journey's last chapter only)
 // v0.27.0 — a unique clip id per instance (the journey's last chapter shows the tablet too)
 // v0.19.0 — the tablet's screen drawn live (vectors) under the user's frame; it shipped as a 1000 px raster in v0.18.0

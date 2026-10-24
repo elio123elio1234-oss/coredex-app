@@ -81,10 +81,14 @@ const CHAPTERS = [
   { label: "Ours", from: 0.795, to: 0.905 },
   { label: "Your clinician", from: 0.905, to: 1.01 },
 ];
-const FADE = 0.016;
+/* each line eases out upward and the next eases in from below, over this much progress */
+const FADE = 0.026;
+const DRIFT = 22; // px
 /* seconds: how quickly the scene catches up with the scroll; short enough to feel attached, long
    enough to turn a wheel step into a glide */
-const GLIDE = 0.12;
+const GLIDE = 0.15;
+/* the camera's fall to the Cyphix watch (mirrors FALL in lib/strapScene, which loads lazily) */
+const FALL = [0.785, 0.845];
 
 /* The hexaxial reference: each lead's positive pole, in degrees, 0 = lead I (the patient's left,
    drawn to the right), positive clockwise. On a watch face, 0 degrees is three o'clock, so the
@@ -130,6 +134,7 @@ export default function OneStrap() {
   const stageRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const dayRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
   const heartRef = useRef<HTMLDivElement>(null);
   const wheelRef = useRef<SVGGElement>(null);
@@ -160,6 +165,7 @@ export default function OneStrap() {
     let shown = 0; // the progress on screen, gliding toward the scroll's
     let last = 0;
     let isDay = false;
+    let clinicShown = false;
 
     // the pinned stage's own height, not the window's: a phone's address bar changes the window
     // as it hides, and the scene used to jump with it
@@ -174,11 +180,14 @@ export default function OneStrap() {
 
     const copy = (p: number) => {
       STEPS.forEach((s, i) => {
-        const o = Math.min(clamp01((p - s.from) / FADE), clamp01((s.to - p) / FADE));
+        const inn = smooth(s.from, s.from + FADE, p);
+        const out = 1 - smooth(s.to - FADE, s.to, p);
+        const o = Math.min(inn, out);
         const el = copyRefs.current[i];
         if (el) {
+          const y = p < (s.from + s.to) / 2 ? (1 - inn) * DRIFT : -(1 - out) * DRIFT;
           el.style.opacity = String(o);
-          el.style.transform = `translateY(${(1 - o) * 14}px)`;
+          el.style.transform = `translateY(${y.toFixed(1)}px)`;
           el.setAttribute("aria-hidden", o < 0.5 ? "true" : "false");
         }
       });
@@ -206,9 +215,10 @@ export default function OneStrap() {
       const lit = span(RING[0], RING[1], p);
       ring.setAttribute("r", R.toFixed(1));
       ring.style.opacity = String(0.22 * lit);
+      // the twelve hours, lit on the dial itself where its printed marks were
       ticks.forEach((t, i) => {
-        const [x1, y1] = at(i * 30, R * 0.93);
-        const [x2, y2] = at(i * 30, R);
+        const [x1, y1] = at(i * 30, dial.r * (i % 3 === 0 ? 0.62 : 0.7));
+        const [x2, y2] = at(i * 30, dial.r * 0.86);
         t.setAttribute("x1", x1);
         t.setAttribute("y1", y1);
         t.setAttribute("x2", x2);
@@ -242,23 +252,24 @@ export default function OneStrap() {
       }
     };
 
-    // night into day: the light opens out of the watch, a soft circle that grows until it fills the
-    // stage, and the clinician's screen rises in it
+    // the camera's fall: the backdrop's glows move with it, so the drop reads as the camera's
+    const backdrop = (p: number) => {
+      const el = backdropRef.current;
+      if (el) el.style.transform = `translateY(${(-smooth(FALL[0], FALL[1], p) * 0.4 * stage.clientHeight).toFixed(1)}px)`;
+    };
+
+    // night into day: morning rises from below the stage, a soft straight edge climbing until the
+    // stage is day ("by morning", the story began), and the clinician's screen rises in it
     const day = (p: number) => {
       const light = smooth(0.885, 0.93, p);
-      const w = stage.clientWidth;
-      const h = stage.clientHeight;
-      const wide = w / h >= 1.15;
-      const cx = wide ? w * 0.7 : w * 0.5; // where the camera holds the product
-      const cy = wide ? h * 0.5 : h * 0.58;
-      const far = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy));
-      const r = light * (far + 160);
+      const EDGE = 38; // % of the stage the edge is soft over
+      const top = light * (100 + EDGE); // where the edge has climbed to, from the bottom
       const sky = dayRef.current;
       if (sky) {
         const mask =
           light >= 1
             ? "none"
-            : `radial-gradient(circle at ${cx.toFixed(0)}px ${cy.toFixed(0)}px, #000 ${Math.max(0, r - 160).toFixed(0)}px, transparent ${r.toFixed(0)}px)`;
+            : `linear-gradient(to top, #000 ${(top - EDGE).toFixed(1)}%, transparent ${top.toFixed(1)}%)`;
         sky.style.opacity = light > 0 ? "1" : "0";
         sky.style.maskImage = mask;
         sky.style.setProperty("-webkit-mask-image", mask);
@@ -267,6 +278,9 @@ export default function OneStrap() {
       if (scrimRef.current) scrimRef.current.style.opacity = String(1 - light);
       const rise = smooth(0.905, 0.95, p);
       const clinic = clinicRef.current;
+      // the traces write themselves from an empty strip each time the clinician's screen arrives
+      if (rise > 0 && !clinicShown) clinic?.querySelector<SVGSVGElement>("svg.hero-system-screen")?.setCurrentTime(0);
+      clinicShown = rise > 0;
       if (clinic) {
         clinic.style.opacity = String(rise);
         clinic.style.setProperty("--rise", `${((1 - rise) * 48).toFixed(1)}px`);
@@ -290,13 +304,15 @@ export default function OneStrap() {
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60;
       last = now;
       // off screen, or before the model is ready, there is nothing to glide: jump to the scroll
-      if (!inView || !scene) shown = p;
+      // (a jump, a link or a reload landing mid-scene, snaps: only scrolling glides)
+      if (!inView || !scene || Math.abs(p - shown) > 0.08) shown = p;
       else shown += (p - shown) * (1 - Math.exp(-dt / GLIDE));
       if (Math.abs(p - shown) < 1e-4) shown = p;
       if (inView) {
         scene?.render(shown);
         copy(shown);
         leads(shown);
+        backdrop(shown);
         day(shown);
       }
       if (shown !== p) raf = requestAnimationFrame(tick);
@@ -395,6 +411,7 @@ export default function OneStrap() {
       data-bar-dark
     >
       <div ref={stageRef} className="ss-stage">
+        <div ref={backdropRef} className="ss-backdrop" aria-hidden="true" />
         <div ref={heartRef} className="ss-heart" aria-hidden="true" />
         <div ref={hostRef} className="ss-canvas" />
         <div ref={scrimRef} className="ss-scrim" aria-hidden="true" />
@@ -418,7 +435,7 @@ export default function OneStrap() {
           </g>
         </svg>
         <div ref={clinicRef} className="ss-clinic" aria-hidden="true">
-          <HeroTablet />
+          <HeroTablet live />
         </div>
         <div className="wrap ss-copy">
           <h2 id="any-watch-title" className="sr-only">
@@ -449,6 +466,7 @@ export default function OneStrap() {
   );
 }
 
+// v0.28.0 — eased, directional copy fades; a longer glide; the hour marks lit on the dial itself; the backdrop moves with the camera's fall; the day rises from below (the circle of light withdrawn); the clinician's tablet writes its traces live
 // v0.27.0 — the journey in five chapters: the moment (night, the electrodes), the strap, six leads (the hexaxial axes over the analog's twelve hours), ours, your clinician (day, the app on a tablet)
 // v0.26.0 — smooth scroll: built ahead at idle, one frame loop draws the model and the copy, a short glide to the scroll position, progress from the pinned stage's height
 // v0.10.0 — four ways to wear it: smartwatch, the strap closed into a bracelet, analog, the Cyphix watch; four stills

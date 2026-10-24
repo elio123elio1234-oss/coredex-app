@@ -9,20 +9,24 @@ import { FACE, dressModel, studioEnvironment } from "./studio";
    "analog" and "contour", the Cyphix watch, on one origin), dressed in the
    shared product studio. Five chapters:
 
+   Each change has its own camera language, not the same lift every time:
+
      the moment   0.00–0.15  in the dark, a close-up of the module's
                              electrodes; a sweep of light finds them
-     the strap    0.11–0.30  the camera pulls back, then the product turns:
-                             the strap on a smartwatch, near full height
-                  0.37–0.45  the smartwatch unclips and rises out
-                  0.45–0.60  the strap closes into a bracelet, then opens
-                  0.575–0.64 the analog watch comes down and clicks in
-     six leads    0.635–0.685 the camera comes round to the analog face,
-                             straight on (the page draws the six lead axes
-                             over its twelve hours: components/OneStrap)
-                  0.775–0.815 and back out
-     ours         0.795–0.83 the strap and the analog rise out together
-                  0.80–0.845 as the Cyphix watch rises in from below
-     clinician    (the page fades the canvas into the day scene)
+     the strap    0.10–0.30  a dolly out, then an orbit to a three-quarter
+                             front: the strap on a smartwatch, near full height
+                  0.37–0.45  the smartwatch unclips and slides out sideways
+                  0.45–0.60  the strap closes into a bracelet, then opens;
+                             the camera cranes up to look down on it
+                  0.575–0.64 the analog falls in from above and the camera
+                             drops with it, then it clicks into the strap
+     six leads    0.625–0.69 an orbit and push-in to the analog face, square
+                             on; its markings and hands dissolve while the page
+                             draws the six lead axes over its twelve hours
+                             (components/OneStrap)
+     ours         0.785–0.845 the camera falls: down past the strap to the
+                             Cyphix watch, waiting below
+     clinician    (the page opens the day scene out of the watch)
 
    Scroll progress p (0..1) drives everything; nothing runs on a timer.
    The caller draws a frame with render(p), in its own animation frame,
@@ -45,8 +49,12 @@ export type StrapScene = {
 const MODEL_URL = "/models/cyphix.glb";
 
 const UNCLIP = 0.012; // metres out of the adapters along the face normal
-const RISE = 0.17; // metres up, enough for a watch to leave the frame
-const RISE_ALL = 0.23; // the whole strap loop needs more
+const RISE = 0.17; // metres up, where the analog falls from
+const SLIDE = 0.26; // metres sideways, enough for the smartwatch to leave the frame
+const CRANE = 0.045; // metres the camera rises to look down on the bracelet
+const DROP = 0.12; // metres the camera falls, from the strap to the Cyphix watch just below it (one leaves the frame as the other enters)
+/** the camera's fall to the Cyphix watch (the page moves its backdrop with it) */
+export const FALL: [number, number] = [0.785, 0.845];
 const PI = Math.PI;
 const TAU = PI * 2;
 
@@ -73,6 +81,11 @@ const span = (a: number, b: number, v: number) => clamp01((v - a) / (b - a));
 const smooth = (a: number, b: number, v: number) => {
   const t = span(a, b, v);
   return t * t * (3 - 2 * t);
+};
+/** smootherstep: zero speed and zero acceleration at both ends, for the camera's moves */
+const soft = (a: number, b: number, v: number) => {
+  const t = span(a, b, v);
+  return t * t * t * (t * (6 * t - 15) + 10);
 };
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
@@ -110,26 +123,6 @@ function monotone(xs: number[], ys: number[]) {
 const yawAt = monotone(KEYS.map((k) => k[0]), KEYS.map((k) => k[1]));
 const pitchAt = monotone(KEYS.map((k) => k[0]), KEYS.map((k) => k[2]));
 
-/** A soft cool pool of light under the product on the dark stage. */
-function floorGlow() {
-  const c = document.createElement("canvas");
-  c.width = c.height = 256;
-  const g = c.getContext("2d")!;
-  const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-  r.addColorStop(0, "rgba(150,180,255,0.55)");
-  r.addColorStop(0.45, "rgba(120,150,230,0.16)");
-  r.addColorStop(1, "rgba(120,150,230,0)");
-  g.fillStyle = r;
-  g.fillRect(0, 0, 256, 256);
-  const tex = new THREE.CanvasTexture(c);
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.2, 0.2).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
-  );
-  mesh.renderOrder = -1;
-  return mesh;
-}
-
 export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
   // 1.5x is still sharp with antialiasing, and a 2x screen fills 44 % fewer pixels each frame
@@ -154,7 +147,10 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(MODEL_URL);
   const root = gltf.scene;
   await breathe();
-  const { strap, smartwatch, analog, contour, link, closeLink } = dressModel(root);
+  const { strap, smartwatch, analog, contour, link, closeLink, setDialClean } = dressModel(root);
+  // the analog's hands fade with its markings in the six-leads chapter (set before the compile)
+  const hands = ["hand_hour", "hand_minute", "hand_second", "hand_cap"].map((n) => root.getObjectByName(n) as THREE.Mesh);
+  hands.forEach((m) => ((m.material as THREE.Material).transparent = true));
   await breathe();
   const presenter = new THREE.Group();
   presenter.rotation.y = Math.PI / 4; // undo the export's presentation yaw: the faces point at the camera at yaw 0
@@ -168,9 +164,6 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   // turn about the middle of the strap loop, not the watch
   const box = new THREE.Box3().setFromObject(presenter);
   presenter.position.sub(box.getCenter(new THREE.Vector3()));
-  const glow = floorGlow();
-  glow.position.y = -box.getSize(new THREE.Vector3()).y / 2 - 0.004;
-  scene.add(glow);
 
   // the camera's three subjects: the module's electrodes, the whole product, the analog dial
   const electrodes = ["electrode_LL1", "electrode_LL2", "electrode_RLD", "electrode_LA1", "electrode_LA2"].map(
@@ -182,6 +175,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
 
   const camera = new THREE.PerspectiveCamera(24, 1, 0.005, 5);
   const worldUp = new THREE.Vector3();
+  const worldSide = new THREE.Vector3();
   const inv = new THREE.Matrix4();
   const V = new THREE.Vector3();
   const aim = new THREE.Vector3();
@@ -215,47 +209,57 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
     scene.environmentRotation.y = -1.6 + 1.6 * smooth(0.0, 0.14, p);
     key.intensity = 1.4 * smooth(0.02, 0.12, p);
 
-    // the smartwatch: unclip, then rise out of frame
+    // the smartwatch: unclip, then slide out of frame to the side, away from the copy
+    const side = worldSide.set(1, 0, 0).transformDirection(inv);
     const out = easeInOut(span(0.37, 0.4, p));
-    const rise = easeInCubic(span(0.395, 0.45, p));
-    smartwatch.position.copy(FACE).multiplyScalar(out * UNCLIP).addScaledVector(up, rise * RISE);
-    smartwatch.visible = rise < 0.999;
+    const slide = easeInCubic(span(0.395, 0.45, p));
+    smartwatch.position.copy(FACE).multiplyScalar(out * UNCLIP).addScaledVector(side, slide * SLIDE);
+    smartwatch.visible = slide < 0.999;
 
     // the strap alone closes into a bracelet, then opens again for the analog
     const closed = easeInOut(span(0.45, 0.52, p)) * (1 - easeInOut(span(0.56, 0.6, p)));
     closeLink(closed);
     link.visible = closed > 0.001;
 
-    // the strap with the analog watch leaves together for the Cyphix watch
-    const away = easeInCubic(span(0.795, 0.83, p));
-    strap.position.copy(up).multiplyScalar(away * RISE_ALL);
-    strap.visible = away < 0.999;
+    // the camera's fall to the Cyphix watch: the strap and the analog stay where they are and
+    // leave the frame above it
+    const fallen = soft(FALL[0], FALL[1], p);
+    strap.visible = fallen < 0.999;
 
     // the analog: down from above, then click into the same strap
     const fall = 1 - easeOutCubic(span(0.575, 0.62, p));
     const clip = 1 - easeInOut(span(0.62, 0.64, p));
-    analog.position.copy(FACE).multiplyScalar(clip * UNCLIP).addScaledVector(up, fall * RISE + away * RISE_ALL);
-    analog.visible = p > 0.57 && away < 0.999;
+    analog.position.copy(FACE).multiplyScalar(clip * UNCLIP).addScaledVector(up, fall * RISE);
+    analog.visible = p > 0.57 && fallen < 0.999;
 
-    // the Cyphix watch: one piece, its electrodes in its own band, rising in from below as the
-    // strap and the analog leave above, so the stage is never empty
-    const arrive = 1 - easeOutCubic(span(0.8, 0.845, p));
-    contour.position.copy(up).multiplyScalar(-arrive * RISE_ALL);
-    contour.visible = p > 0.795;
+    // its face dissolves to a clean dial, hands and all, while the lead axes are drawn over it
+    const clean = soft(0.68, 0.705, p) * (1 - soft(0.765, 0.79, p));
+    setDialClean(clean);
+    hands.forEach((m) => {
+      (m.material as THREE.Material).opacity = 1 - clean;
+      m.visible = clean < 0.999;
+    });
+
+    // the Cyphix watch: one piece, its electrodes in its own band, waiting below for the camera
+    contour.position.copy(up).multiplyScalar(-DROP);
+    contour.visible = p > 0.775;
 
     // the camera: close on the electrodes, out to the whole product, in to the dial, out again;
     // the distance blends in log space, so the move reads as one continuous dolly
     tilt.updateMatrixWorld(true);
-    const wMacro = 1 - smooth(0.11, 0.2, p);
-    const wDial = smooth(0.635, 0.685, p) * (1 - smooth(0.775, 0.815, p));
+    const wMacro = 1 - soft(0.1, 0.21, p);
+    const wDial = soft(0.625, 0.69, p) * (1 - soft(0.77, 0.82, p));
     const wFull = Math.max(0, 1 - wMacro - wDial);
     atMacro.set(0, 0, 0);
     electrodes.forEach((e) => atMacro.add(e.getWorldPosition(V)));
     atMacro.multiplyScalar(1 / electrodes.length);
     dialMesh.getWorldPosition(atDial);
     aim.copy(atMacro).multiplyScalar(wMacro).addScaledVector(atDial, wDial);
+    aim.y -= DROP * fallen;
     const dist = Math.exp(wMacro * Math.log(distMacro) + wFull * Math.log(distFull) + wDial * Math.log(distDial));
-    camera.position.set(aim.x, aim.y, aim.z + dist);
+    // the crane: up over the bracelet, looking down on it, then down with the falling analog
+    const crane = CRANE * soft(0.5, 0.575, p) * (1 - soft(0.575, 0.645, p));
+    camera.position.set(aim.x, aim.y + crane, aim.z + dist);
     camera.lookAt(aim);
     camera.updateMatrixWorld(true);
   };
@@ -338,6 +342,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   };
 }
 
+// v0.28.0 — a camera language per change (slide out, crane, drop with the analog, orbit and push-in, the fall to the Cyphix watch); smootherstep moves; the analog's markings and hands dissolve for the six leads; no floor glow
 // v0.27.0 — the journey: a dark close-up of the electrodes found by a sweep of light, the pull-back reveal, the product larger (~88% of the stage), the camera round to the analog face straight on for the six leads, the Cyphix watch, then the page's day scene
 // v0.26.0 — smooth scroll: drawn in the caller's frame (render(p)), every shader compiled and every texture uploaded before the visitor arrives, the build in short steps, 1.5x pixel cap, no canvas reset on unchanged resizes
 // v0.10.0 — the strap closes by growing from its cut ends, not by a dropped-in link

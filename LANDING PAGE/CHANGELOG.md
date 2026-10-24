@@ -1,5 +1,89 @@
 # Changelog — CYPHIX Landing
 
+## v0.28.0 — 2026-10-24 — the journey refined; Instagram and LinkedIn
+
+**Why.** The user on v0.27.0: "It's really beautiful!" Then four asks:
+- "smoother transitions";
+- "when you stretch the lines on the analog watch, remove the watch's own
+  lines, it's too busy already";
+- "all the transitions are almost the same; maybe a scene as if the camera
+  goes down, falls or something; and remove the white circle that looks
+  like a shadow, it's ugly";
+- "in the final scene with the iPad, let's make the ECG signals be created
+  live, in a gentle loop, not too fast."
+
+Then: "up beside the phone, put the Instagram logo and link to it, and the
+LinkedIn logo and link to it."
+
+**A camera language per change.** Before, every change was a part lifted
+up or down. Now:
+- **The smartwatch unclips and slides out sideways,** away from the copy.
+- **The camera cranes up over the bracelet,** looking down on it. It then
+  drops with the analog as the analog falls in from above.
+- **An orbit and a push-in** bring the analog face square on (as before).
+- **The camera falls** from the strap to the Cyphix watch waiting just below.
+  - The strap and the analog stay where they are and leave the frame above.
+  - The fall is 0.12 m: one part leaves the frame as the other enters, so
+    the frame is never empty.
+  - The stage's glows sit on their own layer, which moves up with the fall,
+    so the drop reads as the camera's own.
+- **Morning rises from below** with a soft straight edge (the story began
+  with "By morning").
+
+**Withdrawn: both white circles.**
+- The cool pool of light under the product (the floor glow, since v0.8.0).
+- v0.27.0's circle of light opening out of the watch, which read as a white
+  disc.
+
+**A clean dial for the six leads.**
+- The analog's printed markings dissolve to a clean face. Its hands fade with
+  them. A second, unmarked dial texture is mixed in the dial's shader
+  (`setDialClean`).
+- In their place, the twelve hours light up in coral on the dial itself.
+- The lead axes then grow over the clean face; their opposite poles are grey
+  dashes.
+- Everything returns as the camera pulls away.
+
+**Smoother.**
+- **Camera moves** use smootherstep: no start or stop jolt.
+- **Copy:**
+  - each line eases out upward and the next eases in from below, over longer
+    fades (0.026 of the scene, was 0.016);
+  - the glide is 0.15 s (was 0.12).
+- **A jump, a link or a reload landing mid-scene** now snaps straight to it
+  instead of fast-forwarding through the journey.
+
+**Live traces on the clinician's tablet.**
+- **How they draw:** `HeroTablet live` writes the six traces like a monitor's
+  pen, a 10 s strip in 10 s, real time and unhurried, looping. From the
+  second pass on, the last strip stays on screen ahead of the pen, past a
+  small gap. It is declarative SMIL; no script runs.
+- **Where:** they restart from an empty strip each time the chapter arrives.
+  The hero's tablet stays still.
+- **The canon:** this is the one sanctioned exception to "no simulated live
+  signals", at the user's explicit request (PRODUCT.md). The recording stays
+  the same illustrative one, labelled, and nothing reads it.
+
+**Instagram and LinkedIn in the bar.**
+- **Where:** beside the phone, as line glyphs in the page's own icon stroke
+  and colours (not the brands' colours). The tap boxes are 40 × 40, and the
+  last glyph's edge meets the page's right edge.
+- **Links:** `instagram.com/cyphix.co/` (the share link's tracking
+  parameters dropped) and `linkedin.com/company/cyphixmedical/`. They open in
+  a new tab with `noopener noreferrer`.
+- **Smaller screens:** when the phone number hides (1100 px and below), the
+  two icons stay.
+
+**Checked** (headless Chrome, software WebGL):
+- Frames across every transition at 1440 × 900 and 390 × 844.
+- The live tablet at 1.5, 4, 7.5, 11.5 and 14 s: the strip writes, then
+  loops with the gap.
+- The bar at 1440, 1280, 820, 390 and 360: the hrefs, targets and boxes are
+  right, with no sideways scroll.
+- The scene is ready 2 s after load, at the top.
+- Scrolling the whole journey, the longest block is 103 ms.
+- The main bundle still holds no three.js (184 kB).
+
 ## v0.27.0 — 2026-10-24 — the closing scene becomes a journey
 
 **Why.** The user, after v0.26.0:
