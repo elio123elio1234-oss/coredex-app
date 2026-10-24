@@ -1,5 +1,32 @@
 # Changelog — CYPHIX Landing
 
+## v0.25.0 — 2026-10-24 — a more natural hand in the hero
+
+**Why.** The user sent a new image: "let's use this hand, it looks more
+natural." It is the same forearm, strap and module, with the three black
+electrodes. The hand is relaxed and open, not held stiff with the fingers
+straight up.
+
+**What changed.**
+- `src/assets/photos/hero-wrist.webp` is replaced and its sidecar rewritten.
+- **The same processing as the previous forearm:**
+  - the matte's haze removed;
+  - turned 90° counter-clockwise so the hand points up.
+- **Placed so nothing else can move:**
+  - The new image came at exactly the old scale: the band is 156 px vs 155
+    and the forearm 329 px wide vs 328.
+  - It is set on the same 670 × 1464 canvas, so the strap and the forearm
+    fall on the same pixels (band rows 987–1141 vs 986–1141; forearm
+    285–614 vs 286–614).
+  - The relaxed fingertips end 47 rows lower than the straight ones did,
+    about 19 px at 1440.
+- No CSS change. The alt text says the hand is relaxed and open.
+
+**Checked.**
+- The hero, the hand's box, the tablet and its screen are identical to the
+  live v0.24.5, to the pixel, at 1440, 1280, 820 and 390.
+- No sideways scroll.
+
 ## v0.24.5 — 2026-10-24 — white behind the hands
 
 **Why.** The user, on the red: "honestly it really hurts the eye. Let's try a

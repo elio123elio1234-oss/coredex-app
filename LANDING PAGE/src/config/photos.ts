@@ -18,7 +18,7 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
   // the user's own image (ChatGPT), turned so the hand points up: the module on the inside of the wrist
   hero: {
     src: heroWrist,
-    alt: "A raised forearm, palm toward the viewer, wearing the Cyphix strap: on the inside of the wrist, the module with its three black electrodes.",
+    alt: "A raised forearm, the hand relaxed and open toward the viewer, wearing the Cyphix strap: on the inside of the wrist, the module with its three black electrodes.",
     w: 670,
     h: 1464,
   },
@@ -37,5 +37,6 @@ export const PHOTOS: Partial<Record<PhotoSlot, Photo>> = {
 // v0.13.0 — the "home" slot (beside "1 in 3") holds the user's physician image
 // v0.12.0 — the "group" slot is gone: the user's four-watch image is wired in Product.tsx
 // v0.11.1 — the forearm cropped shorter (the hand sat too high)
+// v0.25.0 — the hero forearm is the user's more natural hand (relaxed, open); the strap on the same pixels
 // v0.11.0 — the hero slot holds the user's wrist image (the module on the inside of the wrist)
 // v0.9.0 — the four Gemini photo slots (hero wrist, home moment, three watches, clinic), empty until supplied

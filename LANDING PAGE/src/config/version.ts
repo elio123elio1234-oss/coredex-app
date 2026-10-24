@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.24.5";
+export const APP_VERSION = "0.25.0";
 export const APP_BUILD_LABEL =
-  "Footer: white behind the heart-hands, seen through white frosted glass; the text dark and the wordmark red, as in the bar";
+  "Hero: the user's more natural hand (relaxed, open), the strap and the forearm on the same pixels as before; nothing else moved";
 
+// v0.25.0 — the hero hand replaced by the user's more natural one
 // v0.24.5 — white behind the hands (the red trial withdrawn)
 // v0.24.4 — trial: the logo's red behind the hands
 // v0.24.3 — the grey behind the hands; the bottom band restored
