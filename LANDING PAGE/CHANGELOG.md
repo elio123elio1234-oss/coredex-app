@@ -1,5 +1,35 @@
 # Changelog — CYPHIX Landing
 
+## v0.24.0 — 2026-10-24 — the page's blue behind the heart-hands
+
+**Why.** The user was unsure the heart-hands image matched the page's vibe,
+then proposed: "maybe behind the hands making the heart we put the blue
+background, like at the top of my page."
+
+The top of the page is the announcement bar in the brand blue (`--blue`,
+#1d4f8b). The footer's light blue-grey gradient is replaced by that blue. The
+image has a transparent background, so the blue sits directly behind the
+hands. The footer now ties back to the page's opening colour, not a new pastel.
+
+**What changed.**
+- `.foot-upper` background: `var(--blue)`.
+- **The glass is tinted with the same blue,** at 62 % with `blur(9px)`. The
+  open area stays exactly the announcement bar's blue. The hands read through
+  it, softened, the heart still clear. The previous white 55 % pane would have
+  washed the blue to pastel.
+- **White text, as on the announcement bar.** This covers the headings, links,
+  tagline and the wordmark. The red wordmark on blue vibrates and fails
+  contrast. The focus ring is white in this area, since the coral one fails on
+  blue.
+- The layout, the height, the image and its crop are unchanged. The legal band
+  below is unchanged.
+
+**Checked.**
+- Real contrast, measured on the rendered pixels behind every footer line. At
+  a 55 % tint the worst case was 4.2:1 over the lightest skin, so the tint went
+  to 62 %. Worst cases: 1440: 4.7:1 · 1280: 4.7 · 820: 4.7 · 390: 4.7.
+- No sideways scroll at 1440 or 390.
+
 ## v0.23.2 — 2026-10-24 — the Request the deck panel without rounded corners
 
 **Why.** The user: "the details rectangle in the Request the deck section,

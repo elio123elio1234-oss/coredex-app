@@ -1160,7 +1160,8 @@ section[id] {
 /* ---------- footer ---------- */
 
 /* the footer keeps its layout; its whole upper area is frosted glass over the user's heart-hands
-   image: the text sits straight on the glass (no card), and the area is tall enough for the heart */
+   image: the text sits straight on the glass (no card), and the area is tall enough for the heart.
+   Behind the hands, the page's blue (the announcement bar's), so the glass is blue glass */
 .foot {
   border-top: 1px solid var(--hair);
 }
@@ -1170,7 +1171,7 @@ section[id] {
   display: flex;
   align-items: center;
   min-height: clamp(360px, 36vw, 540px);
-  background: linear-gradient(180deg, #c9d6e6 0%, #e2e9f2 100%);
+  background: var(--blue);
 }
 .foot-stage {
   position: absolute;
@@ -1185,32 +1186,34 @@ section[id] {
   object-fit: cover;
   object-position: 50% 36%;
 }
-/* the glass: the image is seen through it, softened, with the heart still clear */
+/* the glass: tinted with the same blue, so the background stays exactly the page's blue and
+   the hands are seen through it, softened, the heart still clear */
 .foot-stage::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(9px) saturate(1.4);
-  backdrop-filter: blur(9px) saturate(1.4);
+  background: rgba(29, 79, 139, 0.62);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .foot-stage img {
     filter: blur(9px);
   }
-  .foot-stage::after {
-    background: rgba(255, 255, 255, 0.55);
-  }
 }
 .foot-glass-wrap {
   width: 100%;
 }
-/* on the glass the text takes the darker inks, so it holds 4.5:1 over the hands too */
-.foot-upper .foot-top h2 {
-  color: var(--navy);
+/* on the blue glass the text is white, as on the announcement bar, and holds 4.5:1 over the hands too */
+.foot-upper .foot-top h2,
+.foot-upper .foot-top ul,
+.foot-upper .foot-tagline,
+.foot-upper .foot-logo,
+.foot-upper .foot-top ul a:hover {
+  color: #fff;
 }
-.foot-upper .foot-top ul {
-  color: var(--ink);
+.foot-upper :focus-visible {
+  outline-color: #fff;
 }
 .foot-top {
   display: grid;
@@ -1565,7 +1568,8 @@ section[id] {
   }
 }
 
-/* v0.23.2 — the Request the deck panel square-cornered, like the page's other rectangles
+/* v0.24.0 — the footer's glass on the page's blue (the announcement bar's) behind the hands; its text and wordmark white
+   v0.23.2 — the Request the deck panel square-cornered, like the page's other rectangles
    v0.23.1 — the footer's glass is its whole upper area (no card): the text straight on the glass, the area taller so the heart shows
    v0.23.0 — the glass moves to the footer (the user: try it below): the footer's columns on one frosted rectangle over the heart-hands image; Request the deck back to v0.21
    v0.22.0 — Request the deck on frosted glass over the user's heart-hands image (blurred band, soft medical blue); the form sits on the glass, inputs translucent white
