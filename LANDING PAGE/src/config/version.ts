@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.30.0";
+export const APP_VERSION = "0.31.0";
 export const APP_BUILD_LABEL =
-  "The dark moment with no transitions, only the scroll: each product holds with its copy and the page carries it on; the clinician's tablet writes like a monitor, a pen per lead and a heart on every beat";
+  "The dark moment on its original navy: the product turns in place and each way to wear it is lit out of the dark as the last fades away; a smaller pen on the monitor; the tablet at a phone's full width";
 
+// v0.31.0 — the product turns in place, lit out of the dark; the navy back; the pen smaller; the phone's tablet larger
 // v0.30.0 — the dark moment as plain scroll; the clinician's tablet as a monitor
 // v0.29.0 — the dark moment, calm, in the manner of a product page
 // v0.28.0 — the journey's transitions, clean dial, sunrise, live traces; Instagram and LinkedIn

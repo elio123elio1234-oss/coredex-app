@@ -8,15 +8,14 @@ import stillCyphix from "../assets/img/scene-cyphix.webp";
 
 /* "One strap. Any watch." — the page's one dark moment, near its end.
 
-   No transitions, only the page's own scroll. The screen goes dark and
-   pins; the four ways to wear Cyphix stand one under the other, a screen
-   apart, live from the team's 3D model (lib/strapStory). Each holds while
-   its copy holds (an eyebrow, a large headline, a line whose key phrases
-   are set brighter, centred above the product), then the scroll carries it
-   up and away at exactly the scroll's speed while the next comes up from
-   below, as the page itself would. Each turns slowly as it goes by. Last,
-   the white page slides up the same way with the clinician's screen,
-   writing its illustrative recording like a monitor.
+   The screen goes dark and pins. The product stands large and centred
+   under centred copy (an eyebrow, a large headline, a line whose key
+   phrases are set brighter) and turns slowly with the scroll; it never
+   moves across the screen. Between the ways to wear it, its light goes out
+   into the black with its copy, and the next is lit out of the dark with
+   its own: two products are never on screen at once. Last, the white page
+   scrolls up over the stage with the clinician's screen, which writes its
+   illustrative recording like a monitor.
 
    The model is built ahead of time, once the page has loaded and the
    browser is idle (or as the section nears), so nothing is loading on
@@ -25,12 +24,17 @@ import stillCyphix from "../assets/img/scene-cyphix.webp";
 type Mode = "idle" | "live" | "still";
 type Panel = { eyebrow: string; title: string; text: ReactNode };
 
-/* the timeline, in screens of scroll: a hold on each panel, a one-screen move between them (the
-   same distance the column moves, so it reads as the page scrolling); mirrored by lib/strapStory */
-const HOLD = 0.7;
-const PAN = 1;
-const PANELS = 5; // four products, then the clinician
-const SCREENS = PANELS * HOLD + (PANELS - 1) * PAN; // 7.5
+/* the timeline, in screens of scroll (the stage's own height): each way to wear it has a span; the
+   light goes out over DIP before a span's end and comes back over DIP after the next one's start */
+const SPANS: [number, number][] = [
+  [0, 1.4],
+  [1.4, 2.8],
+  [2.8, 4.2],
+  [4.2, 5.2],
+];
+const DIP = 0.24;
+const SLIDE: [number, number] = [5.0, 6.0]; // the white page comes up over the last one, a screen
+const SCREENS = 6; // the section's travel: 700svh less the stage
 
 const DARK: Panel[] = [
   {
@@ -92,16 +96,15 @@ const STILLS = [
   { src: stillCyphix, label: "The Cyphix watch", alt: "The Cyphix watch in black titanium, with the electrodes built into its band." },
 ];
 
-/** the column's position for `s` screens of scroll: whole numbers are holds */
-function columnAt(s: number) {
-  let t = s;
-  for (let i = 0; i < PANELS - 1; i++) {
-    if (t <= HOLD) return i;
-    t -= HOLD;
-    if (t <= PAN) return i + t / PAN;
-    t -= PAN;
-  }
-  return PANELS - 1;
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const span = (a: number, b: number, v: number) => clamp01((v - a) / (b - a));
+
+/** how lit way `i` is at `s` screens (the first is lit as the section scrolls in) */
+function lightOf(i: number, s: number) {
+  const [a, b] = SPANS[i];
+  const inn = i === 0 ? span(-0.7, 0, s) : span(a, a + DIP, s);
+  const out = i === SPANS.length - 1 ? 1 : 1 - span(b - DIP, b, s);
+  return Math.min(inn, out);
 }
 
 function webglAvailable() {
@@ -128,6 +131,7 @@ export default function OneStrap() {
   const stageRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const dayRef = useRef<HTMLDivElement>(null);
+  const clinicRef = useRef<HTMLDivElement>(null);
   const copyRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [mode, setMode] = useState<Mode>("idle");
 
@@ -139,40 +143,54 @@ export default function OneStrap() {
     const section = sectionRef.current;
     const stage = stageRef.current;
     const host = hostRef.current;
-    if (!section || !stage || !host) return;
+    const day = dayRef.current;
+    const clinic = clinicRef.current;
+    if (!section || !stage || !host || !day || !clinic) return;
 
     let story: StrapStory | null = null;
     let disposed = false;
     let raf = 0;
-    let shown = 0; // screens of scroll on screen, gliding toward the scroll's
+    let shown = -1; // screens of scroll on screen, gliding toward the scroll's
     let last = 0;
     let barDark = true;
 
     // screens scrolled into the pinned stage, by the stage's own height (a phone's address bar
-    // changes the window as it hides; the stage does not move with it)
+    // changes the window as it hides; the stage does not move with it); negative while it arrives
     const measure = () => {
       const r = section.getBoundingClientRect();
-      const s = Math.min(SCREENS, Math.max(0, -r.top / stage.clientHeight));
+      const s = Math.min(SCREENS, -r.top / stage.clientHeight);
       return { s, inView: r.bottom > 0 && r.top < window.innerHeight };
     };
 
+    // the clinician's screen as large as the room under its copy allows (the phone's whole width)
+    const fit = () => {
+      const copy = day.querySelector<HTMLElement>(".st-panel");
+      if (!copy) return;
+      const top = copy.offsetTop + copy.offsetHeight + 28;
+      const room = day.clientHeight - top - 24;
+      const width = Math.max(200, Math.min(880, day.clientWidth * 0.92, room * 1.45));
+      clinic.style.width = `${width.toFixed(0)}px`;
+      clinic.style.top = `${(top + Math.max(0, (room - width / 1.45) / 2)).toFixed(0)}px`;
+    };
+
     const paint = (s: number) => {
-      const pos = columnAt(s);
-      const h = stage.clientHeight;
-      story?.render(pos, s);
-      copyRefs.current.forEach((el, i) => {
+      // the way on screen: the one whose span holds s (at a boundary the light is out, so it swaps unseen)
+      let i = SPANS.findIndex(([, b]) => s < b);
+      if (i < 0) i = SPANS.length - 1;
+      const [a, b] = SPANS[i];
+      story?.render(i, span(a, b, s), lightOf(i, s));
+      copyRefs.current.forEach((el, k) => {
         if (!el) return;
-        const off = (i - pos) * h;
-        el.style.transform = `translate3d(0, ${off.toFixed(1)}px, 0)`;
-        el.style.visibility = Math.abs(i - pos) < 1.2 ? "visible" : "hidden";
+        const o = k === i ? lightOf(k, s) : 0;
+        el.style.opacity = o.toFixed(3);
+        el.style.visibility = o > 0 ? "visible" : "hidden";
       });
-      const day = dayRef.current;
-      const off = (PANELS - 1 - pos) * h;
-      if (day) {
-        day.style.transform = `translate3d(0, ${off.toFixed(1)}px, 0)`;
-        day.style.visibility = off < h ? "visible" : "hidden";
-      }
-      // the bar follows: dark over the night stage, light once the white page has reached it
+      // the white page scrolls up over the stage, a screen of scroll for a screen of travel
+      const h = stage.clientHeight;
+      const off = (1 - span(SLIDE[0], SLIDE[1], s)) * h;
+      day.style.transform = `translate3d(0, ${off.toFixed(1)}px, 0)`;
+      day.style.visibility = off < h ? "visible" : "hidden";
+      // the bar follows: dark over the stage, light once the white page has reached it
       const dark = off > 36;
       if (dark !== barDark) {
         barDark = dark;
@@ -182,7 +200,7 @@ export default function OneStrap() {
       }
     };
 
-    // one loop draws the column and moves the copy together, in the frame of the scroll it read
+    // one loop draws the product and sets the copy together, in the frame of the scroll it read
     const tick = (now: number) => {
       raf = 0;
       const { s, inView } = measure();
@@ -201,6 +219,7 @@ export default function OneStrap() {
     };
     const onResize = () => {
       story?.resize();
+      fit();
       onScroll();
     };
 
@@ -236,6 +255,8 @@ export default function OneStrap() {
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    fit();
+    document.fonts?.ready.then(() => !disposed && fit());
     onScroll();
 
     return () => {
@@ -293,7 +314,7 @@ export default function OneStrap() {
           <div className="st-panel is-day">
             <Copy p={CLINIC} />
           </div>
-          <div className="st-clinic">
+          <div ref={clinicRef} className="st-clinic">
             <HeroTablet live />
           </div>
         </div>
@@ -303,8 +324,9 @@ export default function OneStrap() {
   );
 }
 
-// v0.30.0 — no transitions, only the scroll (the user: the dissolves looked unprofessional): four products in a column a screen apart, each holding with its copy, carried up at the scroll's own speed; the white page and the clinician's monitor slide up the same way
-// v0.29.0 — the dark moment, calm, in the manner of a product page: centred copy over the product, large; a chapter per way to wear it, each arriving with a soft dissolve
+// v0.31.0 — the product never moves across the screen: it turns in place, and between the ways to wear it the light goes out into the black with the copy and the next is lit out of the dark; the clinician's screen sized to the room under its copy (a phone's whole width)
+// v0.30.0 — no transitions, only the scroll: four products in a column a screen apart, carried up at the scroll's own speed; the white page and the clinician's monitor slide up the same way
+// v0.29.0 — the dark moment, calm, in the manner of a product page: centred copy over the product, large; a soft dissolve between ways
 // v0.28.0 — eased, directional copy fades; a longer glide; the day rises from below; the clinician's tablet writes its traces live
 // v0.27.0 — the journey in five chapters (night, the strap, six leads, ours, your clinician)
 // v0.26.0 — smooth scroll: built ahead at idle, one frame loop, a short glide

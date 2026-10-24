@@ -95,13 +95,19 @@ Wearable Ease.**
     - lines over the product (the six-lead axes over the analog dial,
       v0.27–v0.28);
     - theatrical scenes (the camera's falls, cranes and slide-outs).
-  - **The shape (v0.30.0):** no transitions, only the page's own scroll.
-    - Each way to wear it holds, large, under centred copy (an eyebrow, a
-      large headline, brighter key phrases).
-    - It is then carried up at exactly the scroll's speed while the next
-      comes up from below.
-    - The white page slides up the same way with the clinician's screen.
-    - The user called v0.29.0's dissolves "unprofessional".
+  - **The shape (v0.31.0):**
+    - The product stands large and centred under centred copy (an eyebrow, a
+      large headline, brighter key phrases), turning slowly in place.
+    - Between the ways to wear it, its light goes out and it fades into the
+      stage with its copy; the next is lit out of the dark. Two products are
+      never on screen at once.
+    - The stage is the original dark navy with its glows (the user:
+      prettier than black).
+    - The white page scrolls up over it with the clinician's screen.
+  - **What the user rejected along the way:**
+    - the dissolves of v0.29.0, "unprofessional";
+    - the products carried up a column at scroll speed (v0.30.0), which the
+      user still did not love.
   - **One sanctioned live trace (the user, 2026-10-24):** "in the final scene
     with the iPad, let's make the ECG signals be created live, in a gentle
     loop, not too fast."
@@ -146,6 +152,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 4. One company across the PDF, the deck and the page.
 <!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
+<!-- v0.31.0 — the product lit out of the dark, in place, on the navy stage -->
 <!-- v0.30.0 — the dark moment as plain scroll; the monitor's pens and heart -->
 <!-- v0.29.0 — the dark moment, calm (lines and theatrics withdrawn; the scroll, not clicks) -->
 <!-- v0.28.0 — the one sanctioned live trace (the journey's last tablet) -->

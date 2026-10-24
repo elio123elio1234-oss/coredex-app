@@ -8,19 +8,19 @@ import { dressModel, studioEnvironment } from "./studio";
    the team's own 3D model (public/models/cyphix.glb), dressed in the
    shared product studio.
 
-   No transitions at all, only the page's own scroll: the four ways to wear
-   it stand one under the other, a screen apart (the smartwatch, the
-   bracelet, the analog watch, the Cyphix watch), and the camera moves down
-   past them exactly as the page would scroll, holding on each while its
-   copy holds. Each turns slowly as it goes by. The caller (OneStrap) owns
-   the timeline: render(pos, s) draws the column at `pos` (0 = the first,
-   1 = the second…; whole numbers are holds) with the scroll `s`, in screens,
-   turning the products.
+   The product never moves across the screen. It stands large and centred
+   under the copy and turns slowly with the scroll. Between the ways to wear
+   it, its light goes out (the studio, the key and the rim, even the glow of
+   a watch's screen) until it is gone into the black; the next is then lit
+   out of the dark. Two products are never on screen at once.
+
+   The caller (OneStrap) owns the timeline: render(i, t, light) draws way
+   `i` at `t` (0..1) through its own slow turn, under `light` (0..1).
    ================================================================== */
 
 export type StrapStory = {
-  /** draws the column at position `pos`, the products turned by the scroll `s` (in screens) */
-  render: (pos: number, s: number) => void;
+  /** draws way `i`, `t` (0..1) through its turn, under `light` (0 = dark, 1 = lit) */
+  render: (i: number, t: number, light: number) => void;
   /** re-reads the host's size; returns true when it changed */
   resize: () => boolean;
   dispose: () => void;
@@ -28,16 +28,14 @@ export type StrapStory = {
 
 const MODEL_URL = "/models/cyphix.glb";
 
-type Look = { watch: "smartwatch" | "analog" | "contour" | null; closed: number; yaw: number; pitch: number; centre: number };
-/* the column, top to bottom; `centre` is the scroll (in screens) at the middle of its hold, where
-   it stands at `yaw`; it turns 0.32 rad per screen of scroll */
-export const COLUMN: Look[] = [
-  { watch: "smartwatch", closed: 0, yaw: 0.5, pitch: 0.18, centre: 0.35 },
-  { watch: null, closed: 1, yaw: 0.8, pitch: 0.32, centre: 2.05 },
-  { watch: "analog", closed: 0, yaw: 0.45, pitch: 0.16, centre: 3.75 },
-  { watch: "contour", closed: 0, yaw: 0.45, pitch: 0.22, centre: 5.45 },
+type Way = { watch: "smartwatch" | "analog" | "contour" | null; closed: number; yaw: [number, number]; pitch: number };
+/* in the page's order: on a smartwatch, as a bracelet, on an analog watch, the Cyphix watch */
+const WAYS: Way[] = [
+  { watch: "smartwatch", closed: 0, yaw: [0.28, 0.78], pitch: 0.18 },
+  { watch: null, closed: 1, yaw: [0.55, 1.05], pitch: 0.32 },
+  { watch: "analog", closed: 0, yaw: [0.2, 0.7], pitch: 0.16 },
+  { watch: "contour", closed: 0, yaw: [0.2, 0.7], pitch: 0.22 },
 ];
-const TURN = 0.32; // rad per screen
 
 /** lets the page breathe between the heavy steps of the build, so none of them is one long task */
 const breathe = () => new Promise<void>((r) => setTimeout(r, 0));
@@ -58,66 +56,70 @@ export async function createStrapStory(host: HTMLElement): Promise<StrapStory> {
   const scene = new THREE.Scene();
   await breathe();
   scene.environment = studioEnvironment(renderer, "dark");
-  scene.environmentIntensity = 1.0;
-  const key = new THREE.DirectionalLight(0xffffff, 1.4);
+  const KEY = 1.4;
+  const RIM = 2.6;
+  const key = new THREE.DirectionalLight(0xffffff, KEY);
   key.position.set(-1.6, 2.4, 2.6);
-  const rim = new THREE.DirectionalLight(0xcfe0ff, 2.6);
+  const rim = new THREE.DirectionalLight(0xcfe0ff, RIM);
   rim.position.set(2.4, 1.4, -2.6);
   scene.add(key, rim);
 
   const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(MODEL_URL);
+  const root = gltf.scene;
   await breathe();
+  const { strap, smartwatch, analog, contour, link, closeLink } = dressModel(root);
+  await breathe();
+  const presenter = new THREE.Group();
+  presenter.rotation.y = Math.PI / 4; // undo the export's presentation yaw: the faces point at the camera at yaw 0
+  presenter.add(root);
+  const spin = new THREE.Group();
+  const tilt = new THREE.Group();
+  spin.add(presenter);
+  tilt.add(spin);
+  scene.add(tilt);
+  // turn about the middle of the strap loop, not the watch
+  const box = new THREE.Box3().setFromObject(presenter);
+  presenter.position.sub(box.getCenter(new THREE.Vector3()));
 
-  // one dressed copy of the model per way to wear it, each on its own turntable, in a column (the
-  // copies are taken from the undressed model, before any of them is dressed)
-  const roots = COLUMN.map((_, i) => (i === 0 ? gltf.scene : gltf.scene.clone(true)));
-  const stands: { stand: THREE.Group; spin: THREE.Group; tilt: THREE.Group; look: Look }[] = [];
-  for (const [i, look] of COLUMN.entries()) {
-    const root = roots[i];
-    const { strap, smartwatch, analog, contour, link, closeLink } = dressModel(root);
-    smartwatch.visible = look.watch === "smartwatch";
-    analog.visible = look.watch === "analog";
-    contour.visible = look.watch === "contour";
-    strap.visible = look.watch !== "contour"; // the Cyphix watch has its own band
-    closeLink(look.closed);
-    link.visible = look.closed > 0;
-    const presenter = new THREE.Group();
-    presenter.rotation.y = Math.PI / 4; // undo the export's presentation yaw: the faces point at the camera at yaw 0
-    presenter.add(root);
-    const spin = new THREE.Group();
-    const tilt = new THREE.Group();
-    const stand = new THREE.Group();
-    spin.add(presenter);
-    tilt.add(spin);
-    stand.add(tilt);
-    scene.add(stand);
-    // turn about the middle of what this one shows
-    const box = new THREE.Box3().setFromObject(presenter);
-    presenter.position.sub(box.getCenter(new THREE.Vector3()));
-    stands.push({ stand, spin, tilt, look });
-    await breathe();
-  }
+  // the watches' screens glow on their own; they go dark with the light too
+  const glowing: { m: THREE.MeshPhysicalMaterial; base: number }[] = [];
+  root.traverse((o) => {
+    const m = (o as THREE.Mesh).material as THREE.MeshPhysicalMaterial | undefined;
+    if (m && m.emissiveIntensity > 0 && m.emissiveMap) glowing.push({ m, base: m.emissiveIntensity });
+  });
 
   const camera = new THREE.PerspectiveCamera(24, 1, 0.005, 5);
-  let w = 1;
-  let h = 1;
-  let dist = 1;
-  let gap = 1; // world metres between two stands: one screen's height at the products' distance
+  let shown = -1;
   let drawn = "";
 
-  const render = (pos: number, s: number) => {
-    const key = `${pos.toFixed(5)}:${s.toFixed(4)}`;
-    if (key === drawn) return;
-    drawn = key;
-    stands.forEach(({ stand, spin, tilt, look }, i) => {
-      stand.position.y = -i * gap;
-      // only the ones on screen (or about to be) are drawn
-      stand.visible = Math.abs(i - pos) < 1.15;
-      spin.rotation.y = look.yaw + TURN * (s - look.centre);
-      tilt.rotation.x = look.pitch;
-    });
-    camera.position.set(0, -pos * gap, dist);
-    camera.lookAt(0, -pos * gap, 0);
+  const configure = (i: number) => {
+    if (i === shown) return;
+    shown = i;
+    const w = WAYS[i];
+    smartwatch.visible = w.watch === "smartwatch";
+    analog.visible = w.watch === "analog";
+    contour.visible = w.watch === "contour";
+    strap.visible = w.watch !== "contour"; // the Cyphix watch has its own band
+    closeLink(w.closed);
+    link.visible = w.closed > 0;
+  };
+
+  const render = (i: number, t: number, light: number) => {
+    const k = `${i}:${t.toFixed(4)}:${light.toFixed(3)}`;
+    if (k === drawn) return;
+    drawn = k;
+    configure(i);
+    const w = WAYS[i];
+    spin.rotation.y = w.yaw[0] + (w.yaw[1] - w.yaw[0]) * t;
+    tilt.rotation.x = w.pitch;
+    // the light: everything that lights the product, eased so it lingers in the highlights
+    const l = light * light * (3 - 2 * light);
+    scene.environmentIntensity = l;
+    key.intensity = KEY * l;
+    rim.intensity = RIM * l;
+    glowing.forEach(({ m, base }) => (m.emissiveIntensity = base * l));
+    // and it fades into the stage's navy as the last of the light goes, never a dark cut-out
+    canvas.style.opacity = Math.min(1, light * 1.6).toFixed(3);
     renderer.render(scene, camera);
   };
 
@@ -125,8 +127,8 @@ export async function createStrapStory(host: HTMLElement): Promise<StrapStory> {
   // address bar hiding fires resize without changing the stage, so unchanged sizes are skipped
   let size = "";
   const resize = () => {
-    w = Math.max(1, host.clientWidth);
-    h = Math.max(1, host.clientHeight);
+    const w = Math.max(1, host.clientWidth);
+    const h = Math.max(1, host.clientHeight);
     if (`${w}x${h}` === size) return false;
     size = `${w}x${h}`;
     renderer.setSize(w, h, false);
@@ -135,18 +137,20 @@ export async function createStrapStory(host: HTMLElement): Promise<StrapStory> {
     const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     // large and centred under the copy: the product's half extents over ~60% of the stage's
     // height, or ~86% of a narrow stage's width, held low in the frame, clear of the copy
-    dist = Math.max(0.042 / tan / 0.6, 0.046 / (tan * aspect) / 0.86);
-    gap = 2 * dist * tan; // the column moves exactly as the page scrolls
+    const dist = Math.max(0.042 / tan / 0.6, 0.046 / (tan * aspect) / 0.86);
+    camera.position.set(0, 0, dist);
+    camera.lookAt(0, 0, 0);
     camera.setViewOffset(w, h, 0, -h * 0.16, w, h);
     camera.updateProjectionMatrix();
     drawn = "";
     return true;
   };
 
+  root.updateMatrixWorld(true);
   resize();
 
-  // every shader compiled and every texture uploaded now, before the visitor gets here
-  stands.forEach(({ stand }) => (stand.visible = true));
+  // every part's shaders compiled and every texture uploaded now, before the visitor gets here
+  [smartwatch, analog, contour, link].forEach((o) => (o.visible = true));
   await renderer.compileAsync(scene, camera);
   await breathe();
   renderer.render(scene, camera);
@@ -162,5 +166,7 @@ export async function createStrapStory(host: HTMLElement): Promise<StrapStory> {
   };
 }
 
-// v0.30.0 — no transitions, only the scroll: the four ways to wear it stand in a column a screen apart and the camera moves past them exactly as the page scrolls, holding on each; each turns slowly (the dissolve of v0.29.0 withdrawn)
-// v0.29.0 — the dark moment, calm: the product large and centred under the copy, rising into view, each way to wear it a chapter that arrives with a soft dissolve
+// v0.31.0 — as the light goes the product also fades into the navy stage (no dark silhouette)
+// v0.31.0 — the product never moves across the screen: it turns slowly in place, and between the ways to wear it its light goes out into the black and the next is lit out of the dark (the column of v0.30.0 withdrawn)
+// v0.30.0 — no transitions, only the scroll: the four ways in a column a screen apart, passed at the scroll's own speed
+// v0.29.0 — the dark moment, calm: the product large and centred under the copy, a soft dissolve between ways

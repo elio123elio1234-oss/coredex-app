@@ -1,5 +1,57 @@
 # Changelog — CYPHIX Landing
 
+## v0.31.0 — 2026-10-24 — lit out of the dark, on the navy
+
+**Why.** The user, on v0.30.0, from a phone:
+
+> "The iPad looks better now. Why did you put such a big dot at the start
+> of every signal? And on the phone the iPad is really small, look. About
+> the scenes: I still don't like the transitions that much."
+
+Then:
+
+> "The screen there also went black, not dark blue like the original you
+> made. The dark blue from before was prettier."
+
+**The transitions: the product no longer moves across the screen.**
+- **In place:** it stands large and centred under the copy and turns slowly
+  with the scroll.
+- **Between the ways to wear it,** its light goes out: the studio
+  environment, the key and the rim, even the glow of a watch's screen.
+  - As the last of it goes, the product also fades into the stage, so it
+    never shows as a dark cut-out against the navy.
+  - The copy fades with it.
+  - The next way is then lit out of the dark, its copy with it.
+- **One product at a time:** two products are never on screen together
+  (v0.29.0's dissolve did that), and nothing slides (v0.30.0's column did
+  that).
+- **The first product** is lit as the section scrolls in.
+- **The end:** the white page still scrolls up over the stage, with the
+  clinician's screen.
+- **The scene module** is back to one dressed copy of the model, which
+  swaps unseen while the light is out: `render(way, turn, light)`.
+- **The section** is 700svh (six screens of travel).
+
+**The stage is the original dark navy again.**
+- `#0a0d13 → #111725`.
+- The blue glow, now centred behind the product.
+- The faint warm glow at the foot.
+
+**The monitor's pen is a small tip.** 2.4 units, no halo (it was 4.2 with an
+11-unit halo).
+
+**The clinician's tablet fits the room under its copy.**
+- The page sizes it once the copy is laid out: up to 92 % of the width,
+  up to 880 px, and as tall as the room left.
+- On a phone that is its whole width. It was sized by a fixed desktop
+  allowance, which left it about 200 px wide on an iPhone.
+
+**Checked** (headless Chrome, software WebGL):
+- The dip frame by frame at 1440 × 900: the product dims and fades into
+  the navy, a beat of empty stage, then the next comes up. No silhouette.
+- Every way and the end on 390 × 844: the tablet near the full width.
+- No sideways scroll.
+
 ## v0.30.0 — 2026-10-24 — only the scroll; the tablet beats
 
 **Why.** The user, on v0.29.0:

@@ -170,8 +170,7 @@ function Screen({ live }: { live: boolean }) {
         {live &&
           STRIPS.map((s) => (
             <g key={s.name} className="tm-pen" transform="translate(-40 0)">
-              <circle r="11" fill="#13213a" opacity="0.1" />
-              <circle r="4.2" fill="#13213a" />
+              <circle r="2.4" fill="#13213a" />
             </g>
           ))}
       </g>
@@ -250,6 +249,7 @@ export default function HeroTablet({ live = false }: { live?: boolean }) {
   );
 }
 
+// v0.31.0 — the pen a small tip (the user: the dot was too big)
 // v0.30.0 — `live` writes like a monitor: a pen per lead riding the trace in real time, a heart on every R peak, from an empty strip each time it comes into view (script, not SMIL)
 // v0.28.0 — `live`: the traces write themselves in a gentle 10 s loop (the journey's last chapter only)
 // v0.27.0 — a unique clip id per instance (the journey's last chapter shows the tablet too)
