@@ -79,6 +79,7 @@ export default function Footer() {
   );
 }
 
+// v0.23.1 — no card: the whole upper area is the glass (styles in index.css)
 // v0.23.0 — the columns on one frosted-glass rectangle over the heart-hands image (moved here from Request the deck)
 // v0.15.0 — the "How it works" link goes with its section
 // v0.14.0 — the "Market" and "Why Cyphix" links go with their sections

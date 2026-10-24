@@ -1,5 +1,40 @@
 # Changelog — CYPHIX Landing
 
+## v0.23.1 — 2026-10-24 — the footer's glass is the area itself, not a card
+
+**Why.** The user: "But you added another layer, a rectangle. I don't want
+that, that's your mistake! I just want the text itself on the glass
+background, over that whole rectangle there, and make it a bit bigger so the
+heart in the hands shows."
+
+v0.23.0 put the columns on a rounded card floating over the image, which is a
+new layer. The user wanted the footer's own area to be the glass.
+
+**What changed.**
+- **No card.** `.foot-top` is back to its plain grid and padding. The text
+  sits straight on the background.
+- **The whole upper footer is the glass.**
+  - The heart-hands image fills it (`object-fit: cover`, heart centred).
+  - A full-area pane over it: white at 55 %,
+    `backdrop-filter: blur(9px) saturate(1.4)`.
+  - The image reads through it, softened, the heart clearly a heart.
+  - Without backdrop-filter, the image is blurred directly under a white
+    tint.
+- **Taller,** so the whole heart fits: at least `clamp(360px, 36vw, 540px)`
+  (518 px at 1440), with the columns centred in it.
+- **Darker inks on the glass,** so the text holds over the hands: the column
+  headings in navy and the links in ink. The tagline and the legal band are
+  unchanged.
+
+**Checked.**
+- Real contrast, measured on the rendered pixels behind every footer line at
+  1440, 1280, 820 and 390: the worst case is 5.2:1, and every line passes
+  4.5:1.
+- The design detector still flags "Company" and "Investors" at 2.6–3.2:1.
+  It measures against the raw image and does not see the glass pane above it,
+  so the pixel measurement is the one that holds.
+- There is no sideways scroll.
+
 ## v0.23.0 — 2026-10-24 — the glass moves to the footer; "Request the deck" restored
 
 **Why.** The user, on v0.22.0: "Let's try one rectangle below, where I
