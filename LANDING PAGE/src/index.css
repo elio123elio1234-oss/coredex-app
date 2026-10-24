@@ -315,8 +315,7 @@ section[id] {
   display: flex;
   gap: 32px;
 }
-.bar-nav a,
-.bar-phone {
+.bar-nav a {
   position: relative;
   padding: 8px 0;
   font-size: 15px;
@@ -337,41 +336,76 @@ section[id] {
   transform-origin: right;
   transition: transform 0.45s var(--ease);
 }
-.bar-nav a:hover,
-.bar-phone:hover {
+.bar-nav a:hover {
   color: var(--ink);
 }
 .bar-nav a:hover::after {
   transform: scaleX(1);
   transform-origin: left;
 }
-.bar-phone {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-/* the right end: the phone, then Instagram and LinkedIn */
+/* the right end: the phone, Instagram and LinkedIn, three marks */
 .bar-end {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
 }
-.bar-phone {
-  margin-right: 14px;
-}
 .bar-social {
   display: inline-grid;
   place-items: center;
   width: 40px;
   height: 40px;
+  padding: 0;
+  border: 0;
   border-radius: 10px;
+  background: none;
   color: var(--ink-2);
+  cursor: pointer;
   transition: color 0.2s ease;
 }
-.bar-social:hover {
+.bar-social:hover,
+.bar-social[aria-expanded="true"] {
   color: var(--ink);
+}
+/* the number, opened under the phone's mark, its top on the bar's lower edge */
+.bar-call {
+  position: relative;
+}
+.bar-pop {
+  position: absolute;
+  top: calc(100% + (var(--bar) - 40px) / 2);
+  right: 0;
+  padding: 14px 20px;
+  background: #fff;
+  border: 1px solid var(--hair);
+  box-shadow: 0 14px 34px rgba(11, 26, 48, 0.12);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s var(--ease),
+    visibility 0s linear 0.25s;
+}
+.bar-pop.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s var(--ease);
+}
+.bar-pop a {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.bar-pop a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 /* the last glyph's edge, not its tap box, meets the page's right edge */
 .bar-social:last-child {
@@ -380,7 +414,16 @@ section[id] {
 .bar.is-dark .bar-social {
   color: #b7c0cf;
 }
-.bar.is-dark .bar-social:hover {
+.bar.is-dark .bar-social:hover,
+.bar.is-dark .bar-social[aria-expanded="true"] {
+  color: #fff;
+}
+.bar.is-dark .bar-pop {
+  background: #111725;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+}
+.bar.is-dark .bar-pop a {
   color: #fff;
 }
 .bar.is-dark {
@@ -389,12 +432,10 @@ section[id] {
   backdrop-filter: saturate(1.4) blur(14px);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
 }
-.bar.is-dark .bar-nav a,
-.bar.is-dark .bar-phone {
+.bar.is-dark .bar-nav a {
   color: #b7c0cf;
 }
-.bar.is-dark .bar-nav a:hover,
-.bar.is-dark .bar-phone:hover {
+.bar.is-dark .bar-nav a:hover {
   color: #fff;
 }
 
@@ -1432,11 +1473,6 @@ section[id] {
 
 /* ---------- tablet ---------- */
 
-@media (max-width: 1100px) {
-  .bar-phone {
-    display: none;
-  }
-}
 @media (max-width: 1023px) {
   .bar-nav {
     gap: 22px;
@@ -1682,7 +1718,8 @@ section[id] {
   }
 }
 
-/* v0.33.0 — the scene's styles back to v0.27.0 (left-aligned copy in the page's type, the product right, the chapters, the day scene), less the six-leads overlay; 900svh
+/* v0.34.0 — the phone in the bar is a mark beside Instagram and LinkedIn, on every width; a click opens the number under it
+   v0.33.0 — the scene's styles back to v0.27.0 (left-aligned copy in the page's type, the product right, the chapters, the day scene), less the six-leads overlay; 900svh
    v0.32.0 — the clinician's screen on the navy stage, lit out of the dark (the white sheet and its styles withdrawn); 760svh
    v0.31.0 — the stage back on the original dark navy with its glows (the user: prettier than black)
    v0.31.0 — the product turns in place; the copy fades with its light (700svh); the clinician's screen sized by the page

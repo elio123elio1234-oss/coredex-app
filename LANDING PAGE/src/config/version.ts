@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.33.0";
+export const APP_VERSION = "0.34.0";
 export const APP_BUILD_LABEL =
-  "Reset: the 3D journey back to v0.27.0, the version the user called really beautiful, in the page's own type, with only the user's notes on it: no lines over the product, no white pool under it, each move given more scroll, the tablet writing live";
+  "The phone number is no longer on show in the bar: the phone is a mark beside Instagram and LinkedIn, and a click opens the number under it";
 
+// v0.34.0 — the bar's phone as a mark; a click opens the number
 // v0.33.0 — the journey reset to v0.27.0 with only the user's own notes on it
 // v0.32.0 — the clinician's screen lit out of the dark on the navy stage
 // v0.31.0 — the product turns in place, lit out of the dark; the navy back; the pen smaller; the phone's tablet larger

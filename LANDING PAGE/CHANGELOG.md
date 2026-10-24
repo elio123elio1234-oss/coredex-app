@@ -1,5 +1,32 @@
 # Changelog — CYPHIX Landing
 
+## v0.34.0 — 2026-10-25 — the number behind the phone's mark
+
+**Why.** The user: "At the top there's no need to show my number straight
+away. Just the phone icon beside the Instagram one, and when you click it
+the number appears."
+
+**What changed.**
+- **Three marks at the bar's right end:** the phone, Instagram and LinkedIn,
+  the same size and stroke.
+- **A click on the phone opens a small panel** under it, its top on the
+  bar's lower edge, holding the number as a call link.
+- **It closes** on a second click, a click elsewhere, or Escape (which
+  returns focus to the mark). The button says whether it is open
+  (`aria-expanded`).
+- **The panel follows the bar:** white over the page, the navy of the stage
+  over the dark scene.
+- **The phone's mark now shows on every width.** The number used to hide
+  below 1100 px.
+- **The number is unchanged elsewhere:** in "Request the deck" and in the
+  footer.
+
+**Checked** (headless Chrome) at 1440, 390 and 360 px wide:
+- closed and open, on the white bar and the dark one;
+- the panel's top sits exactly on the bar's lower edge;
+- a click elsewhere closes it;
+- no sideways scroll.
+
 ## v0.33.0 — 2026-10-25 — reset: the journey the user called beautiful
 
 **Why.** The user, on v0.32.0:

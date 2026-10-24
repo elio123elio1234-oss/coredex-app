@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Logo from "./Logo";
 import { Instagram, LinkedIn, Phone } from "./Icons";
 
 /* The top of the page, AliveCor-style: a navy announcement bar that scrolls
-   away, then a white sticky bar — wordmark, section links, the direct line
-   and a solid "Request the deck" button. Over the dark closing stage the bar
-   turns dark too. */
+   away, then a white sticky bar: the wordmark, section links, and at the
+   right end the phone, Instagram and LinkedIn as three marks. The number
+   itself is not on show: a click on the phone opens it under the mark.
+   Over the dark closing stage the bar turns dark too. */
 
 const LINKS = [
   { href: "#solution", label: "Product" },
@@ -21,6 +22,28 @@ const SOCIAL = [
 
 export default function Header() {
   const [dark, setDark] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const callRef = useRef<HTMLDivElement>(null);
+  const callButton = useRef<HTMLButtonElement>(null);
+
+  // the number closes again on a click elsewhere, or Escape
+  useEffect(() => {
+    if (!callOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!callRef.current?.contains(e.target as Node)) setCallOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setCallOpen(false);
+      callButton.current?.focus();
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [callOpen]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -56,10 +79,22 @@ export default function Header() {
             ))}
           </nav>
           <div className="bar-end">
-            <a className="bar-phone" href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>
-              <Phone width={17} height={17} />
-              {PHONE}
-            </a>
+            <div className="bar-call" ref={callRef}>
+              <button
+                ref={callButton}
+                type="button"
+                className="bar-social"
+                aria-label={callOpen ? "Hide our phone number" : "Show our phone number"}
+                aria-expanded={callOpen}
+                aria-controls="bar-call-number"
+                onClick={() => setCallOpen((o) => !o)}
+              >
+                <Phone width={19} height={19} />
+              </button>
+              <div id="bar-call-number" className={`bar-pop${callOpen ? " is-open" : ""}`}>
+                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
+              </div>
+            </div>
             {SOCIAL.map(({ href, label, Icon }) => (
               <a key={href} className="bar-social" href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
                 <Icon width={20} height={20} />
@@ -72,6 +107,7 @@ export default function Header() {
   );
 }
 
+// v0.34.0 — the number is no longer on show: the phone is a mark beside Instagram and LinkedIn, and a click opens the number under it (the user)
 // v0.28.0 — Instagram and LinkedIn beside the phone (they stay when the phone number hides)
 // v0.20.0 — the bar's "Request the deck" button removed (the user: three times was too many; the announcement and the hero keep it)
 // v0.17.1 — the announcement names the stage, not the amount (the user)
