@@ -427,7 +427,7 @@ section[id] {
   object-fit: contain;
 }
 /* the raised forearm rises from the band's lower edge at its v0.11.0 scale (the whole arm
-   was band - 56 px tall; this asset is its upper 1404 of 1768 rows, 79.4 %), so the hand sits lower without growing;
+   was band - 56 px tall; this asset is its upper 1464 of 1768 rows, 82.8 %), so the hand sits lower without growing;
    the system, the CYPHIX app on a tablet, stands behind it on the left, as on AliveCor */
 .hero-media.is-arm {
   display: flex;
@@ -441,7 +441,7 @@ section[id] {
   display: block;
   flex: none;
   width: auto;
-  height: calc((clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 56px) * 0.7939);
+  height: calc((clamp(560px, calc(100svh - var(--bar) - 40px), 820px) - 56px) * 0.8279);
   /* only the hand moves left, over the tablet; the tablet keeps its place */
   transform: translateX(calc(-1 * min(5.3vw, 84px)));
 }
@@ -1275,15 +1275,16 @@ section[id] {
   }
   .hero-media.is-arm {
     justify-content: center;
-    padding: 8px var(--gutter) 0;
+    padding: 0 var(--gutter);
   }
   .hero-arm {
-    height: 381px;
+    height: 397px;
+    margin-top: -8px;
     transform: translateX(-6vw);
   }
   .hero-system {
     width: min(48vw, 380px);
-    margin: 16px -13% 0 0;
+    margin: 24px -13% 0 0;
   }
   .split-media {
     min-height: 360px;
@@ -1389,15 +1390,16 @@ section[id] {
     width: 92%;
   }
   .hero-media.is-arm {
-    padding: 10px 12px 0;
+    padding: 0 12px;
   }
   .hero-arm {
-    height: 333px;
+    height: 347px;
+    margin-top: -4px;
     transform: translateX(-7.5vw);
   }
   .hero-system {
     width: 54vw;
-    margin-top: 14px;
+    margin-top: 24px;
     margin-right: -15%;
   }
   .rule-head .h2 {
@@ -1492,7 +1494,8 @@ section[id] {
   }
 }
 
-/* v0.16.0 — the hero tablet swapped for the user's third image (taller: 1000 x 647); no rule changed
+/* v0.17.0 — the user's forearm with black electrodes; the hand a touch higher again (1464 rows, about 25 px at 1440). Stacked layouts: the fingertips reach 8 / 4 px into the copy's bottom padding and the tablet's top margin grows, so the band and the tablet stay put
+   v0.16.0 — the hero tablet swapped for the user's third image (taller: 1000 x 647); no rule changed
    v0.15.0 — "How it works" removed: its module render style and the card's link style with it
    v0.14.0 — "Why Cyphix" and the market section removed (their styles with them); the phone pass: one-line announcement, a compact bar button, a tighter hero top, 12 px chip, thumb-sized links
    v0.13.4 — the hand a touch higher: 60 more rows of forearm at the same scale (about 25 px at 1440); width and x unchanged.

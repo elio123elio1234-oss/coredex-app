@@ -1,5 +1,41 @@
 # Changelog — CYPHIX Landing
 
+## v0.17.0 — 2026-10-24 — black electrodes, and the hand a touch higher
+
+**Why.** The user sent the same forearm with the module's electrodes in black
+("maybe that's prettier") and asked: "raise the hand a tiny bit more too."
+
+**What changed.**
+- **The forearm image is the user's new one.** It went through the same
+  pipeline as the first:
+  - the haze removed;
+  - turned counter-clockwise;
+  - cropped to the subject;
+  - set 8 px in from the left, right and top.
+
+  It lines up with the old image at 99.4 % overlap, so the hand's place and
+  scale are unchanged; only the electrodes differ.
+- **The hand is a touch higher.** It shows 1464 of the 1768 rows, 60 more
+  than v0.13.4, at the same scale:
+  - the height factor goes from 0.7939 to 0.8279;
+  - tablets go from 381 to 397 px, phones from 333 to 347 px.
+
+  The hand rises 24 px at 1440, 18 at 1280, 16 at 820 and 14 at 390. Its x and
+  width are unchanged.
+- **On stacked layouts nothing else moves.**
+  - The fingertips reach 8 px (tablets) and 4 px (phones) into the copy's
+    bottom padding.
+  - The media's top padding goes to 0.
+  - The tablet's top margin grows to 24 px.
+
+  The band's height and the tablet's box are unchanged.
+- The alt text says "three black electrodes".
+
+**Checked.** In headless Chrome at four widths:
+- the tablet's box and the hero's height are unchanged to the pixel;
+- only the hand's top moved;
+- there is no sideways scroll.
+
 ## v0.16.0 — 2026-10-24 — the user's new tablet in the hero
 
 **Why.** The user sent a new ChatGPT image: "use this iPad."
