@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.25.0";
+export const APP_VERSION = "0.26.0";
 export const APP_BUILD_LABEL =
-  "Hero: the user's more natural hand (relaxed, open), the strap and the forearm on the same pixels as before; nothing else moved";
+  "The 3D scene scrolls smoothly: built ahead of time while the page is idle, no freeze when a watch first appears, and it glides with the scroll in the same frame as the text";
 
+// v0.26.0 — the 3D scene: built ahead at idle, precompiled, gliding with the scroll
 // v0.25.0 — the hero hand replaced by the user's more natural one
 // v0.24.5 — white behind the hands (the red trial withdrawn)
 // v0.24.4 — trial: the logo's red behind the hands

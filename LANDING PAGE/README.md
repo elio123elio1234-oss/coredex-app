@@ -27,7 +27,9 @@ not generated: `HeroTablet.tsx` draws the CYPHIX screen live as SVG (data in
 - **Vite + React + TypeScript** (static SPA)
 - Plain CSS for the one load arrival (no animation library)
 - **three.js 0.169** for the closing scene, in its own lazy chunk (`src/lib/strapScene.ts`),
-  loading the meshopt-compressed GLB from `public/models/`
+  loading the meshopt-compressed GLB from `public/models/`. It is built ahead of time, once the
+  page has loaded and the browser is idle (every shader compiled, every texture uploaded), and it
+  glides to the scroll position in one frame loop with the copy (`OneStrap.tsx`)
 - **Sora** + **Geist Mono** self-hosted from `src/assets/fonts` (no external requests)
 
 ## Run locally
@@ -104,6 +106,7 @@ and light.
 <!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->
 <!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
+<!-- v0.26.0 — the closing scene is built ahead at idle and glides with the scroll -->
 <!-- v0.8.0 — the 3D model, the closing scene, three.js, how to re-render -->
 <!-- v0.7.0 — the professional rebuild: no animation library, the frame-mapped callouts, the og card, the deploy command -->
 <!-- v0.6.0 — the investor redesign: stack, structure, and how the hero finds the watch screen -->

@@ -1,5 +1,73 @@
 # Changelog — CYPHIX Landing
 
+## v0.26.0 — 2026-10-24 — the 3D scene scrolls smoothly
+
+**Why.** The user, about "One strap. Any watch.":
+
+> "first of all it sometimes gets stuck (maybe don't wait until we reach it
+> for it to load), but something there is still not smooth and doesn't flow
+> with the scroll."
+
+Four causes, all in how the scene was loaded and driven:
+
+1. **Late build, on the visitor's way in.** The scene started loading only
+   1.5 screens before the section. The build then ran as long tasks right as
+   the visitor arrived: the GLB, the materials, the bracelet bend and the
+   studio light.
+2. **A shader compile on each watch's first appearance.** three.js compiles a
+   material the first time its object is drawn. The analog and the Cyphix
+   watch are hidden until their moment, so each froze the page mid-scroll as
+   it came into view. That is the "sometimes gets stuck".
+3. **A frame behind the text.** The scroll handler set the progress inside one
+   animation frame, and the scene drew in the next. The copy moved with the
+   scroll; the model trailed it by a frame.
+4. **Jumps, not motion.** Progress was the raw scroll position. Each
+   mouse-wheel step (about 100 px of a 5,000 px scene) moved the model in one
+   jump.
+
+**What changed.**
+- **Built ahead of time.** Once the page has loaded and the browser is idle,
+  the scene is built. Nearing the section still triggers it if that comes
+  first. A data-saver connection waits for the section.
+- **The build is split into short steps,** so it never holds the page in one
+  long task.
+- **Ready before the visitor arrives:**
+  - `renderer.compileAsync` compiles every part's shaders with every part
+    shown;
+  - one frame with everything in it uploads the textures.
+  - Nothing compiles or uploads mid-scroll any more.
+- **One frame loop draws the model and the copy together** (`render(p)`, no
+  second frame).
+- **The scene glides to the scroll position:** an exponential catch-up of
+  0.12 s. A wheel step becomes motion, and the model stays attached to the
+  scroll.
+  - Off screen, or before the model is ready, it jumps instead: a link that
+    lands past the section doesn't play the scene in the background.
+- **Progress uses the pinned stage's own height,** not the window's. On a
+  phone, the address bar hiding changes the window and used to nudge the
+  scene.
+- **Each frame is cheaper:**
+  - the canvas resolution is capped at 1.5x (on a 2x screen, 44 % fewer
+    pixels, still sharp with antialiasing);
+  - an unchanged resize no longer resets the canvas (a phone fires resize as
+    its address bar hides, and setting a canvas's size clears it).
+- The four states, the timings, the copy and the stills fallback are
+  unchanged.
+
+**Checked** (headless Chrome, software WebGL, so times are inflated; the
+comparison is what counts):
+
+| | Live v0.25.0 | v0.26.0 |
+|---|---|---|
+| Scene ready while the visitor is still at the top | no | yes, ~3 s after load |
+| Longest block, scrolling through the scene | 2.6 s on entry | 0.12 s |
+| Blocks at the watches' first appearance | 0.67 s and 0.73 s | none |
+
+- The scene at 0.1, 0.5, 0.75 and 0.97 matches the live version frame for
+  frame.
+- Phone (390): the scene is built at the top, the canvas is at 1.5x
+  (585 × 1266), there is no sideways scroll, and there are no page errors.
+
 ## v0.25.0 — 2026-10-24 — a more natural hand in the hero
 
 **Why.** The user sent a new image: "let's use this hand, it looks more

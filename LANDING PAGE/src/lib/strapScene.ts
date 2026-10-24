@@ -9,9 +9,10 @@ import { FACE, dressModel, studioEnvironment } from "./studio";
    "analog" and "contour", the Cyphix watch, on one origin), dressed in the
    shared product studio. Four ways to wear it, in the team's order:
 
-   Scroll progress p (0..1) drives everything; nothing runs on a timer
-   and a frame is drawn only when p or the size changes. Every part moves
-   physically and stays opaque:
+   Scroll progress p (0..1) drives everything; nothing runs on a timer.
+   The caller draws a frame with render(p), in its own animation frame (no
+   second frame of lag), and only when p or the size changes. Every part
+   moves physically and stays opaque:
      0.00–0.24  on a smartwatch, the strap turns to show the module's electrodes
      0.24–0.34  back to a three-quarter front, the module still in view
      0.34–0.37  the smartwatch unclips, with its lug housings
@@ -26,8 +27,10 @@ import { FACE, dressModel, studioEnvironment } from "./studio";
    ================================================================== */
 
 export type StrapScene = {
-  setProgress: (p: number) => void;
-  resize: () => void;
+  /** draws the scene at progress p (0..1) now; skipped when nothing changed */
+  render: (p: number) => void;
+  /** re-reads the host's size; returns true when it changed */
+  resize: () => boolean;
   dispose: () => void;
 };
 
@@ -53,6 +56,8 @@ const KEYS: [number, number, number][] = [
 ];
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+/** lets the page breathe between the heavy steps of the build, so none of them is one long task */
+const breathe = () => new Promise<void>((r) => setTimeout(r, 0));
 const span = (a: number, b: number, v: number) => clamp01((v - a) / (b - a));
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
@@ -110,7 +115,8 @@ function floorGlow() {
 
 export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // 1.5x is still sharp with antialiasing, and a 2x screen fills 44 % fewer pixels each frame
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -119,6 +125,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
+  await breathe();
   scene.environment = studioEnvironment(renderer, "dark");
   scene.environmentIntensity = 1.0;
   const key = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -129,7 +136,9 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
 
   const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(MODEL_URL);
   const root = gltf.scene;
+  await breathe();
   const { strap, smartwatch, analog, contour, link, closeLink } = dressModel(root);
+  await breathe();
   const presenter = new THREE.Group();
   presenter.rotation.y = Math.PI / 4; // undo the export's presentation yaw: the faces point at the camera at yaw 0
   presenter.add(root);
@@ -150,8 +159,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   const worldUp = new THREE.Vector3();
   const inv = new THREE.Matrix4();
 
-  let progress = 0;
-  let frame = 0;
+  let drawn = -1; // the progress last drawn; -1 forces the next render
 
   /** world-up expressed in the watches' parent space, so they rise straight up whatever the turn */
   const upInRoot = () => {
@@ -160,9 +168,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
     return worldUp.set(0, 1, 0).transformDirection(inv);
   };
 
-  const draw = () => {
-    frame = 0;
-    const p = progress;
+  const pose = (p: number) => {
     spin.rotation.y = yawAt(p);
     tilt.rotation.x = pitchAt(p);
     const up = upInRoot();
@@ -193,16 +199,24 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
     const arrive = 1 - easeOutCubic(span(0.885, 0.95, p));
     contour.position.copy(up).multiplyScalar(arrive * RISE_ALL);
     contour.visible = p > 0.88;
+  };
 
+  const render = (p: number) => {
+    const next = clamp01(p);
+    if (Math.abs(next - drawn) < 1e-5) return;
+    drawn = next;
+    pose(next);
     renderer.render(scene, camera);
   };
-  const request = () => {
-    if (!frame) frame = requestAnimationFrame(draw);
-  };
 
+  // setting a canvas's size, even to the same value, clears and reallocates it: a phone's
+  // address bar hiding fires resize without changing the stage, so unchanged sizes are skipped
+  let size = "";
   const resize = () => {
     const w = Math.max(1, host.clientWidth);
     const h = Math.max(1, host.clientHeight);
+    if (`${w}x${h}` === size) return false;
+    size = `${w}x${h}`;
     renderer.setSize(w, h, false);
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -220,21 +234,26 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
     if (wide) camera.setViewOffset(w, h, -w * 0.2, 0, w, h);
     else camera.setViewOffset(w, h, 0, -h * 0.06, w, h);
     camera.updateProjectionMatrix();
-    request();
+    drawn = -1;
+    return true;
   };
 
   resize();
 
+  // Every part's shaders are compiled now, with every part shown: each watch used to compile
+  // the first time it came into view, which froze the scroll right in the scene. Then one
+  // frame with everything in it uploads the textures, before the visitor gets here.
+  const parts = [smartwatch, analog, contour, link];
+  parts.forEach((o) => (o.visible = true));
+  await renderer.compileAsync(scene, camera);
+  await breathe();
+  renderer.render(scene, camera);
+  pose(0);
+
   return {
-    setProgress: (p: number) => {
-      const next = clamp01(p);
-      if (Math.abs(next - progress) < 1e-4) return;
-      progress = next;
-      request();
-    },
+    render,
     resize,
     dispose: () => {
-      if (frame) cancelAnimationFrame(frame);
       scene.environment?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -242,6 +261,7 @@ export async function createStrapScene(host: HTMLElement): Promise<StrapScene> {
   };
 }
 
+// v0.26.0 — smooth scroll: drawn in the caller's frame (render(p)), every shader compiled and every texture uploaded before the visitor arrives, the build in short steps, 1.5x pixel cap, no canvas reset on unchanged resizes
 // v0.10.0 — the strap closes by growing from its cut ends, not by a dropped-in link
 // v0.10.0 — four ways to wear it: smartwatch → the strap closes into a bracelet → analog → the Cyphix watch (the Contour)
 // v0.8.0 — the "One strap. Any watch." scene: studio-dressed GLB; the watch unclips and rises out, the analog comes down and clicks in, all opaque
