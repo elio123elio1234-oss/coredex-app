@@ -453,9 +453,8 @@ section[id] {
   margin: 12% -20% 0 0;
   position: relative;
   aspect-ratio: 1385 / 955;
-  /* a touch smaller (the user), scaled toward the hand: no layout moves, the hand stays put */
-  transform: scale(0.92);
-  transform-origin: 100% 50%;
+  /* back to full size, a touch to the left (the user); a transform, so no layout moves and the hand stays put */
+  transform: translateX(calc(-1 * min(1.1vw, 18px)));
 }
 /* the screen sits under the frame's transparent opening; the bezel covers its edges and corners */
 .hero-system-screen {
@@ -1503,7 +1502,8 @@ section[id] {
   }
 }
 
-/* v0.20.0 — the bar's "Request the deck" button removed; the announcement keeps its link on phones from 375 px
+/* v0.20.1 — the tablet back to full size (no 0.92 scale) and a touch to the left: translateX(-min(1.1vw, 18px)), 16 px at 1440
+   v0.20.0 — the bar's "Request the deck" button removed; the announcement keeps its link on phones from 375 px
    v0.19.0 — the hero tablet's screen is live SVG under the frame (sharp at any size); the tablet scaled to 0.92 toward the hand
    v0.18.0 — the hero tablet is built (tools/tablet), 1000 x 690; same width and centre, no rule changed
    v0.17.0 — the user's forearm with black electrodes; the hand a touch higher again (1464 rows, about 25 px at 1440). Stacked layouts: the fingertips reach 8 / 4 px into the copy's bottom padding and the tablet's top margin grows, so the band and the tablet stay put

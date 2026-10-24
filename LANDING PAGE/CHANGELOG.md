@@ -1,5 +1,24 @@
 # Changelog — CYPHIX Landing
 
+## v0.20.1 — 2026-10-24 — the tablet: full size again, a touch to the left
+
+**Why.** The user: "Actually, put it back to the previous size, and move the
+iPad a little, little to the left, really a touch."
+
+**What changed.**
+- **v0.19.0's `scale(0.92)` is gone.** The tablet is back to its full width:
+  403 px at 1440, 358 px at 1280.
+- **It moves a touch left** with `translateX(-min(1.1vw, 18px))`: 16 px at
+  1440, 14 at 1280, 9 at 820 and 4 at 390.
+
+Only the tablet changed. A transform moves nothing in the layout, so the
+hand's box is unchanged at every width.
+
+**Checked.** In headless Chrome at 1920, 1440, 1280, 1024, 820 and 390 px:
+- the hand is unchanged;
+- at 1024 the tablet stays 72 px clear of the copy;
+- there is no sideways scroll.
+
 ## v0.20.0 — 2026-10-24 — one "Request the deck" fewer
 
 **Why.** The user: "The REQUEST THE DECK button appears three times. Why? In

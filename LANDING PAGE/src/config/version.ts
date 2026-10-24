@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.20.0";
+export const APP_VERSION = "0.20.1";
 export const APP_BUILD_LABEL =
-  "The white bar's Request the deck button removed (it appeared three times); the announcement and the hero keep it";
+  "Hero tablet back to full size and a touch to the left (16 px at 1440); the hand unchanged";
 
+// v0.20.1 — the tablet back to full size, a touch to the left
 // v0.20.0 — the bar's Request the deck button removed
 // v0.19.0 — the tablet screen live (SVG) under the frame; 0.92 scale
 // v0.18.0 — the hero tablet built from the user's frame (tools/tablet)
