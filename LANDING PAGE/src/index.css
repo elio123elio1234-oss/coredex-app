@@ -1492,7 +1492,8 @@ section[id] {
   }
 }
 
-/* v0.15.0 — "How it works" removed: its module render style and the card's link style with it
+/* v0.16.0 — the hero tablet swapped for the user's third image (taller: 1000 x 647); no rule changed
+   v0.15.0 — "How it works" removed: its module render style and the card's link style with it
    v0.14.0 — "Why Cyphix" and the market section removed (their styles with them); the phone pass: one-line announcement, a compact bar button, a tighter hero top, 12 px chip, thumb-sized links
    v0.13.4 — the hand a touch higher: 60 more rows of forearm at the same scale (about 25 px at 1440); width and x unchanged.
    Stacked layouts take the extra height from the top padding (24 to 8 / 10 px) and give the tablet the same top margin, so the band and the tablet stay put

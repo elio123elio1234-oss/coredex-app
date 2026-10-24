@@ -1,5 +1,28 @@
 # Changelog — CYPHIX Landing
 
+## v0.16.0 — 2026-10-24 — the user's new tablet in the hero
+
+**Why.** The user sent a new ChatGPT image: "use this iPad."
+
+**What changed.**
+- **The image.** The share link's preview image is only a 1200 × 630 card
+  with a grey background and white side bars, so I didn't use it. The
+  original, 1536 × 1024 with a transparent surround, came from the page's
+  direct file link. It is cut to the device and saved as `hero-system.webp`
+  (1000 × 647).
+- **Only the image changed.**
+  - No CSS rule changed: the tablet keeps its width, its left edge and its
+    centre.
+  - It is a little taller than the last one (aspect 1.55 against 1.78), so it
+    gains height evenly above and below.
+  - The hand is untouched.
+
+**Checked.** In headless Chrome at four widths:
+- the tablet's x, width and vertical centre are unchanged, for example
+  802 / 403 / 543 at 1440;
+- the hand's box is unchanged;
+- there is no sideways scroll.
+
 ## v0.15.0 — 2026-10-24 — "How it works" removed
 
 **Why.** The user: "Take out the How it works part as well."

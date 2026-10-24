@@ -36,7 +36,7 @@ export default function Hero() {
               className="hero-system"
               src={heroSystem}
               width={1000}
-              height={563}
+              height={647}
               alt="The CYPHIX app on a tablet: a 6-lead ECG recording, leads I, II, III, aVR, aVL and aVF, with the frontal-plane axis and the heart rate beside it."
               decoding="async"
             />
@@ -58,6 +58,7 @@ export default function Hero() {
   );
 }
 
+// v0.16.0 — the user's third tablet image (1000 x 647); same width and place
 // v0.13.0 — the user's new tablet image (wider, 1000 x 563); the hand further over its right side
 // v0.12.0 — the forearm at its v0.11.0 size, lower in the band; the user's tablet image of the system behind it
 // v0.11.1 — the forearm alone (the render beside it looked staged, and it appears further down the page)
