@@ -1,5 +1,28 @@
 # Changelog — CYPHIX Landing
 
+## v0.24.5 — 2026-10-24 — white behind the hands
+
+**Why.** The user, on the red: "honestly it really hurts the eye. Let's try a
+white background for a moment, we haven't tried that."
+
+**What changed.**
+- `.foot-upper` background: `var(--paper)` (white).
+- The glass is white at 55 % with `blur(9px)`. The hands read through it in
+  their own colour, softened, the heart clear.
+- **The red trial's `brightness(0.75)` on the image is removed,** in the
+  fallback as well.
+- **The text is back on the dark inks,** as in v0.23.1: headings in navy,
+  links in ink, the tagline in ink-2.
+- **The wordmark is red again,** as in the bar, and the focus ring is the
+  page's coral.
+- The footer's top hairline separates it from the white Request the deck
+  section above. The layout, the image crop and the pale small-print band are
+  unchanged.
+
+**Checked.**
+- Real contrast, measured on the rendered pixels behind every footer line.
+  Worst cases: 1440: 5.8:1 · 1280: 6.2 · 820: 5.2 · 390: 6.2.
+
 ## v0.24.4 — 2026-10-24 — trial: the logo's red behind the hands
 
 **Why.** The user: "a last attempt, let's try red like the logo, and then I'll
