@@ -1,5 +1,50 @@
 # Changelog — CYPHIX Landing
 
+## v0.22.0 — 2026-10-24 — "Request the deck" on frosted glass
+
+**Why.** The user sent a ChatGPT image (two hands making a heart, one wrist
+wearing the Cyphix strap). They asked for it behind "Request the deck":
+- with a colour behind it, "maybe grey or something medical";
+- the image a little blurred;
+- the whole section on top of it, "like frosted glass, as if seeing the image
+  through glass, like Apple";
+- "integrate it smartly, keep the page's clean look".
+
+They also offered the footer. The section was chosen over the footer for two
+reasons: the footer is small text on white, where an image would hurt
+legibility; and the form is the page's closing action, so the glass has a job
+there as the form's own surface.
+
+**What changed.**
+- **A soft medical-blue stage.** The section has a gradient from #c9d6e6 to
+  #f6f8fb (the footer is white). The image sits in its top band:
+  - `contact-hands.webp`, 1600 × 800 with a transparent background;
+  - `object-fit: cover` with the heart centred;
+  - blurred 2.5 px;
+  - masked so the forearms fade out at the bottom instead of ending on a hard
+    line.
+- **The section rises over it on frosted glass.** The heading, the contact
+  details and the form share one sheet:
+  - white at 58 %;
+  - `backdrop-filter: blur(26px) saturate(1.5)`;
+  - a white hairline border and an inner top highlight;
+  - a soft navy shadow;
+  - a 32 px radius.
+
+  The heart stays readable above the sheet, and the thumbs and forearms melt
+  into it below, seen through the glass. Browsers without backdrop-filter get
+  a near-opaque white sheet.
+- **One glass surface, no card inside a card.** The form's own white card is
+  gone; the form sits straight on the glass. Its inputs are translucent white
+  with a hairline border; focus stays solid white with the ink ring.
+
+**Checked.**
+- In headless Chrome at 1440, 1280, 820 and 390:
+  - the heart is visible above the sheet;
+  - the text on the glass reads (ink on near-white);
+  - no sideways scroll.
+- The design detector reports no findings.
+
 ## v0.21.0 — 2026-10-24 — the team in black and white, colour on hover
 
 **Why.** The user: "In The team, on desktop, can our photos be grey-white,

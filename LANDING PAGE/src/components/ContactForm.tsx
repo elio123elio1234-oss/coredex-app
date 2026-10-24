@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Check, Mail, Phone, Pin } from "./Icons";
 import { CAPTCHA_POLICY_URL, LEADS_URL } from "../config/api";
+import hands from "../assets/photos/contact-hands.webp";
 
 /* ==================================================================
    ContactForm — "Request the deck", the page's one action (#contact).
@@ -179,127 +180,134 @@ export default function ContactForm() {
 
   return (
     <section className="section contact" id="contact" aria-labelledby="contact-title">
-      <div className="wrap contact-grid">
-        <div className="contact-copy">
-          <h2 id="contact-title" className="h2">
-            Request the deck.
-          </h2>
-          <p className="body-lg">
-            Tell us who you are. We will send the deck and find a time to talk.
-          </p>
-          <ul className="direct">
-            <li>
-              <Mail />
-              <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
-            </li>
-            <li>
-              <Phone />
-              <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-            </li>
-            <li>
-              <Pin />
-              <span>Kiryat Ono, Israel</span>
-            </li>
-          </ul>
-        </div>
+      {/* the user's image, a touch out of focus on a soft medical blue; the section rises over it on frosted glass */}
+      <div className="contact-stage" aria-hidden="true">
+        <img src={hands} alt="" width={1600} height={800} loading="lazy" decoding="async" />
+      </div>
+      <div className="wrap">
+        <div className="contact-glass contact-grid">
+          <div className="contact-copy">
+            <h2 id="contact-title" className="h2">
+              Request the deck.
+            </h2>
+            <p className="body-lg">
+              Tell us who you are. We will send the deck and find a time to talk.
+            </p>
+            <ul className="direct">
+              <li>
+                <Mail />
+                <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
+              </li>
+              <li>
+                <Phone />
+                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
+              </li>
+              <li>
+                <Pin />
+                <span>Kiryat Ono, Israel</span>
+              </li>
+            </ul>
+          </div>
 
-        <div className="contact-panel">
-          {status === "sent" ? (
-            <div className="contact-sent" role="status">
-              <span className="contact-check" aria-hidden="true">
-                <Check width={22} height={22} />
-              </span>
-              <h3>Thank you, {name.trim().split(/\s+/)[0]}.</h3>
-              {/* No "confirmation e-mail" promise: the server only mails when its
-                  provider is configured (/healthz "email"), and today it is off. */}
-              <p>
-                Your request is in. We will reply to <strong>{email.trim()}</strong> within a few
-                days.
-              </p>
-            </div>
-          ) : (
-            <form className="form" onSubmit={submit} noValidate data-status={status}>
-              <div className="form-row">
-                <label className={`field${bad("name")}`}>
-                  <span>Full name</span>
+          <div className="contact-panel">
+            {status === "sent" ? (
+              <div className="contact-sent" role="status">
+                <span className="contact-check" aria-hidden="true">
+                  <Check width={22} height={22} />
+                </span>
+                <h3>Thank you, {name.trim().split(/\s+/)[0]}.</h3>
+                {/* No "confirmation e-mail" promise: the server only mails when its
+                    provider is configured (/healthz "email"), and today it is off. */}
+                <p>
+                  Your request is in. We will reply to <strong>{email.trim()}</strong> within a few
+                  days.
+                </p>
+              </div>
+            ) : (
+              <form className="form" onSubmit={submit} noValidate data-status={status}>
+                <div className="form-row">
+                  <label className={`field${bad("name")}`}>
+                    <span>Full name</span>
+                    <input
+                      name="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      autoComplete="name"
+                      maxLength={LIMITS.nameMax}
+                      required
+                    />
+                  </label>
+                  <label className={`field${bad("email")}`}>
+                    <span>Work e-mail</span>
+                    <input
+                      name="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      inputMode="email"
+                      required
+                    />
+                  </label>
+                </div>
+                <label className={`field${bad("organization")}`}>
+                  <span>
+                    Fund or company <em>optional</em>
+                  </span>
                   <input
-                    name="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    autoComplete="name"
-                    maxLength={LIMITS.nameMax}
-                    required
+                    name="organization"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                    autoComplete="organization"
+                    maxLength={LIMITS.organizationMax}
                   />
                 </label>
-                <label className={`field${bad("email")}`}>
-                  <span>Work e-mail</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    inputMode="email"
-                    required
+                <label className={`field${bad("message")}`}>
+                  <span>
+                    Message <em>optional</em>
+                  </span>
+                  <textarea
+                    name="message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                    maxLength={LIMITS.messageMax}
+                    placeholder="What would you like to see first: the prototype, the data, the plan?"
                   />
                 </label>
-              </div>
-              <label className={`field${bad("organization")}`}>
-                <span>
-                  Fund or company <em>optional</em>
-                </span>
-                <input
-                  name="organization"
-                  value={organization}
-                  onChange={(e) => setOrganization(e.target.value)}
-                  autoComplete="organization"
-                  maxLength={LIMITS.organizationMax}
-                />
-              </label>
-              <label className={`field${bad("message")}`}>
-                <span>
-                  Message <em>optional</em>
-                </span>
-                <textarea
-                  name="message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  maxLength={LIMITS.messageMax}
-                  placeholder="What would you like to see first: the prototype, the data, the plan?"
-                />
-              </label>
-              {siteKey && <div ref={widgetRef} className="form-captcha" />}
-              {touched && invalid && (
-                <p className="form-error" role="alert">
-                  Please add your name and a valid e-mail address.
-                </p>
-              )}
-              {touched && !invalid && needsCaptcha && (
-                <p className="form-error" role="alert">
-                  Please complete the verification first.
-                </p>
-              )}
-              {error && (
-                <p className="form-error" role="alert">
-                  {error}
-                </p>
-              )}
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary" disabled={status === "sending"}>
-                  {status === "sending" ? "Sending…" : "Request the deck"}
-                  {status !== "sending" && <ArrowRight />}
-                </button>
-                <span className="form-note">We use your details only to answer this request.</span>
-              </div>
-            </form>
-          )}
+                {siteKey && <div ref={widgetRef} className="form-captcha" />}
+                {touched && invalid && (
+                  <p className="form-error" role="alert">
+                    Please add your name and a valid e-mail address.
+                  </p>
+                )}
+                {touched && !invalid && needsCaptcha && (
+                  <p className="form-error" role="alert">
+                    Please complete the verification first.
+                  </p>
+                )}
+                {error && (
+                  <p className="form-error" role="alert">
+                    {error}
+                  </p>
+                )}
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={status === "sending"}>
+                    {status === "sending" ? "Sending…" : "Request the deck"}
+                    {status !== "sending" && <ArrowRight />}
+                  </button>
+                  <span className="form-note">We use your details only to answer this request.</span>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
+// v0.22.0 — the section on frosted glass over the user's heart-hands image (a slightly blurred band on soft medical blue)
 // v0.7.0 — no reveal wrappers; the heading takes the page's h2 voice
 // v0.6.1 — the sent state no longer promises a confirmation e-mail the server may not send
 // v0.6.0 — re-cut for investors: name · e-mail · fund · message, "Request the deck", direct e-mail / phone;
