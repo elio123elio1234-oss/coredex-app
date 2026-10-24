@@ -863,116 +863,184 @@ section[id] {
   color: var(--ink-2);
 }
 
-/* ---------- "One strap. Any watch.": the page's one dark moment ---------- */
+/* ---------- "One strap. Any watch." ---------- */
 
-/* the screen goes dark and pins; the product stands centred under centred copy (in the manner of
-   a product page) and turns in place; between the ways to wear it the light goes out and the next
-   is lit out of the dark; last, the clinician's screen is lit the same way */
 .strap-scene {
   position: relative;
   margin-top: var(--section);
-  color: #f5f5f7;
+  color: #eef1f6;
   background: #0a0d13;
 }
-/* 6.6 screens of travel plus the stage itself */
 .strap-scene.is-live,
 .strap-scene.is-idle {
-  height: 760vh;
-  height: 760svh;
+  height: 900vh;
+  height: 900svh;
 }
-/* the dark navy of the original stage (the user: prettier than black), its blue glow now
-   behind the product in the middle, the faint warm one at the foot */
-.st-stage {
+.ss-stage {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
   background:
-    radial-gradient(46% 60% at 50% 60%, rgba(122, 160, 222, 0.16), transparent 70%),
+    radial-gradient(46% 60% at 66% 52%, rgba(122, 160, 222, 0.16), transparent 70%),
     radial-gradient(70% 50% at 50% 110%, rgba(242, 87, 76, 0.08), transparent 70%),
     linear-gradient(180deg, #0a0d13 0%, #111725 100%);
 }
-.st-host {
+.ss-canvas {
   position: absolute;
   inset: 0;
 }
-.st-canvas {
-  position: absolute;
-  inset: 0;
+.ss-canvas canvas {
   display: block;
-  width: 100%;
-  height: 100%;
 }
-.st-panel {
+/* the copy's side of the night stage stays dark, so the product can pass behind the words */
+.ss-scrim {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(var(--bar) + clamp(20px, 5.5vh, 64px));
-  z-index: 2;
-  max-width: calc(46rem + 2 * var(--gutter));
-  margin: 0 auto;
-  padding: 0 var(--gutter);
-  text-align: center;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(10, 13, 19, 0.82) 0%, rgba(10, 13, 19, 0.55) 30%, rgba(10, 13, 19, 0) 48%);
   pointer-events: none;
+}
+/* the last chapter: day, and the clinician's screen */
+.ss-day {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 60% at 70% 50%, #ffffff, transparent 70%),
+    linear-gradient(180deg, #f4f6f9 0%, #e7ecf3 100%);
   opacity: 0;
-  will-change: opacity;
+  pointer-events: none;
 }
-.st-eyebrow {
-  margin: 0 0 10px;
-  font-size: clamp(15px, 1.3vw, 19px);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #a1a1a6;
-}
-.st-title {
-  margin: 0;
-  font-size: clamp(36px, 5.4vw, 76px);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-  color: #f5f5f7;
-}
-.st-text {
-  max-width: 36em;
-  margin: 18px auto 0;
-  font-size: clamp(16px, 1.35vw, 20px);
-  line-height: 1.5;
-  color: #8e8e93;
-}
-.st-text strong {
-  font-weight: 500;
-  color: #f5f5f7;
-}
-.st-note {
+.ss-clinic {
+  --rise: 48px;
   position: absolute;
-  right: var(--gutter);
-  bottom: clamp(16px, 3vh, 32px);
-  z-index: 2;
-  margin: 0;
-  font-size: 12px;
-  color: #8e8e93;
-}
-/* the clinician's screen on the stage, sized and placed by the page to the room under its copy (a
-   phone's whole width), lit out of the dark like the watches */
-.st-clinic {
-  position: absolute;
-  left: 50%;
   top: 50%;
-  z-index: 1;
-  width: min(880px, 92vw);
+  right: var(--edge);
+  width: min(48vw, 660px);
   opacity: 0;
-  transform: translateX(-50%);
-  will-change: opacity;
+  transform: translateY(calc(-50% + var(--rise)));
+  pointer-events: none;
+  will-change: transform, opacity;
 }
-.st-clinic .hero-system {
+.ss-clinic .hero-system {
   width: 100%;
   margin: 0;
   transform: none;
+  filter: drop-shadow(0 30px 40px rgba(11, 26, 48, 0.18));
 }
-.st-loading {
+.ss-step.is-day .ss-title {
+  color: var(--ink);
+}
+.ss-step.is-day .ss-text {
+  color: var(--ink-2);
+}
+.ss-stage.is-day .ss-steps {
+  color: var(--ink-3);
+}
+.ss-stage.is-day .ss-steps li.is-on {
+  color: var(--ink);
+}
+.ss-stage.is-day .ss-steps li::before {
+  background: rgba(11, 26, 48, 0.14);
+}
+.ss-stage.is-day .ss-steps li.is-on::before {
+  background: var(--coral);
+}
+.ss-stage.is-day .ss-note {
+  color: var(--ink-3);
+}
+/* tall stages (the scene's own test: narrower than 1.15:1) hold the product under the copy */
+@media (max-aspect-ratio: 23/20) {
+  .ss-scrim {
+    background: linear-gradient(180deg, rgba(10, 13, 19, 0.85) 0%, rgba(10, 13, 19, 0.5) 30%, rgba(10, 13, 19, 0) 44%);
+  }
+  .ss-clinic {
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: 12svh;
+    width: min(90vw, 620px);
+    transform: translate(-50%, var(--rise));
+  }
+}
+.ss-copy {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  align-items: center;
+  pointer-events: none;
+}
+.ss-step {
+  grid-area: 1 / 1;
+  max-width: 26rem;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.ss-title {
+  margin: 0;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 550;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: #fff;
+}
+.ss-text {
+  margin: 18px 0 0;
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: #b7c0cf;
+}
+.ss-steps {
   position: absolute;
   left: 50%;
-  top: 60%;
+  bottom: clamp(24px, 5vh, 48px);
+  z-index: 1;
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #8f98a8;
+  white-space: nowrap;
+}
+.ss-steps li {
+  position: relative;
+  min-width: 44px;
+  padding-top: 14px;
+  transition: color 0.4s ease;
+}
+.ss-steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background-color 0.4s ease;
+}
+.ss-steps li.is-on {
+  color: #fff;
+}
+.ss-steps li.is-on::before {
+  background: var(--coral);
+}
+.ss-note {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(24px, 5vh, 48px);
+  z-index: 1;
+  margin: 0;
+  font-size: 12.5px;
+  color: #8f98a8;
+}
+.ss-loading {
+  position: absolute;
+  left: 66%;
+  top: 50%;
   width: 28px;
   height: 28px;
   margin: -14px 0 0 -14px;
@@ -986,35 +1054,50 @@ section[id] {
     transform: rotate(360deg);
   }
 }
-/* reduced motion, or no WebGL: the same story, still */
+/* reduced motion, or no WebGL: the four ways to wear it as stills */
 .strap-scene.is-still {
   padding: clamp(80px, 10vw, 140px) 0;
+  background: linear-gradient(180deg, #0a0d13 0%, #111725 100%);
 }
-.st-still {
-  text-align: center;
+.ss-still-title {
+  margin: 0;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 550;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: #fff;
 }
-.st-stills {
+.ss-still-title span {
+  color: #b7c0cf;
+}
+.ss-still-text {
+  margin: 18px 0 0;
+  max-width: 34em;
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: #b7c0cf;
+}
+.ss-stills {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
-  margin: 56px 0 0;
+  gap: 16px;
+  margin: clamp(40px, 5vw, 64px) 0 0;
   padding: 0;
   list-style: none;
 }
-.st-stills img {
-  display: block;
+.ss-stills li {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ss-stills img {
   width: 100%;
-  height: auto;
 }
-.st-stills span {
-  display: block;
-  margin-top: 8px;
-  font-size: 14px;
-  color: #a1a1a6;
-}
-.st-still .st-note {
+.strap-scene.is-still .ss-note {
   position: static;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 .strap-scene + .contact {
   margin-top: 0;
@@ -1409,6 +1492,14 @@ section[id] {
   .contact-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+  .ss-step {
+    align-self: start;
+    margin-top: calc(var(--bar) + 24px);
+    max-width: 30rem;
+  }
+  .ss-note {
+    display: none;
+  }
   .foot-top {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1422,12 +1513,6 @@ section[id] {
 @media (max-width: 719px) {
   :root {
     --bar: 64px;
-  }
-  .st-panel {
-    top: calc(var(--bar) + 18px);
-  }
-  .st-stills {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .announce {
     font-size: 13px;
@@ -1515,6 +1600,25 @@ section[id] {
   .solution-card {
     margin-top: -56px;
   }
+  .ss-stills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ss-steps {
+    gap: 10px;
+  }
+  /* phones: the chapters as bars only */
+  .ss-steps span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .ss-steps li {
+    min-width: 40px;
+    padding-top: 0;
+  }
 
   .milestones {
     grid-template-columns: minmax(0, 1fr);
@@ -1578,7 +1682,8 @@ section[id] {
   }
 }
 
-/* v0.32.0 — the clinician's screen on the navy stage, lit out of the dark (the white sheet and its styles withdrawn); 760svh
+/* v0.33.0 — the scene's styles back to v0.27.0 (left-aligned copy in the page's type, the product right, the chapters, the day scene), less the six-leads overlay; 900svh
+   v0.32.0 — the clinician's screen on the navy stage, lit out of the dark (the white sheet and its styles withdrawn); 760svh
    v0.31.0 — the stage back on the original dark navy with its glows (the user: prettier than black)
    v0.31.0 — the product turns in place; the copy fades with its light (700svh); the clinician's screen sized by the page
    v0.30.0 — the dark moment as panels: the copy and the white page move with the scroll (the veil, the fades and the sunrise mask withdrawn); 850svh

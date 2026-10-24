@@ -94,22 +94,23 @@ Wearable Ease.**
   - **What the user rejected:**
     - lines over the product (the six-lead axes over the analog dial,
       v0.27–v0.28);
-    - theatrical scenes (the camera's falls, cranes and slide-outs).
-  - **The shape (v0.31.0):**
-    - The product stands large and centred under centred copy (an eyebrow, a
-      large headline, brighter key phrases), turning slowly in place.
-    - Between the ways to wear it, its light goes out and it fades into the
-      stage with its copy; the next is lit out of the dark. Two products are
-      never on screen at once.
-    - The stage is the original dark navy with its glows (the user:
-      prettier than black).
-    - Last, the clinician's screen is lit out of the dark the same way
-      (v0.32.0: the white sheet sliding up was "ugly"), and the page scrolls
-      on.
-  - **What the user rejected along the way:**
-    - the dissolves of v0.29.0, "unprofessional";
-    - the products carried up a column at scroll speed (v0.30.0), which the
-      user still did not love.
+    - theatrical scenes (the camera's falls, cranes and slide-outs);
+    - the white pool of light under the product ("looks like a shadow");
+    - v0.29–v0.32 as a whole (2026-10-25): centred, Apple-style copy over
+      the product, with dissolves, a column at scroll speed, then light dips,
+      and the clinician's iPad on the navy. "It does not match the rest of
+      the page's design, it does not look professional."
+  - **The shape (v0.33.0): the v0.27.0 journey, reset.** The one version the
+    user called "really beautiful":
+    - left-aligned copy in the page's own type, the product large on the
+      right, the chapters along the foot;
+    - the product moves physically: the smartwatch unclips and rises out,
+      the strap closes into a bracelet, the analog comes down and clicks in,
+      the Cyphix watch rises in as the others leave;
+    - day opens out of the watch, with the clinician's tablet.
+
+    On top of it, only the user's own notes: nothing drawn over the product,
+    no pool under it, each move given more scroll.
   - **One sanctioned live trace (the user, 2026-10-24):** "in the final scene
     with the iPad, let's make the ECG signals be created live, in a gentle
     loop, not too fast."
@@ -154,6 +155,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 4. One company across the PDF, the deck and the page.
 <!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
+<!-- v0.33.0 — the journey reset to v0.27.0 with only the user's notes -->
 <!-- v0.32.0 — the clinician's screen lit the same way -->
 <!-- v0.31.0 — the product lit out of the dark, in place, on the navy stage -->
 <!-- v0.30.0 — the dark moment as plain scroll; the monitor's pens and heart -->

@@ -1,5 +1,55 @@
 # Changelog — CYPHIX Landing
 
+## v0.33.0 — 2026-10-25 — reset: the journey the user called beautiful
+
+**Why.** The user, on v0.32.0:
+
+> "No, I don't like it at all. Not this, not the iPad, not the
+> transformation between the watches. It doesn't match the rest of the
+> page's design, it doesn't look professional."
+
+They were right, and the cause is in v0.29.0, not v0.32.0.
+- v0.29.0 swapped the section's design for a centred, Apple-style one: an
+  eyebrow, a centred headline, grey copy with brighter phrases, the product
+  under it.
+- Nothing else on the page is set that way. The page sets its headings left
+  in its own type.
+- Four versions then reworked only the transitions inside that foreign
+  layout. None could fix it.
+
+**What changed: back to v0.27.0, the one version the user called "really
+beautiful".**
+- The same copy, left-aligned in the page's type, with the product large on
+  the right and the chapters along the foot.
+- The product moves physically:
+  - the smartwatch unclips and rises out;
+  - the strap closes into a bracelet;
+  - the analog comes down and clicks in;
+  - the Cyphix watch rises in as the others leave.
+- Day opens out of the watch, with the clinician's tablet.
+- `lib/strapScene.ts` is back; `lib/strapStory.ts` is removed.
+
+**Only the user's own notes on v0.27.0 are applied on top of it:**
+- **Nothing is drawn over the product.** The "Six leads" chapter (the lead
+  axes over the analog dial) is withdrawn with its overlay and its camera
+  move. The user rejected "all the lines on the product". The journey has
+  four chapters.
+- **No white pool under the product.** The floor glow ("a white circle that
+  looks like a shadow, ugly") is withdrawn.
+- **Smoother:** each move has more scroll than in v0.27.0 (about 20 % more
+  for the unclip, the rise, the bracelet and the analog's fall). The time
+  the six leads held went to the moves and to a hold on each watch.
+- **The clinician's tablet writes live** like a monitor (the user's request,
+  v0.28–v0.31). It is out of the layout until it rises, so it starts from an
+  empty strip.
+
+**Checked** (headless Chrome, software WebGL), every chapter at 1440 × 900
+and 390 × 844:
+- no white pool and no lines;
+- the copy left, the product right (under the copy on the phone);
+- the day scene with the tablet;
+- no sideways scroll.
+
 ## v0.32.0 — 2026-10-24 — the clinician's screen, lit out of the dark
 
 **Why.** The user: "The transition from the watches to the iPad is ugly."

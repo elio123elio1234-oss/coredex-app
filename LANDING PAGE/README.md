@@ -26,11 +26,11 @@ not generated: `HeroTablet.tsx` draws the CYPHIX screen live as SVG (data in
 
 - **Vite + React + TypeScript** (static SPA)
 - Plain CSS for the one load arrival (no animation library)
-- **three.js 0.169** for the closing scene, in its own lazy chunk (`src/lib/strapStory.ts`),
+- **three.js 0.169** for the closing scene, in its own lazy chunk (`src/lib/strapScene.ts`),
   loading the meshopt-compressed GLB from `public/models/`. It is built ahead of time, once the
   page has loaded and the browser is idle (every shader compiled, every texture uploaded), and it
-  turns with the scroll in one frame loop with the copy (`OneStrap.tsx`): the product stands in place,
-  and each way to wear it is lit out of the dark as the last fades away
+  moves with the scroll in one frame loop with the copy (`OneStrap.tsx`): the watches unclip and
+  rise out, the strap closes into a bracelet, the analog clicks in, the Cyphix watch rises in
 - **Sora** + **Geist Mono** self-hosted from `src/assets/fonts` (no external requests)
 
 ## Run locally
@@ -70,9 +70,9 @@ src/
     Hero.tsx              headline beside the 3D render of the strap on a smartwatch
     Need.tsx              1 in 3, then the three-way comparison
     Product.tsx           "Our solution": the user's four watches (hover grows one) under the navy card
-    OneStrap.tsx          the page's one dark moment: centred copy over the product, a chapter per way to wear it, the day and the clinician's live screen; still fallback
+    OneStrap.tsx          the closing journey: copy left, the product right, four chapters, the day and the clinician's live screen; still fallback
     Header / Stage / Team / ContactForm / Footer / Icons / Logo
-  lib/strapStory.ts       the scroll-driven three.js scene: render(way, turn, light), the light dipping between ways
+  lib/strapScene.ts       the scroll-driven three.js scene: render(p), every part moving physically
   assets/img              renders of the 3D model (with provenance sidecars) + portraits + app screen
 public/models/cyphix.glb  the team's 3D model: strap, smartwatch, analog, contour (one origin)
   assets/fonts            Sora + Geist Mono variable woff2 (OFL)
@@ -107,6 +107,7 @@ and light.
 <!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->
 <!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
+<!-- v0.33.0 — the journey reset to v0.27.0 (lib/strapScene back, strapStory removed) -->
 <!-- v0.31.0 — the product in place, lit out of the dark -->
 <!-- v0.30.0 — the dark moment is plain scroll past a column of products -->
 <!-- v0.29.0 — the closing scene is the calm dark moment (lib/strapStory) -->
