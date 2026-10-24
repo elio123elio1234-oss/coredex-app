@@ -1,5 +1,27 @@
 # Changelog — CYPHIX Landing
 
+## v0.24.1 — 2026-10-24 — the footer on the page's dark navy
+
+**Why.** The user: "it looks light blue, not dark like on my site."
+
+v0.24.0 read "the blue at the top of my page" as the announcement bar's
+`--blue` (#1d4f8b). That was the wrong blue. The user meant the dark navy of
+the band right under the hero (the facts band, `--navy` #0f2f56), which the
+solution card also uses.
+
+**What changed.**
+- `.foot-upper` background: `var(--navy)`.
+- The glass is tinted with the same navy, at 55 % with `blur(9px)`. The open
+  area stays exactly the facts band's navy. The hands read through it,
+  softened, the heart still clear. The darker colour needs less tint for the
+  text to hold, so the hands show a little more than at v0.24.0's 62 %.
+- The text, the wordmark and the focus ring stay white. The layout, the image,
+  its crop and the legal band are unchanged.
+
+**Checked.**
+- Real contrast, measured on the rendered pixels behind every footer line.
+  Worst cases: 1440: 5.5:1 · 1280: 5.3 · 820: 5.4 · 390: 5.4.
+
 ## v0.24.0 — 2026-10-24 — the page's blue behind the heart-hands
 
 **Why.** The user was unsure the heart-hands image matched the page's vibe,

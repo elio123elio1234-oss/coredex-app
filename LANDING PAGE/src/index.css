@@ -1161,7 +1161,7 @@ section[id] {
 
 /* the footer keeps its layout; its whole upper area is frosted glass over the user's heart-hands
    image: the text sits straight on the glass (no card), and the area is tall enough for the heart.
-   Behind the hands, the page's blue (the announcement bar's), so the glass is blue glass */
+   Behind the hands, the page's dark navy (the facts band's), so the glass is navy glass */
 .foot {
   border-top: 1px solid var(--hair);
 }
@@ -1171,7 +1171,7 @@ section[id] {
   display: flex;
   align-items: center;
   min-height: clamp(360px, 36vw, 540px);
-  background: var(--blue);
+  background: var(--navy);
 }
 .foot-stage {
   position: absolute;
@@ -1186,13 +1186,13 @@ section[id] {
   object-fit: cover;
   object-position: 50% 36%;
 }
-/* the glass: tinted with the same blue, so the background stays exactly the page's blue and
+/* the glass: tinted with the same navy, so the background stays exactly the page's navy and
    the hands are seen through it, softened, the heart still clear */
 .foot-stage::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(29, 79, 139, 0.62);
+  background: rgba(15, 47, 86, 0.55);
   -webkit-backdrop-filter: blur(9px);
   backdrop-filter: blur(9px);
 }
@@ -1204,7 +1204,7 @@ section[id] {
 .foot-glass-wrap {
   width: 100%;
 }
-/* on the blue glass the text is white, as on the announcement bar, and holds 4.5:1 over the hands too */
+/* on the navy glass the text is white, as on the facts band, and holds 4.5:1 over the hands too */
 .foot-upper .foot-top h2,
 .foot-upper .foot-top ul,
 .foot-upper .foot-tagline,
@@ -1568,7 +1568,8 @@ section[id] {
   }
 }
 
-/* v0.24.0 — the footer's glass on the page's blue (the announcement bar's) behind the hands; its text and wordmark white
+/* v0.24.1 — the footer on the dark navy (the facts band's), not the announcement bar's lighter blue
+   v0.24.0 — the footer's glass on the page's blue (the announcement bar's) behind the hands; its text and wordmark white
    v0.23.2 — the Request the deck panel square-cornered, like the page's other rectangles
    v0.23.1 — the footer's glass is its whole upper area (no card): the text straight on the glass, the area taller so the heart shows
    v0.23.0 — the glass moves to the footer (the user: try it below): the footer's columns on one frosted rectangle over the heart-hands image; Request the deck back to v0.21
