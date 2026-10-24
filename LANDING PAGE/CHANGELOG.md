@@ -1,5 +1,30 @@
 # Changelog — CYPHIX Landing
 
+## v0.24.3 — 2026-10-24 — the grey goes behind the hands
+
+**Why.** The user: "no, no, I meant that the background behind the hands
+should be grey."
+
+v0.24.2 read "the very bottom strip" as the small-print band and turned that
+grey. That was wrong. The user meant the area behind the heart-hands, which is
+the lowest large block of the page.
+
+**What changed.**
+- **The small-print band is back to v0.24.1:** `--mist-2`, the note in
+  `--blue`, the badge in `--ink-3` with its `--rule` border.
+- **Behind the hands, the hero's grey:** `.foot-upper` is `var(--slate)`.
+- **The glass is tinted with the same grey,** at 58 % with `blur(9px)`. The
+  open area stays exactly the hero's grey, and the hands read through it,
+  softened, as the forearm does on the hero's grey.
+- The text, the wordmark and the focus ring stay white. The layout and the
+  image are unchanged.
+
+**Checked.**
+- Real contrast, measured on the rendered pixels behind every footer line.
+  Worst cases: 1440: 5.1:1 · 1280: 5.0 · 820: 5.1 · 390: 5.1.
+- The small print on the pale band: 7.6:1. The badge: 5.7:1.
+- No sideways scroll at 1440 or 390.
+
 ## v0.24.2 — 2026-10-24 — the bottom band in the hero's grey
 
 **Why.** The user: "let's make the very bottom strip grey, like at the top of

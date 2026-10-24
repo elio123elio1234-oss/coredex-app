@@ -4,8 +4,8 @@ import { APP_VERSION } from "../config/version";
 
 /* The close, AliveCor-style: the wordmark on the left, link columns on the
    right, then a pale band with the small print and the build badge. The whole
-   upper area is frosted glass over the user's heart-hands image, on the page's
-   dark navy (the facts band's); the text sits straight on it, in white. */
+   upper area is frosted glass over the user's heart-hands image, on the hero's
+   grey (slate); the text sits straight on it, in white. */
 
 const EMAIL = "elio123elio1234@gmail.com";
 const PHONE = "+972 54-398-9698";
@@ -79,6 +79,7 @@ export default function Footer() {
   );
 }
 
+// v0.24.3 — the hero's grey behind the hands, grey glass (styles in index.css)
 // v0.24.1 — the dark navy (the facts band's), not the announcement bar's lighter blue
 // v0.24.0 — the page's blue behind the hands, blue glass, white text (styles in index.css)
 // v0.23.1 — no card: the whole upper area is the glass (styles in index.css)

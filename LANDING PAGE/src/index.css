@@ -1161,7 +1161,7 @@ section[id] {
 
 /* the footer keeps its layout; its whole upper area is frosted glass over the user's heart-hands
    image: the text sits straight on the glass (no card), and the area is tall enough for the heart.
-   Behind the hands, the page's dark navy (the facts band's), so the glass is navy glass */
+   Behind the hands, the hero's grey (slate), so the glass is grey glass */
 .foot {
   border-top: 1px solid var(--hair);
 }
@@ -1171,7 +1171,7 @@ section[id] {
   display: flex;
   align-items: center;
   min-height: clamp(360px, 36vw, 540px);
-  background: var(--navy);
+  background: var(--slate);
 }
 .foot-stage {
   position: absolute;
@@ -1186,13 +1186,13 @@ section[id] {
   object-fit: cover;
   object-position: 50% 36%;
 }
-/* the glass: tinted with the same navy, so the background stays exactly the page's navy and
+/* the glass: tinted with the same grey, so the background stays exactly the hero's grey and
    the hands are seen through it, softened, the heart still clear */
 .foot-stage::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(15, 47, 86, 0.55);
+  background: rgba(54, 58, 67, 0.58);
   -webkit-backdrop-filter: blur(9px);
   backdrop-filter: blur(9px);
 }
@@ -1204,7 +1204,7 @@ section[id] {
 .foot-glass-wrap {
   width: 100%;
 }
-/* on the navy glass the text is white, as on the facts band, and holds 4.5:1 over the hands too */
+/* on the grey glass the text is white, as in the hero, and holds 4.5:1 over the hands too */
 .foot-upper .foot-top h2,
 .foot-upper .foot-top ul,
 .foot-upper .foot-tagline,
@@ -1262,9 +1262,8 @@ section[id] {
   color: var(--ink);
   text-decoration: underline;
 }
-/* the small-print band in the hero's grey, its text in the hero lede's sky */
 .foot-band {
-  background: var(--slate);
+  background: var(--mist-2);
 }
 .foot-band-inner {
   display: flex;
@@ -1279,17 +1278,17 @@ section[id] {
   max-width: 56ch;
   font-size: 13.5px;
   line-height: 1.65;
-  color: var(--sky);
+  color: var(--blue);
 }
 .badge {
   flex: none;
   padding: 3px 9px;
-  border: 1px solid rgba(168, 191, 223, 0.35);
+  border: 1px solid var(--rule);
   border-radius: 999px;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: var(--sky);
+  color: var(--ink-3);
 }
 
 /* ---------- arrival: the hero once, on load ---------- */
@@ -1569,7 +1568,8 @@ section[id] {
   }
 }
 
-/* v0.24.2 — the footer's small-print band in the hero's grey (slate), its note and badge in sky
+/* v0.24.3 — the grey goes behind the hands (the user meant that, not the bottom band): the glass area in the hero's slate; the bottom band back to v0.24.1
+   v0.24.2 — the footer's small-print band in the hero's grey (slate), its note and badge in sky
    v0.24.1 — the footer on the dark navy (the facts band's), not the announcement bar's lighter blue
    v0.24.0 — the footer's glass on the page's blue (the announcement bar's) behind the hands; its text and wordmark white
    v0.23.2 — the Request the deck panel square-cornered, like the page's other rectangles
