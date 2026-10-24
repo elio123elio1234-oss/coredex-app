@@ -1,5 +1,46 @@
 # Changelog — CYPHIX Landing
 
+## v0.18.0 — 2026-10-24 — the hero tablet, built rather than generated
+
+**Why.** The user sent an empty tablet frame and asked: "Inside it, build my
+page yourself, with my real logo and the waves that show there's ischemia, as
+there are now. Just that we make it, so it's clear and in good quality."
+They then swapped in a second frame: "actually, use this frame."
+
+The generated tablets had soft, invented lettering (a near-miss of the
+wordmark) and traces drawn by an image model.
+
+**What changed.**
+- **The screen is drawn** (`tools/tablet/screen.html`, 1330 × 888, rendered at
+  2× in headless Chrome). It is the CYPHIX recording view:
+  - the real wordmark (the 2026-10-10 artwork, `#1E293B` as in the app), and
+    the date;
+  - "Limb leads · 10 s · 320 Hz", the 12.5 mm/s and 10 mm/mV controls;
+  - six leads on 1 mm / 5 mm paper, each with a 1 mV calibration pulse;
+  - the frontal-plane axis wheel with its −30° to +90° sector, heart rate and
+    rhythm;
+  - "Illustrative recording." in the corner.
+- **The ischemia is real ECG.**
+  - Leads I and II are modelled with ST elevation in II and a reciprocal
+    depression in I.
+  - III, aVR, aVL and aVF are derived from them by Einthoven's and
+    Goldberger's relations, so the elevation shows in II, III and aVF (marked
+    in red, as before) and the reciprocal change in aVL.
+  - The axis (51°) and the rate (75 bpm) are computed from the trace, not
+    typed.
+- **The frame is the user's.** The screen goes behind its transparent
+  opening, and the bezel covers the edges and corners. `tools/tablet/compose.py`
+  writes `hero-system.webp` (1000 × 690). The tools reproduce the shipped image
+  to a mean difference of 0.2/255.
+- **Only the image changed.** No CSS rule changed: the tablet keeps its width,
+  left edge and centre, and the hand doesn't move.
+- **The announcement** (v0.17.1, shipped earlier today) reads "Now raising our
+  seed round".
+
+**Checked.** In headless Chrome at four widths, the tablet's x, width and
+centre are unchanged, as are the hand's box and the hero's height, and there
+is no sideways scroll.
+
 ## v0.17.1 — 2026-10-24 — the stage, not the amount
 
 **Why.** The user: "Why does the top say 'Now raising a $1.9M seed round'? We

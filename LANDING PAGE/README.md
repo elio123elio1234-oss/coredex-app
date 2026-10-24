@@ -18,7 +18,9 @@ The user's own images carry the page:
 - beside "1 in 3": a physician reviewing a recording;
 - "Our solution": the four-watch image, cut per watch.
 
-The "More than an ECG" section was removed in v0.13.0.
+The "More than an ECG" section was removed in v0.13.0. The hero's tablet is built,
+not generated: `tools/tablet/` draws the CYPHIX screen and puts it in the user's frame
+(see its README).
 
 ## Stack
 
@@ -93,6 +95,7 @@ kept as a centreline table, `CLOSED_BAND` in `studio.ts`). If the
 model changes, re-export the same four groups, and re-render the stills
 (`render-hero`, `scene-*`). Their sidecars record each one's angle
 and light.
+<!-- v0.18.0 — tools/tablet builds the hero tablet: the user's frame with the CYPHIX screen drawn in HTML -->
 <!-- v0.15.0 — HowItWorks.tsx and render-module.webp removed at the user's request -->
 <!-- v0.14.0 — Compare.tsx ("Why Cyphix") and Market.tsx removed at the user's request -->
 <!-- v0.13.0 — Sensors.tsx and lib/vitals.ts removed; the user's images in the hero, beside "1 in 3" and in "Our solution" -->

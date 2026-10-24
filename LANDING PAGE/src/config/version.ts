@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.17.1";
+export const APP_VERSION = "0.18.0";
 export const APP_BUILD_LABEL =
-  "The announcement names the stage only: Now raising our seed round (no amount)";
+  "Hero tablet built, not generated: the user's frame with the CYPHIX screen drawn sharp (real wordmark, 6 leads, inferior ST elevation in red)";
 
+// v0.18.0 — the hero tablet built from the user's frame (tools/tablet)
 // v0.17.1 — the announcement without the amount
 // v0.17.0 — the forearm with black electrodes, a touch higher
 // v0.16.0 — the hero tablet is the user's third image
