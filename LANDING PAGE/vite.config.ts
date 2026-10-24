@@ -16,9 +16,22 @@ export default defineConfig({
     sourcemap: false,
     outDir: single ? "dist-single" : "dist",
     assetsInlineLimit: single ? 100_000_000 : 4096,
-    // three.js lives in its own lazy chunk (lib/strapScene), loaded only near the closing scene
+    // three.js lives in its own lazy chunk (lib/strapScene), loaded only by the /one-strap page
     chunkSizeWarningLimit: 700,
+    // one document per page: the home page, and the three behind "Explore" (served without the
+    // extension: vercel.json's cleanUrls). The single-file build stays the home page alone.
+    rollupOptions: single
+      ? undefined
+      : {
+          input: {
+            main: "index.html",
+            technology: "technology.html",
+            investors: "investors.html",
+            "one-strap": "one-strap.html",
+          },
+        },
   },
 });
 
+// v0.35.0 — four documents: the home page, /technology, /investors and /one-strap
 // v0.8.0 — the lazy three.js chunk is expected; warning limit raised to 700 kB

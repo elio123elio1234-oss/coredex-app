@@ -1,5 +1,71 @@
 # Changelog — CYPHIX Landing
 
+## v0.35.0 — 2026-10-25 — Explore: the journey, the technology, the investors
+
+**Why.** The user:
+
+> "Let's move this to the bar at the top, a section where a menu of
+> categories drops down. Also a technology category that explains Cyphix's
+> innovation (you have it in the investor deck, right? the electrode that
+> filters noise and all that), and an investors section on the market and
+> exactly what the need is. That way the home page stays clean and doesn't
+> take ages to scroll."
+
+**What changed.**
+
+- **"Explore" in the bar**, after Product · Stage · Team.
+  - A click opens a panel from the bar's lower edge with three pages, each
+    with a title and a line. The page you are on is marked in coral.
+  - It closes the way the phone's number does: a second click, a click
+    elsewhere, or Escape. Both now share one rule, `lib/usePopover`.
+  - On tablets and phones the section links leave the bar but "Explore"
+    stays; its panel spans the bar's width.
+- **The home page is short again.** The 3D journey left it (5,426 px tall at
+  1440, down from about 13,700 with the journey's 900vh stage). The home page no longer downloads three.js.
+- **/one-strap: "One strap. Any watch."** The journey of v0.33.0, unchanged,
+  on a page of its own: it opens on its stage and ends on "Request the deck".
+- **/technology: "Six views of the heart. From a strap."**
+  - **How it works, in three steps**, each over its picture: wear it and
+    measure (the working prototype); a smart array, weighted (the
+    prototype's band, LL 1 · RLD · LL 2); six leads to the cardiologist (the
+    app's limb-lead view).
+  - **"Noise, solved in hardware."** Each contact point is an array of
+    elements with its own ADC, weighted in real time by the quality of its
+    contact; patent filed in Israel. Beside it, the deck's two strips (one
+    electrode raw; the same lead weighted across the array), labelled
+    illustrative.
+- **/investors: "The ECG that stays with the patient."**
+  - The figures on the navy band: 17.9M deaths a year (WHO), $4.53B, $2.76B.
+  - The need ("doesn't stop at the clinic door").
+  - Today's compromise in three columns, by category, not competitor.
+  - The business model: who pays, for what, how.
+  - What has been done, beside the working prototype.
+  - What comes next, on the milestones' line, with "Now" in coral.
+- **Every page** shares the bar, "Request the deck" and the footer. Each one
+  ends with links to the other pages.
+- **Each page is its own document** (`technology.html` and its siblings,
+  served as `/technology` by `cleanUrls`), with its own title, description
+  and share text.
+- **The footer** maps every page. Its small print now allows for the working
+  prototype's photographs.
+
+**What stays off the public pages, on purpose** (see PRODUCT.md):
+- **The medical centre the deck names for a trial.** There is no public
+  agreement.
+- **The deck's 2026 market figures ($4.97B / $3.03B).** The site keeps
+  $4.53B / $2.76B so it does not contradict itself.
+- **The deck's sample ECG report.** It carries an interpretation line.
+- **A prototype screen with a Hebrew label over the trace.** It was
+  replaced by the deck's clean strips rather than edited.
+
+**Checked** (headless Chrome), at 1440 × 900 and 390 × 844:
+- All three new pages, top to bottom.
+- "Explore" opens from the bar's lower edge, marks the current page, and
+  its links navigate.
+- The 3D page renders its stage.
+- The home page has no 3D section and does not request three.js.
+- No sideways scroll on any page.
+
 ## v0.34.0 — 2026-10-25 — the number behind the phone's mark
 
 **Why.** The user: "At the top there's no need to show my number straight

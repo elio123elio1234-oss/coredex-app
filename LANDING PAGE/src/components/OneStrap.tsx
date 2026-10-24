@@ -6,8 +6,8 @@ import stillStrap from "../assets/img/scene-strap.webp";
 import stillAnalog from "../assets/img/scene-analog.webp";
 import stillCyphix from "../assets/img/scene-cyphix.webp";
 
-/* "One strap. Any watch." — the closing journey, near the end of the page.
-   A tall section with a sticky stage; scroll progress through it drives the
+/* "One strap. Any watch." — the journey, on its own page (/one-strap, behind
+   "Explore" in the bar). A tall section with a sticky stage; scroll progress through it drives the
    live 3D model (lib/strapScene) and everything around it, in four chapters:
 
      the moment    night: a close-up of the electrodes, found by a sweep of
@@ -336,6 +336,7 @@ export default function OneStrap() {
   );
 }
 
+// v0.35.0 — moved off the home page onto /one-strap (src/pages/OneStrapPage); unchanged otherwise
 // v0.33.0 — back to the v0.27.0 journey the user called "really beautiful" (left-aligned copy in the page's own type, the product right, the chapters), with only the user's notes on it: no lines over the product (the six-leads chapter withdrawn), no white pool under it, each move given more scroll, the tablet writing live like a monitor
 // v0.27.0 — the journey in five chapters: the moment (night, the electrodes), the strap, six leads (the hexaxial axes over the analog's twelve hours), ours, your clinician (day, the app on a tablet)
 // v0.26.0 — smooth scroll: built ahead at idle, one frame loop draws the model and the copy, a short glide to the scroll position, progress from the pinned stage's height

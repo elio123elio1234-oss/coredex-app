@@ -64,16 +64,26 @@ says so.
 
 ```
 src/
-  App.tsx                 bar · hero · facts · need · solution · who · stage · team · one strap · form · footer
+  App.tsx                 the home page: bar · hero · facts · need · solution · who · stage · team · form · footer
+  pages/                  the pages behind "Explore" in the bar, each its own document (technology.html …):
+    OneStrapPage.tsx      /one-strap: the 3D journey, then the form
+    Technology.tsx        /technology: how it works, the multi-element array (from the investor deck)
+    Investors.tsx         /investors: the need, today's compromise, market, model, what's done, what's next
+  entries/                one entry per page document
+  config/nav.ts           the site map shared by the bar and the footer
   index.css               the whole design system (tokens, sections, tablet, phone, the arrival)
   components/
     Hero.tsx              headline beside the 3D render of the strap on a smartwatch
     Need.tsx              1 in 3, then the three-way comparison
     Product.tsx           "Our solution": the user's four watches (hover grows one) under the navy card
     OneStrap.tsx          the closing journey: copy left, the product right, four chapters, the day and the clinician's live screen; still fallback
+    PageHead.tsx          the head of a page behind "Explore" (the hero's slate band, left-aligned)
+    NextLinks.tsx         the other pages, as two wide links before the form
     Header / Stage / Team / ContactForm / Footer / Icons / Logo
+  lib/usePopover.ts       the bar's panels (the phone's number, Explore): click, click outside, Escape
   lib/strapScene.ts       the scroll-driven three.js scene: render(p), every part moving physically
   assets/img              renders of the 3D model (with provenance sidecars) + portraits + app screen
+  assets/deck             pictures from the user's investor deck (the prototype, its band, two strips), with sidecars
 public/models/cyphix.glb  the team's 3D model: strap, smartwatch, analog, contour (one origin)
   assets/fonts            Sora + Geist Mono variable woff2 (OFL)
 public/og.jpg             the 1200×630 link-preview card
@@ -107,6 +117,7 @@ and light.
 <!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->
 <!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
+<!-- v0.35.0 — the pages behind "Explore": pages/, entries/, config/nav.ts, assets/deck -->
 <!-- v0.33.0 — the journey reset to v0.27.0 (lib/strapScene back, strapStory removed) -->
 <!-- v0.31.0 — the product in place, lit out of the dark -->
 <!-- v0.30.0 — the dark moment is plain scroll past a column of products -->

@@ -1,18 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "./Logo";
-import { Instagram, LinkedIn, Phone } from "./Icons";
+import { Chevron, Instagram, LinkedIn, Phone } from "./Icons";
+import { EXPLORE, SECTIONS, type PageKey } from "../config/nav";
+import { usePopover } from "../lib/usePopover";
 
-/* The top of the page, AliveCor-style: a navy announcement bar that scrolls
-   away, then a white sticky bar: the wordmark, section links, and at the
-   right end the phone, Instagram and LinkedIn as three marks. The number
-   itself is not on show: a click on the phone opens it under the mark.
-   Over the dark closing stage the bar turns dark too. */
-
-const LINKS = [
-  { href: "#solution", label: "Product" },
-  { href: "#stage", label: "Stage" },
-  { href: "#team", label: "Team" },
-];
+/* The top of every page, AliveCor-style: a navy announcement bar that
+   scrolls away, then a white sticky bar: the wordmark, the home page's
+   section links and "Explore", a menu of the pages kept off the home page
+   (the 3D journey, the technology, the investors' page), and at the right
+   end the phone, Instagram and LinkedIn as three marks. The number itself
+   is not on show: a click on the phone opens it under the mark. Over a dark
+   stage the bar turns dark too. */
 
 const PHONE = "+972 54-398-9698";
 const SOCIAL = [
@@ -20,30 +18,11 @@ const SOCIAL = [
   { href: "https://www.linkedin.com/company/cyphixmedical/", label: "Cyphix on LinkedIn", Icon: LinkedIn },
 ];
 
-export default function Header() {
+export default function Header({ page = "home" }: { page?: PageKey }) {
   const [dark, setDark] = useState(false);
-  const [callOpen, setCallOpen] = useState(false);
-  const callRef = useRef<HTMLDivElement>(null);
-  const callButton = useRef<HTMLButtonElement>(null);
-
-  // the number closes again on a click elsewhere, or Escape
-  useEffect(() => {
-    if (!callOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (!callRef.current?.contains(e.target as Node)) setCallOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setCallOpen(false);
-      callButton.current?.focus();
-    };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [callOpen]);
+  const call = usePopover();
+  const explore = usePopover();
+  const inside = EXPLORE.some((e) => e.key === page);
 
   useEffect(() => {
     const onScroll = () => {
@@ -68,30 +47,59 @@ export default function Header() {
       </p>
       <header className={`bar${dark ? " is-dark" : ""}`}>
         <div className="wrap bar-inner">
-          <a className="bar-brand" href="#top" aria-label="Cyphix, back to top">
+          <a
+            className="bar-brand"
+            href={page === "home" ? "#top" : "/"}
+            aria-label={page === "home" ? "Cyphix, back to top" : "Cyphix, home"}
+          >
             <Logo className="bar-logo" />
           </a>
-          <nav className="bar-nav" aria-label="Sections">
-            {LINKS.map((l) => (
+          <nav className="bar-nav" aria-label="Site">
+            {SECTIONS.map((l) => (
               <a key={l.href} href={l.href}>
                 {l.label}
               </a>
             ))}
+            <div className="bar-explore" ref={explore.ref}>
+              <button
+                ref={explore.button}
+                type="button"
+                className={`bar-explore-btn${inside ? " is-current" : ""}`}
+                aria-expanded={explore.open}
+                aria-controls="bar-explore-menu"
+                onClick={() => explore.setOpen((o) => !o)}
+              >
+                Explore
+                <Chevron width={15} height={15} />
+              </button>
+              <div id="bar-explore-menu" className={`bar-menu${explore.open ? " is-open" : ""}`}>
+                <ul>
+                  {EXPLORE.map((e) => (
+                    <li key={e.key}>
+                      <a href={e.href} aria-current={e.key === page ? "page" : undefined}>
+                        <span className="bar-menu-title">{e.title}</span>
+                        <span className="bar-menu-text">{e.text}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </nav>
           <div className="bar-end">
-            <div className="bar-call" ref={callRef}>
+            <div className="bar-call" ref={call.ref}>
               <button
-                ref={callButton}
+                ref={call.button}
                 type="button"
                 className="bar-social"
-                aria-label={callOpen ? "Hide our phone number" : "Show our phone number"}
-                aria-expanded={callOpen}
+                aria-label={call.open ? "Hide our phone number" : "Show our phone number"}
+                aria-expanded={call.open}
                 aria-controls="bar-call-number"
-                onClick={() => setCallOpen((o) => !o)}
+                onClick={() => call.setOpen((o) => !o)}
               >
                 <Phone width={19} height={19} />
               </button>
-              <div id="bar-call-number" className={`bar-pop${callOpen ? " is-open" : ""}`}>
+              <div id="bar-call-number" className={`bar-pop${call.open ? " is-open" : ""}`}>
                 <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
               </div>
             </div>
@@ -107,6 +115,7 @@ export default function Header() {
   );
 }
 
+// v0.35.0 — "Explore": a menu of the pages kept off the home page (the 3D journey, Technology, Investors); the section links reach the home page from every page; the open/close rule shared (lib/usePopover)
 // v0.34.0 — the number is no longer on show: the phone is a mark beside Instagram and LinkedIn, and a click opens the number under it (the user)
 // v0.28.0 — Instagram and LinkedIn beside the phone (they stay when the phone number hides)
 // v0.20.0 — the bar's "Request the deck" button removed (the user: three times was too many; the announcement and the hero keep it)

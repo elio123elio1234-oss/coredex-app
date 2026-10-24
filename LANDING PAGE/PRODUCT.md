@@ -144,6 +144,29 @@ Public (all confirmed for the website on 2026-10-19):
 - Assets: the team's 3D model of the strap (see above), the phone app's "Limb Leads"
   screen, both portraits. The one-pager's two flat concept renders are retired.
 
+From the user's t:invent investor deck (2026-10-04), published on the Technology and
+Investors pages at the user's request (2026-10-25):
+- **The innovation:** each contact point is an array of elements, each read by its own
+  ADC; the processing weights them in real time by the quality of their actual contact.
+  The skin–electrode noise is "solved in hardware". Multi-element array, **patent filed in
+  Israel**. The prototype's band: the left-leg contact as two elements (LL 1, LL 2) beside
+  the reference, RLD.
+- **The need:** 17.9M deaths a year from cardiovascular disease (WHO); the need for an
+  ECG comes after discharge, between appointments, at the moment of a symptom.
+- **Today's compromise:** clinical depth (Holter, 12-lead devices), monitoring over time
+  (patches), comfort (smartwatches). The page names the categories, not the competitors.
+- **Business model:** health systems pay (health funds, public clinics), for a follow-up
+  programme, as a fixed monthly fee per active patient.
+- **What comes next:** the next stage's preparation; a wearable product ready for a trial;
+  a feasibility trial with 20 to 50 patients; regulatory validation (beta series, safety
+  and usability, a multi-centre trial, an FDA submission).
+- **Kept off the public pages, on purpose:**
+  - the medical centre the deck names for a first trial (no agreement is public);
+  - the deck's market figures, $4.97B TAM and $3.03B SAM for 2026. The site keeps the
+    one-pager's $4.53B and $2.76B so it never contradicts itself; the user decides if they
+    change everywhere;
+  - the deck's sample ECG report, which carries an interpretation line.
+
 Absent — never fabricate: customers, pilots, clinical results, accuracy figures,
 regulatory clearances, investors, press, testimonials, revenue, pricing.
 
@@ -155,6 +178,7 @@ regulatory clearances, investors, press, testimonials, revenue, pricing.
 4. One company across the PDF, the deck and the page.
 <!-- v0.13.0 — the sensors section removed at the user's request -->
 <!-- v0.12.0 — the sensors as illustrative charts -->
+<!-- v0.35.0 — the Technology and Investors pages' evidence, from the investor deck; what stays off them -->
 <!-- v0.33.0 — the journey reset to v0.27.0 with only the user's notes -->
 <!-- v0.32.0 — the clinician's screen lit the same way -->
 <!-- v0.31.0 — the product lit out of the dark, in place, on the navy stage -->

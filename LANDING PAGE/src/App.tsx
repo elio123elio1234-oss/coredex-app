@@ -6,14 +6,16 @@ import Product from "./components/Product";
 import WhoFor from "./components/WhoFor";
 import Stage from "./components/Stage";
 import Team from "./components/Team";
-import OneStrap from "./components/OneStrap";
 import ContactForm from "./components/ContactForm";
 import Footer from "./components/Footer";
+
+/* The home page, kept short: the 3D journey, the technology and the
+   investors' page are behind "Explore" in the bar (src/pages). */
 
 export default function App() {
   return (
     <>
-      <Header />
+      <Header page="home" />
       <main id="top">
         <Hero />
         <Facts />
@@ -22,7 +24,6 @@ export default function App() {
         <WhoFor />
         <Stage />
         <Team />
-        <OneStrap />
         <ContactForm />
       </main>
       <Footer />
@@ -30,6 +31,7 @@ export default function App() {
   );
 }
 
+// v0.35.0 — the 3D journey leaves the home page for /one-strap, behind "Explore" (the user: keep the home page clean and short)
 // v0.15.0 — "How it works" removed (the user)
 // v0.14.0 — "Why Cyphix" and the market section removed (the user)
 // v0.13.0 — "More than an ECG" removed (the user)

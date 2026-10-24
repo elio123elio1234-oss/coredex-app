@@ -29,19 +29,28 @@ export default function Footer() {
               <h2 id="foot-company">Company</h2>
               <ul>
                 <li>
-                  <a href="#solution">Product</a>
+                  <a href="/#solution">Product</a>
                 </li>
                 <li>
-                  <a href="#stage">Stage</a>
+                  <a href="/one-strap">One strap. Any watch.</a>
                 </li>
                 <li>
-                  <a href="#team">Team</a>
+                  <a href="/technology">Technology</a>
+                </li>
+                <li>
+                  <a href="/#stage">Stage</a>
+                </li>
+                <li>
+                  <a href="/#team">Team</a>
                 </li>
               </ul>
             </nav>
             <nav aria-labelledby="foot-investors">
               <h2 id="foot-investors">Investors</h2>
               <ul>
+                <li>
+                  <a href="/investors">The need, the market and the plan</a>
+                </li>
                 <li>
                   <a href="#contact">Request the deck</a>
                 </li>
@@ -66,9 +75,9 @@ export default function Footer() {
         <div className="wrap foot-band-inner">
           <p className="foot-note">
             © {new Date().getFullYear()} Cyphix. Product images are concept renderings from the
-            Cyphix 3D model; photographs of people, where shown, are concept imagery. Cyphix is in
-            development and is not available for sale. It records and displays ECG data; it does
-            not provide a diagnosis.
+            Cyphix 3D model unless labelled as the working prototype; photographs of people are
+            concept imagery unless labelled otherwise. Cyphix is in development and is not
+            available for sale. It records and displays ECG data; it does not provide a diagnosis.
           </p>
           <span className="badge" title="Build version">
             v{APP_VERSION}
@@ -79,6 +88,7 @@ export default function Footer() {
   );
 }
 
+// v0.35.0 — the page map reaches every page: the home page's sections by "/#…", One strap. Any watch., Technology, and the investors' page; the small print allows for the working prototype's photographs
 // v0.24.5 — white behind the hands, white glass, dark text (styles in index.css)
 // v0.24.4 — trial: the logo's red behind the hands, red glass (styles in index.css)
 // v0.24.3 — the hero's grey behind the hands, grey glass (styles in index.css)

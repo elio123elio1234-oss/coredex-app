@@ -313,9 +313,11 @@ section[id] {
 }
 .bar-nav {
   display: flex;
+  align-self: stretch;
+  align-items: center;
   gap: 32px;
 }
-.bar-nav a {
+.bar-nav > a {
   position: relative;
   padding: 8px 0;
   font-size: 15px;
@@ -324,7 +326,7 @@ section[id] {
   text-decoration: none;
   transition: color 0.2s ease;
 }
-.bar-nav a::after {
+.bar-nav > a::after {
   content: "";
   position: absolute;
   left: 0;
@@ -336,10 +338,10 @@ section[id] {
   transform-origin: right;
   transition: transform 0.45s var(--ease);
 }
-.bar-nav a:hover {
+.bar-nav > a:hover {
   color: var(--ink);
 }
-.bar-nav a:hover::after {
+.bar-nav > a:hover::after {
   transform: scaleX(1);
   transform-origin: left;
 }
@@ -432,11 +434,122 @@ section[id] {
   backdrop-filter: saturate(1.4) blur(14px);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
 }
-.bar.is-dark .bar-nav a {
+.bar.is-dark .bar-nav > a,
+.bar.is-dark .bar-explore-btn {
   color: #b7c0cf;
 }
-.bar.is-dark .bar-nav a:hover {
+.bar.is-dark .bar-nav > a:hover,
+.bar.is-dark .bar-explore-btn:hover,
+.bar.is-dark .bar-explore-btn[aria-expanded="true"],
+.bar.is-dark .bar-explore-btn.is-current {
   color: #fff;
+}
+.bar.is-dark .bar-menu {
+  background: #111725;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+.bar.is-dark .bar-menu a {
+  color: #fff;
+}
+.bar.is-dark .bar-menu a:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.bar.is-dark .bar-menu-text {
+  color: #8f98a8;
+}
+
+/* "Explore": the pages kept off the home page, in a panel hung from the bar's lower edge */
+.bar-explore {
+  position: relative;
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+}
+.bar-explore-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  font: 500 15px / 1.5 var(--sans);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.bar-explore-btn svg {
+  transform: rotate(90deg);
+  transition: transform 0.35s var(--ease);
+}
+.bar-explore-btn[aria-expanded="true"] svg {
+  transform: rotate(-90deg);
+}
+.bar-explore-btn:hover,
+.bar-explore-btn[aria-expanded="true"],
+.bar-explore-btn.is-current {
+  color: var(--ink);
+}
+.bar-menu {
+  position: absolute;
+  top: 100%;
+  left: -24px;
+  width: 340px;
+  background: #fff;
+  border: 1px solid var(--hair);
+  box-shadow: 0 18px 40px rgba(11, 26, 48, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s var(--ease),
+    visibility 0s linear 0.25s;
+}
+.bar-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s var(--ease);
+}
+.bar-menu ul {
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+.bar-menu a {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 14px 24px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+.bar-menu a:hover {
+  background: var(--mist-2);
+}
+/* the page you are on: a coral mark at the panel's edge */
+.bar-menu a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: var(--coral);
+}
+.bar-menu-title {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.bar-menu-text {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-3);
 }
 
 /* ---------- hero: the slate band ---------- */
@@ -1144,6 +1257,369 @@ section[id] {
   margin-top: 0;
 }
 
+/* ---------- the pages behind "Explore" ---------- */
+
+/* the head: the home hero's slate band and type, left-aligned, shorter */
+.page-head {
+  background: var(--slate);
+  color: #fff;
+}
+.page-head-inner {
+  padding-top: clamp(64px, 8vw, 112px);
+  padding-bottom: clamp(64px, 8vw, 112px);
+}
+.page-head .chip {
+  width: fit-content;
+}
+.page-head-title {
+  margin: 0;
+  font-size: clamp(40px, 5vw, 68px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.page-head-title span {
+  display: block;
+}
+.page-head-lede {
+  margin: 24px 0 0;
+  max-width: 34em;
+  font-size: clamp(17px, 1.45vw, 20px);
+  line-height: 1.6;
+  color: var(--sky);
+}
+.page-head .btn {
+  margin-top: 36px;
+}
+
+/* technology: three steps, each over its picture */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 56px clamp(28px, 3vw, 48px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step-media {
+  margin: 0 0 28px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--mist-2);
+}
+.step-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.step-media.is-cover img {
+  object-fit: cover;
+}
+/* a cut-out cropped by its own frame: it stands on the frame's lower edge */
+.step-media.is-bottom img {
+  object-fit: contain;
+  object-position: 50% 100%;
+}
+/* a screen floats in its frame */
+.step-media.is-device img {
+  object-fit: contain;
+  padding: 9%;
+  filter: drop-shadow(0 18px 24px rgba(11, 26, 48, 0.16));
+}
+.step-n {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--coral);
+}
+.step-title {
+  margin: 0 0 12px;
+  font-size: clamp(20px, 1.7vw, 24px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.step-text {
+  margin: 0 0 14px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.step .media-note {
+  margin: 0;
+}
+
+/* technology: the noise, and the two strips */
+.tech-noise {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 48px clamp(40px, 6vw, 96px);
+  align-items: center;
+}
+.tech-noise-copy .h2 {
+  margin-bottom: 24px;
+}
+.tech-noise-copy .body-lg + .body-lg {
+  margin-top: 18px;
+}
+.tech-patent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 32px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--hair);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.tech-patent strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.tech-patent-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  color: var(--blue);
+}
+.tech-traces {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+.tech-trace {
+  padding: 16px 16px 12px;
+  background: #fff;
+  border: 1px solid var(--hair);
+}
+.tech-trace-label {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.tech-trace img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* the foot of a page: the other pages as two wide links */
+.next-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 clamp(24px, 3vw, 48px);
+}
+.next-link {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 28px 56px 28px 0;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--hair);
+  color: var(--ink);
+  text-decoration: none;
+}
+.next-title {
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.next-text {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.next-arrow {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  color: var(--blue);
+  transform: translateY(-50%);
+  transition: transform 0.4s var(--ease);
+}
+.next-link:hover .next-arrow {
+  transform: translate(6px, -50%);
+}
+
+/* investors: the source under the figures, a soft picture on white */
+.facts-source {
+  margin-top: 28px;
+  font-size: 12.5px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+.split-media.is-soft {
+  display: grid;
+  place-items: center;
+  background: #fff;
+}
+.split-media.is-soft img {
+  width: min(100%, 585px);
+  height: auto;
+  object-fit: contain;
+}
+.split-media.is-soft .media-note {
+  color: var(--ink-3);
+}
+
+/* investors: today's compromise, in three columns */
+.gap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px clamp(28px, 3vw, 48px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gap li {
+  padding-top: 24px;
+  border-top: 2px solid var(--ink);
+}
+.gap-title {
+  margin: 0 0 6px;
+  font-size: clamp(20px, 1.7vw, 24px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.gap-kind {
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.gap-text {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.gap-close {
+  margin: clamp(40px, 5vw, 56px) 0 0;
+  max-width: 46em;
+  font-size: clamp(18px, 1.5vw, 21px);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.gap-close strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* investors: the business model */
+.model {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px clamp(28px, 3vw, 48px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.model .row-icon {
+  margin-bottom: 20px;
+}
+.model-q {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.model-a {
+  margin: 0;
+  max-width: 18em;
+  font-size: clamp(19px, 1.6vw, 22px);
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* investors: what has been done, beside the working prototype */
+.done-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 48px clamp(40px, 6vw, 88px);
+  align-items: center;
+}
+.done {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.done li {
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+.done-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.done-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.done-media {
+  margin: 0;
+}
+.done-media img {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 24px 32px rgba(11, 26, 48, 0.18));
+}
+.done-media .media-note {
+  display: block;
+  margin-top: 12px;
+}
+
+/* investors: what comes next, on the milestones' line: now in coral, the rest still open */
+.milestones.is-road {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.milestones.is-road .ms::before {
+  background: var(--hair);
+}
+.milestones.is-road .ms p {
+  max-width: 17em;
+}
+.ms .ms-when {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--coral);
+}
+.ms.is-later .ms-dot {
+  background: var(--ground);
+  box-shadow:
+    inset 0 0 0 2px var(--ink-3),
+    0 0 0 5px var(--ground);
+}
+.ms.is-later .ms-when {
+  color: var(--ink-3);
+}
+
+/* the 3D journey's own page opens straight on its stage */
+.is-journey > .strap-scene:first-child {
+  margin-top: 0;
+}
+
 /* ---------- contact ---------- */
 
 .contact {
@@ -1477,6 +1953,19 @@ section[id] {
   .bar-nav {
     gap: 22px;
   }
+  .steps,
+  .tech-noise,
+  .gap,
+  .model,
+  .done-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .step-media {
+    max-width: 560px;
+  }
+  .milestones.is-road {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .hero,
   .split {
     grid-template-columns: minmax(0, 1fr);
@@ -1559,8 +2048,21 @@ section[id] {
   .bar-logo {
     height: 17px;
   }
-  .bar-nav {
+  /* the section links leave the bar; "Explore" stays, its panel across the bar's width */
+  .bar-nav > a {
     display: none;
+  }
+  .bar-explore {
+    position: static;
+  }
+  .bar-menu {
+    left: 0;
+    right: 0;
+    width: auto;
+    border-width: 1px 0;
+  }
+  .bar-menu a {
+    padding: 16px var(--gutter);
   }
   .hero-title {
     font-size: clamp(34px, 9.4vw, 44px);
@@ -1682,6 +2184,24 @@ section[id] {
   .ms p {
     max-width: none;
   }
+  .milestones.is-road {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .milestones.is-road .ms::before,
+  .milestones.is-road .ms.is-next::before {
+    display: block;
+    background: var(--hair);
+  }
+  .milestones.is-road .ms:last-child::before {
+    display: none;
+  }
+  .milestones.is-road .ms p {
+    max-width: none;
+  }
+  .done,
+  .next-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
   .people {
     grid-template-columns: minmax(0, 1fr);
@@ -1718,7 +2238,8 @@ section[id] {
   }
 }
 
-/* v0.34.0 — the phone in the bar is a mark beside Instagram and LinkedIn, on every width; a click opens the number under it
+/* v0.35.0 — "Explore" in the bar (a panel hung from its lower edge; across the bar on tablets and phones), the section links scoped to the nav's own children; the pages behind it: the head, technology's steps, noise and strips, the next links, the investors' compromise, model, what has been done and the road ahead; the 3D page opens on its stage
+   v0.34.0 — the phone in the bar is a mark beside Instagram and LinkedIn, on every width; a click opens the number under it
    v0.33.0 — the scene's styles back to v0.27.0 (left-aligned copy in the page's type, the product right, the chapters, the day scene), less the six-leads overlay; 900svh
    v0.32.0 — the clinician's screen on the navy stage, lit out of the dark (the white sheet and its styles withdrawn); 760svh
    v0.31.0 — the stage back on the original dark navy with its glows (the user: prettier than black)

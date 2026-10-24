@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.34.0";
+export const APP_VERSION = "0.35.0";
 export const APP_BUILD_LABEL =
-  "The phone number is no longer on show in the bar: the phone is a mark beside Instagram and LinkedIn, and a click opens the number under it";
+  "Explore in the bar: the 3D journey, Technology and Investors on pages of their own, from the investor deck; the home page short again";
 
+// v0.35.0 — "Explore": /one-strap, /technology and /investors; the 3D journey off the home page
 // v0.34.0 — the bar's phone as a mark; a click opens the number
 // v0.33.0 — the journey reset to v0.27.0 with only the user's own notes on it
 // v0.32.0 — the clinician's screen lit out of the dark on the navy stage
