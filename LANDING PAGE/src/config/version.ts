@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.22.0";
+export const APP_VERSION = "0.23.0";
 export const APP_BUILD_LABEL =
-  "Request the deck on frosted glass over the user's heart-hands image, softly blurred on medical blue";
+  "Request the deck back to its own layout; the footer keeps its layout, its columns on one frosted-glass rectangle over the heart-hands image";
 
+// v0.23.0 — the glass moves to the footer (one rectangle, layout unchanged); Request the deck restored
 // v0.22.0 — Request the deck on frosted glass over the heart-hands image
 // v0.21.0 — team portraits black and white on desktop, colour on hover
 // v0.20.1 — the tablet back to full size, a touch to the left

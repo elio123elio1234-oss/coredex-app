@@ -1003,49 +1003,9 @@ section[id] {
 
 /* ---------- contact ---------- */
 
-/* the user's image as a slightly blurred band on soft medical blue; the section rises over it on
-   frosted glass, so the hands show sharp-ish above the sheet and melt into it below */
 .contact {
-  position: relative;
-  isolation: isolate;
-  padding-top: clamp(200px, 27vw, 400px);
   padding-bottom: var(--section);
-  background: linear-gradient(180deg, #c9d6e6 0%, #dbe4ef 38%, #eef2f7 72%, #f6f8fb 100%);
-}
-.contact-stage {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: -1;
-  height: clamp(320px, 46vw, 680px);
-  overflow: hidden;
-  /* the forearms fade into the blue instead of ending on a hard line */
-  -webkit-mask-image: linear-gradient(180deg, #000 52%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 52%, transparent 100%);
-}
-.contact-stage img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 42%;
-  filter: blur(2.5px);
-  transform: scale(1.03);
-}
-.contact-glass {
-  padding: clamp(28px, 4.4vw, 64px);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 32px;
-  background: rgba(255, 255, 255, 0.58);
-  -webkit-backdrop-filter: blur(26px) saturate(1.5);
-  backdrop-filter: blur(26px) saturate(1.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 40px 80px -40px rgba(15, 47, 86, 0.35);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .contact-glass {
-    background: rgba(255, 255, 255, 0.92);
-  }
+
 }
 .contact-grid {
   display: grid;
@@ -1085,9 +1045,13 @@ section[id] {
   color: var(--ink);
   border-color: var(--ink);
 }
-/* the form sits straight on the glass: the glass is its surface (no card inside a card) */
 .contact-panel {
-  padding: 0;
+  padding: clamp(24px, 3.4vw, 44px);
+  border-radius: 28px;
+  background: var(--paper);
+  box-shadow:
+    0 1px 2px rgba(11, 26, 48, 0.04),
+    0 32px 64px -32px rgba(11, 26, 48, 0.26);
 }
 .form {
   display: grid;
@@ -1118,9 +1082,9 @@ section[id] {
 .field textarea {
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid rgba(11, 26, 48, 0.08);
+  border: 1px solid transparent;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--mist-2);
   color: var(--ink);
   font: 400 16px/1.45 var(--sans);
   caret-color: var(--coral);
@@ -1132,7 +1096,7 @@ section[id] {
 }
 .field input:hover,
 .field textarea:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: #e9eef5;
 }
 .field input:focus,
 .field textarea:focus {
@@ -1195,15 +1159,59 @@ section[id] {
 
 /* ---------- footer ---------- */
 
+/* the footer keeps its layout; behind it the user's heart-hands image, softly blurred on medical
+   blue, and its columns on one frosted-glass rectangle through which the heart shows */
 .foot {
   border-top: 1px solid var(--hair);
 }
+.foot-upper {
+  position: relative;
+  isolation: isolate;
+  padding-top: clamp(28px, 3.5vw, 48px);
+  background: linear-gradient(180deg, #c9d6e6 0%, #e2e9f2 100%);
+}
+.foot-stage {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  /* the forearms fade into the blue before the legal band instead of ending on a hard line */
+  -webkit-mask-image: linear-gradient(180deg, #000 58%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 58%, transparent 100%);
+}
+.foot-stage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 40%;
+  filter: blur(2px);
+  transform: scale(1.03);
+}
+.foot-glass-wrap {
+  padding-bottom: clamp(28px, 3.5vw, 48px);
+}
 .foot-top {
+  --gx: clamp(10px, 3vw, 44px);
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 0.8fr)) minmax(0, 1.2fr);
   gap: 40px;
-  padding-top: clamp(48px, 6vw, 72px);
-  padding-bottom: clamp(48px, 6vw, 72px);
+  /* the rectangle grows outward into the gutter, so the columns keep their place */
+  margin-inline: calc(-1 * var(--gx));
+  padding: clamp(28px, 3.6vw, 48px) var(--gx);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 30px 60px -36px rgba(15, 47, 86, 0.35);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .foot-top {
+    background: rgba(255, 255, 255, 0.9);
+  }
 }
 .foot-brand {
   display: inline-flex;
@@ -1551,7 +1559,8 @@ section[id] {
   }
 }
 
-/* v0.22.0 — Request the deck on frosted glass over the user's heart-hands image (blurred band, soft medical blue); the form sits on the glass, inputs translucent white
+/* v0.23.0 — the glass moves to the footer (the user: try it below): the footer's columns on one frosted rectangle over the heart-hands image; Request the deck back to v0.21
+   v0.22.0 — Request the deck on frosted glass over the user's heart-hands image (blurred band, soft medical blue); the form sits on the glass, inputs translucent white
    v0.21.0 — the team's portraits in black and white on desktop, colour on hover (0.7 s)
    v0.20.1 — the tablet back to full size (no 0.92 scale) and a touch to the left: translateX(-min(1.1vw, 18px)), 16 px at 1440
    v0.20.0 — the bar's "Request the deck" button removed; the announcement keeps its link on phones from 375 px

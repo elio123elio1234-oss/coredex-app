@@ -1,8 +1,11 @@
 import Logo from "./Logo";
+import hands from "../assets/photos/contact-hands.webp";
 import { APP_VERSION } from "../config/version";
 
 /* The close, AliveCor-style: the wordmark on the left, link columns on the
-   right, then a pale band with the small print and the build badge. */
+   right, then a pale band with the small print and the build badge. The
+   columns sit on one frosted-glass rectangle over the user's heart-hands
+   image, softly blurred on a medical blue. */
 
 const EMAIL = "elio123elio1234@gmail.com";
 const PHONE = "+972 54-398-9698";
@@ -10,46 +13,53 @@ const PHONE = "+972 54-398-9698";
 export default function Footer() {
   return (
     <footer className="foot" id="footer">
-      <div className="wrap foot-top">
-        <div>
-          <a className="foot-brand" href="#top" aria-label="Cyphix, back to top">
-            <Logo className="foot-logo" />
-          </a>
-          <p className="foot-tagline">Clinical Depth. Wearable Ease.</p>
+      <div className="foot-upper">
+        <div className="foot-stage" aria-hidden="true">
+          <img src={hands} alt="" width={1600} height={800} loading="lazy" decoding="async" />
         </div>
-        <nav aria-labelledby="foot-company">
-          <h2 id="foot-company">Company</h2>
-          <ul>
-            <li>
-              <a href="#solution">Product</a>
-            </li>
-            <li>
-              <a href="#stage">Stage</a>
-            </li>
-            <li>
-              <a href="#team">Team</a>
-            </li>
-          </ul>
-        </nav>
-        <nav aria-labelledby="foot-investors">
-          <h2 id="foot-investors">Investors</h2>
-          <ul>
-            <li>
-              <a href="#contact">Request the deck</a>
-            </li>
-          </ul>
-        </nav>
-        <div>
-          <h2>Contact</h2>
-          <ul>
-            <li>
-              <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
-            </li>
-            <li>
-              <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-            </li>
-            <li>Kiryat Ono, Israel</li>
-          </ul>
+        <div className="wrap foot-glass-wrap">
+          <div className="foot-top">
+            <div>
+              <a className="foot-brand" href="#top" aria-label="Cyphix, back to top">
+                <Logo className="foot-logo" />
+              </a>
+              <p className="foot-tagline">Clinical Depth. Wearable Ease.</p>
+            </div>
+            <nav aria-labelledby="foot-company">
+              <h2 id="foot-company">Company</h2>
+              <ul>
+                <li>
+                  <a href="#solution">Product</a>
+                </li>
+                <li>
+                  <a href="#stage">Stage</a>
+                </li>
+                <li>
+                  <a href="#team">Team</a>
+                </li>
+              </ul>
+            </nav>
+            <nav aria-labelledby="foot-investors">
+              <h2 id="foot-investors">Investors</h2>
+              <ul>
+                <li>
+                  <a href="#contact">Request the deck</a>
+                </li>
+              </ul>
+            </nav>
+            <div>
+              <h2>Contact</h2>
+              <ul>
+                <li>
+                  <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+                </li>
+                <li>
+                  <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
+                </li>
+                <li>Kiryat Ono, Israel</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
       <div className="foot-band">
@@ -69,6 +79,7 @@ export default function Footer() {
   );
 }
 
+// v0.23.0 — the columns on one frosted-glass rectangle over the heart-hands image (moved here from Request the deck)
 // v0.15.0 — the "How it works" link goes with its section
 // v0.14.0 — the "Market" and "Why Cyphix" links go with their sections
 // v0.13.0 — the "Sensors" link goes with the section

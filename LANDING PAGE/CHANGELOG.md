@@ -1,5 +1,43 @@
 # Changelog — CYPHIX Landing
 
+## v0.23.0 — 2026-10-24 — the glass moves to the footer; "Request the deck" restored
+
+**Why.** The user, on v0.22.0: "Let's try one rectangle below, where I
+suggested" (the footer). Then: "I understood the problem: you also changed
+its structure, that's why it doesn't look good. Put the previous structure
+back."
+
+They were right about v0.22.0. It didn't only add an image and glass; it
+rebuilt the section:
+- a tall image band pushed the content down;
+- the form lost its own card;
+- the heading, the details and the form were merged onto one sheet.
+
+The request was an effect, not a new layout.
+
+**What changed.**
+- **"Request the deck" is back to v0.21.0 exactly.** `ContactForm.tsx` and
+  the section's styles (the section, the form panel, the inputs) are restored
+  from that commit.
+- **The footer keeps its layout and gains the effect.**
+  - Nothing moves: the wordmark and tagline on the left, Company, Investors
+    and Contact, then the legal band with the badge.
+  - The upper part sits on a soft medical-blue gradient with the user's
+    heart-hands image behind it, blurred 2 px and faded out before the legal
+    band.
+  - The columns sit on one frosted-glass rectangle: white at 60 %,
+    `backdrop-filter: blur(12px) saturate(1.4)`, a white hairline and a soft
+    shadow. The heart shows through it, softly.
+  - The rectangle grows outward into the gutter by its own padding, so the
+    columns keep their place.
+  - Without backdrop-filter, the rectangle is near-opaque white.
+
+**Checked.**
+- In headless Chrome at 1440, 820 and 390, "Request the deck" matches
+  v0.21.0 (white form card, the same inputs).
+- The footer's columns read on the glass, and there is no sideways scroll.
+- The design detector reports no findings.
+
 ## v0.22.0 — 2026-10-24 — "Request the deck" on frosted glass
 
 **Why.** The user sent a ChatGPT image (two hands making a heart, one wrist
