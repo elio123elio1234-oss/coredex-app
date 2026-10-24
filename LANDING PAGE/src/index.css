@@ -1270,9 +1270,6 @@ section[id] {
   .bar-phone {
     display: none;
   }
-  .bar-cta {
-    margin-left: auto;
-  }
 }
 @media (max-width: 1023px) {
   .bar-nav {
@@ -1371,14 +1368,7 @@ section[id] {
     font-size: 12px;
     padding: 9px 14px;
   }
-  /* phones: the bar's button sized to the bar, the logo and links with room for a thumb */
-  .bar-cta {
-    height: 40px;
-    padding: 0 14px;
-    gap: 8px;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-  }
+  /* phones: the logo and links with room for a thumb */
   .bar-brand,
   .foot-brand {
     padding: 8px 0;
@@ -1505,15 +1495,16 @@ section[id] {
   }
 }
 
-/* small phones: the announcement keeps to one line; its link repeats the bar's button right below it */
-@media (max-width: 420px) {
+/* the smallest phones: the announcement keeps to one line (with its link it fits from 365 px) */
+@media (max-width: 374px) {
   .announce span,
   .announce a {
     display: none;
   }
 }
 
-/* v0.19.0 — the hero tablet's screen is live SVG under the frame (sharp at any size); the tablet scaled to 0.92 toward the hand
+/* v0.20.0 — the bar's "Request the deck" button removed; the announcement keeps its link on phones from 375 px
+   v0.19.0 — the hero tablet's screen is live SVG under the frame (sharp at any size); the tablet scaled to 0.92 toward the hand
    v0.18.0 — the hero tablet is built (tools/tablet), 1000 x 690; same width and centre, no rule changed
    v0.17.0 — the user's forearm with black electrodes; the hand a touch higher again (1464 rows, about 25 px at 1440). Stacked layouts: the fingertips reach 8 / 4 px into the copy's bottom padding and the tablet's top margin grows, so the band and the tablet stay put
    v0.16.0 — the hero tablet swapped for the user's third image (taller: 1000 x 647); no rule changed

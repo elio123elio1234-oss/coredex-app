@@ -1,5 +1,29 @@
 # Changelog — CYPHIX Landing
 
+## v0.20.0 — 2026-10-24 — one "Request the deck" fewer
+
+**Why.** The user: "The REQUEST THE DECK button appears three times. Why? In
+the white bar I think it's unnecessary."
+
+The first screen showed it three times, one under the other: the
+announcement's link, the white bar's button, and the hero's button.
+
+**What changed.**
+- **The white bar's button is gone,** with its styles (the margin rule at
+  1100 px and the phone sizing). The bar holds the wordmark, the section links
+  and, on wide screens, the phone number.
+- **The announcement's link is back on phones.** It was hidden under 420 px
+  only because the bar's button sat right below it. With "Now raising our seed
+  round" it fits on one line from 365 px, so it now hides only under 375 px.
+- The hero's button, the form and the footer link are unchanged.
+
+**Checked.**
+- At 1440, 1024, 390 and 360 px, the first screen offers the announcement's
+  link and the hero's button (only the hero's at 360).
+- The announcement stays on one line, the hand doesn't move, and there is no
+  sideways scroll.
+- The design detector reports no findings.
+
 ## v0.19.0 — 2026-10-24 — the tablet's screen drawn live; the tablet a touch smaller
 
 **Why.** The user: "Is the iPad screen a screenshot of what you made, or is it

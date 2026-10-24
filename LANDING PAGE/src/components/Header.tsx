@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
-import { ArrowRight, Phone } from "./Icons";
+import { Phone } from "./Icons";
 
 /* The top of the page, AliveCor-style: a navy announcement bar that scrolls
    away, then a white sticky bar — wordmark, section links, the direct line
@@ -55,16 +55,13 @@ export default function Header() {
             <Phone width={17} height={17} />
             {PHONE}
           </a>
-          <a className="btn btn-solid btn-sm bar-cta" href="#contact">
-            Request the deck
-            <ArrowRight width={15} height={15} />
-          </a>
         </div>
       </header>
     </>
   );
 }
 
+// v0.20.0 — the bar's "Request the deck" button removed (the user: three times was too many; the announcement and the hero keep it)
 // v0.17.1 — the announcement names the stage, not the amount (the user)
 // v0.15.0 — "How it works" leaves the nav with its section
 // v0.9.0 — AliveCor-style: navy announcement bar, white sticky bar with links, phone and a solid uppercase button
