@@ -1047,7 +1047,7 @@ section[id] {
 }
 .contact-panel {
   padding: clamp(24px, 3.4vw, 44px);
-  border-radius: 28px;
+  border-radius: 0;
   background: var(--paper);
   box-shadow:
     0 1px 2px rgba(11, 26, 48, 0.04),
@@ -1565,7 +1565,8 @@ section[id] {
   }
 }
 
-/* v0.23.1 — the footer's glass is its whole upper area (no card): the text straight on the glass, the area taller so the heart shows
+/* v0.23.2 — the Request the deck panel square-cornered, like the page's other rectangles
+   v0.23.1 — the footer's glass is its whole upper area (no card): the text straight on the glass, the area taller so the heart shows
    v0.23.0 — the glass moves to the footer (the user: try it below): the footer's columns on one frosted rectangle over the heart-hands image; Request the deck back to v0.21
    v0.22.0 — Request the deck on frosted glass over the user's heart-hands image (blurred band, soft medical blue); the form sits on the glass, inputs translucent white
    v0.21.0 — the team's portraits in black and white on desktop, colour on hover (0.7 s)

@@ -1,5 +1,21 @@
 # Changelog — CYPHIX Landing
 
+## v0.23.2 — 2026-10-24 — the Request the deck panel without rounded corners
+
+**Why.** The user: "the details rectangle in the Request the deck section,
+let's make it without rounded corners so it matches the design of the rest
+of the page."
+
+The page's other rectangles are square: the full-bleed photo with its navy
+card, the solution image, the bands. The form panel was the one large shape
+with a 28 px radius, so it read like a different kit.
+
+**What changed.**
+- `.contact-panel` `border-radius: 28px` → `0`.
+- Nothing else moved: the same padding, shadow, fields, button and layout.
+  The fields and the button keep their small radii, like every other button
+  on the page.
+
 ## v0.23.1 — 2026-10-24 — the footer's glass is the area itself, not a card
 
 **Why.** The user: "But you added another layer, a rectangle. I don't want

@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.23.1";
+export const APP_VERSION = "0.23.2";
 export const APP_BUILD_LABEL =
-  "Footer: no card. Its whole upper area is frosted glass over the heart-hands image, the text straight on it, tall enough for the heart";
+  "Request the deck: the form panel has square corners, like the page's other rectangles";
 
+// v0.23.2 — the Request the deck panel square-cornered
 // v0.23.1 — the footer's glass is the whole area, no card; taller so the heart shows
 // v0.23.0 — the glass moves to the footer (one rectangle, layout unchanged); Request the deck restored
 // v0.22.0 — Request the deck on frosted glass over the heart-hands image
