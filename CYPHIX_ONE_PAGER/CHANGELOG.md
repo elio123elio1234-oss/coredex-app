@@ -1,5 +1,23 @@
 # Changelog — CYPHIX One-Pager
 
+## v1.2.0 — 2026-10-26 — a larger tablet, centred; no callouts
+
+**Why.** The user, on v1.1: "I'd make the iPad behind a bit bigger and centre it (I wouldn't
+touch the hand), remove the arrows that explain what each thing is, and put our photos in
+colour, not black and white. And why is there a 'Request the deck' button at the top? You do
+know it's a PDF?"
+
+**What changed.**
+- **The tablet:** 420 px wide, up from 349, and centred on the page. The hand keeps its exact
+  place and size; its box is now anchored where it stood, not centred on itself. The thumb
+  now rests on the right end of the traces, as the site's hand does, and all six leads still
+  read.
+- **No callouts:** "6-lead ECG" and "Cyphix module" are gone.
+- **The portraits are in colour.**
+- **No deck request:** the blue line says only "Now raising our seed round"; a PDF has no
+  button. The e-mail, phone and site at the foot stay as links.
+- The PDF is 1.7 MB (the colour portraits, the larger tablet).
+
 ## v1.1.0 — 2026-10-26 — minimal, after the user's own one-pager
 
 **Why.** The user, on v1.0: "No, no, you made it too crowded. Look at my one-pager, the one

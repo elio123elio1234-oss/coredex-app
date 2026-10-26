@@ -3,7 +3,7 @@
 The investor one-pager: the landing page ([cyphix-landing.vercel.app](https://cyphix-landing.vercel.app))
 set on one A4 page, as a PDF to attach to an intro e-mail.
 
-**The file to send: [`Cyphix-One-Pager.pdf`](Cyphix-One-Pager.pdf)** (one page, 1.3 MB, links clickable).
+**The file to send: [`Cyphix-One-Pager.pdf`](Cyphix-One-Pager.pdf)** (one page, 1.7 MB, links clickable).
 
 ![The one-pager](preview.jpg)
 
@@ -16,12 +16,12 @@ design.
 
 | Band | Content | From |
 |---|---|---|
-| Blue line | Now raising our seed round · Request the deck (mailto) | the site's announcement line |
+| Blue line | Now raising our seed round (no deck request: a PDF has no button) | the site's announcement line |
 | Bar | the red wordmark · the site's address | the site's bar |
-| Slate hero, centred | In development · Not for sale; **Clinical Depth. / Wearable Ease.**; the one-pager's lede; the site's hand and tablet, the tablet larger so its six leads read in full, with two callouts ("6-lead ECG", "Cyphix module") | the site's hero, the one-pager's callouts |
+| Slate hero, centred | In development · Not for sale; **Clinical Depth. / Wearable Ease.**; the one-pager's lede; the site's hand and tablet: the tablet 420 px wide and centred on the page, behind the hand | the site's hero |
 | Navy figures | $4.53B TAM · $2.76B SAM · 6-lead ECG on the watch you already wear | the site's facts band |
 | Two columns | The need · The trade-off · Where we are | the one-pager's text |
-| Team | Elio El Hassrouny, Dr. Tamir Wolf, MD · e-mail, phone, city | the one-pager |
+| Team | Elio El Hassrouny, Dr. Tamir Wolf, MD, in colour · e-mail, phone, city | the one-pager |
 
 **Kept off, on purpose** (same rules as the site, see `../LANDING PAGE/PRODUCT.md`):
 - no amount for the round;
@@ -63,6 +63,7 @@ node tools/build.mjs      # prints Cyphix-One-Pager.pdf + preview.jpg
 a picture or font failed to load. It then confirms the PDF has exactly one page. Edit the
 copy in `one-pager.html`; keep every claim one the site already makes.
 
+<!-- v1.2.0 — the tablet larger and centred, no callouts, portraits in colour, no deck request -->
 <!-- v1.1.0 — minimal, after the user's own one-pager -->
 <!-- v1.0.1 — the PDF's size after the print floor for small type -->
 <!-- v1.0.0 — the investor one-pager in the landing page's design, 2026-10-26 -->

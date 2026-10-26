@@ -116,15 +116,6 @@ p {
   font: 600 9.5px/22px var(--sans);
   text-align: center;
 }
-.announce span {
-  margin: 0 5px;
-  opacity: 0.6;
-}
-.announce a {
-  text-decoration: underline;
-  text-decoration-thickness: 0.6px;
-  text-underline-offset: 2px;
-}
 .bar {
   flex: none;
   display: flex;
@@ -190,34 +181,32 @@ p {
   color: var(--sky);
 }
 
-/* the landing page's arrangement, re-proportioned: the tablet is larger against the hand
-   (0.84 of the hand's height, the site has 0.67), and the hand stands only over its side
-   panel, so all six leads show. Everything is measured in --ha, the hand's height; the hand
-   rises from the band's lower edge, as on the site. Proportions from the pictures:
-   the thumb's outer edge at 6.1 % of the hand picture's width, the strap's module at
-   (66.8 %, 72.6 %); the screen's traces end at 72.4 % of its width. */
+/* the landing page's arrangement, re-proportioned: the hand rises from the band's lower edge,
+   as on the site, measured in --ha, its height; the tablet stands behind it, larger than on the
+   site (420 px wide against a 416 px hand; the site's is 0.67 of the hand) and centred on the
+   page, so the six leads lead the picture. */
 .art {
   position: absolute;
   inset: auto 0 0;
   height: var(--ha);
   margin: 0;
   --ha: 416px;
-  --tw: calc(var(--ha) * 0.84);
 }
 .art-box {
+  /* the hand's place since v1.1.0: its box starts 0.516 of its height left of the centre */
   position: absolute;
-  left: 50%;
+  left: calc(50% - var(--ha) * 0.51585);
   bottom: 0;
-  width: calc(var(--ha) * 1.0317);
+  width: calc(var(--ha) * 1.0457);
   height: var(--ha);
-  transform: translateX(-50%);
 }
 .tablet {
   position: absolute;
-  left: 0;
-  top: calc(var(--ha) * 0.08);
-  width: var(--tw);
+  left: 50%;
+  top: 18px;
+  width: 420px;
   aspect-ratio: 1385 / 955;
+  transform: translateX(-50%);
 }
 .tablet-screen {
   position: absolute;
@@ -240,56 +229,6 @@ p {
   width: auto;
 }
 
-/* callouts, as on the user's one-pager: a label, a hairline, a coral dot with a white ring */
-.callout {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  margin: 0;
-  --reach: 132px; /* from the art's edge to the label's outer edge */
-}
-.callout-text {
-  flex: none;
-  width: 104px;
-  font-size: 9.5px;
-  line-height: 1.4;
-  color: var(--sky);
-}
-.callout-text strong {
-  display: block;
-  margin-bottom: 1px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #fff;
-}
-.callout-line {
-  flex: 1;
-  height: 1px;
-  margin: 0 6px;
-  background: rgba(255, 255, 255, 0.5);
-}
-.callout-dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--coral);
-  box-shadow: 0 0 0 2px #fff;
-}
-/* the traces, at a tenth of the screen's width, on lead III */
-.callout.is-ecg {
-  left: calc(-1 * var(--reach));
-  width: calc(var(--reach) + var(--tw) * 0.1162 + 4.5px);
-  top: calc(var(--ha) * 0.3286 - 14px);
-  text-align: right;
-}
-/* the module on the inside of the wrist: the hand's left (0.588) + 66.8 % of its width (0.4577) */
-.callout.is-module {
-  left: calc(var(--ha) * 0.8937 - 4.5px);
-  right: calc(-1 * var(--reach));
-  top: calc(var(--ha) * 0.726 - 14px);
-  text-align: left;
-}
 .art .note {
   position: absolute;
   left: var(--g);
@@ -449,7 +388,6 @@ p {
   height: 100%;
   object-fit: cover;
   object-position: 50% 30%;
-  filter: grayscale(1);
 }
 /* a standing shot: zoomed to head and shoulders, as on the site */
 .person-photo.is-elio img {
@@ -484,6 +422,7 @@ p {
   font-weight: 500;
 }
 
+/* v1.2.0 — the tablet 420 px and centred (the hand where it was), no callouts, portraits in colour, the announcement without a link */
 /* v1.1.0 — minimal, after the user's one-pager: the hero centred with a larger tablet and callouts, the navy figures, three short texts, the team */
 /* v1.0.1 — a print floor: labels, notes and the small print at 7.5–8 px (about 6 pt), running text at 9.5 px or more */
 /* v1.0.0 — the sheet in the landing page's design (tokens and bands of LANDING PAGE/src/index.css, v0.35.0) */
