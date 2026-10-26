@@ -1,9 +1,10 @@
-/* The investor one-pager: the landing page (cyphix-landing.vercel.app) set on one A4 sheet.
-   The same tokens, fonts and bands as the site: the blue announcement line, the white bar with
-   the red wordmark, the slate hero with the coral second line, the navy figures band, the
-   four watches on slate under a navy card, rule-headed sections, the milestone line, and the
-   white glass over the heart-hands at the close. Square corners on every band; type in Sora,
-   Geist Mono only on small data labels. Sizes are CSS px on a 794 × 1123 sheet (A4 at 96 dpi). */
+/* The investor one-pager, minimal: the user's own one-pager (Cyphix-One-Pager-phone-test-3,
+   the headline over the product in the centre, then a few lines, the market, the team) set in
+   the landing page's design (cyphix-landing.vercel.app). The blue announcement line and the
+   white bar with the red wordmark; the slate hero, centred, with the site's hand and tablet in
+   the middle (the tablet larger, its six leads in full); the navy figures band; three short
+   texts on white; the team and the contact. Sizes are CSS px on a 794 × 1123 sheet (A4 at
+   96 dpi, 1 px = 0.75 pt). */
 
 @font-face {
   font-family: "Sora";
@@ -35,7 +36,7 @@
 
   --sans: "Sora", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --g: 40px; /* the sheet's gutter */
+  --g: 48px; /* the sheet's gutter */
 }
 
 @page {
@@ -66,11 +67,9 @@ a {
 }
 img {
   display: block;
-  max-width: 100%;
 }
 h1,
-h2,
-h3 {
+h2 {
   text-wrap: balance;
 }
 p {
@@ -84,9 +83,6 @@ p {
 }
 .is-coral {
   color: var(--coral);
-}
-.nowrap {
-  white-space: nowrap;
 }
 
 /* ---------- the sheet ---------- */
@@ -109,47 +105,19 @@ p {
   }
 }
 
-.note {
-  font-size: 8px;
-  line-height: 1.4;
-  color: var(--ink-3);
-}
-
-/* section heads: the title, then a rule to the edge */
-.rule-head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 0 0 9px;
-}
-.rule-head::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
-.h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-/* ---------- announcement + bar ---------- */
+/* ---------- the announcement line and the bar ---------- */
 
 .announce {
   flex: none;
   margin: 0;
-  height: 20px;
+  height: 22px;
   background: var(--blue);
   color: #fff;
-  font: 600 9px/20px var(--sans);
+  font: 600 9.5px/22px var(--sans);
   text-align: center;
 }
 .announce span {
-  margin: 0 4px;
+  margin: 0 5px;
   opacity: 0.6;
 }
 .announce a {
@@ -162,98 +130,93 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 38px;
+  height: 50px;
   padding: 0 var(--g);
   box-shadow: 0 1px 0 var(--hair);
   position: relative;
   z-index: 1;
 }
-.brand {
-  display: block;
-}
 .logo {
   display: block;
-  height: 14px;
+  height: 16px;
   width: auto;
   aspect-ratio: 346 / 72;
   color: var(--red);
 }
-.bar-meta {
-  margin: 0;
-  font-size: 9px;
+.bar-link {
+  font-size: 10px;
   font-weight: 500;
   color: var(--ink-2);
 }
-.bar-meta span {
-  margin: 0 3px;
-  color: var(--ink-3);
-}
 
-/* ---------- hero: the slate band ---------- */
+/* ---------- the hero: slate, centred, the product in the middle ---------- */
 
 .hero {
   flex: none;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  height: 234px;
+  position: relative;
+  height: 672px;
+  padding-top: 34px;
   background: var(--slate);
   color: #fff;
+  text-align: center;
   overflow: hidden;
 }
-.hero-copy {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px 0 var(--g);
-  text-align: center;
-}
 .chip {
-  margin: 0 0 14px;
-  padding: 6px 12px;
+  display: inline-block;
+  margin: 0 0 18px;
+  padding: 7px 14px;
   background: rgba(255, 255, 255, 0.12);
   color: #dfe5ee;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .hero-title {
   margin: 0;
-  font-size: 34px;
+  font-size: 46px;
   font-weight: 600;
-  line-height: 1.14;
+  line-height: 1.12;
   letter-spacing: -0.025em;
 }
 .hero-title span {
   display: block;
 }
 .hero-lede {
-  margin: 14px 0 0;
-  max-width: 27em;
-  font-size: 11px;
+  margin: 16px auto 0;
+  max-width: 44em;
+  font-size: 12.5px;
   line-height: 1.6;
   color: var(--sky);
 }
-.hero-media {
-  position: relative;
-  margin: 0;
-}
-/* the site's arrangement (1440 × 900): the tablet stands behind the raised forearm, on the left,
-   and the forearm rises from the band's lower edge; proportions taken from the live hero */
-.hero-art {
+
+/* the landing page's arrangement, re-proportioned: the tablet is larger against the hand
+   (0.84 of the hand's height, the site has 0.67), and the hand stands only over its side
+   panel, so all six leads show. Everything is measured in --ha, the hand's height; the hand
+   rises from the band's lower edge, as on the site. Proportions from the pictures:
+   the thumb's outer edge at 6.1 % of the hand picture's width, the strap's module at
+   (66.8 %, 72.6 %); the screen's traces end at 72.4 % of its width. */
+.art {
   position: absolute;
+  inset: auto 0 0;
+  height: var(--ha);
+  margin: 0;
+  --ha: 416px;
+  --tw: calc(var(--ha) * 0.84);
+}
+.art-box {
+  position: absolute;
+  left: 50%;
   bottom: 0;
-  left: 46%;
-  height: 218px;
-  aspect-ratio: 495 / 606;
+  width: calc(var(--ha) * 1.0317);
+  height: var(--ha);
   transform: translateX(-50%);
 }
 .tablet {
   position: absolute;
   left: 0;
-  top: 18.15%;
-  width: 81.41%;
+  top: calc(var(--ha) * 0.08);
+  width: var(--tw);
   aspect-ratio: 1385 / 955;
 }
 .tablet-screen {
@@ -271,40 +234,90 @@ p {
 }
 .arm {
   position: absolute;
-  left: 44.04%;
-  top: 0;
-  width: 55.96%;
-  height: 100%;
+  left: calc(var(--ha) * 0.588);
+  bottom: 0;
+  height: var(--ha);
+  width: auto;
 }
-.hero-media .note {
+
+/* callouts, as on the user's one-pager: a label, a hairline, a coral dot with a white ring */
+.callout {
   position: absolute;
-  left: 14px;
-  bottom: 9px;
+  display: flex;
+  align-items: center;
   margin: 0;
-  color: rgba(255, 255, 255, 0.55);
+  --reach: 132px; /* from the art's edge to the label's outer edge */
+}
+.callout-text {
+  flex: none;
+  width: 104px;
+  font-size: 9.5px;
+  line-height: 1.4;
+  color: var(--sky);
+}
+.callout-text strong {
+  display: block;
+  margin-bottom: 1px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+}
+.callout-line {
+  flex: 1;
+  height: 1px;
+  margin: 0 6px;
+  background: rgba(255, 255, 255, 0.5);
+}
+.callout-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 0 2px #fff;
+}
+/* the traces, at a tenth of the screen's width, on lead III */
+.callout.is-ecg {
+  left: calc(-1 * var(--reach));
+  width: calc(var(--reach) + var(--tw) * 0.1162 + 4.5px);
+  top: calc(var(--ha) * 0.3286 - 14px);
+  text-align: right;
+}
+/* the module on the inside of the wrist: the hand's left (0.588) + 66.8 % of its width (0.4577) */
+.callout.is-module {
+  left: calc(var(--ha) * 0.8937 - 4.5px);
+  right: calc(-1 * var(--reach));
+  top: calc(var(--ha) * 0.726 - 14px);
+  text-align: left;
+}
+.art .note {
+  position: absolute;
+  left: var(--g);
+  bottom: 14px;
+  margin: 0;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ---------- the figures, on the navy ---------- */
 
 .facts {
   flex: none;
-  padding: 17px var(--g);
-  background: var(--navy);
-  color: #fff;
-}
-.facts-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 28px;
+  padding: 16px var(--g);
+  background: var(--navy);
+  color: #fff;
 }
 .fact {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 11px;
+  gap: 12px;
 }
 .fact-figure {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -312,211 +325,123 @@ p {
 }
 .fact p {
   margin: 0;
-  max-width: 10.5em;
-  font-size: 9.5px;
+  max-width: 11em;
+  font-size: 10.5px;
   font-weight: 500;
   line-height: 1.35;
 }
-.fact .src {
+.tag {
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--mono);
+  font-size: 8px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.14em;
+  color: var(--sky);
 }
-
-/* ---------- the need, and today's compromise ---------- */
-
-.need {
+.fact-icon {
   flex: none;
-  padding: 16px var(--g) 0;
+  width: 36px;
+  height: 36px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.need-head {
+
+/* ---------- three short texts ---------- */
+
+.story {
+  flex: none;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 32px;
-  align-items: end;
-  margin-bottom: 11px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 56px;
+  padding: 22px var(--g) 0;
 }
-.statement {
-  margin: 0;
-  max-width: 14em;
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1.22;
-  letter-spacing: -0.02em;
-}
-.body {
-  margin: 0;
-  font-size: 10px;
-  line-height: 1.6;
-  color: var(--ink-2);
-}
-.gap {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.gap li {
-  padding-top: 8px;
-  border-top: 1.5px solid var(--ink);
-}
-.gap-title {
-  margin: 0 0 2px;
-  font-size: 11px;
+.story h2 {
+  margin: 0 0 5px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.015em;
 }
-.gap-kind {
-  margin: 0 0 5px;
-  font-family: var(--mono);
-  font-size: 7.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.gap-text {
-  margin: 0;
-  font-size: 9.5px;
-  line-height: 1.5;
+.story p {
+  margin: 0 0 13px;
+  font-size: 11px;
+  line-height: 1.6;
   color: var(--ink-2);
 }
-
-/* ---------- our solution: the four watches on slate, under a navy card ---------- */
-
-.solution {
-  flex: none;
-  margin-top: 16px;
-}
-.stills {
-  position: relative;
-  display: grid;
-  grid-template-columns: 507fr 466fr 528fr 513fr;
-  align-items: center;
-  gap: 14px;
-  height: 132px;
-  margin: 0;
-  padding: 6px 64px 24px;
-  background: var(--slate);
-}
-.stills img {
-  width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-.stills .note {
-  position: absolute;
-  right: 12px;
-  top: 8px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.55);
-}
-.card {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 28px;
-  margin: -28px var(--g) 0;
-  padding: 14px 24px 15px;
-  background: var(--navy);
-  color: #fff;
-}
-.card h2 {
-  margin: 0 0 7px;
-  font-size: 16px;
+.story p strong {
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
 }
-.card p {
-  margin: 0;
-  font-size: 9.5px;
-  line-height: 1.55;
-  color: #dbe4f0;
+.story em {
+  font-style: italic;
 }
-.card .patent {
+/* where we are: the landing page's milestone line, standing */
+.steps {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.steps li {
+  position: relative;
+  padding: 0 0 9px 22px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.steps li::before {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 7.25px;
+  top: 14px;
+  bottom: -5px;
+  width: 1.5px;
+  background: var(--ink);
+}
+.steps li:nth-last-child(2)::after {
+  background: linear-gradient(var(--ink), var(--rule));
+}
+.steps li.is-next::before {
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--coral);
+}
+.steps li.is-next strong {
+  font-weight: 600;
+}
+
+/* ---------- the team and the contact ---------- */
+
+.team {
+  flex: none;
+  margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 9px;
-  color: #fff;
-}
-.card .patent strong {
-  font-weight: 600;
-}
-.patent-icon {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* ---------- the model and the team, side by side ---------- */
-
-.duo {
-  flex: none;
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 34px;
-  padding: 16px var(--g) 0;
-}
-.model {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.line-icon {
-  display: block;
-  width: 24px;
-  height: 24px;
-  margin-bottom: 6px;
-  fill: none;
-  stroke: var(--blue);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.model-q {
-  margin: 0 0 3px;
-  font-family: var(--mono);
-  font-size: 7.5px;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.model-a {
-  margin: 0;
-  font-size: 9.5px;
-  font-weight: 500;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-.people {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: 28px;
+  padding: 16px var(--g) 20px;
+  border-top: 1px solid var(--hair);
 }
 .person {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 9px;
-  align-items: end;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .person-photo {
+  flex: none;
+  width: 52px;
+  height: 64px;
   overflow: hidden;
-  aspect-ratio: 4 / 5;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #e8ecf1;
 }
 .person-photo img {
@@ -526,170 +451,39 @@ p {
   object-position: 50% 30%;
   filter: grayscale(1);
 }
-/* a standing shot: zoomed to head and shoulders, as on the site, so both portraits frame alike */
+/* a standing shot: zoomed to head and shoulders, as on the site */
 .person-photo.is-elio img {
   transform: scale(1.9);
   transform-origin: 52.8% 33.5%;
 }
-.person-name {
-  margin: 0 0 2px;
+.person p {
+  margin: 0;
+  font-size: 9.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.person strong {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.contact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  margin: 0 0 0 auto;
   font-size: 10px;
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-}
-.person-role {
-  margin: 0;
-  font-size: 9px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--ink-2);
+  text-align: right;
 }
-
-/* ---------- where we are, what comes next: one line ---------- */
-
-.road {
-  flex: none;
-  display: grid;
-  grid-template-columns: 4fr 3fr;
-  column-gap: 0;
-  padding: 16px var(--g) 0;
-}
-.road-head {
-  margin: 0 0 12px;
-}
-.road-head.is-next {
+.contact a:first-child {
   color: var(--ink);
-}
-.milestones {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.ms {
-  position: relative;
-  padding: 18px 12px 0 0;
-}
-.ms::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 4px;
-  height: 1.5px;
-  background: var(--ink);
-}
-.ms.is-done:nth-child(4)::before {
-  background: linear-gradient(90deg, var(--ink) 0 55%, var(--rule) 100%);
-}
-.ms.is-next::before,
-.ms.is-later::before {
-  background: var(--rule);
-}
-.ms-dot {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow: 0 0 0 3px var(--paper);
-}
-.is-next .ms-dot {
-  background: var(--paper);
-  box-shadow:
-    inset 0 0 0 1.5px var(--coral),
-    0 0 0 3px var(--paper);
-}
-.is-later .ms-dot {
-  background: var(--paper);
-  box-shadow:
-    inset 0 0 0 1.5px var(--ink-3),
-    0 0 0 3px var(--paper);
-}
-.ms p {
-  margin: 0;
-  font-size: 9.5px;
-  line-height: 1.45;
-  color: var(--ink);
-}
-.ms.is-later p {
-  color: var(--ink-2);
-}
-.ms p strong {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-/* ---------- the close: white glass over the heart-hands, then the small print ---------- */
-
-.foot {
-  margin-top: auto;
-  flex: none;
-  border-top: 1px solid var(--hair);
-}
-.foot-glass {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 14px var(--g);
-  background: url("assets/img/footer-hands.jpg") 50% 40% / cover no-repeat;
-}
-.foot-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(255, 255, 255, 0.55);
-}
-.foot-brand .logo {
-  height: 15px;
-}
-.foot-tagline {
-  margin: 6px 0 0;
-  font-size: 9.5px;
   font-weight: 500;
-  color: var(--ink-2);
-}
-.foot-contact {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 7px 26px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 9.5px;
-  color: var(--ink);
-}
-.foot-contact li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.foot-contact svg {
-  flex: none;
-  width: 11px;
-  height: 11px;
-  fill: none;
-  stroke: var(--navy);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.foot-note {
-  margin: 0;
-  padding: 8px var(--g) 9px;
-  border-top: 1px solid var(--hair);
-  font-size: 7.5px;
-  line-height: 1.55;
-  color: var(--blue);
 }
 
+/* v1.1.0 — minimal, after the user's one-pager: the hero centred with a larger tablet and callouts, the navy figures, three short texts, the team */
 /* v1.0.1 — a print floor: labels, notes and the small print at 7.5–8 px (about 6 pt), running text at 9.5 px or more */
 /* v1.0.0 — the sheet in the landing page's design (tokens and bands of LANDING PAGE/src/index.css, v0.35.0) */

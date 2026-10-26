@@ -34,15 +34,20 @@ const report = await page.evaluate(() => {
   const problems = [];
   for (const img of document.images) if (!img.naturalWidth) problems.push(`picture not loaded: ${img.getAttribute("src")}`);
   for (const f of ["Sora", "Geist Mono"]) if (!document.fonts.check(`12px "${f}"`)) problems.push(`font not loaded: ${f}`);
-  const foot = document.querySelector(".foot").getBoundingClientRect();
+  const foot = document.querySelector(".team").getBoundingClientRect();
   if (foot.bottom > sheet.bottom + 0.5) problems.push(`the sheet overflows by ${(foot.bottom - sheet.bottom).toFixed(1)} px`);
   for (const el of document.querySelectorAll(".sheet *")) {
-    if (el.closest("svg")) continue;
+    if (el.closest("svg") || el.closest("[data-overflow]")) continue;
     if (el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflow !== "hidden" && el.clientWidth > 0)
       problems.push(`overflows its box: <${el.tagName.toLowerCase()} class="${el.className}">`);
   }
+  // a box that lets its labels reach past it (data-overflow) must still keep them on the page
+  for (const el of document.querySelectorAll("[data-overflow] *")) {
+    const r = el.getBoundingClientRect();
+    if (r.width && (r.left < sheet.left || r.right > sheet.right)) problems.push(`runs off the page: <${el.tagName.toLowerCase()} class="${el.className}">`);
+  }
   // the room left above the footer, which the sections may use
-  const last = document.querySelector(".road").getBoundingClientRect();
+  const last = document.querySelector(".story").getBoundingClientRect();
   return { problems, spare: +(foot.top - last.bottom).toFixed(1), sheet: [sheet.width, sheet.height] };
 });
 console.log("sheet", report.sheet.map((n) => n.toFixed(1)).join(" × "), "· room above the footer", report.spare, "px");
@@ -61,4 +66,5 @@ const pages = (readFileSync(PDF, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ||
 console.log(`${PDF} · ${pages} page(s) · ${(readFileSync(PDF).length / 1024).toFixed(0)} KB`);
 if (pages !== 1) process.exit(1);
 
+// v1.1.0 — the minimal sheet: the team closes it; the art's callouts may reach past their box but not off the page
 // v1.0.0 — the PDF and its preview, with the sheet's checks before printing

@@ -1,5 +1,29 @@
 # Changelog — CYPHIX One-Pager
 
+## v1.1.0 — 2026-10-26 — minimal, after the user's own one-pager
+
+**Why.** The user, on v1.0: "No, no, you made it too crowded. Look at my one-pager, the one
+with the two watches in the centre: see how very minimal it is. Do it in that style, just with
+my landing page's design. It doesn't need all the information, it only has to spark interest.
+The landing page's main picture can sit in the middle, with its background. Make the iPad a
+bit bigger, so they really get that it records leads."
+
+**What changed.** The sheet now follows the layout of `Cyphix-One-Pager-phone-test-3.pdf`:
+- **The hero:** the landing page's slate hero, centred; the one-pager's headline and lede; the
+  site's hand and tablet in the middle.
+  - The tablet is larger against the hand: 0.84 of the hand's height, against the site's 0.67.
+  - The hand now covers only the screen's side panel, so all six leads are in full view.
+  - Two callouts in the one-pager's manner: a label, a hairline and a coral dot. "6-lead ECG"
+    with the leads' names, and "Cyphix module" on the strap.
+- **The navy band:** $4.53B TAM, $2.76B SAM and "6-lead ECG on the watch you already wear".
+- **The text:** the need, the trade-off and where we are, in the one-pager's words.
+- **The close:** the team and the contact.
+
+**Removed:** the compromise columns, the four watches with the solution card, the technology
+paragraph, the business model, the roadmap and the glass footer. Their pictures were taken out
+of `assets/` too. The seed amount stays off, and so does the tablet's reading. The PDF is now
+1.3 MB.
+
 ## v1.0.1 — 2026-10-26 — a print floor for the smallest type
 
 **Why.** The design check flagged the sheet's type. The real finding: the mono labels ("Who
