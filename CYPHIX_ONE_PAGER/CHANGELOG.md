@@ -1,5 +1,24 @@
 # Changelog — CYPHIX One-Pager
 
+## v1.2.2 — 2026-10-26 — no address, no "not for sale"
+
+**Why.** The user: "Why do we need cyphix-landing.vercel.app, and that it's not for sale? Of
+course it's not for sale if I'm submitting to a venture capital fund. Come on."
+
+**What changed.**
+- The bar holds the red wordmark alone; the site's address is gone.
+- The hero has no "In development · Not for sale" chip. The headline sits a little lower
+  (54 px from the band's top, up from 34), so the hero stays balanced.
+- The page's only links are now the e-mail and the phone.
+
+## v1.2.1 — 2026-10-26 — the tablet back to its earlier size
+
+**Why.** The user: "Actually, put the iPad back to the previous size."
+
+**What changed.**
+- The tablet is back to its v1.1.0 size, 0.84 of the hand's height (349 px wide).
+- It stays centred, as asked in v1.2.0; the hand has not moved.
+
 ## v1.2.0 — 2026-10-26 — a larger tablet, centred; no callouts
 
 **Why.** The user, on v1.1: "I'd make the iPad behind a bit bigger and centre it (I wouldn't
