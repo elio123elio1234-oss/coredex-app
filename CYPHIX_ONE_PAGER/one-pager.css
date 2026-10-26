@@ -141,7 +141,7 @@ p {
   flex: none;
   position: relative;
   height: 672px;
-  padding-top: 54px;
+  padding-top: 64px;
   background: var(--slate);
   color: #fff;
   text-align: center;
@@ -405,6 +405,7 @@ p {
   font-weight: 500;
 }
 
+/* v1.3.0 — the hero's lede is the landing page's two lines; the headline lower to keep the hero balanced */
 /* v1.2.2 — no site address in the bar, no chip in the hero; the headline a little lower */
 /* v1.2.1 — the tablet back to its v1.1.0 size (0.84 of the hand), still centred */
 /* v1.2.0 — the tablet 420 px and centred (the hand where it was), no callouts, portraits in colour, the announcement without a link */

@@ -18,8 +18,8 @@ design.
 |---|---|---|
 | Blue line | Now raising our seed round (no deck request: a PDF has no button) | the site's announcement line |
 | Bar | the red wordmark, alone | the site's bar |
-| Slate hero, centred | **Clinical Depth. / Wearable Ease.**; the one-pager's lede; the site's hand and tablet: the tablet at 0.84 of the hand's height (the site's is 0.67), centred on the page, behind the hand | the site's hero |
-| Navy figures | $4.53B TAM · $2.76B SAM · 6-lead ECG on the watch you already wear | the site's facts band |
+| Slate hero, centred | **Clinical Depth. / Wearable Ease.**; the landing page's opening line ("on the strap of the watch you already wear"); the site's hand and tablet: the tablet at 0.84 of the hand's height (the site's is 0.67), centred on the page, behind the hand | the site's hero |
+| Navy figures | $4.53B TAM · $2.76B SAM · No adhesive patches, wires or professional setup | the site's facts band, the one-pager's lede |
 | Two columns | The need · The trade-off · Where we are | the one-pager's text |
 | Team | Elio El Hassrouny, Dr. Tamir Wolf, MD, in colour · e-mail, phone, city | the one-pager |
 
@@ -63,6 +63,7 @@ node tools/build.mjs      # prints Cyphix-One-Pager.pdf + preview.jpg
 a picture or font failed to load. It then confirms the PDF has exactly one page. Edit the
 copy in `one-pager.html`; keep every claim one the site already makes.
 
+<!-- v1.3.0 — the landing page's opening line; the band's third fact -->
 <!-- v1.2.2 — no address in the bar, no chip; the tablet back to its v1.1.0 size -->
 <!-- v1.2.0 — the tablet larger and centred, no callouts, portraits in colour, no deck request -->
 <!-- v1.1.0 — minimal, after the user's own one-pager -->

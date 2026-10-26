@@ -1,5 +1,19 @@
 # Changelog — CYPHIX One-Pager
 
+## v1.3.0 — 2026-10-26 — the landing page's opening line
+
+**Why.** The user: "And you're missing the sentence that it's on the watch the user already
+wears, like in the landing page's opening. That's an important sentence."
+
+**What changed.**
+- **The hero's lede** is now the landing page's own, word for word: "A 6-lead ECG module on
+  the strap of the watch you already wear. It records when symptoms occur and sends the
+  recording directly to the clinician."
+- **The navy band's third fact** was the same sentence. It now carries the part of the old
+  lede that would otherwise be lost: "No adhesive patches, wires or professional setup."
+- The lede is two lines now, so the headline sits a little lower (64 px from the band's top)
+  to keep the hero balanced.
+
 ## v1.2.2 — 2026-10-26 — no address, no "not for sale"
 
 **Why.** The user: "Why do we need cyphix-landing.vercel.app, and that it's not for sale? Of
