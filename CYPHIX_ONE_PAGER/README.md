@@ -3,7 +3,7 @@
 The investor one-pager: the landing page ([cyphix-landing.vercel.app](https://cyphix-landing.vercel.app))
 set on one A4 page, as a PDF to attach to an intro e-mail.
 
-**The file to send: [`Cyphix-One-Pager.pdf`](Cyphix-One-Pager.pdf)** (one page, 1.5 MB, links clickable).
+**The file to send: [`Cyphix-One-Pager.pdf`](Cyphix-One-Pager.pdf)** (one page, 1.4 MB, links clickable).
 
 ![The one-pager](preview.jpg)
 
@@ -62,4 +62,5 @@ node tools/build.mjs      # prints Cyphix-One-Pager.pdf + preview.jpg
 a picture or font failed to load. It then confirms the PDF has exactly one page. Edit the
 copy in `one-pager.html`; keep every claim one the site already makes.
 
+<!-- v1.0.1 — the PDF's size after the print floor for small type -->
 <!-- v1.0.0 — the investor one-pager in the landing page's design, 2026-10-26 -->

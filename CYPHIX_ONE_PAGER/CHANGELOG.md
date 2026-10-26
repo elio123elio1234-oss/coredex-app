@@ -1,5 +1,22 @@
 # Changelog — CYPHIX One-Pager
 
+## v1.0.1 — 2026-10-26 — a print floor for the smallest type
+
+**Why.** The design check flagged the sheet's type. The real finding: the mono labels ("Who
+pays", "Patches") were 6.5 px, about 4.9 pt, and the notes and small print 7 to 7.5 px. Those
+are too small even on paper.
+
+**What changed.**
+- Labels, notes, the chip and the small print are now 7.5 to 8 px (about 6 pt).
+- Running text is now 9.5 px or more.
+- The announcement line, the bar's date and the roles are now 9 px.
+- The sheet still fits on one page, with 5 px to spare. The PDF is 1.4 MB.
+
+**Not changed, on purpose.** The screen-reading floors (12 px body, 11 px UI) do not apply to a
+printed A4 sheet, where 1 CSS px is 0.75 pt and 9.5 to 11 px is 7 to 8 pt. The hero's
+forearm also stays where it is: it rises from the band's lower edge on purpose. Both
+exceptions are recorded in the shared Impeccable config, scoped to `one-pager.html` only.
+
 ## v1.0.0 — 2026-10-26 — the landing page on one page
 
 **Why.** The user: "Open a new folder named CYPHIX_ONE_PAGER and make a one-pager there from my

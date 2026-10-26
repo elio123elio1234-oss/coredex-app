@@ -110,7 +110,7 @@ p {
 }
 
 .note {
-  font-size: 7.5px;
+  font-size: 8px;
   line-height: 1.4;
   color: var(--ink-3);
 }
@@ -145,7 +145,7 @@ p {
   height: 20px;
   background: var(--blue);
   color: #fff;
-  font: 600 8.5px/20px var(--sans);
+  font: 600 9px/20px var(--sans);
   text-align: center;
 }
 .announce span {
@@ -180,7 +180,7 @@ p {
 }
 .bar-meta {
   margin: 0;
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -213,7 +213,7 @@ p {
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.12);
   color: #dfe5ee;
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -370,14 +370,14 @@ p {
 .gap-kind {
   margin: 0 0 5px;
   font-family: var(--mono);
-  font-size: 6.5px;
+  font-size: 7.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
 .gap-text {
   margin: 0;
-  font-size: 9px;
+  font-size: 9.5px;
   line-height: 1.5;
   color: var(--ink-2);
 }
@@ -486,9 +486,9 @@ p {
 .model-q {
   margin: 0 0 3px;
   font-family: var(--mono);
-  font-size: 6.5px;
+  font-size: 7.5px;
   font-weight: 400;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
@@ -540,7 +540,7 @@ p {
 }
 .person-role {
   margin: 0;
-  font-size: 8.5px;
+  font-size: 9px;
   line-height: 1.45;
   color: var(--ink-2);
 }
@@ -612,7 +612,7 @@ p {
 }
 .ms p {
   margin: 0;
-  font-size: 9px;
+  font-size: 9.5px;
   line-height: 1.45;
   color: var(--ink);
 }
@@ -664,7 +664,7 @@ p {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 9px;
+  font-size: 9.5px;
   color: var(--ink);
 }
 .foot-contact li {
@@ -686,9 +686,10 @@ p {
   margin: 0;
   padding: 8px var(--g) 9px;
   border-top: 1px solid var(--hair);
-  font-size: 7px;
+  font-size: 7.5px;
   line-height: 1.55;
   color: var(--blue);
 }
 
+/* v1.0.1 — a print floor: labels, notes and the small print at 7.5–8 px (about 6 pt), running text at 9.5 px or more */
 /* v1.0.0 — the sheet in the landing page's design (tokens and bands of LANDING PAGE/src/index.css, v0.35.0) */
