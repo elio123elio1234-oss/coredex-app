@@ -1,0 +1,694 @@
+/* The investor one-pager: the landing page (cyphix-landing.vercel.app) set on one A4 sheet.
+   The same tokens, fonts and bands as the site: the blue announcement line, the white bar with
+   the red wordmark, the slate hero with the coral second line, the navy figures band, the
+   four watches on slate under a navy card, rule-headed sections, the milestone line, and the
+   white glass over the heart-hands at the close. Square corners on every band; type in Sora,
+   Geist Mono only on small data labels. Sizes are CSS px on a 794 × 1123 sheet (A4 at 96 dpi). */
+
+@font-face {
+  font-family: "Sora";
+  src: url("assets/fonts/sora-latin-var.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("assets/fonts/geist-mono-latin-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+:root {
+  --paper: #ffffff;
+  --mist: #e3e8ef;
+  --slate: #363a43;
+  --navy: #0f2f56;
+  --blue: #1d4f8b;
+  --sky: #a8bfdf;
+  --ink: #0b1a30;
+  --ink-2: #33415a;
+  --ink-3: #52627b;
+  --hair: rgba(11, 26, 48, 0.12);
+  --rule: #b9c6d8;
+  --coral: #f2574c;
+  --red: #c7362c;
+
+  --sans: "Sora", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --g: 40px; /* the sheet's gutter */
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+body {
+  background: var(--mist);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+::selection {
+  background: rgba(242, 87, 76, 0.22);
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.is-coral {
+  color: var(--coral);
+}
+.nowrap {
+  white-space: nowrap;
+}
+
+/* ---------- the sheet ---------- */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--paper);
+}
+@media screen {
+  .sheet {
+    margin: 32px auto;
+    box-shadow:
+      0 1px 2px rgba(11, 26, 48, 0.06),
+      0 24px 48px -24px rgba(11, 26, 48, 0.3);
+  }
+}
+
+.note {
+  font-size: 7.5px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+/* section heads: the title, then a rule to the edge */
+.rule-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 9px;
+}
+.rule-head::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+/* ---------- announcement + bar ---------- */
+
+.announce {
+  flex: none;
+  margin: 0;
+  height: 20px;
+  background: var(--blue);
+  color: #fff;
+  font: 600 8.5px/20px var(--sans);
+  text-align: center;
+}
+.announce span {
+  margin: 0 4px;
+  opacity: 0.6;
+}
+.announce a {
+  text-decoration: underline;
+  text-decoration-thickness: 0.6px;
+  text-underline-offset: 2px;
+}
+.bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  padding: 0 var(--g);
+  box-shadow: 0 1px 0 var(--hair);
+  position: relative;
+  z-index: 1;
+}
+.brand {
+  display: block;
+}
+.logo {
+  display: block;
+  height: 14px;
+  width: auto;
+  aspect-ratio: 346 / 72;
+  color: var(--red);
+}
+.bar-meta {
+  margin: 0;
+  font-size: 8.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.bar-meta span {
+  margin: 0 3px;
+  color: var(--ink-3);
+}
+
+/* ---------- hero: the slate band ---------- */
+
+.hero {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 234px;
+  background: var(--slate);
+  color: #fff;
+  overflow: hidden;
+}
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px 0 var(--g);
+  text-align: center;
+}
+.chip {
+  margin: 0 0 14px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #dfe5ee;
+  font-size: 7.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hero-title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+}
+.hero-title span {
+  display: block;
+}
+.hero-lede {
+  margin: 14px 0 0;
+  max-width: 27em;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--sky);
+}
+.hero-media {
+  position: relative;
+  margin: 0;
+}
+/* the site's arrangement (1440 × 900): the tablet stands behind the raised forearm, on the left,
+   and the forearm rises from the band's lower edge; proportions taken from the live hero */
+.hero-art {
+  position: absolute;
+  bottom: 0;
+  left: 46%;
+  height: 218px;
+  aspect-ratio: 495 / 606;
+  transform: translateX(-50%);
+}
+.tablet {
+  position: absolute;
+  left: 0;
+  top: 18.15%;
+  width: 81.41%;
+  aspect-ratio: 1385 / 955;
+}
+.tablet-screen {
+  position: absolute;
+  left: 2.0217%;
+  top: 3.8743%;
+  width: 96.029%;
+  height: 92.984%;
+}
+.tablet-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.arm {
+  position: absolute;
+  left: 44.04%;
+  top: 0;
+  width: 55.96%;
+  height: 100%;
+}
+.hero-media .note {
+  position: absolute;
+  left: 14px;
+  bottom: 9px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ---------- the figures, on the navy ---------- */
+
+.facts {
+  flex: none;
+  padding: 17px var(--g);
+  background: var(--navy);
+  color: #fff;
+}
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.fact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+}
+.fact-figure {
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.fact p {
+  margin: 0;
+  max-width: 10.5em;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.fact .src {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- the need, and today's compromise ---------- */
+
+.need {
+  flex: none;
+  padding: 16px var(--g) 0;
+}
+.need-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: end;
+  margin-bottom: 11px;
+}
+.statement {
+  margin: 0;
+  max-width: 14em;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
+.body {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.gap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gap li {
+  padding-top: 8px;
+  border-top: 1.5px solid var(--ink);
+}
+.gap-title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.gap-kind {
+  margin: 0 0 5px;
+  font-family: var(--mono);
+  font-size: 6.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.gap-text {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------- our solution: the four watches on slate, under a navy card ---------- */
+
+.solution {
+  flex: none;
+  margin-top: 16px;
+}
+.stills {
+  position: relative;
+  display: grid;
+  grid-template-columns: 507fr 466fr 528fr 513fr;
+  align-items: center;
+  gap: 14px;
+  height: 132px;
+  margin: 0;
+  padding: 6px 64px 24px;
+  background: var(--slate);
+}
+.stills img {
+  width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.stills .note {
+  position: absolute;
+  right: 12px;
+  top: 8px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+}
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  margin: -28px var(--g) 0;
+  padding: 14px 24px 15px;
+  background: var(--navy);
+  color: #fff;
+}
+.card h2 {
+  margin: 0 0 7px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.card p {
+  margin: 0;
+  font-size: 9.5px;
+  line-height: 1.55;
+  color: #dbe4f0;
+}
+.card .patent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  color: #fff;
+}
+.card .patent strong {
+  font-weight: 600;
+}
+.patent-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- the model and the team, side by side ---------- */
+
+.duo {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 34px;
+  padding: 16px var(--g) 0;
+}
+.model {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.line-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 6px;
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.model-q {
+  margin: 0 0 3px;
+  font-family: var(--mono);
+  font-size: 6.5px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.model-a {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+.people {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.person {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 9px;
+  align-items: end;
+}
+.person-photo {
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  border-radius: 8px;
+  background: #e8ecf1;
+}
+.person-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  filter: grayscale(1);
+}
+/* a standing shot: zoomed to head and shoulders, as on the site, so both portraits frame alike */
+.person-photo.is-elio img {
+  transform: scale(1.9);
+  transform-origin: 52.8% 33.5%;
+}
+.person-name {
+  margin: 0 0 2px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+.person-role {
+  margin: 0;
+  font-size: 8.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* ---------- where we are, what comes next: one line ---------- */
+
+.road {
+  flex: none;
+  display: grid;
+  grid-template-columns: 4fr 3fr;
+  column-gap: 0;
+  padding: 16px var(--g) 0;
+}
+.road-head {
+  margin: 0 0 12px;
+}
+.road-head.is-next {
+  color: var(--ink);
+}
+.milestones {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ms {
+  position: relative;
+  padding: 18px 12px 0 0;
+}
+.ms::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 1.5px;
+  background: var(--ink);
+}
+.ms.is-done:nth-child(4)::before {
+  background: linear-gradient(90deg, var(--ink) 0 55%, var(--rule) 100%);
+}
+.ms.is-next::before,
+.ms.is-later::before {
+  background: var(--rule);
+}
+.ms-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 3px var(--paper);
+}
+.is-next .ms-dot {
+  background: var(--paper);
+  box-shadow:
+    inset 0 0 0 1.5px var(--coral),
+    0 0 0 3px var(--paper);
+}
+.is-later .ms-dot {
+  background: var(--paper);
+  box-shadow:
+    inset 0 0 0 1.5px var(--ink-3),
+    0 0 0 3px var(--paper);
+}
+.ms p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.ms.is-later p {
+  color: var(--ink-2);
+}
+.ms p strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- the close: white glass over the heart-hands, then the small print ---------- */
+
+.foot {
+  margin-top: auto;
+  flex: none;
+  border-top: 1px solid var(--hair);
+}
+.foot-glass {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px var(--g);
+  background: url("assets/img/footer-hands.jpg") 50% 40% / cover no-repeat;
+}
+.foot-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.55);
+}
+.foot-brand .logo {
+  height: 15px;
+}
+.foot-tagline {
+  margin: 6px 0 0;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.foot-contact {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 7px 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 9px;
+  color: var(--ink);
+}
+.foot-contact li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.foot-contact svg {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: var(--navy);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.foot-note {
+  margin: 0;
+  padding: 8px var(--g) 9px;
+  border-top: 1px solid var(--hair);
+  font-size: 7px;
+  line-height: 1.55;
+  color: var(--blue);
+}
+
+/* v1.0.0 — the sheet in the landing page's design (tokens and bands of LANDING PAGE/src/index.css, v0.35.0) */
