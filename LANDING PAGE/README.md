@@ -1,7 +1,7 @@
 # CYPHIX — Landing Page
 
 Investor-facing home page for CYPHIX, a wearable 6-lead ECG on the watch you
-already wear. Live at **https://cyphix-landing.vercel.app**.
+already wear. Live at **https://cyphix.co** (also www.cyphix.co and cyphix-landing.vercel.app).
 
 Since v0.9.0 the page follows alivecor.com's structure in Cyphix's colours, with four
 photograph slots generated in Gemini (prompts and reference images in `gemini/`;

@@ -60,7 +60,8 @@ Wearable Ease.**
 - Language: English first. A Hebrew/RTL version was planned in LAUNCH_PLAN (L4) and is
   still open.
 - Stack: existing Vite + React + TypeScript SPA in this folder, live on Vercel at
-  https://cyphix-landing.vercel.app (project `cyphix-landing`).
+  https://cyphix.co (project `cyphix-landing`; the domain is registered at GoDaddy, whose DNS
+  points `@` to 76.76.21.21 and `www` to cname.vercel-dns.com, since 2026-11-05).
 
 ## Brand Commitments
 

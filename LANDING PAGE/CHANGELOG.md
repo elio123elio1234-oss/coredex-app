@@ -1,5 +1,23 @@
 # Changelog — CYPHIX Landing
 
+## v0.36.0 — 2026-11-05 — cyphix.co
+
+**Why.** The user bought **cyphix.co** at GoDaddy: "host the landing page there".
+
+**What changed.**
+- `cyphix.co` and `www.cyphix.co` were added to the Vercel project `cyphix-landing`.
+- The user changed the domain's DNS records at GoDaddy, step by step:
+  - `A @` now points to `76.76.21.21`, replacing GoDaddy's parking record;
+  - `CNAME www` now points to `cname.vercel-dns.com`.
+- The nameservers stay with GoDaddy.
+- Every page's share card (`og:url`, `og:image`) now points to `https://cyphix.co`.
+- The old address, cyphix-landing.vercel.app, keeps working.
+
+**Checked.**
+- `cyphix.co` resolves to 76.76.21.21 on Google, Cloudflare and GoDaddy's own nameserver.
+- `www` resolves to Vercel.
+- Both serve the site once Vercel's certificate is issued.
+
 ## v0.35.0 — 2026-10-25 — Explore: the journey, the technology, the investors
 
 **Why.** The user:

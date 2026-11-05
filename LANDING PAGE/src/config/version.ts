@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.35.0";
+export const APP_VERSION = "0.36.0";
 export const APP_BUILD_LABEL =
-  "Explore in the bar: the 3D journey, Technology and Investors on pages of their own, from the investor deck; the home page short again";
+  "On the company's own domain, cyphix.co: the share links point there";
 
+// v0.36.0 — live at cyphix.co (GoDaddy DNS → Vercel); share links moved there
 // v0.35.0 — "Explore": /one-strap, /technology and /investors; the 3D journey off the home page
 // v0.34.0 — the bar's phone as a mark; a click opens the number
 // v0.33.0 — the journey reset to v0.27.0 with only the user's own notes on it
