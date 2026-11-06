@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-/* Steps through a held stage by scroll, in the manner of a product page: the stage holds under
-   the bar while the visitor scrolls through its wrapper, whose travel is split evenly between the
-   steps. It reports the step in view (a re-render only when it changes) and writes each step's own
-   progress, 0 to 1, as `--fill` on the element marked `data-step-fill={i}`, without a re-render,
-   for a line that fills as the visitor reads. `go(i)` scrolls smoothly to the middle of step i.
-   The step is a switch, not a scrub: the change between two is a short transition in CSS. */
+/* Steps through a held stage by scroll: the stage holds under the bar while the visitor scrolls
+   through its wrapper, whose travel is split evenly between the steps, and the hook reports the
+   step in view (a re-render only when it changes). The stage holds only where its content fits
+   the window under the bar; where it does not (a phone), `held` is false, nothing holds and the
+   page reads plainly. The change between two steps is a transition in CSS. */
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -13,14 +12,27 @@ export function useScrollSteps(count: number) {
   const pin = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
+  const [held, setHeld] = useState(false);
 
   useEffect(() => {
     const wrap = pin.current;
     const box = stage.current;
     if (!wrap || !box) return;
-    const fills = Array.from(wrap.querySelectorAll<HTMLElement>("[data-step-fill]"));
+    const content = box.firstElementChild as HTMLElement | null;
     let raf = 0;
     let current = -1;
+    let isHeld = false;
+
+    // does the content fit the window under the bar (the stage's sticky top)?
+    const fit = () => {
+      const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar")) || 72;
+      const room = window.innerHeight - bar - 32;
+      const fits = !!content && content.offsetHeight <= room;
+      if (fits !== isHeld) {
+        isHeld = fits;
+        setHeld(fits);
+      }
+    };
     const draw = () => {
       raf = 0;
       const r = wrap.getBoundingClientRect();
@@ -28,10 +40,6 @@ export function useScrollSteps(count: number) {
       const travel = r.height - s.height;
       const p = travel > 0 ? clamp01((s.top - r.top) / travel) : 0;
       const at = Math.min(count - 1, Math.floor(p * count));
-      fills.forEach((el) => {
-        const i = Number(el.dataset.stepFill);
-        el.style.setProperty("--fill", clamp01(p * count - i).toFixed(3));
-      });
       if (at !== current) {
         current = at;
         setStep(at);
@@ -40,31 +48,23 @@ export function useScrollSteps(count: number) {
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(draw);
     };
+    const onResize = () => {
+      fit();
+      onScroll();
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", onResize);
+    fit();
     draw();
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [count]);
 
-  const go = useCallback(
-    (i: number) => {
-      const wrap = pin.current;
-      const box = stage.current;
-      if (!wrap || !box) return;
-      const travel = wrap.offsetHeight - box.offsetHeight;
-      // the stage holds from where the wrapper's top meets the stage's sticky top (the bar)
-      const top = wrap.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(box).top) || 0);
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      window.scrollTo({ top: top + ((i + 0.5) / count) * travel, behavior: reduce ? "auto" : "smooth" });
-    },
-    [count],
-  );
-
-  return { pin, stage, step, go };
+  return { pin, stage, step, held };
 }
 
+// v0.38.4 — holds only where the content fits the window (`held`); the tabs' fill and jump retired with the tabs
 // v0.38.0 — scroll steps for "Who it's for": the step in view, each step's fill, a smooth jump to a step

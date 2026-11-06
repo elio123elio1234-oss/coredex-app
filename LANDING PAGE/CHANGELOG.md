@@ -1,5 +1,32 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.4 — 2026-11-07 — "Who it's for": back to its rows
+
+**Why.** The user, on v0.38.0–v0.38.2's tabs: "The change between them on scroll is too fast, I
+miss it myself. 'For patients / For clinicians / For clinics & health systems' is really small too;
+maybe put who it's for next to the SVG and not above the line? Something in the design doesn't
+work for me, it's very confusing and messy. Go back to the previous design, just the scroll between
+them or something."
+
+**What changed.**
+- **The rows are back:** the line icon, the audience in bold beside it ("For patients:"), the user's
+  full text, and the phone beside them. This is v0.37.10's look.
+- **The scroll moves through them.**
+  - All three stay in view. The row in view is in full ink and the other two rest faded (28 %),
+    with a 0.6 s fade.
+  - The reader sees what comes and can't miss a step.
+  - Each step has about two-thirds of a screen of scroll (1.95 screens for the three; v0.38.0 gave
+    each half a screen).
+- **The section holds only where the three rows fit the window under the bar.** Elsewhere (a phone,
+  a short landscape window) nothing holds and all three read plainly in full ink.
+- Retired: the tabs, their hairlines, the slides, the points and the tab jump.
+
+**Checked.**
+- Typecheck and build pass.
+- 1440 × 900 and 1366 × 657 hold, each step lighting its row; 960 × 600 and 390 × 760 read plainly.
+- No page errors.
+
+
 ## v0.38.3 — 2026-11-07 — the team, as a team
 
 **Why.** The user passed on advice about the team section. The black-and-white-to-colour hover

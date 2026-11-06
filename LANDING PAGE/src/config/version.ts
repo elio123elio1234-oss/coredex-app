@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.3";
+export const APP_VERSION = "0.38.4";
 export const APP_BUILD_LABEL =
-  "The team: 'Bridging deep-tech hardware engineering with frontline clinical expertise.'; a line under the founder";
+  "Who it's for: back to its rows; the scroll moves through them, the one in view in full ink";
 
+// v0.38.4 — "Who it's for" back to its rows, the scroll highlighting the one in view
 // v0.38.3 — the team's line, and a line of context under the founder
 // v0.38.2 — "Who it's for": the full texts back, as paragraphs
 // v0.38.1 — the timeline's words: hardware prototype, AI & algorithmic validation, patent-pending core tech, backed by the IIA

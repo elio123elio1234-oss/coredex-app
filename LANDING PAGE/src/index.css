@@ -1008,204 +1008,87 @@ section[id] {
   margin-top: 12px;
 }
 
-/* who it's for, one audience at a time: the stage holds under the bar while the visitor scrolls
-   through 1.5 screens, a step each half screen (lib/useScrollSteps). The change is a short fade
-   and a few pixels of rise, the points following one after another; a hairline under the tab in
-   view fills as the visitor reads on. */
-.who-pin {
+/* who it's for: the three rows (icon, the audience in bold beside it, the user's text). On a
+   screen that holds all three, the stage holds under the bar while the visitor scrolls through
+   about two screens, and the row in view is in full ink while the other two rest faded, so the
+   reader sees what comes and moves through them at their own pace (lib/useScrollSteps). Where the
+   rows do not fit the screen (a phone), nothing holds and all three read plainly. */
+.who-pin.is-held {
   position: relative;
-  height: calc(100vh - var(--bar) + 150vh);
-  height: calc(100svh - var(--bar) + 150svh);
+  height: calc(100vh - var(--bar) + 195vh);
+  height: calc(100svh - var(--bar) + 195svh);
 }
-.who-stage {
+.who-pin.is-held .who-stage {
   position: sticky;
   top: var(--bar);
   display: grid;
   align-items: center;
   height: calc(100vh - var(--bar));
   height: calc(100svh - var(--bar));
-  overflow: hidden;
 }
-.who-grid {
+.who-pin:not(.is-held) .who-stage {
+  padding-top: clamp(40px, 5vw, 64px);
+}
+.rows-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 32px clamp(40px, 6vw, 88px);
+  gap: 48px clamp(40px, 6vw, 88px);
   align-items: center;
 }
-.who-tabs {
-  display: flex;
-  gap: clamp(16px, 2.4vw, 32px);
-  margin-bottom: clamp(28px, 5vh, 52px);
-}
-.who-tab {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 8px 0 0;
-  border: 0;
-  background: none;
-  color: var(--ink-3);
-  font: 500 15px/1.35 var(--sans);
-  text-align: left;
-  cursor: pointer;
-  transition: color 0.35s ease;
-}
-.who-tab:hover,
-.who-tab.is-on {
-  color: var(--ink);
-}
-.who-tab:focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 6px;
-  border-radius: 2px;
-}
-.who-tab-line {
-  display: block;
-  height: 2px;
-  background: var(--hair);
-  overflow: hidden;
-}
-.who-tab-line span {
-  display: block;
-  height: 100%;
-  background: var(--ink);
-  transform: scaleX(var(--fill, 0));
-  transform-origin: left;
-}
-.who-slides {
+.rows {
   display: grid;
-}
-.who-slide {
-  grid-area: 1 / 1;
-  opacity: 0;
-  transform: translateY(12px);
-  pointer-events: none;
-  transition:
-    opacity 0.45s ease,
-    transform 0.7s var(--ease);
-}
-.who-slide.is-past {
-  transform: translateY(-12px);
-}
-.who-slide.is-on {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-  transition-delay: 0.12s;
-}
-.who-icon {
-  display: block;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 20px;
-  color: var(--blue);
-}
-.who-head {
-  margin: 0 0 22px;
-  max-width: 15em;
-  font-size: clamp(26px, 2.6vw, 38px);
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  color: var(--ink);
-}
-.who-text {
-  margin: 0;
-  max-width: 30em;
-  font-size: 17px;
-  line-height: 1.65;
-  color: var(--ink-2);
-}
-.who-slide.is-on .who-text {
-  animation: who-point 0.6s var(--ease) 0.2s both;
-}
-.who-points {
-  display: grid;
-  gap: 12px;
+  gap: 40px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.who-points li {
-  position: relative;
-  padding-left: 22px;
+.rows li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  transition: opacity 0.6s ease;
+}
+.who-pin.is-held .rows li:not(.is-on) {
+  opacity: 0.28;
+}
+.rows p {
+  margin: 0;
+  max-width: 28em;
   font-size: 17px;
-  line-height: 1.5;
+  line-height: 1.65;
   color: var(--ink-2);
 }
-.who-points li::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 0.6em;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--coral);
-}
-.who-slide.is-on .who-points li {
-  animation: who-point 0.6s var(--ease) both;
-}
-.who-slide.is-on .who-points li:nth-child(1) {
-  animation-delay: 0.2s;
-}
-.who-slide.is-on .who-points li:nth-child(2) {
-  animation-delay: 0.28s;
-}
-.who-slide.is-on .who-points li:nth-child(3) {
-  animation-delay: 0.36s;
-}
-@keyframes who-point {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.rows strong {
+  font-weight: 600;
+  color: var(--ink);
 }
 @media (max-width: 1023px) {
-  .who-grid {
+  .rows-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
   }
-  .who-grid .rows-media {
+  .rows-grid .rows-media {
     max-width: 520px;
-  }
-  .who-tab {
-    font-size: 13.5px;
-  }
-  .who-icon {
-    width: 36px;
-    height: 36px;
-    margin-bottom: 14px;
-  }
-  .who-points li,
-  .who-text {
-    font-size: 16px;
   }
 }
 /* a landscape window under 1024 px (150 % zoom) keeps the two columns, as the opening does */
 @media (max-width: 1023px) and (min-aspect-ratio: 5/4) {
-  .who-grid {
+  .rows-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .who-grid .rows-media {
+  .rows-grid .rows-media {
     max-width: none;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .who-slide,
-  .who-slide.is-past {
-    transform: none;
-    transition: opacity 0.2s ease;
+@media (max-width: 719px) {
+  .rows li {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 18px;
   }
-  .who-slide.is-on .who-points li,
-  .who-slide.is-on .who-text {
-    animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rows li {
+    transition: none;
   }
 }
 
@@ -2562,7 +2445,8 @@ section[id] {
   }
 }
 
-/* v0.38.3 — .person-bio, a line of context under a team member
+/* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.3 — .person-bio, a line of context under a team member
    v0.38.2 — "Who it's for": the full paragraphs back in the steps (.who-text)
    v0.38.0 — "Who it's for" one audience at a time, stepped by scroll (tabs, a filling hairline, points, a short fade); the old rows retired
    v0.37.6 — the swap retired ("Catch the Invisible."); the hold 1.7 screens
