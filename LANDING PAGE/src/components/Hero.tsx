@@ -36,9 +36,9 @@ export default function Hero() {
                 <span className="is-coral">Wearable Ease.</span>
               </h1>
               <p className="hero-lede">
-                A 6-lead ECG module on the strap of the watch you already wear.
-                It records when symptoms occur and sends the recording directly
-                to the clinician.
+                A clinical-grade 6-lead ECG integrated into your everyday watch
+                strap. Capture transient symptoms the exact moment they strike,
+                and share pristine data directly with your clinician.
               </p>
             </div>
             <figure className={`hero-media${photo ? " is-arm" : ""}`}>
@@ -103,6 +103,7 @@ export default function Hero() {
   );
 }
 
+// v0.37.4 — the opening line, the user's new wording ("A clinical-grade 6-lead ECG integrated into your everyday watch strap…")
 // v0.37.3 — both scenes on a "slide" (1440 x 828) scaled to the stage, the same composition at any zoom; the light behind it fills the stage; no "Concept imagery" caption
 // v0.37.2 — the scene cross-fades in over the unmoved hero
 // v0.37.1 — the day's light as its own layer (no white circle): the tablet glides into the scene

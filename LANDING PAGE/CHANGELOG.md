@@ -1,5 +1,31 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.4 — 2026-11-07 — the opening's new line; the slide no smaller
+
+**Why.** Two notes from the user:
+1. **The line.** "In the opening, put this sentence in place of the current one: A clinical-grade
+   6-lead ECG integrated into your everyday watch strap. Capture transient symptoms the exact moment
+   they strike, and share pristine data directly with your clinician."
+2. **v0.37.3's slide.** "Now everything looks worse and smaller." The user was right. The slide was
+   shrunk to fit the stage's height, and on a laptop's window, wide but short (1536 × 730 at
+   125 %), that meant about 80 % size, with every type and picture smaller than the page around
+   it.
+
+**What changed.**
+- The hero's line is the user's sentence, word for word.
+- The slide's top 215 px are empty slate (the copy starts below them). On a short window, up to
+  180 px of that is now cropped rather than the whole slide shrunk: the scale is
+  `min(width / 1440, height / 648)`, no longer `min(width / 1440, height / 828)`. A 1536 × 730
+  window now shows the slide at full size, and a 1150 × 540 one at 0.72 instead of 0.56.
+- The tablet scene is centred in the stage, so on a short window it crops evenly around the tablet
+  and its line.
+
+**Checked.**
+- Typecheck and build pass.
+- 1536 × 730, 1150 × 540 and 1440 × 900, the hero and the scene: nothing cut but the empty slate.
+- No page errors.
+
+
 ## v0.37.3 — 2026-11-07 — the opening as a slide; the team; no concept captions
 
 **Why.** Three notes from the user:
