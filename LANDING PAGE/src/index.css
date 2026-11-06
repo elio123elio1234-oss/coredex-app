@@ -677,11 +677,12 @@ section[id] {
   height: calc(100svh - var(--bar) + 240svh);
 }
 .hero-stage {
+  /* never taller than the window under the bar (v0.37.2 held a 560 px floor, so on a short window
+     the hero's lower edge sat below the screen while the scene began) */
   position: sticky;
   top: var(--bar);
   height: calc(100vh - var(--bar));
   height: calc(100svh - var(--bar));
-  min-height: 560px;
   overflow: hidden;
   background: var(--slate);
 }
@@ -689,84 +690,49 @@ section[id] {
   height: 100%;
   min-height: 0;
 }
-/* each scene on its own slide, isolated, in order: the hero, the day's light (the whole stage),
-   the scene */
+/* a short stage takes its space from the copy's padding first */
+.hero-pin .hero-copy {
+  padding-top: clamp(16px, 7vh, 72px);
+  padding-bottom: clamp(16px, 7vh, 72px);
+}
+/* each scene on its own layer, isolated, in order: the hero, the day's light, the scene */
 .hero-slide {
   position: absolute;
   inset: 0;
   isolation: isolate;
 }
-/* wide screens: the slide is laid out once at 1440 x 828 (a 1440 x 900 window under the bar) and
-   scaled as a whole to the stage, anchored to its lower edge, so the hand still rises from the
-   band's edge and every zoom and window shows the same composition (the user: "like a slide").
-   Inside it, the page's width-based sizes take their 1440 px values, and on a landscape window
-   under 1024 px (a laptop at 150 % zoom) the tablet and phone rules are undone, so the slide is
-   the same everywhere a window is wider than tall. */
-@media (min-width: 1024px), (min-aspect-ratio: 5/4) {
-  .hero-slide {
-    --gutter: 48px;
-    --edge: 144px;
-    inset: auto auto 0 50%;
-    width: 1440px;
-    height: 828px;
-    transform: translateX(-50%) scale(var(--k, 1));
-    transform-origin: 50% 100%;
-  }
-  .hero-slide .hero {
+/* a landscape window under 1024 px (a laptop at 150 % zoom) keeps the opening side by side: the
+   stacked tablet layout is for portrait screens, and in a short, wide window it pushed the hand
+   below the screen. The sizes still follow the window, as everywhere on the page. */
+@media (max-width: 1023px) and (min-aspect-ratio: 5/4) {
+  .hero-pin .hero {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  /* the scene is centred in the stage, not anchored to its edge: on a short window the slide's
-     top and bottom are cropped evenly around the tablet and its line */
-  .hero-slide.is-moment {
-    inset: 50% auto auto 50%;
-    transform: translate(-50%, -50%) scale(var(--k, 1));
-    transform-origin: 50% 50%;
+  .hero-pin .hero-copy {
+    padding-left: var(--edge);
+    padding-right: clamp(24px, 4vw, 64px);
   }
-  .hero-slide .hero-copy {
-    padding: 72px 58px 72px 144px;
+  .hero-pin .hero-media.is-arm {
+    padding: 0 var(--gutter);
   }
-  .hero-slide .chip {
-    margin: 0 0 32px;
-    padding: 11px 22px;
-    font-size: 13px;
-  }
-  .hero-slide .hero-lede {
-    margin: 24px 0 40px;
-  }
-  .hero-slide .hero-media.is-arm {
-    padding: 0 48px;
-  }
-  .hero-slide .hero-title {
-    font-size: 60px;
-  }
-  .hero-slide .hero-lede {
-    font-size: 19px;
-  }
-  .hero-slide .hero-arm {
-    height: 606px;
+  .hero-pin .hero-arm {
+    height: min(397px, calc((100svh - var(--bar)) * 0.78));
     margin-top: 0;
-    transform: translateX(-76px);
+    transform: translateX(-5.3vw);
   }
-  .hero-slide .hero-system {
-    width: 403px;
+  .hero-pin .hero-system {
+    width: 28vw;
     margin: 12% -20% 0 0;
-    transform: translateX(-16px);
+    transform: translateX(-1.1vw);
   }
-  .hero-slide .hm-inner {
+  .hero-pin .hm-inner {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
     align-content: normal;
-    gap: 72px;
   }
-  .hero-slide .hm-media {
+  .hero-pin .hm-media {
     max-width: none;
   }
-  .hero-slide .hm-title {
-    font-size: 63px;
-  }
-  .hero-slide .hm-text {
-    font-size: 18.7px;
-  }
-  .hero-slide .hm-media .hero-system {
+  .hero-pin .hm-media .hero-system {
     width: 100%;
     margin: 0;
     transform: none;
@@ -2480,7 +2446,8 @@ section[id] {
   }
 }
 
-/* v0.37.4 — the slide crops its empty top on short windows (no shrinking); the scene centred
+/* v0.37.5 — the slide withdrawn (it fought the browser's zoom); the stage never taller than the window; a landscape window keeps the opening side by side
+   v0.37.4 — the slide crops its empty top on short windows (no shrinking); the scene centred
    v0.37.3 — the opening on a slide scaled to the stage (the same composition at any zoom)
    v0.37.2 — the opening's transition as fades in turns (the hero's content out, the light, the screen, the line in)
    v0.37.1 — the opening's transition without the white circle: the tablet glides, the light changes behind it

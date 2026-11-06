@@ -1,5 +1,37 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.5 — 2026-11-07 — the slide withdrawn; the opening fits at every zoom
+
+**Why.** The user: "Sorry, no. When I zoom in or out it still changes the hand's height and the
+size of the text. If it can't be done, say so and we'll go back to the original version without
+it. I just want smooth access for everyone."
+
+It can't be done without a cost. The browser's zoom is there so people can make the text bigger.
+A page that keeps its text the same size at every zoom refuses exactly the readers who need it
+(WCAG 1.4.4, resize text), the opposite of "access for everyone". The top bar zooms either way,
+so the slide also kept changing size beneath it. So v0.37.3–v0.37.4's slide is gone. The opening
+uses the page's own sizing again and follows the zoom like the rest of the page.
+
+**What changed.**
+- **The user's original problem is fixed at its cause.** At 100 % zoom the transition began
+  before the hero's lower edge was on screen. The held stage had a 560 px floor, so on a short
+  window it was taller than the screen. That floor is gone: the stage is exactly the window under
+  the bar, and a short stage takes its space from the copy's padding first.
+- **Landscape windows under 1024 px** (a laptop at 150 % or 175 % zoom) keep the opening side by
+  side. The stacked tablet layout is for portrait screens, and in a wide, short window it pushed
+  the hand below the screen. That was true of the original version too.
+- Everything else in v0.37.x stays: the new line, the quiet fades, the team, no captions.
+
+**Checked.**
+- Typecheck and build pass.
+- Headless Chrome at:
+  - 1440 × 900 (100 %), 1152 × 720 (125 %), 960 × 600 (150 %) and 823 × 514 (175 %);
+  - 1536 × 730, 1150 × 540 and 1024 × 768;
+  - 768 × 1024 and 390 × 760.
+- At each, the hero is whole on screen, hand included, before the scene starts, and the scene
+  fits. No page errors.
+
+
 ## v0.37.4 — 2026-11-07 — the opening's new line; the slide no smaller
 
 **Why.** Two notes from the user:

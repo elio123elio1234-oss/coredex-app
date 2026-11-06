@@ -103,6 +103,7 @@ export default function Hero() {
   );
 }
 
+// v0.37.5 — the slide's scaling withdrawn (its wrappers stay as the scene's layers)
 // v0.37.4 — the opening line, the user's new wording ("A clinical-grade 6-lead ECG integrated into your everyday watch strap…")
 // v0.37.3 — both scenes on a "slide" (1440 x 828) scaled to the stage, the same composition at any zoom; the light behind it fills the stage; no "Concept imagery" caption
 // v0.37.2 — the scene cross-fades in over the unmoved hero

@@ -30,15 +30,6 @@ const SCREEN = [0.3, 0.42] as const; // the clinician's screen fades in
 const COPY = [0.36, 0.48] as const; // the line fades in, rising a few pixels
 export const SWAP_AT = 0.66; // "in your hands" → "on your hand"
 
-/* the slide: on wide screens both scenes are laid out once at this size and scaled to the stage
-   as a whole, so every zoom and window shows the same composition (index.css, .hero-slide) */
-const SLIDE_W = 1440;
-const SLIDE_H = 828;
-/* the slide's top is empty slate (the hero's copy starts 215 px down); on a short window up to 180
-   px of it is cropped rather than the whole slide shrunk to fit (v0.37.3 shrank it, and on a
-   laptop's wide, short window everything came out smaller: the user, "worse and smaller") */
-const SLIDE_SPARE = 180;
-
 export function useHeroScene() {
   const pin = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -58,11 +49,6 @@ export function useHeroScene() {
     let raf = 0;
     let swapped = false;
     let shown = false;
-
-    const fit = () => {
-      const k = Math.min(box.clientWidth / SLIDE_W, box.clientHeight / (SLIDE_H - SLIDE_SPARE));
-      box.style.setProperty("--k", k.toFixed(4));
-    };
 
     const draw = () => {
       raf = 0;
@@ -103,16 +89,11 @@ export function useHeroScene() {
       if (!raf) raf = requestAnimationFrame(draw);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    const onResize = () => {
-      fit();
-      onScroll();
-    };
-    window.addEventListener("resize", onResize);
-    fit();
+    window.addEventListener("resize", onScroll);
     draw();
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
@@ -120,6 +101,7 @@ export function useHeroScene() {
   return { pin, stage, moment };
 }
 
+// v0.37.5 — the slide withdrawn: the page answers the browser's zoom like any page (the user: "smooth access for everyone")
 // v0.37.4 — the slide crops its empty top on short windows instead of shrinking
 // v0.37.3 — the slide's scale (--k) from the stage; a longer hold on the whole hero before the fades
 // v0.37.2 — fades in turns: the hero's content out, the light in, the screen in, the line in; nothing moves
