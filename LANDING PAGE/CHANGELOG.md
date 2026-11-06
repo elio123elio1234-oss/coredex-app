@@ -1,5 +1,21 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.9 — 2026-11-07 — "Universal Fit. Clinical Power."
+
+**Why.** The user: in the lower blue rectangle, in place of "Our solution", use the following
+headline and body.
+
+**What changed.** The navy card over the grey band now reads, word for word:
+- **Universal Fit. Clinical Power.**
+- "Cyphix is designed to fit your lifestyle, not disrupt it. Forget cumbersome wires and clinical
+  setups. Our 6-lead module seamlessly integrates with the watch you already own—smart or
+  analog—or works beautifully as a standalone bracelet."
+
+The section keeps its anchor (`#solution`), so the bar's "Product" link still lands on it.
+
+**Checked.** Typecheck and build pass; the card at 1440 and 390 wide.
+
+
 ## v0.37.8 — 2026-11-07 — the need names the blind spot
 
 **Why.** The user passed on advice about the section with the physician's photograph. The photo

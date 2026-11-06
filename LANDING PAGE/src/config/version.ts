@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.37.8";
+export const APP_VERSION = "0.37.9";
 export const APP_BUILD_LABEL =
-  "The need: 'The Cardiac Diagnostic Blind Spot.' in place of the WHO statistic";
+  "The navy card: 'Universal Fit. Clinical Power.' in place of 'Our solution'";
 
+// v0.37.9 — the navy card's words, the user's
 // v0.37.8 — the need names the diagnostic blind spot
 // v0.37.7 — the IP fact without "Tnufa", for an international reader
 // v0.37.6 — "Catch the Invisible." in the tablet scene (the swap retired); the haze on scrolling back fixed
