@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.37.2";
+export const APP_VERSION = "0.37.3";
 export const APP_BUILD_LABEL =
-  "The opening's transition as quiet fades in turns: nothing moves, nothing overlaps";
+  "The opening as a slide, the same at any zoom; the team's roles; no 'Concept imagery' captions";
 
+// v0.37.3 — the opening on a slide scaled to the window; electrical & electronics engineer, Clinical Advisor; no concept captions
 // v0.37.2 — fades in turns: the hero's content out, the light, the screen, the line in; nothing moves
 // v0.37.1 — no white circle: the hand lowers, the tablet glides, the light changes behind it
 // v0.37.0 — the opening as a scroll scene; no hero button; the market fact as an icon; the sharper phone; the watches to /visualizations; the version without its capsule

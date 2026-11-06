@@ -8,7 +8,7 @@ import portraitTamir from "../assets/img/portrait-tamir.webp";
 const PEOPLE = [
   {
     name: "Elio El Hassrouny",
-    role: ["Founder & CEO", "ex-Samsung R&D"],
+    role: ["Founder & CEO", "Electrical & Electronics Engineer"],
     src: portraitElio,
     w: 640,
     h: 800,
@@ -17,7 +17,7 @@ const PEOPLE = [
   },
   {
     name: "Dr. Tamir Wolf, MD",
-    role: ["External Clinical Advisor"],
+    role: ["Clinical Advisor"],
     src: portraitTamir,
     w: 320,
     h: 400,
@@ -33,7 +33,7 @@ export default function Team() {
           <h2 id="team-title" className="h2">
             The team.
           </h2>
-          <p className="body-lg">Engineering from Samsung R&amp;D, with a physician as clinical advisor.</p>
+          <p className="body-lg">An electrical and electronics engineer, with a physician as clinical advisor.</p>
         </header>
         <ul className="people">
           {PEOPLE.map((p) => (
@@ -67,6 +67,7 @@ export default function Team() {
   );
 }
 
+// v0.37.3 — the founder an electrical & electronics engineer (no "ex-Samsung R&D"); the advisor without "External" (the user)
 // v0.21.0 — the portraits rest in black and white on desktop and turn to colour under the pointer (styles in index.css)
 // v0.7.0 — heading over two portrait-and-name rows; the founder's standing shot zoomed to match the advisor's headshot
 // v0.6.0 — the one-pager's team band: heading, then portrait + name + role for each person

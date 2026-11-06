@@ -24,11 +24,16 @@ const smooth = (a: number, b: number, v: number) => {
 };
 
 /* beats, as progress through the wrapper's travel */
-const OUT = [0.06, 0.18] as const; // the hero's copy, hand and tablet fade out
-const LIGHT = [0.16, 0.3] as const; // the day's light fades in
-const SCREEN = [0.26, 0.4] as const; // the clinician's screen fades in
-const COPY = [0.32, 0.46] as const; // the line fades in, rising a few pixels
-export const SWAP_AT = 0.64; // "in your hands" → "on your hand"
+const OUT = [0.12, 0.24] as const; // after a hold on the whole hero: its copy, hand and tablet fade out
+const LIGHT = [0.22, 0.34] as const; // the day's light fades in
+const SCREEN = [0.3, 0.42] as const; // the clinician's screen fades in
+const COPY = [0.36, 0.48] as const; // the line fades in, rising a few pixels
+export const SWAP_AT = 0.66; // "in your hands" → "on your hand"
+
+/* the slide: on wide screens both scenes are laid out once at this size and scaled to the stage
+   as a whole, so every zoom and window shows the same composition (index.css, .hero-slide) */
+const SLIDE_W = 1440;
+const SLIDE_H = 828;
 
 export function useHeroScene() {
   const pin = useRef<HTMLDivElement>(null);
@@ -43,12 +48,17 @@ export function useHeroScene() {
     const hero = Array.from(
       box.querySelectorAll<HTMLElement>(".hero .hero-copy, .hero .hero-arm, .hero .hero-system, .hero .media-note"),
     );
-    const bg = scene.querySelector<HTMLElement>(".hm-bg");
+    const bg = box.querySelector<HTMLElement>(".hm-bg");
     const screen = scene.querySelector<HTMLElement>(".hm-media");
     const words = scene.querySelector<HTMLElement>(".hm-copy");
     let raf = 0;
     let swapped = false;
     let shown = false;
+
+    const fit = () => {
+      const k = Math.min(box.clientWidth / SLIDE_W, box.clientHeight / SLIDE_H);
+      box.style.setProperty("--k", k.toFixed(4));
+    };
 
     const draw = () => {
       raf = 0;
@@ -89,11 +99,16 @@ export function useHeroScene() {
       if (!raf) raf = requestAnimationFrame(draw);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    const onResize = () => {
+      fit();
+      onScroll();
+    };
+    window.addEventListener("resize", onResize);
+    fit();
     draw();
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
@@ -101,6 +116,7 @@ export function useHeroScene() {
   return { pin, stage, moment };
 }
 
+// v0.37.3 — the slide's scale (--k) from the stage; a longer hold on the whole hero before the fades
 // v0.37.2 — fades in turns: the hero's content out, the light in, the screen in, the line in; nothing moves
 // v0.37.1 — no white circle: the hand lowers, the tablet glides into the scene, the light changes behind it
 // v0.37.0 — the opening as a scroll scene: the hero, the light and the clinician's screen, the swap to "on your hand"

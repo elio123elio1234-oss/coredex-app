@@ -59,7 +59,7 @@ export default function WhoFor() {
                 decoding="async"
               />
             )}
-            <figcaption className="media-note">{photo ? "Concept imagery" : "The Cyphix app · limb-lead view"}</figcaption>
+            {!photo && <figcaption className="media-note">The Cyphix app · limb-lead view</figcaption>}
           </figure>
         </div>
       </div>
@@ -67,5 +67,6 @@ export default function WhoFor() {
   );
 }
 
+// v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.37.0 — the app's limb-lead phone in the user's sharper image (1719 x 871), same size on the page
 // v0.9.0 — AliveCor-style "who it's for": patients, clinicians, clinics; photo slot "clinic" (interim: the app screen)

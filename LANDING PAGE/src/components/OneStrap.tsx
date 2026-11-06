@@ -286,7 +286,6 @@ export default function OneStrap() {
               </li>
             ))}
           </ul>
-          <p className="ss-note">Concept rendering from the Cyphix 3D model</p>
         </div>
       </section>
     );
@@ -329,13 +328,13 @@ export default function OneStrap() {
             </li>
           ))}
         </ol>
-        <p className="ss-note">Concept rendering from the Cyphix 3D model, rendered live</p>
         {mode === "idle" && <span className="ss-loading" aria-hidden="true" />}
       </div>
     </section>
   );
 }
 
+// v0.37.3 — no "Concept rendering" note (the user: the labels are obvious; the footer's small print covers them)
 // v0.35.0 — moved off the home page onto /one-strap (src/pages/OneStrapPage); unchanged otherwise
 // v0.33.0 — back to the v0.27.0 journey the user called "really beautiful" (left-aligned copy in the page's own type, the product right, the chapters), with only the user's notes on it: no lines over the product (the six-leads chapter withdrawn), no white pool under it, each move given more scroll, the tablet writing live like a monitor
 // v0.27.0 — the journey in five chapters: the moment (night, the electrodes), the strap, six leads (the hexaxial axes over the analog's twelve hours), ours, your clinician (day, the app on a tablet)

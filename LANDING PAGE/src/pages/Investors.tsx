@@ -115,7 +115,6 @@ export default function Investors() {
         <section className="split" aria-labelledby="need-title">
           <figure className="split-media is-soft">
             <img src={needDoor} width={585} height={559} alt="An open door between a clinic room and a living room, an ECG line passing through it." loading="lazy" decoding="async" />
-            <figcaption className="media-note">Concept imagery</figcaption>
           </figure>
           <div className="split-copy">
             <h2 id="need-title" className="statement">
@@ -228,7 +227,7 @@ export default function Investors() {
         <NextLinks
           links={[
             { href: "/technology", title: "Technology", text: "How a strap records a 6-lead ECG" },
-            { href: "/#team", title: "The team", text: "Engineering from Samsung R&D, a physician as clinical advisor" },
+            { href: "/#team", title: "The team", text: "An electrical and electronics engineer, a physician as clinical advisor" },
           ]}
         />
         <ContactForm />
@@ -238,4 +237,5 @@ export default function Investors() {
   );
 }
 
+// v0.37.3 — the team link without Samsung; no "Concept imagery" caption (the user)
 // v0.35.0 — Investors: the need, today's compromise, the market, the business model, what has been done and what comes next, from the investor deck (no round amount, no partner named)

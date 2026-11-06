@@ -20,7 +20,6 @@ export default function Need() {
             loading="lazy"
             decoding="async"
           />
-          <figcaption className="media-note">Concept imagery</figcaption>
         </figure>
       ) : (
         <div className="split-media is-figure" aria-hidden="true">
@@ -41,6 +40,7 @@ export default function Need() {
   );
 }
 
+// v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.13.0 — the user's image fills the slot (a physician reviewing a recording), cropped to keep the laptop
 // v0.9.0 — interim panel is the "1 in 3" figure on navy, not a repeated render
 // v0.9.0 — AliveCor-style split: photo slot "home" left, the need right (the comparison moved to Compare)

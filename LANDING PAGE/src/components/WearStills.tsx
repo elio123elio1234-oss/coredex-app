@@ -23,9 +23,9 @@ export default function WearStills({ className = "" }: { className?: string }) {
           <img key={s.alt} src={s.src} alt={s.alt} width={s.w} height={621} loading="lazy" decoding="async" />
         ))}
       </div>
-      <figcaption className="media-note">Concept imagery</figcaption>
     </figure>
   );
 }
 
+// v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.37.0 — the four watches out of "Our solution" (Product.tsx v0.12.0), onto their own page

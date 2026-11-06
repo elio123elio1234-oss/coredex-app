@@ -21,71 +21,89 @@ export default function Hero() {
   const photo = PHOTOS.hero;
   const { pin, stage, moment } = useHeroScene();
   // reduced motion: the clinician's screen holds still, its recording in full
-  const [live] = useState(() => !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [live] = useState(
+    () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   return (
     <div ref={pin} className="hero-pin">
       <div ref={stage} className="hero-stage">
-        <section className="hero" aria-labelledby="hero-title">
-          <div className="hero-copy">
-            <p className="chip">In development · Not for sale</p>
-            <h1 id="hero-title" className="hero-title">
-              Clinical Depth.
-              <span className="is-coral">Wearable Ease.</span>
-            </h1>
-            <p className="hero-lede">
-              A 6-lead ECG module on the strap of the watch you already wear. It records when
-              symptoms occur and sends the recording directly to the clinician.
-            </p>
-          </div>
-          <figure className={`hero-media${photo ? " is-arm" : ""}`}>
-            {photo ? (
-              <>
-                <HeroTablet />
-                <img className="hero-arm" src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} decoding="async" />
-              </>
-            ) : (
-              <img
-                className="hero-render"
-                src={heroRender}
-                width={1289}
-                height={1358}
-                alt="The Cyphix strap on a smartwatch: the watch shows CYPHIX 6-lead ECG, the module with its electrodes sits on the band beside it."
-                decoding="async"
-              />
-            )}
-            <figcaption className="media-note">{photo ? "Concept imagery" : "Concept rendering"}</figcaption>
-          </figure>
-        </section>
+        <div className="hero-slide">
+          <section className="hero" aria-labelledby="hero-title">
+            <div className="hero-copy">
+              <p className="chip">In development · Not for sale</p>
+              <h1 id="hero-title" className="hero-title">
+                Clinical Depth.
+                <span className="is-coral">Wearable Ease.</span>
+              </h1>
+              <p className="hero-lede">
+                A 6-lead ECG module on the strap of the watch you already wear.
+                It records when symptoms occur and sends the recording directly
+                to the clinician.
+              </p>
+            </div>
+            <figure className={`hero-media${photo ? " is-arm" : ""}`}>
+              {photo ? (
+                <>
+                  <HeroTablet />
+                  <img
+                    className="hero-arm"
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={photo.w}
+                    height={photo.h}
+                    decoding="async"
+                  />
+                </>
+              ) : (
+                <img
+                  className="hero-render"
+                  src={heroRender}
+                  width={1289}
+                  height={1358}
+                  alt="The Cyphix strap on a smartwatch: the watch shows CYPHIX 6-lead ECG, the module with its electrodes sits on the band beside it."
+                  decoding="async"
+                />
+              )}
+            </figure>
+          </section>
+        </div>
 
-        <section
-          ref={moment}
-          className="hero-moment"
-          aria-labelledby="moment-title"
-          aria-hidden="true"
-          style={{ display: "none" }}
-        >
-          <div className="hm-bg" aria-hidden="true" />
-          <div className="wrap hm-inner">
-            <div className="hm-copy">
-              <h2 id="moment-title" className="hm-title">
-                The moment,
-                <span className="hm-swap">
-                  <span className="hm-was">in your hands.</span>
-                  <span className="hm-now">on your hand.</span>
-                </span>
-              </h2>
-              <p className="hm-text">Recorded when it happens, sent straight to the clinician.</p>
+        {/* the day's light fills the whole stage, behind the scene's slide */}
+        <div className="hm-bg" aria-hidden="true" />
+
+        <div className="hero-slide is-moment">
+          <section
+            ref={moment}
+            className="hero-moment"
+            aria-labelledby="moment-title"
+            aria-hidden="true"
+            style={{ display: "none" }}
+          >
+            <div className="wrap hm-inner">
+              <div className="hm-copy">
+                <h2 id="moment-title" className="hm-title">
+                  The moment,
+                  <span className="hm-swap">
+                    <span className="hm-was">in your hands.</span>
+                    <span className="hm-now">on your hand.</span>
+                  </span>
+                </h2>
+                <p className="hm-text">
+                  Recorded when it happens, sent straight to the clinician.
+                </p>
+              </div>
+              <div className="hm-media">
+                <HeroTablet live={live} full />
+              </div>
             </div>
-            <div className="hm-media">
-              <HeroTablet live={live} full />
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );
 }
 
+// v0.37.3 — both scenes on a "slide" (1440 x 828) scaled to the stage, the same composition at any zoom; the light behind it fills the stage; no "Concept imagery" caption
 // v0.37.2 — the scene cross-fades in over the unmoved hero
 // v0.37.1 — the day's light as its own layer (no white circle): the tablet glides into the scene
 // v0.37.0 — "Request the deck" leaves the hero (the user); the band holds on scroll and turns into the clinician's screen, "The moment, in your hands." then "on your hand."

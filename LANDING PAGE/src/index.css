@@ -689,6 +689,82 @@ section[id] {
   height: 100%;
   min-height: 0;
 }
+/* each scene on its own slide, isolated, in order: the hero, the day's light (the whole stage),
+   the scene */
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+}
+/* wide screens: the slide is laid out once at 1440 x 828 (a 1440 x 900 window under the bar) and
+   scaled as a whole to the stage, anchored to its lower edge, so the hand still rises from the
+   band's edge and every zoom and window shows the same composition (the user: "like a slide").
+   Inside it, the page's width-based sizes take their 1440 px values, and on a landscape window
+   under 1024 px (a laptop at 150 % zoom) the tablet and phone rules are undone, so the slide is
+   the same everywhere a window is wider than tall. */
+@media (min-width: 1024px), (min-aspect-ratio: 5/4) {
+  .hero-slide {
+    --gutter: 48px;
+    --edge: 144px;
+    inset: auto auto 0 50%;
+    width: 1440px;
+    height: 828px;
+    transform: translateX(-50%) scale(var(--k, 1));
+    transform-origin: 50% 100%;
+  }
+  .hero-slide .hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .hero-slide .hero-copy {
+    padding: 72px 58px 72px 144px;
+  }
+  .hero-slide .chip {
+    margin: 0 0 32px;
+    padding: 11px 22px;
+    font-size: 13px;
+  }
+  .hero-slide .hero-lede {
+    margin: 24px 0 40px;
+  }
+  .hero-slide .hero-media.is-arm {
+    padding: 0 48px;
+  }
+  .hero-slide .hero-title {
+    font-size: 60px;
+  }
+  .hero-slide .hero-lede {
+    font-size: 19px;
+  }
+  .hero-slide .hero-arm {
+    height: 606px;
+    margin-top: 0;
+    transform: translateX(-76px);
+  }
+  .hero-slide .hero-system {
+    width: 403px;
+    margin: 12% -20% 0 0;
+    transform: translateX(-16px);
+  }
+  .hero-slide .hm-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    align-content: normal;
+    gap: 72px;
+  }
+  .hero-slide .hm-media {
+    max-width: none;
+  }
+  .hero-slide .hm-title {
+    font-size: 63px;
+  }
+  .hero-slide .hm-text {
+    font-size: 18.7px;
+  }
+  .hero-slide .hm-media .hero-system {
+    width: 100%;
+    margin: 0;
+    transform: none;
+  }
+}
 /* the journey's closing scene, its day: its light, its screen and its line fade in in turns
    once the hero's content has faded out (lib/useHeroScene); nothing moves but the line, by a few
    pixels */
@@ -2397,7 +2473,8 @@ section[id] {
   }
 }
 
-/* v0.37.2 — the opening's transition as fades in turns (the hero's content out, the light, the screen, the line in)
+/* v0.37.3 — the opening on a slide scaled to the stage (the same composition at any zoom)
+   v0.37.2 — the opening's transition as fades in turns (the hero's content out, the light, the screen, the line in)
    v0.37.1 — the opening's transition without the white circle: the tablet glides, the light changes behind it
    v0.37.0 — "Our solution"'s band empty, its watches on /visualizations; the version badge without its capsule; the opening as a scroll scene: the band holds, light opens into the clinician's screen, "in your hands." swaps to "on your hand."
    v0.35.0 — "Explore" in the bar (a panel hung from its lower edge; across the bar on tablets and phones), the section links scoped to the nav's own children; the pages behind it: the head, technology's steps, noise and strips, the next links, the investors' compromise, model, what has been done and the road ahead; the 3D page opens on its stage

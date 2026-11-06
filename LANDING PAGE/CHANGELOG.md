@@ -1,5 +1,45 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.3 — 2026-11-07 — the opening as a slide; the team; no concept captions
+
+**Why.** Three notes from the user:
+
+1. **The opening at 100 % zoom.** The transition started before the user had seen the hero's
+   lower part: "can the opening screen always keep the same proportions to the screen size, like
+   a slide, so whatever my zoom it always shows the same parts?"
+2. **The team.** "Remove ex-Samsung R&D and write that I'm an electrical and electronics engineer,
+   and for Tamir don't write External."
+3. **The captions.** "Wherever it says Concept imagery, remove it. It's obvious; no need to push
+   it everywhere."
+
+**What changed.**
+- **The slide.** On any window wider than tall, both scenes of the opening are laid out once at
+  1440 × 828 (a 1440 × 900 window under the bar) and scaled as a whole to the stage.
+  - The slide is anchored to the stage's lower edge, so the hand still rises from the band.
+  - Every zoom and window shows the same composition.
+  - Inside it, the page's width-based sizes take their 1440 px values, and on a landscape window
+    under 1024 px (150 % zoom) the tablet and phone rules are undone.
+  - The day's light now fills the whole stage behind the scene's slide.
+  - The fades start later (12 % of the travel instead of 6 %), so the whole hero holds first.
+  - Portrait phones and tablets keep their own layout.
+- **The team.** Elio: "Founder & CEO · Electrical & Electronics Engineer". Tamir: "Clinical
+  Advisor". The team's line and the Investors page's team link no longer mention Samsung either:
+  "An electrical and electronics engineer, with a physician as clinical advisor."
+- **The captions.** The "Concept imagery" captions are gone from the hero, the need, the
+  investors' door image and /visualizations. The 3D page's "Concept rendering…" notes are gone
+  too. The footer's small print still says once, for the whole site, that images are concept
+  imagery. "Illustrative recording." on the ECG screen stays: that one is about the signal, not
+  the picture.
+
+**Checked.**
+- Typecheck and build pass.
+- The opening and its scene in headless Chrome at:
+  - 1440 × 900 (100 %), 1152 × 720 (125 %), 960 × 600 (150 %) and 2150 × 1343 (67 %);
+  - 1920 × 950, 1366 × 657 and 1024 × 768;
+  - 390 × 760 and 768 × 1024.
+- The landscape ones show the same composition. No page errors.
+
+
 ## v0.37.2 — 2026-11-07 — the opening's transition, quiet
 
 **Why.** The user, on v0.37.1 (the hand lowering away, the tablet gliding into the scene): "now

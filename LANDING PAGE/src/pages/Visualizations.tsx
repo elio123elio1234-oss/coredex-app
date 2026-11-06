@@ -19,7 +19,7 @@ export default function Visualizations() {
           chip="Visualizations"
           title="One strap."
           accent="Four ways to wear it."
-          lede="On a smartwatch, on its own as a bracelet, on an analog watch, or as the Cyphix watch. Concept imagery."
+          lede="On a smartwatch, on its own as a bracelet, on an analog watch, or as the Cyphix watch."
         />
         <WearStills className="is-page" />
         <NextLinks
@@ -35,4 +35,5 @@ export default function Visualizations() {
   );
 }
 
+// v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.37.0 — the /visualizations page behind "Explore": the four watches, moved off the home page
