@@ -30,12 +30,12 @@ const ROWS = [
   },
 ];
 
-/* the wheel holds where the window has the room for it: 500 px under the bar side by side, 640 px
+/* the wheel holds where the window has the room for it: 500 px under the bar side by side, 540 px
    stacked (the heading, the wheel and the phone image under it); a shorter phone reads plainly */
 const HOLD = {
   wide: "(min-width: 1024px), (min-aspect-ratio: 5/4)",
   minRoom: 500,
-  minRoomStacked: 640,
+  minRoomStacked: 540,
 };
 
 export default function WhoFor() {
@@ -115,6 +115,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.8 — holds from 540 px stacked (an iPhone with Safari's bars shown has about 600 under the bar)
 // v0.38.7 — the wheel on a phone too (the user), stacked over the phone image, where the screen has 640 px under the bar
 // v0.38.6 — a wheel: the row in view centred, its neighbours tilted back and faded, the rest out of frame; slower (0.9 screen a row); clinics, clinicians, patients (the user)
 // v0.38.5 — the heading inside the held stage with its rows (the user: the gap between the heading and the screen)

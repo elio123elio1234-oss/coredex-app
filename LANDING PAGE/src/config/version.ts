@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.7";
+export const APP_VERSION = "0.38.8";
 export const APP_BUILD_LABEL =
-  "Phones: no white band in the opening; the physician in frame; the wheel on a phone too";
+  "Phones: the hand fits under the copy; the physician re-centred; the wheel holds with Safari's bars shown";
 
+// v0.38.8 — phones: the hand fits, the physician at 56 %, the wheel from 540 px
 // v0.38.7 — phones: the opening's stage in the large viewport, the need's photograph re-centred, the wheel held
 // v0.38.6 — "Who it's for" on a wheel, slower, clinics first
 // v0.38.5 — "Who it's for": the heading inside the held stage

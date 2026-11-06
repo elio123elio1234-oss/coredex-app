@@ -1,5 +1,38 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.8 — 2026-11-07 — the phone pass, second round
+
+**Why.** The user, on an iPhone, after v0.38.7: "Still, still the scrolling doesn't work for me.
+You moved the doctor's picture too far left." The screenshot showed the opening: no white band any
+more, but the hand cut off at the band's lower edge.
+
+**What changed.**
+- **The hand.**
+  - On a stacked layout the hero's copy and the forearm image (347 px) together ran taller than
+    the window under the bar, with Safari's bars shown. The band cut the hand.
+  - The hero's rows are now the copy and the rest of the space, and the forearm shrinks to fit that
+    rest (`max-height: 100%`).
+  - The tablet scales with the window's height (`min(54vw, 46svh)`), so both stand whole on any
+    phone.
+- **The physician.** v0.38.7's 72 % moved the photograph too far. The narrow screens' focus is now
+  56 %, between it and the desktop's 14 %.
+- **The scroll (the wheel).**
+  - v0.38.7 held the wheel only where 640 px stood under the bar. An iPhone with Safari's bars shown
+    has about 600, so it never held there.
+  - It now holds from 540 px.
+  - On a phone the wheel is a little shorter (`clamp(250px, 40svh, 360px)`), the phone image under
+    it at most 300 px wide, and the text 16 px.
+  - The fade at the wheel's edges is thinner there (7 %), so a long row's first and last lines stay
+    whole.
+  - An iPhone SE now holds too.
+
+**Checked.**
+- Typecheck and build pass.
+- Headless Chrome at 390 × 660 and 390 × 740 (an iPhone with Safari's bars shown) and 375 × 667:
+  the hero whole, the physician in frame, each notch of the wheel. No page errors.
+- Only the user's iPhone shows Safari's own toolbar behaviour.
+
+
 ## v0.38.7 — 2026-11-07 — the phone pass
 
 **Why.** The user, on an iPhone: "Now it's perfect! On the phone there are a few small bugs:

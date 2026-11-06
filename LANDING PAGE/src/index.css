@@ -700,6 +700,27 @@ section[id] {
   padding-top: clamp(16px, 7vh, 72px);
   padding-bottom: clamp(16px, 7vh, 72px);
 }
+/* stacked (a phone, a portrait tablet), the hand and the tablet take only the room the copy leaves
+   and shrink to fit it: on an iPhone with Safari's bars shown the hand ran past the band's lower
+   edge and was cut (v0.38.7) */
+@media (max-width: 1023px) and (max-aspect-ratio: 5/4) {
+  .hero-pin .hero {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .hero-pin .hero-media.is-arm {
+    min-height: 0;
+  }
+  .hero-pin .hero-arm {
+    height: auto;
+    max-height: 100%;
+    margin-top: 0;
+  }
+  .hero-pin .hero-system {
+    align-self: flex-end;
+    width: min(54vw, 46svh);
+    margin-bottom: 12%;
+  }
+}
 /* each scene on its own layer, isolated, in order: the hero, the day's light, the scene */
 .hero-slide {
   position: absolute;
@@ -867,7 +888,7 @@ section[id] {
    so the physician stays in the frame with the laptop (the user, on an iPhone) */
 @media (max-width: 1023px) {
   #need .split-media.is-photo img {
-    object-position: 72% 50%;
+    object-position: 56% 50%;
   }
 }
 /* over a photograph the note sits on a small ink chip, so it reads on light and dark */
@@ -1143,8 +1164,17 @@ section[id] {
    runs to six or eight lines; the phone image under it */
 @media (max-width: 1023px) and (max-aspect-ratio: 5/4) {
   .who-pin.is-held .rows {
-    --notch: 230px;
-    height: clamp(280px, 44svh, 380px);
+    --notch: 220px;
+    height: clamp(250px, 40svh, 360px);
+    /* a row nearly fills the wheel here: a thinner fade, so its first and last lines stay whole */
+    -webkit-mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent);
+  }
+  .who-pin.is-held .rows p {
+    font-size: 16px;
+  }
+  .who-pin.is-held .rows-grid .rows-media {
+    max-width: min(300px, 80vw);
   }
   .who-pin.is-held .rows-grid {
     gap: clamp(16px, 3svh, 28px);
@@ -2505,6 +2535,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.8 — phones: the hand fits under the copy; the physician at 56 %; the wheel holds with less room
    v0.38.7 — phones: the opening's stage in the large viewport (no white band), the need's photograph re-centred, the wheel held on a phone too
    v0.38.6 — "Who it's for" on a wheel (the row in view centred, its neighbours tilted back), 0.9 screen a row
    v0.38.5 — "Who it's for": the heading holds with its rows (no gap above the rows)
