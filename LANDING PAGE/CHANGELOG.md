@@ -1,5 +1,25 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.5 — 2026-11-07 — "Who it's for": no gap under the heading
+
+**Why.** The user: "Look at the gap you made between the heading and the screen."
+
+The heading stood outside the held stage, and the stage, a full window tall, centred its content.
+So when the section arrived there was an empty band of about 200 px between "Who it's for" and the
+rows. That was true of v0.38.0's tabs, and of v0.38.4's rows too.
+
+**What changed.**
+- The heading now holds with its rows, inside the stage. The two stand together in the middle of
+  the window, separated by the page's usual spacing.
+- On a short window that spacing gives a little first, so the whole still fits and holds: the
+  heading's margin is `clamp(28px, 4vh, 64px)` and the gap between rows is `clamp(24px, 4.5vh, 40px)`.
+
+**Checked.**
+- Typecheck and build pass.
+- 1440 × 900 and 1366 × 657 hold, the heading directly above the rows; 390 × 760 reads plainly.
+- No page errors.
+
+
 ## v0.38.4 — 2026-11-07 — "Who it's for": back to its rows
 
 **Why.** The user, on v0.38.0–v0.38.2's tabs: "The change between them on scroll is too fast, I

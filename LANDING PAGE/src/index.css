@@ -1026,8 +1026,13 @@ section[id] {
   height: calc(100vh - var(--bar));
   height: calc(100svh - var(--bar));
 }
-.who-pin:not(.is-held) .who-stage {
-  padding-top: clamp(40px, 5vw, 64px);
+/* held, the heading and the rows stand together in the middle of the stage; on a short window
+   their spacing gives a little first, so they still fit */
+.who-pin.is-held .rule-head {
+  margin-bottom: clamp(28px, 4vh, 64px);
+}
+.who-pin.is-held .rows {
+  gap: clamp(24px, 4.5vh, 40px);
 }
 .rows-grid {
   display: grid;
@@ -2446,6 +2451,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.5 — "Who it's for": the heading holds with its rows (no gap above the rows)
    v0.38.3 — .person-bio, a line of context under a team member
    v0.38.2 — "Who it's for": the full paragraphs back in the steps (.who-text)
    v0.38.0 — "Who it's for" one audience at a time, stepped by scroll (tabs, a filling hairline, points, a short fade); the old rows retired

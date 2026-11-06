@@ -32,41 +32,55 @@ export default function WhoFor() {
   const { pin, stage, step, held } = useScrollSteps(ROWS.length);
   return (
     <section className="section who" id="who" aria-labelledby="who-title">
-      <div className="wrap">
-        <div className="rule-head">
-          <h2 id="who-title" className="h2">
-            Who it's for
-          </h2>
-        </div>
-      </div>
       <div ref={pin} className={`who-pin${held ? " is-held" : ""}`}>
         <div ref={stage} className="who-stage">
-          <div className="wrap rows-grid">
-            <ul className="rows">
-              {ROWS.map(({ icon: Icon, lead, text }, i) => (
-                <li key={lead} className={i === step ? "is-on" : undefined}>
-                  <Icon className="row-icon" />
-                  <p>
-                    <strong>{lead}</strong> {text}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            <figure className={`rows-media${photo ? " is-photo" : " is-app"}`}>
-              {photo ? (
-                <img src={photo.src} alt={photo.alt} width={photo.w} height={photo.h} loading="lazy" decoding="async" />
-              ) : (
-                <img
-                  src={appLeads}
-                  width={1719}
-                  height={871}
-                  alt="The Cyphix app on a phone, landscape: a Limb Leads screen with six ECG traces labelled I, II, III, aVR, aVL and aVF."
-                  loading="lazy"
-                  decoding="async"
-                />
-              )}
-              {!photo && <figcaption className="media-note">The Cyphix app · limb-lead view</figcaption>}
-            </figure>
+          {/* the heading holds with its rows, so the gap between them is the page's own */}
+          <div className="wrap who-inner">
+            <div className="rule-head">
+              <h2 id="who-title" className="h2">
+                Who it's for
+              </h2>
+            </div>
+            <div className="rows-grid">
+              <ul className="rows">
+                {ROWS.map(({ icon: Icon, lead, text }, i) => (
+                  <li key={lead} className={i === step ? "is-on" : undefined}>
+                    <Icon className="row-icon" />
+                    <p>
+                      <strong>{lead}</strong> {text}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <figure
+                className={`rows-media${photo ? " is-photo" : " is-app"}`}
+              >
+                {photo ? (
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={photo.w}
+                    height={photo.h}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <img
+                    src={appLeads}
+                    width={1719}
+                    height={871}
+                    alt="The Cyphix app on a phone, landscape: a Limb Leads screen with six ECG traces labelled I, II, III, aVR, aVL and aVF."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                {!photo && (
+                  <figcaption className="media-note">
+                    The Cyphix app · limb-lead view
+                  </figcaption>
+                )}
+              </figure>
+            </div>
           </div>
         </div>
       </div>
@@ -74,6 +88,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.5 — the heading inside the held stage with its rows (the user: the gap between the heading and the screen)
 // v0.38.4 — back to the rows (the user: the tabs were tiny, the change too fast, "confusing and messy"; "go back to the previous design, just the scroll between them"): all three in view, the one in view in full ink
 // v0.38.2 — the full texts back, as paragraphs, not points (the user); the stepped tabs stay
 // v0.38.0 — one audience at a time, stepped by scroll (tabs with a filling hairline, a line and three points, a short fade); the user: "it reads long… points that change as you scroll, smooth and clean, gentle like Apple"
