@@ -1,5 +1,27 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.1 — 2026-11-06 — the opening's transition, without the white circle
+
+**Why.** The user, on v0.37.0's transition: the white circle "hurts the eye and feels a bit like
+2005 effects". It was a soft-edged circle of light opening out of the tablet, the same effect as
+the 3D journey's night-to-day. Here, on the slate band, it read as a glare.
+
+**What changed.**
+- No mask or overlay over the scene any more. The transition is now the product moving:
+  - the hand lowers out of the band whole (not see-through over the tablet), and the copy fades;
+  - the tablet itself glides from its place in the hero to its place beside the new line,
+    growing;
+  - the background changes from slate to the day's light behind the tablet, and its shadow
+    arrives with the light.
+- "The moment, in your hands." then rises in. The swap to "on your hand." is unchanged.
+- Technically, the scene's tablet is drawn from the hero tablet's measured place and size to its
+  own (one transform per frame). The hand-over between the two tablets happens with the hand
+  already gone, so it is unseen.
+
+**Checked.** Typecheck and build pass. Frames at 1440 × 900 and 390 × 760 through every beat; no
+page errors.
+
+
 ## v0.37.0 — 2026-11-06 — the opening as a scene; the watches to Explore
 
 **Why.** Six requests from the user, in one sitting:

@@ -689,18 +689,24 @@ section[id] {
   height: 100%;
   min-height: 0;
 }
-/* the journey's closing scene, its day: light from the hero's tablet, the screen rising in it */
+/* the journey's closing scene, its day: the light changes behind the hero's tablet as it glides
+   into place (lib/useHeroScene); no mask or overlay over the scene */
 .hero-moment {
-  --rise: 0;
   position: absolute;
   inset: 0;
   z-index: 2;
+  color: var(--ink);
+}
+.hm-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
   background:
     radial-gradient(60% 60% at 70% 50%, #ffffff, transparent 70%),
     linear-gradient(180deg, #f4f6f9 0%, #e7ecf3 100%);
-  color: var(--ink);
 }
 .hm-inner {
+  position: relative;
   height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
@@ -708,8 +714,7 @@ section[id] {
   gap: clamp(32px, 5vw, 88px);
 }
 .hm-copy {
-  opacity: var(--rise);
-  transform: translateY(calc((1 - var(--rise)) * 24px));
+  opacity: 0;
 }
 .hm-title {
   margin: 0;
@@ -772,15 +777,11 @@ section[id] {
   line-height: 1.6;
   color: var(--ink-2);
 }
-.hm-media {
-  opacity: var(--rise);
-  transform: translateY(calc((1 - var(--rise)) * 48px));
-}
 .hm-media .hero-system {
   width: 100%;
   margin: 0;
   transform: none;
-  filter: drop-shadow(0 30px 40px rgba(11, 26, 48, 0.18));
+  will-change: transform;
 }
 @media (max-width: 1023px) {
   .hm-inner {
@@ -2392,7 +2393,8 @@ section[id] {
   }
 }
 
-/* v0.37.0 — "Our solution"'s band empty, its watches on /visualizations; the version badge without its capsule; the opening as a scroll scene: the band holds, light opens into the clinician's screen, "in your hands." swaps to "on your hand."
+/* v0.37.1 — the opening's transition without the white circle: the tablet glides, the light changes behind it
+   v0.37.0 — "Our solution"'s band empty, its watches on /visualizations; the version badge without its capsule; the opening as a scroll scene: the band holds, light opens into the clinician's screen, "in your hands." swaps to "on your hand."
    v0.35.0 — "Explore" in the bar (a panel hung from its lower edge; across the bar on tablets and phones), the section links scoped to the nav's own children; the pages behind it: the head, technology's steps, noise and strips, the next links, the investors' compromise, model, what has been done and the road ahead; the 3D page opens on its stage
    v0.34.0 — the phone in the bar is a mark beside Instagram and LinkedIn, on every width; a click opens the number under it
    v0.33.0 — the scene's styles back to v0.27.0 (left-aligned copy in the page's type, the product right, the chapters, the day scene), less the six-leads overlay; 900svh

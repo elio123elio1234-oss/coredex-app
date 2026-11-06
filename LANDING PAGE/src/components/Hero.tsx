@@ -64,6 +64,7 @@ export default function Hero() {
           aria-hidden="true"
           style={{ display: "none" }}
         >
+          <div className="hm-bg" aria-hidden="true" />
           <div className="wrap hm-inner">
             <div className="hm-copy">
               <h2 id="moment-title" className="hm-title">
@@ -85,6 +86,7 @@ export default function Hero() {
   );
 }
 
+// v0.37.1 — the day's light as its own layer (no white circle): the tablet glides into the scene
 // v0.37.0 — "Request the deck" leaves the hero (the user); the band holds on scroll and turns into the clinician's screen, "The moment, in your hands." then "on your hand."
 // v0.19.0 — the tablet is a component: its screen drawn live as vectors (HeroTablet)
 // v0.18.0 — the tablet is built: the user's empty frame with the CYPHIX screen drawn in tools/tablet (1000 x 690)

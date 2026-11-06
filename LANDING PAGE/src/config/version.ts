@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.37.0";
+export const APP_VERSION = "0.37.1";
 export const APP_BUILD_LABEL =
-  "The opening holds on scroll: the clinician's screen, then 'in your hands' becomes 'on your hand'; the watches move to Explore";
+  "The opening's transition without the white circle: the hand lowers away, the tablet glides into the scene";
 
+// v0.37.1 — no white circle: the hand lowers, the tablet glides, the light changes behind it
 // v0.37.0 — the opening as a scroll scene; no hero button; the market fact as an icon; the sharper phone; the watches to /visualizations; the version without its capsule
 // v0.36.0 — live at cyphix.co (GoDaddy DNS → Vercel); share links moved there
 // v0.35.0 — "Explore": /one-strap, /technology and /investors; the 3D journey off the home page
