@@ -1,5 +1,23 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.8 — 2026-11-07 — the need names the blind spot
+
+**Why.** The user passed on advice about the section with the physician's photograph. The photo
+and the first two sentences of the paragraph work. The headline, "1 in 3 deaths worldwide is
+cardiovascular", is a generic WHO statistic: it says heart disease is common, not which problem
+Cyphix solves (missed transient events). Two rewrites were offered. Option 1, "the diagnostic gap",
+was the one recommended, and it is the one shipped (the user's standing rule: decide, don't ask).
+
+**What changed.**
+- Headline: "The Cardiac Diagnostic Blind Spot."
+- Paragraph: "Symptoms are often transient. By the time a patient reaches care, their ECG is
+  usually back to normal. Cyphix captures clinical-grade morphology at the exact moment of
+  symptom onset, giving cardiologists the definitive data they need to intervene."
+- The "1 in 3" statistic stays on the Investors page, with its WHO source.
+
+**Checked.** Typecheck and build pass; the section at 1440 wide.
+
+
 ## v0.37.7 — 2026-11-07 — the IP fact, for an international reader
 
 **Why.** The user passed on this advice about the blue facts band. "Tnufa" means nothing to an

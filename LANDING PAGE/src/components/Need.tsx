@@ -28,18 +28,19 @@ export default function Need() {
       )}
       <div className="split-copy">
         <h2 id="need-title" className="statement">
-          1 in 3 deaths worldwide is cardiovascular.
+          The Cardiac Diagnostic Blind Spot.
         </h2>
         <p className="body-lg">
-          Symptoms are often transient. By the time a patient reaches care, the ECG may be
-          normal. Cyphix records at the moment it happens, on the watch the patient is already
-          wearing.
+          Symptoms are often transient. By the time a patient reaches care, their ECG is usually
+          back to normal. Cyphix captures clinical-grade morphology at the exact moment of symptom
+          onset, giving cardiologists the definitive data they need to intervene.
         </p>
       </div>
     </section>
   );
 }
 
+// v0.37.8 — the need names the gap Cyphix closes: "The Cardiac Diagnostic Blind Spot." and its paragraph (the user's option 1, in place of the WHO statistic)
 // v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.13.0 — the user's image fills the slot (a physician reviewing a recording), cropped to keep the laptop
 // v0.9.0 — interim panel is the "1 in 3" figure on navy, not a repeated render

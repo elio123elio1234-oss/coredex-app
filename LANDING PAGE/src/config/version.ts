@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.37.7";
+export const APP_VERSION = "0.37.8";
 export const APP_BUILD_LABEL =
-  "The blue band's IP fact: 'Patent-Pending IP · Backed by the Israel Innovation Authority'";
+  "The need: 'The Cardiac Diagnostic Blind Spot.' in place of the WHO statistic";
 
+// v0.37.8 — the need names the diagnostic blind spot
 // v0.37.7 — the IP fact without "Tnufa", for an international reader
 // v0.37.6 — "Catch the Invisible." in the tablet scene (the swap retired); the haze on scrolling back fixed
 // v0.37.5 — the slide withdrawn; the opening fits the window at every zoom, side by side on any landscape window
