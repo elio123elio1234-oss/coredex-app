@@ -86,6 +86,7 @@ export default function Hero() {
   );
 }
 
+// v0.37.2 — the scene cross-fades in over the unmoved hero
 // v0.37.1 — the day's light as its own layer (no white circle): the tablet glides into the scene
 // v0.37.0 — "Request the deck" leaves the hero (the user); the band holds on scroll and turns into the clinician's screen, "The moment, in your hands." then "on your hand."
 // v0.19.0 — the tablet is a component: its screen drawn live as vectors (HeroTablet)

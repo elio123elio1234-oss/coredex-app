@@ -1,5 +1,24 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.2 — 2026-11-07 — the opening's transition, quiet
+
+**Why.** The user, on v0.37.1 (the hand lowering away, the tablet gliding into the scene): "now
+the effect feels childish, not like a medical startup. It needs something gentle."
+
+**What changed.** The transition is now fades in turns. Nothing moves except the line, by 8 px:
+1. the hero's copy, hand and tablet fade out on the slate;
+2. the day's light fades in;
+3. the clinician's screen fades in, already writing;
+4. "The moment, in your hands." fades in.
+
+The beats follow one another, so nothing is ever seen through anything else. A single cross-fade
+was tried first and dropped: mid-way it showed the two tablets and the hand as a double exposure.
+The swap to "on your hand." is unchanged.
+
+**Checked.** Typecheck and build pass. Frames at 1440 × 900 and 390 × 760 through every beat; no
+page errors.
+
+
 ## v0.37.1 — 2026-11-06 — the opening's transition, without the white circle
 
 **Why.** The user, on v0.37.0's transition: the white circle "hurts the eye and feels a bit like
