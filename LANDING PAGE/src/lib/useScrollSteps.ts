@@ -8,11 +8,14 @@ import { useEffect, useRef, useState } from "react";
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
-/* where it holds: `query` (a media query the layout needs) and `minRoom` (the window's height under
-   the bar the held stage needs, in px) */
-type Opts = { query?: string; minRoom?: number };
+/* where it holds: `minRoom`, the height under the bar the held stage needs where `wide` (a media
+   query) matches, and `minRoomStacked` where it does not */
+type Opts = { wide?: string; minRoom?: number; minRoomStacked?: number };
 
-export function useScrollSteps(count: number, { query = "all", minRoom = 0 }: Opts = {}) {
+export function useScrollSteps(
+  count: number,
+  { wide = "all", minRoom = 0, minRoomStacked = Infinity }: Opts = {},
+) {
   const pin = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
@@ -27,10 +30,12 @@ export function useScrollSteps(count: number, { query = "all", minRoom = 0 }: Op
     let isHeld = false;
 
     // does the held stage fit: the layout it needs, and the room under the bar (the sticky top)?
-    const mq = window.matchMedia(query);
+    const mq = window.matchMedia(wide);
     const fit = () => {
       const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar")) || 72;
-      const fits = mq.matches && window.innerHeight - bar >= minRoom;
+      // the layout viewport: on a phone it does not change as the toolbars come and go
+      const room = document.documentElement.clientHeight - bar;
+      const fits = room >= (mq.matches ? minRoom : minRoomStacked);
       if (fits !== isHeld) {
         isHeld = fits;
         setHeld(fits);
@@ -64,11 +69,12 @@ export function useScrollSteps(count: number, { query = "all", minRoom = 0 }: Op
       window.removeEventListener("resize", onResize);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [count, query, minRoom]);
+  }, [count, wide, minRoom, minRoomStacked]);
 
   return { pin, stage, step, held };
 }
 
+// v0.38.7 — a stacked minimum too (the wheel on a phone); the room from the layout viewport
 // v0.38.6 — where it holds is the caller's (a media query and the room it needs), not the plain layout's height
 // v0.38.4 — holds only where the content fits the window (`held`); the tabs' fill and jump retired with the tabs
 // v0.38.0 — scroll steps for "Who it's for": the step in view, each step's fill, a smooth jump to a step

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { PHOTOS } from "../config/photos";
 
 /* The need, AliveCor-style: a photograph filling the left half (the Gemini
@@ -16,7 +17,7 @@ export default function Need() {
             alt={photo.alt}
             width={photo.w}
             height={photo.h}
-            style={{ objectPosition: photo.focus }}
+            style={{ "--focus": photo.focus } as CSSProperties}
             loading="lazy"
             decoding="async"
           />
@@ -40,6 +41,7 @@ export default function Need() {
   );
 }
 
+// v0.38.7 — the photograph's focus as a variable, moved right on narrow screens so the physician stays in frame (index.css)
 // v0.37.8 — the need names the gap Cyphix closes: "The Cardiac Diagnostic Blind Spot." and its paragraph (the user's option 1, in place of the WHO statistic)
 // v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.13.0 — the user's image fills the slot (a physician reviewing a recording), cropped to keep the laptop

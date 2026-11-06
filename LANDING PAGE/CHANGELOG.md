@@ -1,5 +1,40 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.7 — 2026-11-07 — the phone pass
+
+**Why.** The user, on an iPhone: "Now it's perfect! On the phone there are a few small bugs:
+- in the first part of the site, something white hides the whole lower part;
+- in the doctor's picture the doctor is completely out of the frame; it needs moving a bit left;
+- the 'who it's for' scroll effect, the same on the phone too, okay?"
+
+**What changed.**
+- **The white band.** The opening's held stage was `100svh` tall, the small viewport with Safari's
+  bars shown. When the bars hid, the window grew taller than the stage and the page's white showed
+  under it.
+  - The stage now fills the large viewport (`100lvh`).
+  - The hero inside it keeps the small one, so the hand still stands on its lower edge above the
+    toolbar, with the slate continuing below.
+  - The held "Who it's for" stage uses the large viewport too.
+- **The physician.** On stacked layouts (a phone, a portrait tablet) the photograph is cropped
+  narrower, and its focus moves from 14 % to 72 % across: the physician is in the frame with the
+  laptop beside him.
+  - The focus is now a CSS variable (`--focus`), so the narrow screens can override it.
+  - Desktop is unchanged.
+- **The wheel on a phone.** Stacked, the heading, a slightly shorter wheel (`clamp(280px, 44svh,
+  380px)`) and the phone image under it hold together. A notch is 230 px there, since a row runs
+  to six or eight lines.
+  - It holds where the screen has 640 px under the bar, measured on the layout viewport, which
+    stays still while Safari's bars move.
+  - A short phone (an iPhone SE, 667 px) reads the three rows plainly.
+
+**Checked.**
+- Typecheck and build pass.
+- Headless Chrome at 390 × 844, 430 × 932 and 375 × 667: the hero, the photograph, and each notch
+  of the wheel. No page errors.
+- Headless Chrome has no moving toolbar, so the white band's fix still needs the user's iPhone to
+  confirm it.
+
+
 ## v0.38.6 — 2026-11-07 — "Who it's for" on a wheel
 
 **Why.** The user, on v0.38.5: "Nice, I liked it, but the scroll is still too fast, and the text

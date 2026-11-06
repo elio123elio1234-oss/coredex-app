@@ -30,10 +30,12 @@ const ROWS = [
   },
 ];
 
-/* the wheel holds where the two columns stand side by side and the window has the room for it */
+/* the wheel holds where the window has the room for it: 500 px under the bar side by side, 640 px
+   stacked (the heading, the wheel and the phone image under it); a shorter phone reads plainly */
 const HOLD = {
-  query: "(min-width: 1024px), (min-aspect-ratio: 5/4)",
+  wide: "(min-width: 1024px), (min-aspect-ratio: 5/4)",
   minRoom: 500,
+  minRoomStacked: 640,
 };
 
 export default function WhoFor() {
@@ -113,6 +115,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.7 — the wheel on a phone too (the user), stacked over the phone image, where the screen has 640 px under the bar
 // v0.38.6 — a wheel: the row in view centred, its neighbours tilted back and faded, the rest out of frame; slower (0.9 screen a row); clinics, clinicians, patients (the user)
 // v0.38.5 — the heading inside the held stage with its rows (the user: the gap between the heading and the screen)
 // v0.38.4 — back to the rows (the user: the tabs were tiny, the change too fast, "confusing and messy"; "go back to the previous design, just the scroll between them"): all three in view, the one in view in full ink
