@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.5";
+export const APP_VERSION = "0.38.6";
 export const APP_BUILD_LABEL =
-  "Who it's for: the heading holds with its rows, no empty gap above them";
+  "Who it's for on a wheel: clinics, clinicians, patients; slower";
 
+// v0.38.6 — "Who it's for" on a wheel, slower, clinics first
 // v0.38.5 — "Who it's for": the heading inside the held stage
 // v0.38.4 — "Who it's for" back to its rows, the scroll highlighting the one in view
 // v0.38.3 — the team's line, and a line of context under the founder

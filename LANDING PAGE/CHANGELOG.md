@@ -1,5 +1,35 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.6 — 2026-11-07 — "Who it's for" on a wheel
+
+**Why.** The user, on v0.38.5: "Nice, I liked it, but the scroll is still too fast, and the text
+takes the full height. Can you add to your perfect effect that the texts that don't matter right
+now leave the frame or are pushed back, like a wheel effect? And reverse the order, from the end
+to the beginning: clinics first, then clinicians, then patients."
+
+**What changed.**
+- **Order:** clinics & health systems, clinicians, patients. The plain list on a phone follows
+  the same order.
+- **Slower:** 0.9 of a screen of scroll for each row (2.7 screens for the three). v0.38.4 gave
+  each 0.65.
+- **A wheel.** While held, the rows sit in a frame about half the window tall, a picker-style
+  wheel:
+  - the row in view in the middle, at full size;
+  - its neighbours a notch away (150 px), tilted back 26°, 10 % smaller and at 30 %;
+  - the third out of the frame.
+  - The frame fades at its top and bottom edges.
+  - The wheel turns a notch at a time, each change a 0.8 s turn, so it never stops between two
+    rows.
+- **Where it holds:** the two columns side by side (≥ 1024 px or a landscape window), with at least
+  500 px under the bar. On a phone nothing holds and the three read plainly.
+- With reduced motion the rows slide and fade without the tilt.
+
+**Checked.**
+- Typecheck and build pass.
+- 1440 × 900 and 1366 × 657, each of the three notches; 390 × 760 plain.
+- No page errors.
+
+
 ## v0.38.5 — 2026-11-07 — "Who it's for": no gap under the heading
 
 **Why.** The user: "Look at the gap you made between the heading and the screen."

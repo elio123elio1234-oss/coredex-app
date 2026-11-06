@@ -1,19 +1,22 @@
+import type { CSSProperties } from "react";
 import appLeads from "../assets/img/app-limb-leads.webp";
 import { PHOTOS } from "../config/photos";
 import { useScrollSteps } from "../lib/useScrollSteps";
 import { LineClinic, LinePerson, LineStethoscope } from "./Icons";
 
 /* Who it is for, in AliveCor's "Our customers" form: three rows, a line icon, the audience in
-   bold beside it and the user's text; the app's limb-lead screen beside them. Where the three fit
-   the screen, the stage holds while the visitor scrolls and the row in view is in full ink, the
-   other two faded, so the scroll moves through them (lib/useScrollSteps); on a phone they read
-   plainly. Cyphix records and displays; reading the ECG is the clinician's. */
+   bold beside it and the user's text; the app's limb-lead screen beside them. Clinics first, then
+   clinicians, then patients (the user). Where the two columns stand side by side and the window has
+   the room, the stage holds while the visitor scrolls, close to a screen per row, and the rows turn
+   on a wheel: the one in view in the middle at full size, its neighbours tilted back, smaller and
+   faded, the rest out of the frame (lib/useScrollSteps). On a phone they read plainly. Cyphix
+   records and displays; reading the ECG is the clinician's. */
 
 const ROWS = [
   {
-    icon: LinePerson,
-    lead: "For patients:",
-    text: "Peace of mind for those who need it most. Designed specifically for high-risk individuals and those suffering from undiagnosed transient symptoms, empowering them to capture clinical data exactly when it strikes.",
+    icon: LineClinic,
+    lead: "For clinics & health systems:",
+    text: "Proactive care that drives down costs. By capturing the elusive events that standard monitoring misses, Cyphix ends the expensive diagnostic odyssey and prevents unnecessary ER admissions.",
   },
   {
     icon: LineStethoscope,
@@ -21,15 +24,21 @@ const ROWS = [
     text: "Diagnostic certainty. Receive pristine 6-lead morphology, transmitted instantly and presented in the standard clinical format you trust.",
   },
   {
-    icon: LineClinic,
-    lead: "For clinics & health systems:",
-    text: "Proactive care that drives down costs. By capturing the elusive events that standard monitoring misses, Cyphix ends the expensive diagnostic odyssey and prevents unnecessary ER admissions.",
+    icon: LinePerson,
+    lead: "For patients:",
+    text: "Peace of mind for those who need it most. Designed specifically for high-risk individuals and those suffering from undiagnosed transient symptoms, empowering them to capture clinical data exactly when it strikes.",
   },
 ];
 
+/* the wheel holds where the two columns stand side by side and the window has the room for it */
+const HOLD = {
+  query: "(min-width: 1024px), (min-aspect-ratio: 5/4)",
+  minRoom: 500,
+};
+
 export default function WhoFor() {
   const photo = PHOTOS.clinic;
-  const { pin, stage, step, held } = useScrollSteps(ROWS.length);
+  const { pin, stage, step, held } = useScrollSteps(ROWS.length, HOLD);
   return (
     <section className="section who" id="who" aria-labelledby="who-title">
       <div ref={pin} className={`who-pin${held ? " is-held" : ""}`}>
@@ -44,7 +53,23 @@ export default function WhoFor() {
             <div className="rows-grid">
               <ul className="rows">
                 {ROWS.map(({ icon: Icon, lead, text }, i) => (
-                  <li key={lead} className={i === step ? "is-on" : undefined}>
+                  <li
+                    key={lead}
+                    className={
+                      i === step
+                        ? "is-on"
+                        : Math.abs(i - step) === 1
+                          ? "is-near"
+                          : "is-far"
+                    }
+                    style={
+                      {
+                        "--d": i - step,
+                        "--ad": Math.abs(i - step),
+                      } as CSSProperties
+                    }
+                    aria-hidden={held && i !== step ? true : undefined}
+                  >
                     <Icon className="row-icon" />
                     <p>
                       <strong>{lead}</strong> {text}
@@ -88,6 +113,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.6 — a wheel: the row in view centred, its neighbours tilted back and faded, the rest out of frame; slower (0.9 screen a row); clinics, clinicians, patients (the user)
 // v0.38.5 — the heading inside the held stage with its rows (the user: the gap between the heading and the screen)
 // v0.38.4 — back to the rows (the user: the tabs were tiny, the change too fast, "confusing and messy"; "go back to the previous design, just the scroll between them"): all three in view, the one in view in full ink
 // v0.38.2 — the full texts back, as paragraphs, not points (the user); the stepped tabs stay

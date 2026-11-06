@@ -1015,8 +1015,8 @@ section[id] {
    rows do not fit the screen (a phone), nothing holds and all three read plainly. */
 .who-pin.is-held {
   position: relative;
-  height: calc(100vh - var(--bar) + 195vh);
-  height: calc(100svh - var(--bar) + 195svh);
+  height: calc(100vh - var(--bar) + 270vh);
+  height: calc(100svh - var(--bar) + 270svh);
 }
 .who-pin.is-held .who-stage {
   position: sticky;
@@ -1054,8 +1054,34 @@ section[id] {
   align-items: start;
   transition: opacity 0.6s ease;
 }
-.who-pin.is-held .rows li:not(.is-on) {
-  opacity: 0.28;
+/* held, the rows turn on a wheel: the one in view in the middle, at full size; its neighbours a
+   notch away, tilted back, smaller and faded; the rest out of the frame. A notch at a time, each
+   change a 0.8 s turn; the frame fades at its top and bottom edges. */
+.who-pin.is-held .rows {
+  position: relative;
+  display: block;
+  height: clamp(300px, 48vh, 430px);
+  perspective: 1100px;
+  -webkit-mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+  mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+}
+.who-pin.is-held .rows li {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(calc(-50% + var(--d) * 150px)) rotateX(calc(var(--d) * -26deg))
+    scale(calc(1 - var(--ad) * 0.1));
+  transform-origin: 50% 50%;
+  transition:
+    transform 0.8s var(--ease),
+    opacity 0.6s ease;
+}
+.who-pin.is-held .rows li.is-near {
+  opacity: 0.3;
+}
+.who-pin.is-held .rows li.is-far {
+  opacity: 0;
 }
 .rows p {
   margin: 0;
@@ -1092,8 +1118,12 @@ section[id] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rows li {
-    transition: none;
+  .rows li,
+  .who-pin.is-held .rows li {
+    transition: opacity 0.3s ease;
+  }
+  .who-pin.is-held .rows li {
+    transform: translateY(calc(-50% + var(--d) * 150px));
   }
 }
 
@@ -2451,6 +2481,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.6 — "Who it's for" on a wheel (the row in view centred, its neighbours tilted back), 0.9 screen a row
    v0.38.5 — "Who it's for": the heading holds with its rows (no gap above the rows)
    v0.38.3 — .person-bio, a line of context under a team member
    v0.38.2 — "Who it's for": the full paragraphs back in the steps (.who-text)
