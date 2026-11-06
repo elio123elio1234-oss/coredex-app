@@ -10,18 +10,18 @@ import { LineClinic, LinePerson, LineStethoscope } from "./Icons";
 const ROWS = [
   {
     icon: LinePerson,
-    lead: "For patients,",
-    text: "a 6-lead ECG recorded the moment symptoms appear, wherever they are, on the watch they already wear.",
+    lead: "For patients:",
+    text: "Peace of mind for those who need it most. Designed specifically for high-risk individuals and those suffering from undiagnosed transient symptoms, empowering them to capture clinical data exactly when it strikes.",
   },
   {
     icon: LineStethoscope,
-    lead: "For clinicians,",
-    text: "the six limb leads arrive directly, side by side, in the layout they already read.",
+    lead: "For clinicians:",
+    text: "Diagnostic certainty. Receive pristine 6-lead morphology, transmitted instantly and presented in the standard clinical format you trust.",
   },
   {
     icon: LineClinic,
-    lead: "For clinics,",
-    text: "their patients' recordings in one place, without fitting patches or scheduling a Holter.",
+    lead: "For clinics & health systems:",
+    text: "Proactive care that drives down costs. By detecting elusive events early, Cyphix prevents expensive ER admissions and eliminates the logistical overhead of traditional Holter monitoring.",
   },
 ];
 
@@ -67,6 +67,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.37.10 — the three rows in the user's words: patients, clinicians, clinics & health systems
 // v0.37.3 — no "Concept imagery" caption (the user: it is obvious; the footer's small print covers every image)
 // v0.37.0 — the app's limb-lead phone in the user's sharper image (1719 x 871), same size on the page
 // v0.9.0 — AliveCor-style "who it's for": patients, clinicians, clinics; photo slot "clinic" (interim: the app screen)

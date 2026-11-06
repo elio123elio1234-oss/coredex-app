@@ -1,5 +1,24 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.10 — 2026-11-07 — "Who it's for", rewritten
+
+**Why.** The user sent the section's new copy, the three rows as they should read now.
+
+**What changed.** The rows, word for word, each with its lead in bold:
+- **For patients:** "Peace of mind for those who need it most. Designed specifically for
+  high-risk individuals and those suffering from undiagnosed transient symptoms, empowering them
+  to capture clinical data exactly when it strikes."
+- **For clinicians:** "Diagnostic certainty. Receive pristine 6-lead morphology, transmitted
+  instantly and presented in the standard clinical format you trust."
+- **For clinics & health systems:** "Proactive care that drives down costs. By detecting elusive
+  events early, Cyphix prevents expensive ER admissions and eliminates the logistical overhead of
+  traditional Holter monitoring."
+
+The icons and the phone beside them are unchanged.
+
+**Checked.** Typecheck and build pass; the section at 1440 and 390 wide.
+
+
 ## v0.37.9 — 2026-11-07 — "Universal Fit. Clinical Power."
 
 **Why.** The user: in the lower blue rectangle, in place of "Our solution", use the following
