@@ -1337,6 +1337,13 @@ section[id] {
   line-height: 1.5;
   color: var(--ink-2);
 }
+.person-bio {
+  margin: 10px 0 0;
+  max-width: 22em;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
 
 /* ---------- "One strap. Any watch." ---------- */
 
@@ -2555,7 +2562,8 @@ section[id] {
   }
 }
 
-/* v0.38.2 — "Who it's for": the full paragraphs back in the steps (.who-text)
+/* v0.38.3 — .person-bio, a line of context under a team member
+   v0.38.2 — "Who it's for": the full paragraphs back in the steps (.who-text)
    v0.38.0 — "Who it's for" one audience at a time, stepped by scroll (tabs, a filling hairline, points, a short fade); the old rows retired
    v0.37.6 — the swap retired ("Catch the Invisible."); the hold 1.7 screens
    v0.37.5 — the slide withdrawn (it fought the browser's zoom); the stage never taller than the window; a landscape window keeps the opening side by side

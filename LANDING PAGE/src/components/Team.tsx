@@ -9,6 +9,7 @@ const PEOPLE = [
   {
     name: "Elio El Hassrouny",
     role: ["Founder & CEO", "Electrical & Electronics Engineer"],
+    bio: "Bringing deep expertise in advanced hardware architecture and wearable systems.",
     src: portraitElio,
     w: 640,
     h: 800,
@@ -18,6 +19,7 @@ const PEOPLE = [
   {
     name: "Dr. Tamir Wolf, MD",
     role: ["Clinical Advisor"],
+    bio: "",
     src: portraitTamir,
     w: 320,
     h: 400,
@@ -33,7 +35,7 @@ export default function Team() {
           <h2 id="team-title" className="h2">
             The team.
           </h2>
-          <p className="body-lg">An electrical and electronics engineer, with a physician as clinical advisor.</p>
+          <p className="body-lg">Bridging deep-tech hardware engineering with frontline clinical expertise.</p>
         </header>
         <ul className="people">
           {PEOPLE.map((p) => (
@@ -58,6 +60,7 @@ export default function Team() {
                     </Fragment>
                   ))}
                 </p>
+                {p.bio && <p className="person-bio">{p.bio}</p>}
               </div>
             </li>
           ))}
@@ -67,6 +70,7 @@ export default function Team() {
   );
 }
 
+// v0.38.3 — the line under the heading speaks of the synergy; a line of context under the founder (the advice the user passed on; no "ex": the user still works there)
 // v0.37.3 — the founder an electrical & electronics engineer (no "ex-Samsung R&D"); the advisor without "External" (the user)
 // v0.21.0 — the portraits rest in black and white on desktop and turn to colour under the pointer (styles in index.css)
 // v0.7.0 — heading over two portrait-and-name rows; the founder's standing shot zoomed to match the advisor's headshot

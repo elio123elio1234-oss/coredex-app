@@ -1,5 +1,26 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.3 — 2026-11-07 — the team, as a team
+
+**Why.** The user passed on advice about the team section. The black-and-white-to-colour hover
+works. But the line under "The team." ("An electrical and electronics engineer, with a physician
+as clinical advisor.") sounds modest, almost like an academic project. It should speak of the
+synergy between advanced hardware and clinical medicine. Investors invest in people first, so a
+short line of context under each person helps. The user added: no "ex" (they still work there).
+
+**What changed.**
+- The line under the heading: "Bridging deep-tech hardware engineering with frontline clinical
+  expertise."
+- Under the founder's name and roles, a line of context: "Bringing deep expertise in advanced
+  hardware architecture and wearable systems."
+  - No employer is named and nothing reads "ex-". The suggested line names no company, and the
+    user removed "ex-Samsung R&D" in v0.37.3.
+- The advisor's entry is unchanged: the advice suggested no line for him.
+- New style `.person-bio`: 15 px, in the page's third ink, under the roles.
+
+**Checked.** Typecheck and build pass; the team at 1440 and 390 wide.
+
+
 ## v0.38.2 — 2026-11-07 — "Who it's for": the full texts back
 
 **Why.** The user: "Bring back the full texts, but not as points, in the 'Who it's for' part you
