@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.1";
+export const APP_VERSION = "0.38.2";
 export const APP_BUILD_LABEL =
-  "Where we are: the milestones in an investor's terms (no 'Tnufa'); next, a clinical study";
+  "Who it's for: the full texts back as paragraphs, still one audience at a time";
 
+// v0.38.2 — "Who it's for": the full texts back, as paragraphs
 // v0.38.1 — the timeline's words: hardware prototype, AI & algorithmic validation, patent-pending core tech, backed by the IIA
 // v0.38.0 — "Who it's for" stepped by scroll: tabs, a filling hairline, a line and three points
 // v0.37.10 — "Who it's for", the three rows rewritten

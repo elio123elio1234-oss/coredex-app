@@ -1111,6 +1111,16 @@ section[id] {
   letter-spacing: -0.025em;
   color: var(--ink);
 }
+.who-text {
+  margin: 0;
+  max-width: 30em;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.who-slide.is-on .who-text {
+  animation: who-point 0.6s var(--ease) 0.2s both;
+}
 .who-points {
   display: grid;
   gap: 12px;
@@ -1173,7 +1183,8 @@ section[id] {
     height: 36px;
     margin-bottom: 14px;
   }
-  .who-points li {
+  .who-points li,
+  .who-text {
     font-size: 16px;
   }
 }
@@ -1192,7 +1203,8 @@ section[id] {
     transform: none;
     transition: opacity 0.2s ease;
   }
-  .who-slide.is-on .who-points li {
+  .who-slide.is-on .who-points li,
+  .who-slide.is-on .who-text {
     animation: none;
   }
 }
@@ -2543,7 +2555,8 @@ section[id] {
   }
 }
 
-/* v0.38.0 — "Who it's for" one audience at a time, stepped by scroll (tabs, a filling hairline, points, a short fade); the old rows retired
+/* v0.38.2 — "Who it's for": the full paragraphs back in the steps (.who-text)
+   v0.38.0 — "Who it's for" one audience at a time, stepped by scroll (tabs, a filling hairline, points, a short fade); the old rows retired
    v0.37.6 — the swap retired ("Catch the Invisible."); the hold 1.7 screens
    v0.37.5 — the slide withdrawn (it fought the browser's zoom); the stage never taller than the window; a landscape window keeps the opening side by side
    v0.37.4 — the slide crops its empty top on short windows (no shrinking); the scene centred

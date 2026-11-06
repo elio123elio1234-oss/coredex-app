@@ -1,5 +1,27 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.2 — 2026-11-07 — "Who it's for": the full texts back
+
+**Why.** The user: "Bring back the full texts, but not as points, in the 'Who it's for' part you
+changed earlier, as they were written."
+
+**What changed.** The stepped tabs from v0.38.0 stay. Under each audience's line, the user's
+paragraph is back in full, word for word, in place of the three points:
+- **Patients:** "Peace of mind for those who need it most." Designed specifically for high-risk
+  individuals and those suffering from undiagnosed transient symptoms, empowering them to capture
+  clinical data exactly when it strikes.
+- **Clinicians:** "Diagnostic certainty." Receive pristine 6-lead morphology, transmitted
+  instantly and presented in the standard clinical format you trust.
+- **Clinics & health systems:** "Proactive care that drives down costs." By capturing the
+  elusive events that standard monitoring misses, Cyphix ends the expensive diagnostic odyssey and
+  prevents unnecessary ER admissions.
+
+The paragraph fades in just after its line, as the points did.
+
+**Checked.** Typecheck and build pass. Each step at 1440 × 900, 960 × 600 and 390 × 760; the tab
+click still lands. No page errors.
+
+
 ## v0.38.1 — 2026-11-07 — the timeline, in an investor's terms
 
 **Why.** The user passed on advice about "Where we are". The design works; the words should read
