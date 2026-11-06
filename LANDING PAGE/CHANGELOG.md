@@ -1,5 +1,43 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.0 — 2026-11-07 — "Who it's for", one audience at a time
+
+**Why.** The user, on v0.37.10's three long rows: "It looks a bit long now. Let's do it in points:
+just 'For patients' with points below that change, and on scroll it changes automatically. Make it
+professional, smooth and clean, with gentle effects like Apple's site." Then a correction to the
+clinics copy: "Proactive care that drives down costs. By capturing the elusive events that standard
+monitoring misses, Cyphix ends the expensive diagnostic odyssey and prevents unnecessary ER
+admissions."
+
+**What changed.**
+- **The stage holds.** The section's stage holds under the bar for 1.5 screens of scroll, a step
+  each half screen (new hook `lib/useScrollSteps`).
+- **Three tabs:** for patients, for clinicians, for clinics & health systems.
+  - A hairline under each tab fills as the visitor reads on, and the tab in view is darker.
+  - A tab is also a button: it scrolls smoothly to its audience.
+- **Below the tabs**, the audience's icon, its line, and three short points, cut from the user's
+  words:
+  - **Patients**: "Peace of mind for those who need it most." For high-risk individuals; for
+    undiagnosed, transient symptoms; clinical data, captured the moment it strikes.
+  - **Clinicians**: "Diagnostic certainty." Pristine 6-lead morphology; transmitted instantly; in
+    the standard clinical format you trust.
+  - **Clinics & health systems**: "Proactive care that drives down costs." Captures the elusive
+    events standard monitoring misses; ends the expensive diagnostic odyssey; prevents unnecessary
+    ER admissions (the user's corrected copy).
+- **The change between audiences** is a short fade with 12 px of rise. The points follow one after
+  another, 80 ms apart. Nothing else moves.
+- The app's limb-lead phone stands beside the steps throughout.
+- Portrait phones and tablets stack the steps over the phone; a landscape window under 1024 px
+  keeps two columns. With reduced motion the steps cross-fade without moving.
+- The old rows' styles are retired; `.row-icon` stays for the Investors page.
+
+**Checked.**
+- Typecheck and build pass.
+- Headless Chrome at 1440 × 900, 960 × 600, 768 × 1024 and 390 × 760, each step: everything on
+  screen.
+- A click on the third tab lands on the third audience. No page errors.
+
+
 ## v0.37.10 — 2026-11-07 — "Who it's for", rewritten
 
 **Why.** The user sent the section's new copy, the three rows as they should read now.

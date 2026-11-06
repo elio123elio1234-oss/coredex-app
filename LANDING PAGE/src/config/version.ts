@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.37.10";
+export const APP_VERSION = "0.38.0";
 export const APP_BUILD_LABEL =
-  "Who it's for: patients, clinicians, clinics & health systems in the user's new words";
+  "Who it's for, one audience at a time: tabs and points that change as you scroll";
 
+// v0.38.0 — "Who it's for" stepped by scroll: tabs, a filling hairline, a line and three points
 // v0.37.10 — "Who it's for", the three rows rewritten
 // v0.37.9 — the navy card's words, the user's
 // v0.37.8 — the need names the diagnostic blind spot
