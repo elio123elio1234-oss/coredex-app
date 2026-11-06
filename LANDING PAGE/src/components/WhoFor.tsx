@@ -52,8 +52,8 @@ export default function WhoFor() {
             ) : (
               <img
                 src={appLeads}
-                width={876}
-                height={463}
+                width={1719}
+                height={871}
                 alt="The Cyphix app on a phone, landscape: a Limb Leads screen with six ECG traces labelled I, II, III, aVR, aVL and aVF."
                 loading="lazy"
                 decoding="async"
@@ -67,4 +67,5 @@ export default function WhoFor() {
   );
 }
 
+// v0.37.0 — the app's limb-lead phone in the user's sharper image (1719 x 871), same size on the page
 // v0.9.0 — AliveCor-style "who it's for": patients, clinicians, clinics; photo slot "clinic" (interim: the app screen)

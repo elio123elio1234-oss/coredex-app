@@ -69,6 +69,7 @@ src/
     OneStrapPage.tsx      /one-strap: the 3D journey, then the form
     Technology.tsx        /technology: how it works, the multi-element array (from the investor deck)
     Investors.tsx         /investors: the need, today's compromise, market, model, what's done, what's next
+    Visualizations.tsx    /visualizations: the four ways to wear it (the watches off the home page)
   entries/                one entry per page document
   config/nav.ts           the site map shared by the bar and the footer
   index.css               the whole design system (tokens, sections, tablet, phone, the arrival)
@@ -117,6 +118,7 @@ and light.
 <!-- v0.10.1 — the bracelet bends to the team's closed band -->
 <!-- v0.10.0 — four ways to wear it; the contour group; Sensors.tsx -->
 <!-- v0.9.0 — AliveCor-style layout; gemini/ prompts and the photo slots -->
+<!-- v0.37.0 — /visualizations behind "Explore" -->
 <!-- v0.35.0 — the pages behind "Explore": pages/, entries/, config/nav.ts, assets/deck -->
 <!-- v0.33.0 — the journey reset to v0.27.0 (lib/strapScene back, strapStory removed) -->
 <!-- v0.31.0 — the product in place, lit out of the dark -->

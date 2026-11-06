@@ -141,6 +141,16 @@ export const LineShield = (p: P) => (
   </svg>
 );
 
+/** The market: a globe, its meridians and latitudes. */
+export const LineGlobe = (p: P) => (
+  <svg {...line} {...p}>
+    <circle cx="24" cy="24" r="17" />
+    <path d="M7 24h34M9.5 15h29M9.5 33h29" />
+    <path d="M24 7c-5 4.6-7.5 10.3-7.5 17s2.5 12.4 7.5 17c5-4.6 7.5-10.3 7.5-17S29 11.6 24 7Z" />
+  </svg>
+);
+
+// v0.37.0 — LineGlobe, the facts band's market mark
 // v0.9.0 — line icons for the AliveCor-style rows and facts (watch, pulse, send, person, stethoscope, clinic, shield), chevron
 // v0.7.0 — Dash for the comparison's "no" mark
 // v0.6.0 — arrow, mail, phone, pin and check icons (authored, one stroke weight)

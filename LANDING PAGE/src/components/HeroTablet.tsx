@@ -22,8 +22,9 @@ const chevron = (x: number, y: number, s: number) =>
    small gap, and the loop goes on. It starts from an empty strip each time the screen comes into
    view and stops when it leaves. The recording stays the same illustrative one, labelled. */
 const GAP = 26; // units of the paper
+const FULL_AT = 2.5; // seconds into the strip where a `full` screen starts its pen
 
-function useMonitor(live: boolean, svg: React.RefObject<SVGSVGElement>) {
+function useMonitor(live: boolean, full: boolean, svg: React.RefObject<SVGSVGElement>) {
   useEffect(() => {
     const el = svg.current;
     if (!live || !el) return;
@@ -57,7 +58,8 @@ function useMonitor(live: boolean, svg: React.RefObject<SVGSVGElement>) {
       (es) => {
         const visible = es.some((e) => e.isIntersecting);
         if (visible && !raf) {
-          t0 = performance.now(); // from an empty strip
+          // from an empty strip, or (full) already a pass in, the last strip ahead of the pen
+          t0 = performance.now() - (full ? (seconds + FULL_AT) * 1000 : 0);
           raf = requestAnimationFrame(frame);
         } else if (!visible && raf) {
           cancelAnimationFrame(raf);
@@ -71,16 +73,16 @@ function useMonitor(live: boolean, svg: React.RefObject<SVGSVGElement>) {
       io.disconnect();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [live, svg]);
+  }, [live, full, svg]);
 }
 
-function Screen({ live }: { live: boolean }) {
+function Screen({ live, full }: { live: boolean; full: boolean }) {
   // the tablet appears twice on the page (the hero, the closing section): one clip id each
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const clip = `tablet-paper-${uid}`;
   const sweep = `tablet-sweep-${uid}`;
   const ref = useRef<SVGSVGElement>(null);
-  useMonitor(live, ref);
+  useMonitor(live, full, ref);
   return (
     <svg
       ref={ref}
@@ -240,15 +242,16 @@ function Screen({ live }: { live: boolean }) {
   );
 }
 
-export default function HeroTablet({ live = false }: { live?: boolean }) {
+export default function HeroTablet({ live = false, full = false }: { live?: boolean; full?: boolean }) {
   return (
     <div className="hero-system">
-      <Screen live={live} />
+      <Screen live={live} full={full} />
       <img className="hero-system-frame" src={frame} width={1385} height={955} alt="" decoding="async" />
     </div>
   );
 }
 
+// v0.37.0 — `full`: the monitor starts a pass in, the screen already holding its traces (the home page's opening scene)
 // v0.31.0 — the pen a small tip (the user: the dot was too big)
 // v0.30.0 — `live` writes like a monitor: a pen per lead riding the trace in real time, a heart on every R peak, from an empty strip each time it comes into view (script, not SMIL)
 // v0.28.0 — `live`: the traces write themselves in a gentle 10 s loop (the journey's last chapter only)

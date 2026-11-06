@@ -1,4 +1,4 @@
-import { LineShield, LineWatch } from "./Icons";
+import { LineGlobe, LineShield, LineWatch } from "./Icons";
 
 /* The navy facts band under the hero. Every figure is one the one-pager
    already states; nothing here is a user count or a clinical result. */
@@ -12,8 +12,8 @@ export default function Facts() {
           <p>6-lead ECG on the watch you already wear</p>
         </div>
         <div className="fact">
-          <span className="fact-figure">$4.53B</span>
-          <p>Global mobile ECG market</p>
+          <LineGlobe className="fact-icon" />
+          <p>$4.53B global mobile ECG market</p>
         </div>
         <div className="fact">
           <LineShield className="fact-icon" />
@@ -24,4 +24,5 @@ export default function Facts() {
   );
 }
 
+// v0.37.0 — the market fact in the others' form: a line icon (a globe) and the same type, not a big figure (the user)
 // v0.9.0 — the AliveCor-style facts band: watch, market, patent and programme

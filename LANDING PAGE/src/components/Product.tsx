@@ -1,30 +1,12 @@
-import wearSmart from "../assets/photos/wear-smart.webp";
-import wearBracelet from "../assets/photos/wear-bracelet.webp";
-import wearAnalog from "../assets/photos/wear-analog.webp";
-import wearCyphix from "../assets/photos/wear-cyphix.webp";
-
-/* "Our solution", AliveCor-style: the four ways to wear it across the slate
-   band (the user's own image, cut into one image per watch at a shared scale),
-   with a navy card rising over its lower edge. Under a pointer, the watch it
-   rests on grows and the others step back. */
-
-const WEAR = [
-  { src: wearSmart, w: 507, alt: "The Cyphix strap on a smartwatch: the module with its electrodes on the band, the watch showing CYPHIX 6-lead ECG." },
-  { src: wearBracelet, w: 466, alt: "The Cyphix strap on its own, closed into a bracelet." },
-  { src: wearAnalog, w: 528, alt: "The same Cyphix strap on an analog watch." },
-  { src: wearCyphix, w: 513, alt: "The Cyphix watch: our own screen, with the module built into its band." },
-];
+/* "Our solution", AliveCor-style: the slate band, with a navy card rising
+   over its lower edge. The band is empty since v0.37.0: its four watches
+   moved to /visualizations, behind "Explore" (the user: keep the grey band,
+   the watches are not relevant at this stage). */
 
 export default function Product() {
   return (
     <section className="solution" id="solution" aria-labelledby="solution-title">
-      <figure className="solution-media is-render">
-        <div className="solution-stills">
-          {WEAR.map((s) => (
-            <img key={s.alt} src={s.src} alt={s.alt} width={s.w} height={621} loading="lazy" decoding="async" />
-          ))}
-        </div>
-      </figure>
+      <div className="solution-media is-empty" aria-hidden="true" />
       <div className="wrap">
         <div className="solution-card">
           <h2 id="solution-title">Our solution</h2>
@@ -40,6 +22,7 @@ export default function Product() {
   );
 }
 
+// v0.37.0 — the band kept, empty; its four watches moved to /visualizations (WearStills)
 // v0.15.0 — the card's "See how it works" link goes with that section
 // v0.12.0 — the user's four-watch image (cut per watch) replaces the renders; the hovered watch grows
 // v0.10.0 — four stills: smartwatch, bracelet, analog, the Cyphix watch

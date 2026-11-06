@@ -1,5 +1,44 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.0 — 2026-11-06 — the opening as a scene; the watches to Explore
+
+**Why.** Six requests from the user, in one sitting:
+
+1. Take "Request the deck" out of the hero completely. The link in the announcement line and the
+   form at the foot of the page stay.
+2. Turn the opening into a scroll scene. On the first scroll the hero holds and is replaced by the
+   scene from the end of the 3D journey: the clinician's tablet. The tablet's traces are already on
+   screen, not drawn from an empty one. Its line reads "The moment, in your hands." Scrolling on
+   changes it to "on your hand.", "so that it's clear it was replaced", and only then does the page
+   scroll down.
+3. The facts band's middle item didn't look like the two beside it. It now has a line icon (a
+   globe) and the same type size. The figure is still $4.53B.
+4. "Who it's for" uses the user's sharper image of the app's limb-lead screen on the phone (from
+   ChatGPT, 1719 × 871), at the same size on the page. /technology shows the same image.
+5. The version number in the footer no longer has a capsule around it.
+6. The four watches are "not relevant at this stage". "Our solution" keeps its grey band, now
+   empty. The watches move to a new page behind "Explore", **/visualizations**, still with the
+   hover effect.
+
+**How.**
+- `Hero.tsx` and `lib/useHeroScene.ts`:
+  - the slate band sits on a sticky stage inside a wrapper 2.4 screens tall;
+  - light opens out of the hero's tablet, as it does from the watch in the journey, and the
+    tablet and its line rise into it;
+  - the swap is a switch, not a scrub. The old words leave upward and the new ones rise in coral
+    and are underlined, so the change is unmistakable and never stops half-way. Scrolling back
+    undoes it.
+- `HeroTablet` gains `full`: the monitor starts a pass in, so the screen already holds its traces.
+- With reduced motion, the tablet stays still and the swap is a plain cross-fade.
+- The stills are now `WearStills.tsx`, used only by the new page.
+
+**Checked.**
+- Typecheck and build pass.
+- Headless Chrome at 1440 × 900, 1280 × 640, 1024 × 768 and 390 × 760: every beat of the
+  scene, the band, the phone, the new page and the Explore menu. No page errors.
+- It has not yet been tried on a real phone's scroll.
+
+
 ## v0.36.0 — 2026-11-05 — cyphix.co
 
 **Why.** The user bought **cyphix.co** at GoDaddy: "host the landing page there".

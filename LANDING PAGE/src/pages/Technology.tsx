@@ -44,8 +44,8 @@ const STEPS = [
     title: "Six leads, to the cardiologist.",
     text: "The processed signals become the six limb leads, I, II, III, aVR, aVL and aVF, and go straight to the care team.",
     img: appLeads,
-    w: 876,
-    h: 463,
+    w: 1719,
+    h: 871,
     fit: "device",
     alt: "The Cyphix app on a phone, landscape: a Limb Leads screen with six ECG traces labelled I, II, III, aVR, aVL and aVF.",
     note: "The Cyphix app · limb-lead view",
@@ -139,4 +139,5 @@ export default function Technology() {
   );
 }
 
+// v0.37.0 — the app's limb-lead phone in the user's sharper image (1719 x 871)
 // v0.35.0 — Technology: how it works in three steps (the working prototype, its band, the app), and the innovation, the multi-element array weighted by contact quality (patent filed in Israel), from the investor deck

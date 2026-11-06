@@ -38,6 +38,9 @@ export default function Footer() {
                   <a href="/technology">Technology</a>
                 </li>
                 <li>
+                  <a href="/visualizations">Visualizations</a>
+                </li>
+                <li>
                   <a href="/#stage">Stage</a>
                 </li>
                 <li>
@@ -88,6 +91,7 @@ export default function Footer() {
   );
 }
 
+// v0.37.0 — the version as plain small print (no capsule); Visualizations in the page map
 // v0.35.0 — the page map reaches every page: the home page's sections by "/#…", One strap. Any watch., Technology, and the investors' page; the small print allows for the working prototype's photographs
 // v0.24.5 — white behind the hands, white glass, dark text (styles in index.css)
 // v0.24.4 — trial: the logo's red behind the hands, red glass (styles in index.css)

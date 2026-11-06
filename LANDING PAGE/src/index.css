@@ -668,6 +668,141 @@ section[id] {
   left: var(--gutter);
 }
 
+/* ---------- the opening's scene: the band holds, the clinician's screen, the swap ---------- */
+
+/* the stage holds under the bar for 2.4 screens of scroll (lib/useHeroScene) */
+.hero-pin {
+  position: relative;
+  height: calc(100vh - var(--bar) + 240vh);
+  height: calc(100svh - var(--bar) + 240svh);
+}
+.hero-stage {
+  position: sticky;
+  top: var(--bar);
+  height: calc(100vh - var(--bar));
+  height: calc(100svh - var(--bar));
+  min-height: 560px;
+  overflow: hidden;
+  background: var(--slate);
+}
+.hero-pin .hero {
+  height: 100%;
+  min-height: 0;
+}
+/* the journey's closing scene, its day: light from the hero's tablet, the screen rising in it */
+.hero-moment {
+  --rise: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    radial-gradient(60% 60% at 70% 50%, #ffffff, transparent 70%),
+    linear-gradient(180deg, #f4f6f9 0%, #e7ecf3 100%);
+  color: var(--ink);
+}
+.hm-inner {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 88px);
+}
+.hm-copy {
+  opacity: var(--rise);
+  transform: translateY(calc((1 - var(--rise)) * 24px));
+}
+.hm-title {
+  margin: 0;
+  font-size: clamp(36px, 4.4vw, 66px);
+  font-weight: 550;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  white-space: nowrap; /* two lines, the second the one that changes */
+}
+/* the swap: the old words leave upward, the new rise into their place in coral and are underlined,
+   inside a window the height of the line, so the change is seen, not just a different word */
+.hm-swap {
+  display: grid;
+  justify-items: start;
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.hm-swap > span {
+  grid-area: 1 / 1;
+  position: relative;
+  transition:
+    transform 0.75s var(--ease),
+    opacity 0.45s ease;
+}
+.hm-now {
+  color: var(--coral);
+  opacity: 0;
+  transform: translateY(105%);
+}
+.hm-now::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0.3em;
+  bottom: 0.02em;
+  height: 0.06em;
+  background: var(--coral);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s var(--ease);
+}
+.is-swapped .hm-was {
+  opacity: 0;
+  transform: translateY(-105%);
+}
+.is-swapped .hm-now {
+  opacity: 1;
+  transform: none;
+}
+.is-swapped .hm-now::after {
+  transform: scaleX(1);
+  transition-delay: 0.4s;
+}
+.hm-text {
+  margin: 18px 0 0;
+  max-width: 24em;
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.hm-media {
+  opacity: var(--rise);
+  transform: translateY(calc((1 - var(--rise)) * 48px));
+}
+.hm-media .hero-system {
+  width: 100%;
+  margin: 0;
+  transform: none;
+  filter: drop-shadow(0 30px 40px rgba(11, 26, 48, 0.18));
+}
+@media (max-width: 1023px) {
+  .hm-inner {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: clamp(28px, 6vh, 56px);
+  }
+  .hm-media {
+    max-width: 620px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-swap > span,
+  .hm-now::after {
+    transition: opacity 0.3s ease;
+  }
+  .hm-now,
+  .is-swapped .hm-was {
+    transform: none;
+  }
+}
+
 /* ---------- facts band ---------- */
 
 .facts {
@@ -765,6 +900,24 @@ section[id] {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* the home page's band, empty since v0.37.0 (its watches are on /visualizations) */
+.solution-media.is-empty {
+  height: clamp(240px, 30vw, 440px);
+}
+/* on /visualizations the watches stand under the page's head, with no card over them */
+.solution-media.is-page {
+  position: relative;
+  height: clamp(300px, 34vw, 500px);
+}
+.solution-media.is-page .solution-stills {
+  padding-bottom: clamp(36px, 4vw, 56px);
+}
+.solution-media.is-page .media-note {
+  position: absolute;
+  left: var(--gutter);
+  bottom: 14px;
+  color: rgba(255, 255, 255, 0.55);
 }
 .solution-stills {
   display: grid;
@@ -1899,10 +2052,8 @@ section[id] {
   color: var(--blue);
 }
 .badge {
+  /* the version as plain small print, no capsule around it (the user) */
   flex: none;
-  padding: 3px 9px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.06em;
@@ -2129,6 +2280,9 @@ section[id] {
   .solution-media {
     height: auto;
   }
+  .solution-media.is-page {
+    height: auto;
+  }
   .solution-stills {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px 8px;
@@ -2238,7 +2392,8 @@ section[id] {
   }
 }
 
-/* v0.35.0 — "Explore" in the bar (a panel hung from its lower edge; across the bar on tablets and phones), the section links scoped to the nav's own children; the pages behind it: the head, technology's steps, noise and strips, the next links, the investors' compromise, model, what has been done and the road ahead; the 3D page opens on its stage
+/* v0.37.0 — "Our solution"'s band empty, its watches on /visualizations; the version badge without its capsule; the opening as a scroll scene: the band holds, light opens into the clinician's screen, "in your hands." swaps to "on your hand."
+   v0.35.0 — "Explore" in the bar (a panel hung from its lower edge; across the bar on tablets and phones), the section links scoped to the nav's own children; the pages behind it: the head, technology's steps, noise and strips, the next links, the investors' compromise, model, what has been done and the road ahead; the 3D page opens on its stage
    v0.34.0 — the phone in the bar is a mark beside Instagram and LinkedIn, on every width; a click opens the number under it
    v0.33.0 — the scene's styles back to v0.27.0 (left-aligned copy in the page's type, the product right, the chapters, the day scene), less the six-leads overlay; 900svh
    v0.32.0 — the clinician's screen on the navy stage, lit out of the dark (the white sheet and its styles withdrawn); 760svh

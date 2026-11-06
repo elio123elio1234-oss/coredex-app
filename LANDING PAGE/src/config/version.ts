@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.36.0";
+export const APP_VERSION = "0.37.0";
 export const APP_BUILD_LABEL =
-  "On the company's own domain, cyphix.co: the share links point there";
+  "The opening holds on scroll: the clinician's screen, then 'in your hands' becomes 'on your hand'; the watches move to Explore";
 
+// v0.37.0 — the opening as a scroll scene; no hero button; the market fact as an icon; the sharper phone; the watches to /visualizations; the version without its capsule
 // v0.36.0 — live at cyphix.co (GoDaddy DNS → Vercel); share links moved there
 // v0.35.0 — "Explore": /one-strap, /technology and /investors; the 3D journey off the home page
 // v0.34.0 — the bar's phone as a mark; a click opens the number
