@@ -3,10 +3,10 @@
    Static: the line is drawn, not drawing. */
 
 const DONE = [
-  "Working prototype",
-  "Technological and algorithmic proof of feasibility",
-  "Patent pending on the core technology",
-  "Israel Innovation Authority · Tnufa programme",
+  "Working Hardware Prototype",
+  "AI & Algorithmic Validation",
+  "Patent-Pending Core Tech",
+  "Backed by the Israel Innovation Authority",
 ];
 
 export default function Stage() {
@@ -18,7 +18,7 @@ export default function Stage() {
             Where we are.
           </h2>
           <p className="body-lg">
-            From a working prototype to a wearable strap, ready for its first trial.
+            From a validated prototype to a clinical-grade wearable, backed by leading institutions.
           </p>
         </header>
 
@@ -35,7 +35,7 @@ export default function Stage() {
           <li className="ms is-next">
             <span className="ms-dot" aria-hidden="true" />
             <p>
-              <strong>Next step.</strong> A wearable strap, ready for its first trial.
+              <strong>Next step:</strong> Wearable form factor &amp; clinical study
             </p>
           </li>
         </ol>
@@ -44,5 +44,6 @@ export default function Stage() {
   );
 }
 
+// v0.38.1 — the milestones in an investor's terms (the advice the user passed on): hardware prototype, AI & algorithmic validation, patent-pending core tech, backed by the Israel Innovation Authority (no "Tnufa"); next, the wearable form factor and a clinical study (the hospital unnamed until the user confirms)
 // v0.7.0 — static milestone line; the dots carry done/next (no "Done" labels), "Next step." in ink
 // v0.6.0 — the one-pager's "Where we are" on a drawn line ending at the pulsing next step, then the exploded render

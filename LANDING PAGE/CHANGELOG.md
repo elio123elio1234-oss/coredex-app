@@ -1,5 +1,29 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.1 — 2026-11-07 — the timeline, in an investor's terms
+
+**Why.** The user passed on advice about "Where we are". The design works; the words should read
+like a company raising a seed round: drop "Tnufa", sharpen the technical terms, and name the
+clinical partner in the next step.
+
+**What changed.**
+- **The line under the heading:** "From a validated prototype to a clinical-grade wearable,
+  backed by leading institutions."
+- **The milestones**, in order:
+  1. Working Hardware Prototype
+  2. AI & Algorithmic Validation
+  3. Patent-Pending Core Tech
+  4. Backed by the Israel Innovation Authority
+- **The next step:** "Wearable form factor & clinical study".
+
+**Kept out, pending the user.** The advice names the hospital ("clinical study at Sheba Medical
+Center"). The site has kept Sheba's name off on purpose since v0.35.0 (the user's rule: no
+partner names). A hospital's name on a public page can also need its consent. The next step reads
+"clinical study" until the user confirms.
+
+**Checked.** Typecheck and build pass; the timeline at 1440 and 390 wide.
+
+
 ## v0.38.0 — 2026-11-07 — "Who it's for", one audience at a time
 
 **Why.** The user, on v0.37.10's three long rows: "It looks a bit long now. Let's do it in points:
