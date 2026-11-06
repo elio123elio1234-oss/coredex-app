@@ -1,5 +1,22 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.7 — 2026-11-07 — the IP fact, for an international reader
+
+**Why.** The user passed on this advice about the blue facts band. "Tnufa" means nothing to an
+investor or a judge in Abu Dhabi, the US or Europe: it is an internal Israeli term, and noise. What
+interests them is that a national body examined the company and backed it. So: drop Tnufa, say
+"Backed by", and add "IP". The suggested wording: "Patent-Pending IP • Backed by the Israel
+Innovation Authority".
+
+**What changed.** The band's third fact now reads "Patent-Pending IP · Backed by the Israel
+Innovation Authority". It uses the site's own separator (·). "Tnufa" stays on two other pages, in
+their own context, until the user says otherwise:
+- the Stage milestone "Israel Innovation Authority · Tnufa programme";
+- the Investors page's "Funded by the Israel Innovation Authority (Tnufa)…".
+
+**Checked.** Typecheck and build pass; the band at 1440 wide.
+
+
 ## v0.37.6 — 2026-11-07 — "Catch the Invisible."; the haze fixed
 
 **Why.** Two notes from the user:

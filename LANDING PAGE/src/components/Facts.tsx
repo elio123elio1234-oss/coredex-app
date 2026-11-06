@@ -17,12 +17,13 @@ export default function Facts() {
         </div>
         <div className="fact">
           <LineShield className="fact-icon" />
-          <p>Patent pending · Israel Innovation Authority, Tnufa</p>
+          <p>Patent-Pending IP · Backed by the Israel Innovation Authority</p>
         </div>
       </div>
     </section>
   );
 }
 
+// v0.37.7 — the IP fact for an international reader: "Patent-Pending IP · Backed by the Israel Innovation Authority" (no "Tnufa", the user)
 // v0.37.0 — the market fact in the others' form: a line icon (a globe) and the same type, not a big figure (the user)
 // v0.9.0 — the AliveCor-style facts band: watch, market, patent and programme
