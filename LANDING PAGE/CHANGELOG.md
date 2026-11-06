@@ -1,5 +1,35 @@
 # Changelog — CYPHIX Landing
 
+## v0.37.6 — 2026-11-07 — "Catch the Invisible."; the haze fixed
+
+**Why.** Two notes from the user:
+
+1. **A bug.** "If I scroll down to the iPad and then back up there's a bug: it turns murky and
+   hazy, like a blur."
+2. **The tablet scene's words.** "In the iPad part, instead of what's there now and what I told
+   you, write this:
+   Headline: Catch the Invisible.
+   Subheading: Transient symptoms disappear quickly. Cyphix records clinical-grade morphology at
+   symptom onset, ensuring your clinician never misses a critical event."
+
+**What changed.**
+- **The haze.** Since v0.37.3 the day's light has sat outside the scene. Its opacity was set only
+  while the scene was shown, so a fast scroll back up hid the scene with the light still half-on
+  over the hero. The light is now set on every frame.
+  - Checked: jumping straight back to the top from 30 %, 55 % and 90 % of the scene leaves the
+    light at 0 and the hero fully opaque.
+- **The words.** The scene reads "Catch the Invisible." with the user's subheading, word for word.
+  The "in your hands" → "on your hand" swap is retired, with its styles. The headline may now wrap
+  to two lines.
+- **The hold.** The held stage is shorter: 1.7 screens of scroll instead of 2.4. Each fade keeps
+  the same scroll distance; only the swap's stretch is gone.
+
+**Checked.**
+- Typecheck and build pass.
+- 1440 × 900, 960 × 600 and 390 × 760, the scene and the way back up.
+- No page errors.
+
+
 ## v0.37.5 — 2026-11-07 — the slide withdrawn; the opening fits at every zoom
 
 **Why.** The user: "Sorry, no. When I zoom in or out it still changes the hand's height and the

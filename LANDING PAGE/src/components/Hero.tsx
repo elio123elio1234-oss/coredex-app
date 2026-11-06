@@ -82,14 +82,12 @@ export default function Hero() {
             <div className="wrap hm-inner">
               <div className="hm-copy">
                 <h2 id="moment-title" className="hm-title">
-                  The moment,
-                  <span className="hm-swap">
-                    <span className="hm-was">in your hands.</span>
-                    <span className="hm-now">on your hand.</span>
-                  </span>
+                  Catch the Invisible.
                 </h2>
                 <p className="hm-text">
-                  Recorded when it happens, sent straight to the clinician.
+                  Transient symptoms disappear quickly. Cyphix records
+                  clinical-grade morphology at symptom onset, ensuring your
+                  clinician never misses a critical event.
                 </p>
               </div>
               <div className="hm-media">
@@ -103,6 +101,7 @@ export default function Hero() {
   );
 }
 
+// v0.37.6 — the scene's words, the user's: "Catch the Invisible." and its line (the "in your hands" / "on your hand" swap retired)
 // v0.37.5 — the slide's scaling withdrawn (its wrappers stay as the scene's layers)
 // v0.37.4 — the opening line, the user's new wording ("A clinical-grade 6-lead ECG integrated into your everyday watch strap…")
 // v0.37.3 — both scenes on a "slide" (1440 x 828) scaled to the stage, the same composition at any zoom; the light behind it fills the stage; no "Concept imagery" caption

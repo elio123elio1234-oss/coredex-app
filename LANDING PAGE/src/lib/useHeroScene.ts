@@ -1,21 +1,19 @@
 import { useEffect, useRef } from "react";
 
 /* The home page's opening as a short scroll scene. The stage holds under the bar while the
-   visitor scrolls through its wrapper, in three beats:
+   visitor scrolls through its wrapper, in two beats, then a hold:
 
      the opening   the slate hero as it always was
      the moment    a dissolve in turns, so nothing is ever seen through anything else: the hero's
                    copy, hand and tablet fade out on the slate; the day's light fades in; the
-                   clinician's screen fades in, already writing; "The moment, in your hands."
-                   follows, rising a few pixels
-     the swap      a step further the line changes, plainly, to "on your hand."; then the page
-                   scrolls on
+                   clinician's screen fades in, already writing; "Catch the Invisible." and its
+                   line follow, rising a few pixels; a short hold, then the page scrolls on
 
    Fades, nothing more: nothing in the hero moves, nothing flies, nothing is drawn over the
    scene. (v0.37.0 opened a white circle of light: "hard on the eye, 2005"; v0.37.1 lowered the
    hand and glided the tablet: "childish, not a medical startup". The user: something gentle.)
-   The swap is a switch, not a scrub, so it reads as a change and never stops half-way. Scrolling
-   back undoes each beat. */
+   Scrolling back undoes each beat. (Until v0.37.6 the line read "The moment, in your hands." and
+   swapped to "on your hand."; the user replaced both with "Catch the Invisible.") */
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smooth = (a: number, b: number, v: number) => {
@@ -23,12 +21,12 @@ const smooth = (a: number, b: number, v: number) => {
   return t * t * (3 - 2 * t);
 };
 
-/* beats, as progress through the wrapper's travel */
-const OUT = [0.12, 0.24] as const; // after a hold on the whole hero: its copy, hand and tablet fade out
-const LIGHT = [0.22, 0.34] as const; // the day's light fades in
-const SCREEN = [0.3, 0.42] as const; // the clinician's screen fades in
-const COPY = [0.36, 0.48] as const; // the line fades in, rising a few pixels
-export const SWAP_AT = 0.66; // "in your hands" → "on your hand"
+/* beats, as progress through the wrapper's travel (1.7 screens: index.css, .hero-pin); the same
+   scroll distances as v0.37.5's 2.4 screens, without the swap's */
+const OUT = [0.17, 0.34] as const; // after a hold on the whole hero: its copy, hand and tablet fade out
+const LIGHT = [0.31, 0.48] as const; // the day's light fades in
+const SCREEN = [0.42, 0.59] as const; // the clinician's screen fades in
+const COPY = [0.51, 0.68] as const; // the line fades in, rising a few pixels
 
 export function useHeroScene() {
   const pin = useRef<HTMLDivElement>(null);
@@ -47,7 +45,6 @@ export function useHeroScene() {
     const screen = scene.querySelector<HTMLElement>(".hm-media");
     const words = scene.querySelector<HTMLElement>(".hm-copy");
     let raf = 0;
-    let swapped = false;
     let shown = false;
 
     const draw = () => {
@@ -62,6 +59,9 @@ export function useHeroScene() {
       const shine = smooth(SCREEN[0], SCREEN[1], p);
       const rise = smooth(COPY[0], COPY[1], p);
       hero.forEach((el) => (el.style.opacity = String(1 - out)));
+      // the light sits outside the scene, so it is set on every frame: set only while the scene
+      // showed, a fast scroll back up left it half-lit over the hero (v0.37.3–v0.37.5)
+      if (bg) bg.style.opacity = String(light);
 
       // out of the layout until it begins to fade in, so its monitor starts as it appears
       const on = light > 0;
@@ -71,7 +71,6 @@ export function useHeroScene() {
         scene.setAttribute("aria-hidden", on ? "false" : "true");
       }
       if (on) {
-        if (bg) bg.style.opacity = String(light);
         if (screen) screen.style.opacity = String(shine);
         if (words) {
           words.style.opacity = String(rise);
@@ -79,11 +78,6 @@ export function useHeroScene() {
         }
       }
 
-      const swap = p >= SWAP_AT;
-      if (swap !== swapped) {
-        swapped = swap;
-        scene.classList.toggle("is-swapped", swap);
-      }
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(draw);
@@ -101,6 +95,7 @@ export function useHeroScene() {
   return { pin, stage, moment };
 }
 
+// v0.37.6 — the light reset on every frame (scrolling back up left the hero hazy); "Catch the Invisible." in place of the swap, a shorter hold
 // v0.37.5 — the slide withdrawn: the page answers the browser's zoom like any page (the user: "smooth access for everyone")
 // v0.37.4 — the slide crops its empty top on short windows instead of shrinking
 // v0.37.3 — the slide's scale (--k) from the stage; a longer hold on the whole hero before the fades

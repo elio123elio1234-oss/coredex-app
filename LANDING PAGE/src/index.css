@@ -668,13 +668,13 @@ section[id] {
   left: var(--gutter);
 }
 
-/* ---------- the opening's scene: the band holds, the clinician's screen, the swap ---------- */
+/* ---------- the opening's scene: the band holds, the clinician's screen ---------- */
 
-/* the stage holds under the bar for 2.4 screens of scroll (lib/useHeroScene) */
+/* the stage holds under the bar for 1.7 screens of scroll (lib/useHeroScene) */
 .hero-pin {
   position: relative;
-  height: calc(100vh - var(--bar) + 240vh);
-  height: calc(100svh - var(--bar) + 240svh);
+  height: calc(100vh - var(--bar) + 170vh);
+  height: calc(100svh - var(--bar) + 170svh);
 }
 .hero-stage {
   /* never taller than the window under the bar (v0.37.2 held a 560 px floor, so on a short window
@@ -776,52 +776,6 @@ section[id] {
   line-height: 1.02;
   letter-spacing: -0.04em;
   color: var(--ink);
-  white-space: nowrap; /* two lines, the second the one that changes */
-}
-/* the swap: the old words leave upward, the new rise into their place in coral and are underlined,
-   inside a window the height of the line, so the change is seen, not just a different word */
-.hm-swap {
-  display: grid;
-  justify-items: start;
-  overflow: hidden;
-  padding-bottom: 0.14em;
-  margin-bottom: -0.14em;
-}
-.hm-swap > span {
-  grid-area: 1 / 1;
-  position: relative;
-  transition:
-    transform 0.75s var(--ease),
-    opacity 0.45s ease;
-}
-.hm-now {
-  color: var(--coral);
-  opacity: 0;
-  transform: translateY(105%);
-}
-.hm-now::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0.3em;
-  bottom: 0.02em;
-  height: 0.06em;
-  background: var(--coral);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.6s var(--ease);
-}
-.is-swapped .hm-was {
-  opacity: 0;
-  transform: translateY(-105%);
-}
-.is-swapped .hm-now {
-  opacity: 1;
-  transform: none;
-}
-.is-swapped .hm-now::after {
-  transform: scaleX(1);
-  transition-delay: 0.4s;
 }
 .hm-text {
   margin: 18px 0 0;
@@ -846,17 +800,6 @@ section[id] {
     max-width: 620px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .hm-swap > span,
-  .hm-now::after {
-    transition: opacity 0.3s ease;
-  }
-  .hm-now,
-  .is-swapped .hm-was {
-    transform: none;
-  }
-}
-
 /* ---------- facts band ---------- */
 
 .facts {
@@ -2446,7 +2389,8 @@ section[id] {
   }
 }
 
-/* v0.37.5 — the slide withdrawn (it fought the browser's zoom); the stage never taller than the window; a landscape window keeps the opening side by side
+/* v0.37.6 — the swap retired ("Catch the Invisible."); the hold 1.7 screens
+   v0.37.5 — the slide withdrawn (it fought the browser's zoom); the stage never taller than the window; a landscape window keeps the opening side by side
    v0.37.4 — the slide crops its empty top on short windows (no shrinking); the scene centred
    v0.37.3 — the opening on a slide scaled to the stage (the same composition at any zoom)
    v0.37.2 — the opening's transition as fades in turns (the hero's content out, the light, the screen, the line in)
