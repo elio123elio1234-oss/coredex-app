@@ -1,5 +1,17 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.27 — 2026-11-07 — "For investors" first in Explore
+
+**Why.** The user: in Explore, "For investors" should come first, then the rest.
+
+**What changed.** The Explore list now opens on **For investors** (the page was titled
+"Investors" in the menu), followed by One strap. Any watch., Technology and Visualizations, in their
+old order. The list is one source (`config/nav.ts`), so the order holds in both places:
+- the wide bar's menu;
+- the phone's drawer.
+
+Checked in WebKit at 1440 wide and on iPhone 13.
+
 ## v0.38.26 — 2026-11-07 — the Explore pages, from the challenge submission
 
 **Why.** The user sent their Future Health Digital Innovation Challenge submission (16 slides) and

@@ -1,8 +1,8 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.26";
-export const APP_BUILD_LABEL =
-  "Explore pages from the Future Health Challenge submission: investors' pyramid, measures, risks, team; technology's six views, hardware, demo";
+export const APP_VERSION = "0.38.27";
+export const APP_BUILD_LABEL = "Explore: For investors first, then the rest";
 
+// v0.38.27 — Explore opens on For investors
 // v0.38.26 — Investors and Technology filled in from the user's Future Health Challenge submission; the home page untouched
 // v0.38.25 — the wheel holds from 420 px under the bar (it switched off on the user's laptop at 100 %)
 // v0.38.24 — the city removed (the user: not relevant)
