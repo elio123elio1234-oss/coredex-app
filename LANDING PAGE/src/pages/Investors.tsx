@@ -39,7 +39,7 @@ const GAP = [
   },
 ];
 
-/* whom it is for, most urgent first (the submission's pyramid) */
+/* whom it is for, the most urgent at the pyramid's top (the submission's pyramid; the heading says only "Who it's for": the user found "most urgent first" childish) */
 const USERS = [
   {
     title: "Undiagnosed transient symptoms",
@@ -244,7 +244,7 @@ export default function Investors() {
 
         <section className="split" aria-labelledby="need-title">
           <figure className="split-media is-soft">
-            <img src={needDoor} width={585} height={559} alt="An open door between a clinic room and a living room, an ECG line passing through it." loading="lazy" decoding="async" />
+            <img src={needDoor} width={1170} height={966} alt="An open door between a clinic examination room, with its bed and a wall monitor, and a sunlit living room." loading="lazy" decoding="async" />
           </figure>
           <div className="split-copy">
             <h2 id="need-title" className="statement">
@@ -286,7 +286,7 @@ export default function Investors() {
           <div className="wrap">
             <div className="rule-head">
               <h2 id="users-title" className="h2">
-                Who it's for, most urgent first
+                Who it's for
               </h2>
             </div>
             <div className="inv-users">
@@ -519,6 +519,7 @@ export default function Investors() {
   );
 }
 
+// v0.38.28 — the need's image in the user's sharper version (1170 x 966, soft edges baked in); the pyramid's heading just "Who it's for"
 // v0.38.26 — from the user's Future Health Challenge submission: whom it is for (most urgent first) and the outcome, how success is measured, the timeline in months with its stakeholders, integration, regulatory path and sustainability, risks and safeguards, the team's capabilities (no study site or employer named)
 // v0.37.3 — the team link without Samsung; no "Concept imagery" caption (the user)
 // v0.35.0 — Investors: the need, today's compromise, the market, the business model, what has been done and what comes next, from the investor deck (no round amount, no partner named)

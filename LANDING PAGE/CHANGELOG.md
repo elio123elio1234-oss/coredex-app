@@ -1,5 +1,24 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.28 — 2026-11-07 — Investors: a sharper image; a plainer heading
+
+**Why.** Two notes from the user on the Investors page:
+- "Use this one here instead, it's higher quality": a ChatGPT image of the same scene as "The need
+  for an ECG doesn't stop at the clinic door".
+- "Without 'most urgent first', it sounds childish."
+
+**What changed.**
+- **The need's image is the user's sharper version.**
+  - It was 1672 × 941. It is cropped to the hooks, monitor, bed, door, plant and sofa, and saved at
+    1170 × 966: twice the slot's 585 px, so it stays sharp on a phone's or a Retina screen.
+  - Its edges fade into the page's white in the file, as the deck's version did.
+  - The slot keeps its width (585 px side by side, the full width on a phone).
+  - The deck's 585 × 559 version had a blue ECG line through the door; this one has none.
+- **The pyramid's heading is just "Who it's for".** The pyramid's order still shows which comes
+  first, without saying so.
+
+Checked in WebKit at 1440 wide and on iPhone 13.
+
 ## v0.38.27 — 2026-11-07 — "For investors" first in Explore
 
 **Why.** The user: in Explore, "For investors" should come first, then the rest.

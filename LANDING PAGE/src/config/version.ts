@@ -1,7 +1,8 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.27";
-export const APP_BUILD_LABEL = "Explore: For investors first, then the rest";
+export const APP_VERSION = "0.38.28";
+export const APP_BUILD_LABEL = "Investors: the need's image sharper (the user's); the pyramid's heading just \u201cWho it's for\u201d";
 
+// v0.38.28 — Investors: the user's sharper clinic-door image; "most urgent first" dropped from the heading
 // v0.38.27 — Explore opens on For investors
 // v0.38.26 — Investors and Technology filled in from the user's Future Health Challenge submission; the home page untouched
 // v0.38.25 — the wheel holds from 420 px under the bar (it switched off on the user's laptop at 100 %)
