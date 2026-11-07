@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Check, Mail, Pin } from "./Icons";
+import { ArrowRight, Check, Mail } from "./Icons";
 import { CAPTCHA_POLICY_URL, LEADS_URL } from "../config/api";
 
 /* ==================================================================
@@ -174,7 +174,7 @@ export default function ContactForm() {
     }
   };
 
-  const [shown, setShown] = useState<"mail" | "place" | null>(null);
+  const [shown, setShown] = useState<"mail" | null>(null);
   const bad = (k: keyof typeof problems) => (touched && problems[k] ? " is-invalid" : "");
 
   return (
@@ -202,19 +202,6 @@ export default function ContactForm() {
             </button>
             <span id="direct-mail" className={`direct-text${shown === "mail" ? " is-open" : ""}`}>
               <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
-            </span>
-            <button
-              type="button"
-              className="direct-mark"
-              aria-label={shown === "place" ? "Hide where we are" : "Show where we are"}
-              aria-expanded={shown === "place"}
-              aria-controls="direct-place"
-              onClick={() => setShown((s) => (s === "place" ? null : "place"))}
-            >
-              <Pin />
-            </button>
-            <span id="direct-place" className={`direct-text${shown === "place" ? " is-open" : ""}`}>
-              Kiryat Ono, Israel
             </span>
           </div>
         </div>
@@ -327,4 +314,5 @@ export default function ContactForm() {
 //          posts orgType "other" until the lead contract has an investor type
 // v0.1.0 — the "Request access" form: posts a lead to the API, Turnstile only when the
 //          server's policy asks for it, a sent state, honest errors (LAUNCH_PLAN 5.4, L1)
+// v0.38.24 — no city (the user: not relevant); the e-mail mark alone
 // v0.38.23 — the form's note links the privacy policy (notice at collection); the contact line as marks (v0.38.18)

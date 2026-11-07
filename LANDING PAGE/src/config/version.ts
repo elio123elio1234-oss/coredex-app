@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.23";
+export const APP_VERSION = "0.38.24";
 export const APP_BUILD_LABEL =
-  "Legal: privacy policy, terms of use, accessibility statement; contrast fixes from an accessibility audit";
+  "No city on the site: the contact line is the e-mail alone; the footer's Contact column without it";
 
+// v0.38.24 — the city removed (the user: not relevant)
 // v0.38.23 — /privacy, /terms, /accessibility and their footer links; the form links the policy; WCAG contrast fixes
 // v0.38.22 — on a phone the man on the band's right side (the user's mock-up); the computer unchanged
 // v0.38.21 — the solution band's scene: the room blurred, the man in front, his head above the band (the user's mock-up)

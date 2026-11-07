@@ -1,5 +1,20 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.24 — 2026-11-07 — no city
+
+**Why.** The user: "Take my city off the site, it's not relevant."
+
+**What changed.** "Kiryat Ono, Israel" is gone from both places it stood:
+- **"Request the deck":** the pin mark and the line it revealed are removed. The contact line is
+  the e-mail mark alone.
+- **The footer's Contact column:** the city line is removed.
+
+No other page named the city. The legal pages say only that their courts are in Tel Aviv-Jaffa,
+which is the governing-law clause, not an address.
+
+Checked in WebKit on iPhone 13 and at 1440 wide: the city is in no text on the page, one mark
+remains, no errors.
+
 ## v0.38.23 — 2026-11-07 — legal pages and an accessibility pass
 
 **Why.** The user: "add to my site everything it needs so it isn't exposed to lawsuits (cookies or

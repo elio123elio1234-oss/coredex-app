@@ -80,7 +80,6 @@ export default function Footer() {
                 <li>
                   <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </li>
-                <li>Kiryat Ono, Israel</li>
               </ul>
             </div>
           </div>
@@ -110,6 +109,7 @@ export default function Footer() {
   );
 }
 
+// v0.38.24 — no city in the Contact column (the user: not relevant)
 // v0.38.23 — the legal links (Privacy, Terms, Accessibility) in the small print's band
 // v0.38.18 — no tagline, no phone; the marks are the e-mail, Instagram and LinkedIn; on a phone the wordmark the row's width, centred (the user)
 // v0.38.14 — a phone: the phone, Instagram and LinkedIn marks under the tagline (they left the phone's bar; the user)
