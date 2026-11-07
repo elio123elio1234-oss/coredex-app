@@ -7,10 +7,8 @@ import { ArrowRight, LineGlobe, LinePulse, LineShield, LineWatch } from "../comp
 import SixViews from "../components/SixViews";
 import NoiseFigure from "../components/NoiseFigure";
 import wear from "../assets/deck/proto-wear.webp";
-import electrodes from "../assets/deck/proto-electrodes.webp";
+import strapRender from "../assets/img/scene-strap.webp";
 import appLeads from "../assets/img/app-limb-leads.webp";
-import traceRaw from "../assets/deck/trace-raw.webp";
-import traceWeighted from "../assets/deck/trace-weighted.webp";
 
 /* Technology, behind "Explore": how a strap records a 6-lead ECG, and the
    innovation under it, in the investor deck's own words: each contact point
@@ -73,12 +71,12 @@ const STEPS = [
     n: "02",
     title: "A smart array, weighted.",
     text: "Each contact point is an array of elements, each read by its own ADC. The processing measures every element and weights its signal, in real time, by the quality of its actual contact.",
-    img: electrodes,
-    w: 700,
-    h: 933,
-    fit: "cover",
-    alt: "The prototype band: three snap electrodes on a navy woven band, with their leads.",
-    note: "Prototype band: the left-leg contact as two elements, LL 1 and LL 2, beside the reference, RLD",
+    img: strapRender,
+    w: 1200,
+    h: 1200,
+    fit: "render",
+    alt: "The Cyphix strap, rendered from its 3D model: on the inner side of the module, two electrode plates and its sensors.",
+    note: "The Cyphix module, from its 3D model",
   },
   {
     n: "03",
@@ -148,7 +146,7 @@ export default function Technology() {
           </div>
         </section>
 
-        <section className="tech-signal" aria-labelledby="noise-title">
+        <section className="section tech-signal" aria-labelledby="noise-title">
           <div className="wrap">
             <header className="tech-signal-head">
               <p className="tech-signal-kicker">
@@ -175,17 +173,6 @@ export default function Technology() {
                 </li>
               ))}
             </ul>
-            <figure className="tech-signal-deck">
-              <div className="tech-trace">
-                <p className="tech-trace-label">One electrode, raw</p>
-                <img src={traceRaw} width={1182} height={405} alt="An ECG strip from a single electrode, with heavy noise between the beats." loading="lazy" decoding="async" />
-              </div>
-              <div className="tech-trace">
-                <p className="tech-trace-label">The same lead, weighted across the array</p>
-                <img src={traceWeighted} width={1025} height={350} alt="The same lead after weighting: a clean strip with a clear shape to each beat." loading="lazy" decoding="async" />
-              </div>
-              <figcaption className="nf-cap">From the investor deck. Illustrative.</figcaption>
-            </figure>
           </div>
         </section>
 
@@ -282,6 +269,7 @@ export default function Technology() {
   );
 }
 
+// v0.38.30 — the signature section on the page's white, the figure as an ECG printout (the user: the blue band and the coloured drawings read as childish, not medical); step 02's picture the module's render, not the prototype band (the user: "a sixth-grade project"); the deck's two strips dropped (the figure says it)
 // v0.38.29 — more engineered (the user: "not innovative or professional enough"): the system in figures under the head; the noisy electrode against the array as the page's dark signature band, its three noises named (the submission's figure, which was missing)
 // v0.38.26 — from the user's Future Health Challenge submission: six views against one, the three noise sources, after the recording (the portal; the AI baseline in development, decision support only), the hardware, the demo and the video
 // v0.37.0 — the app's limb-lead phone in the user's sharper image (1719 x 871)

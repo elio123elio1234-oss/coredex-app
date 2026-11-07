@@ -1,5 +1,35 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.30 — 2026-11-07 — Technology, medical rather than colourful
+
+**Why.** The user, on v0.38.29: "I didn't like the screen suddenly turning blue; it became less
+serious, and the drawings look childish and colourful, less medical." And on step 02 ("A smart
+array, weighted."): its picture of the prototype band "looks like a sixth-grade project I made".
+
+**What changed.**
+- **No navy band.** "Noise, solved in hardware" stands on the page's own white, like the sections
+  around it, with its kicker, headline and mechanism in the page's ink.
+- **The figure is an ECG printout:**
+  - two strips of black ink on the faint red grid of ECG paper, small squares with every fifth
+    line heavier;
+  - each strip labelled in a quiet column: "Single electrode: one contact; its noise passes into
+    the trace" and "Cyphix array: each contact an array, weighted by its quality";
+  - the three noises over the first strip as thin grey brackets with small mono names (motion,
+    loose contact, muscle).
+
+  The drawn electrode and module are gone, as are the coloured elements, the coral and checked
+  pills, and the verdict circles. It is still captioned "Illustrative signals", and it reads
+  nothing.
+- **The deck's two strips are dropped.** The figure now shows the same thing, and the repetition
+  read as unfinished.
+- **Step 02's picture is the Cyphix module rendered from the team's 3D model** (transparent, so it
+  floats in its frame), not the prototype band. The prototype stays in step 01, on the wrist.
+- **Kept:** the navy figures strip under the head (6 leads, 10 s, 320 Hz). It is the same band the
+  home and Investors pages open with.
+
+Checked in WebKit at 1440, iPhone 13 and iPhone SE: each noise's name fits its bracket, and there is
+no sideways overflow. axe-core (WCAG 2.1 A/AA) finds no violations.
+
 ## v0.38.29 — 2026-11-07 — Technology, engineered; the noise figure
 
 **Why.** The user: the Technology page "doesn't feel innovative or professional enough". They also

@@ -1,16 +1,18 @@
 import { useMemo } from "react";
 
-/* Noise, solved in hardware (the user's submission, hardware slide): one standard electrode
-   against the Cyphix array, the same beats on both. On the single electrode the three noises a
-   wearable meets: motion (the baseline wanders), loose contact (the signal drops and steps) and
-   muscle (fast, irregular noise). Under the array the beats come through clean. The strips are
-   drawn here from a synthetic heartbeat, seeded, so they are the same on every load: an
-   illustration of what the weighting does, labelled so, and nothing in it reads an ECG. */
+/* Noise, solved in hardware (the user's submission, hardware slide): a single electrode against the
+   Cyphix array, the same beats on both, drawn as an ECG printout: black ink on the faint red grid
+   of ECG paper. On the single electrode the three noises a wearable meets are bracketed: motion
+   (the baseline wanders), loose contact (the signal sinks, its beats fade) and muscle (fast,
+   irregular noise). Under the array the same beats come through clean. Drawn here from a synthetic
+   heartbeat, seeded, so it is the same on every load: an illustration, labelled so; it reads
+   nothing. (v0.38.29 drew it on navy with coloured devices and pills: "childish, colourful, less
+   medical", the user; v0.38.30 is the printout.) */
 
 const W = 1000;
-const H = 132;
-const BASE = 78; // the strip's baseline, in its own box
-const AMP = 44; // one unit of the synthetic beat, in px
+const H = 120;
+const BASE = 70; // the strip's baseline, in its own box
+const AMP = 40; // one unit of the synthetic beat, in px
 const BEATS = 7;
 const RR = W / BEATS;
 
@@ -43,10 +45,9 @@ function rng(seed: number) {
   };
 }
 
-const smooth = (x: number, a: number, b: number) => {
+const bump = (x: number, a: number, b: number) => {
   if (x <= a || x >= b) return 0;
-  const t = (x - a) / (b - a);
-  return Math.sin(Math.PI * t); // 0 at the edges, 1 in the middle
+  return Math.sin(Math.PI * ((x - a) / (b - a))); // 0 at the edges, 1 in the middle
 };
 
 function strips() {
@@ -54,58 +55,30 @@ function strips() {
   let noise = 0;
   const clean: string[] = [];
   const noisy: string[] = [];
-  for (let i = 0; i <= W; i += 1) {
-    const x = i;
+  for (let x = 0; x <= W; x += 1) {
     const f = x / W;
-    const v = beat(((x % RR) + RR) % RR / RR);
-    // motion: a slow, large wander
-    const motion = smooth(f, ZONES[0].from, ZONES[0].to) * (0.62 * Math.sin(f * 38) + 0.28 * Math.sin(f * 91 + 1));
-    // loose contact: the signal sinks and steps, its beats faint
-    const c = smooth(f, ZONES[1].from, ZONES[1].to);
-    const contact = c * (-0.55 + 0.18 * Math.sin(f * 140)) ;
+    const v = beat((x % RR) / RR);
+    const motion = bump(f, ZONES[0].from, ZONES[0].to) * (0.62 * Math.sin(f * 38) + 0.28 * Math.sin(f * 91 + 1));
+    const c = bump(f, ZONES[1].from, ZONES[1].to);
+    const contact = c * (-0.55 + 0.18 * Math.sin(f * 140));
     const keep = 1 - 0.7 * c;
-    // muscle: fast irregular noise
     noise = 0.55 * noise + (r() - 0.5);
-    const muscle = smooth(f, ZONES[2].from, ZONES[2].to) * 0.62 * noise;
+    const muscle = bump(f, ZONES[2].from, ZONES[2].to) * 0.62 * noise;
     const n = v * keep + motion + contact + muscle + 0.02 * (r() - 0.5);
-    const yc = (BASE - v * AMP).toFixed(1);
-    const yn = (BASE - n * AMP).toFixed(1);
-    clean.push(`${i ? "L" : "M"}${x} ${yc}`);
-    noisy.push(`${i ? "L" : "M"}${x} ${yn}`);
+    clean.push(`${x ? "L" : "M"}${x} ${(BASE - v * AMP).toFixed(1)}`);
+    noisy.push(`${x ? "L" : "M"}${x} ${(BASE - n * AMP).toFixed(1)}`);
   }
   return { clean: clean.join(""), noisy: noisy.join("") };
 }
 
-function Grid() {
+/* ECG paper: small squares, every fifth line heavier */
+function Paper() {
   const lines = [];
-  for (let x = 0; x <= W; x += 25) lines.push(<line key={`v${x}`} x1={x} y1={0} x2={x} y2={H} className={x % 125 ? "nf-grid" : "nf-grid is-major"} />);
-  for (let y = 3; y <= H; y += 25) lines.push(<line key={`h${y}`} x1={0} y1={y} x2={W} y2={y} className={(y - 3) % 125 ? "nf-grid" : "nf-grid is-major"} />);
+  for (let x = 0; x <= W; x += 10)
+    lines.push(<line key={`v${x}`} x1={x} y1={0} x2={x} y2={H} className={x % 50 ? "nf-grid" : "nf-grid is-major"} />);
+  for (let y = 0; y <= H; y += 10)
+    lines.push(<line key={`h${y}`} x1={0} y1={y} x2={W} y2={y} className={y % 50 ? "nf-grid" : "nf-grid is-major"} />);
   return <g aria-hidden="true">{lines}</g>;
-}
-
-function OneElectrode() {
-  return (
-    <svg viewBox="0 0 120 80" className="nf-device" aria-hidden="true">
-      <rect x="4" y="56" width="112" height="20" rx="6" className="nf-skin" />
-      <rect x="28" y="34" width="64" height="22" rx="7" className="nf-electrode" />
-      <rect x="53" y="26" width="14" height="9" rx="2.5" className="nf-electrode" />
-    </svg>
-  );
-}
-
-function Array3() {
-  return (
-    <svg viewBox="0 0 120 80" className="nf-device" aria-hidden="true">
-      <rect x="4" y="56" width="112" height="20" rx="6" className="nf-skin" />
-      <rect x="12" y="22" width="96" height="34" rx="6" className="nf-module" />
-      <text x="60" y="33" textAnchor="middle" className="nf-module-text">
-        CYPHIX
-      </text>
-      <rect x="18" y="38" width="25" height="13" rx="3" className="nf-el is-a" />
-      <rect x="47.5" y="38" width="25" height="13" rx="3" className="nf-el is-b" />
-      <rect x="77" y="38" width="25" height="13" rx="3" className="nf-el is-c" />
-    </svg>
-  );
 }
 
 function Row({ kind }: { kind: "noisy" | "clean" }) {
@@ -114,35 +87,28 @@ function Row({ kind }: { kind: "noisy" | "clean" }) {
   return (
     <div className={`nf-row is-${kind}`}>
       <div className="nf-side">
-        {noisy ? <OneElectrode /> : <Array3 />}
-        <p className="nf-side-label">{noisy ? "A standard electrode" : "The Cyphix array"}</p>
+        <p className="nf-side-title">{noisy ? "Single electrode" : "Cyphix array"}</p>
+        <p className="nf-side-sub">{noisy ? "One contact; its noise passes into the trace" : "Each contact an array, weighted by its quality"}</p>
       </div>
       <div className="nf-strip">
-        <ul className="nf-pills" aria-label={noisy ? "Noise in the signal" : "Noise handled"}>
-          {ZONES.map((z) => (
-            <li key={z.key} style={{ left: `${((z.from + z.to) / 2) * 100}%` }}>
-              {noisy ? null : <span className="nf-check" aria-hidden="true" />}
-              <span className="nf-full">{z.label}</span>
-              <span className="nf-short" aria-hidden="true">
-                {z.short}
-              </span>
-              <span className="sr-only">{noisy ? ": noise" : ": handled"}</span>
-            </li>
-          ))}
-        </ul>
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="nf-svg" aria-hidden="true">
-          <Grid />
-          {noisy &&
-            ZONES.map((z) => (
-              <rect key={z.key} x={z.from * W} y={0} width={(z.to - z.from) * W} height={H} className="nf-zone" />
+        {noisy && (
+          <ul className="nf-marks" aria-label="Where the noise enters">
+            {ZONES.map((z) => (
+              <li key={z.key} style={{ left: `${z.from * 100}%`, width: `${(z.to - z.from) * 100}%` }}>
+                <span className="nf-full">{z.label}</span>
+                <span className="nf-short" aria-hidden="true">
+                  {z.short}
+                </span>
+              </li>
             ))}
+          </ul>
+        )}
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="nf-svg" aria-hidden="true">
+          <rect width={W} height={H} className="nf-paper" />
+          <Paper />
           <path d={noisy ? paths.noisy : paths.clean} className="nf-trace" vectorEffect="non-scaling-stroke" />
         </svg>
       </div>
-      <p className="nf-verdict">
-        <span className={`nf-mark is-${kind}`} aria-hidden="true" />
-        {noisy ? "Noisy signal" : "Clean signal"}
-      </p>
     </div>
   );
 }
@@ -153,11 +119,12 @@ export default function NoiseFigure() {
       <Row kind="noisy" />
       <Row kind="clean" />
       <figcaption className="nf-cap">
-        Illustrative signals: the same beats under the three noises a wearable meets. Each Cyphix contact
-        point is an array of elements, weighted in real time by the quality of its contact.
+        Illustrative signals: the same beats, with the three noises a wearable ECG meets. Each Cyphix
+        contact point is an array of elements, weighted in real time by the quality of its contact.
       </figcaption>
     </figure>
   );
 }
 
+// v0.38.30 — an ECG printout: black ink on ECG paper, the noises bracketed in grey; no devices, no colour, no band (the user: "childish, colourful, less medical")
 // v0.38.29 — the noisy single electrode against the Cyphix array, the three noises named (the user's submission; the user: "it isn't there")

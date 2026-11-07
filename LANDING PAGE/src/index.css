@@ -2867,20 +2867,16 @@ section[id] {
   white-space: nowrap;
 }
 
-/* the signature band (v0.38.29): noise, solved in hardware. Navy, the figure at full width: a standard
-   electrode's strip with the three noises against the Cyphix array's clean strip, on a fine grid */
-.tech-signal {
-  margin-top: var(--section);
-  padding: clamp(64px, 8vw, 112px) 0;
-  background: var(--navy);
-  color: #fff;
-}
+/* noise, solved in hardware (v0.38.30): on the page's own white, the figure an ECG printout. A
+   label column (the single electrode, the Cyphix array) beside two strips of black ink on the faint
+   red grid of ECG paper; the three noises bracketed in grey over the first. (v0.38.29 set it on a
+   navy band with coloured devices and pills: "less serious, childish, less medical", the user.) */
 .tech-signal-head {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 20px clamp(40px, 6vw, 96px);
+  gap: 18px clamp(40px, 6vw, 96px);
   align-items: end;
-  margin-bottom: clamp(36px, 4.5vw, 56px);
+  margin-bottom: clamp(32px, 4vw, 52px);
 }
 .tech-signal-kicker {
   grid-column: 1 / -1;
@@ -2892,241 +2888,157 @@ section[id] {
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #a8bfdf;
+  color: var(--ink-3);
 }
 .tech-signal-kicker-icon {
   width: 22px;
   height: 22px;
-  color: #a8bfdf;
+  color: var(--blue);
 }
 .tech-signal-title {
   margin: 0;
-  font-size: clamp(34px, 4.2vw, 56px);
+  font-size: clamp(32px, 3.6vw, 48px);
   font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 .tech-signal-lede {
   margin: 0;
   font-size: clamp(16.5px, 1.3vw, 18.5px);
   line-height: 1.65;
-  color: #dbe4f0;
+  color: var(--ink-2);
 }
 .noise-figure {
   margin: 0;
-  padding: clamp(18px, 2.4vw, 32px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
+  border-top: 2px solid var(--ink);
 }
 .nf-row {
   display: grid;
-  grid-template-columns: clamp(96px, 11vw, 140px) minmax(0, 1fr) clamp(110px, 11vw, 150px);
-  gap: clamp(14px, 2vw, 28px);
-  align-items: center;
-  padding: 18px 0;
-}
-.nf-row + .nf-row {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  grid-template-columns: clamp(150px, 16vw, 220px) minmax(0, 1fr);
+  gap: clamp(16px, 2.4vw, 36px);
+  align-items: end;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--hair);
 }
 .nf-side {
-  text-align: center;
+  padding-bottom: 6px;
 }
-.nf-device {
-  display: block;
-  width: 100%;
-  height: auto;
+.nf-side-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
 }
-.nf-skin {
-  fill: #e7c2ab;
-}
-.nf-electrode {
-  fill: #c9d1dc;
-}
-.nf-module {
-  fill: #0b1a30;
-  stroke: rgba(255, 255, 255, 0.35);
-  stroke-width: 1;
-}
-.nf-module-text {
-  fill: rgba(255, 255, 255, 0.7);
-  font-family: var(--mono);
-  font-size: 6.5px;
-  letter-spacing: 0.2em;
-}
-.nf-el.is-a {
-  fill: #e9c46a;
-}
-.nf-el.is-b {
-  fill: #67c2b3;
-}
-.nf-el.is-c {
-  fill: #f2574c;
-}
-.nf-side-label {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.35;
-  color: #dbe4f0;
+.nf-side-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-3);
 }
 .nf-strip {
   position: relative;
-  padding-top: 34px;
+}
+.nf-row.is-noisy .nf-strip {
+  padding-top: 30px;
 }
 .nf-svg {
   display: block;
   width: 100%;
-  height: clamp(92px, 9vw, 132px);
+  height: clamp(84px, 8.4vw, 120px);
+}
+.nf-paper {
+  fill: #fffdfc;
 }
 .nf-grid {
-  stroke: rgba(255, 255, 255, 0.05);
+  stroke: rgba(205, 72, 62, 0.1);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 .nf-grid.is-major {
-  stroke: rgba(255, 255, 255, 0.1);
-}
-.nf-zone {
-  fill: rgba(242, 87, 76, 0.08);
+  stroke: rgba(205, 72, 62, 0.24);
 }
 .nf-trace {
   fill: none;
-  stroke-width: 1.8;
+  stroke: #14181f;
+  stroke-width: 1.4;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
-.nf-row.is-noisy .nf-trace {
-  stroke: #f2574c;
-}
-.nf-row.is-clean .nf-trace {
-  stroke: #ffffff;
-}
-.nf-pills {
+/* the noises, bracketed: a hairline over each stretch with its name above, small and grey */
+.nf-marks {
   position: absolute;
   inset: 0 0 auto;
-  height: 26px;
+  height: 24px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.nf-pills li {
+.nf-marks li {
   position: absolute;
   top: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.3;
-}
-.nf-row.is-noisy .nf-pills li {
-  border: 1px solid rgba(242, 87, 76, 0.55);
-  background: rgba(242, 87, 76, 0.14);
-  color: #ffd2cd;
-}
-.nf-row.is-clean .nf-pills li {
-  border: 1px solid rgba(168, 191, 223, 0.45);
-  background: rgba(168, 191, 223, 0.1);
-  color: #dbe4f0;
-}
-.nf-check {
-  width: 8px;
-  height: 5px;
-  margin-top: -2px;
-  border-left: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-}
-.nf-verdict {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-.nf-mark {
-  position: relative;
-  flex: none;
-  width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-bottom: 1px solid var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
 }
-.nf-mark.is-noisy {
-  border: 1.5px solid #f2574c;
-}
-.nf-mark.is-noisy::before,
-.nf-mark.is-noisy::after {
+.nf-marks li::before,
+.nf-marks li::after {
   content: "";
   position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 50%;
-  height: 1.5px;
-  margin-top: -0.75px;
-  background: #f2574c;
-  transform: rotate(45deg);
+  bottom: -5px;
+  width: 1px;
+  height: 6px;
+  background: var(--ink-3);
 }
-.nf-mark.is-noisy::after {
-  transform: rotate(-45deg);
+.nf-marks li::before {
+  left: 0;
 }
-.nf-mark.is-clean {
-  border: 1.5px solid #ffffff;
+.nf-marks li::after {
+  right: 0;
 }
-.nf-mark.is-clean::before {
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 7px;
-  width: 9px;
-  height: 5px;
-  border-left: 1.5px solid #fff;
-  border-bottom: 1.5px solid #fff;
-  transform: rotate(-45deg);
+.nf-short {
+  display: none;
 }
 .nf-cap {
-  margin: 16px 0 0;
-  font-size: 13px;
+  margin: 14px 0 0;
+  font-size: 13.5px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--ink-3);
 }
 .tech-signal-legend {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px clamp(24px, 3vw, 48px);
-  margin: clamp(32px, 4vw, 48px) 0 0;
+  margin: clamp(36px, 4vw, 52px) 0 0;
   padding: 0;
   list-style: none;
 }
 .tech-signal-legend li {
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 1px solid var(--hair);
   font-size: 15.5px;
   line-height: 1.55;
-  color: #dbe4f0;
+  color: var(--ink-2);
 }
 .tech-signal-legend strong {
   display: block;
   margin-bottom: 4px;
   font-size: 17px;
   font-weight: 600;
-  color: #fff;
+  color: var(--ink);
 }
-.tech-signal-deck {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px clamp(16px, 2.4vw, 32px);
-  margin: clamp(40px, 5vw, 64px) 0 0;
-}
-/* the deck's strips stand on white cards: their labels in the page's ink */
-.tech-signal-deck .tech-trace-label {
-  color: var(--ink-3);
-}
-.tech-signal-deck .nf-cap {
-  grid-column: 1 / -1;
-  margin-top: 0;
+/* step 02's picture: the module's render, transparent, floating in its frame */
+.step-media.is-render img {
+  object-fit: contain;
+  padding: 4% 10%;
+  filter: drop-shadow(0 16px 22px rgba(11, 26, 48, 0.14));
 }
 @media (max-width: 1023px) {
   .tech-signal-head {
@@ -3134,53 +3046,28 @@ section[id] {
   }
 }
 @media (max-width: 719px) {
-  /* a phone: the device and the verdict on one line, the strip under them at the full width */
   .nf-row {
-    grid-template-columns: 72px minmax(0, 1fr);
-    grid-template-areas:
-      "side verdict"
-      "strip strip";
-    gap: 10px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
   }
   .nf-side {
-    grid-area: side;
+    padding-bottom: 0;
   }
-  .nf-verdict {
-    grid-area: verdict;
-    font-size: 14px;
+  .nf-marks li {
+    font-size: 10px;
+    letter-spacing: 0.06em;
   }
-  .nf-strip {
-    grid-area: strip;
-  }
-  .nf-side-label {
-    font-size: 11px;
-  }
-  .nf-pills li {
-    padding: 3px 7px;
-    font-size: 11px;
-  }
-}
-.nf-short {
-  display: none;
-}
-/* the narrowest phones: the middle pill's short name, the pills a little smaller */
-@media (max-width: 374px) {
-  .nf-full {
-    display: none;
-  }
-  .nf-short {
-    display: inline;
-  }
-  .nf-pills li {
-    padding: 2px 6px;
-    font-size: 10.5px;
-  }
-  .nf-check {
-    display: none;
-  }
-  .tech-signal-legend,
-  .tech-signal-deck {
+  .tech-signal-legend {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* the narrowest phones: the middle bracket's short name */
+@media (max-width: 479px) {
+  .nf-marks .nf-full {
+    display: none;
+  }
+  .nf-marks .nf-short {
+    display: inline;
   }
 }
 
@@ -3920,6 +3807,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.30 — the noise figure on white, as an ECG printout (black ink, ECG paper, grey brackets); step 02's render; no navy band
    v0.38.29 — Technology's signature band: the noisy electrode against the array (NoiseFigure), on navy
    v0.38.26 — Explore pages from the user's submission: the investors' pyramid, outcomes, measures, path, risks, team; technology's six views, noise sources, after the recording, hardware, demos
    v0.38.23 — legal pages (privacy, terms, accessibility) and their footer links; contrast fixes from the accessibility audit (--coral-ink for small coral text; the wheel's far rows hidden; full ink on prefers-contrast)
