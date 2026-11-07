@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Logo from "./Logo";
-import { Chevron, Instagram, LinkedIn, Phone } from "./Icons";
+import { Chevron, Instagram, LinkedIn } from "./Icons";
 import { EXPLORE, SECTIONS, type PageKey } from "../config/nav";
 import { usePopover } from "../lib/usePopover";
 
@@ -8,8 +8,8 @@ import { usePopover } from "../lib/usePopover";
    scrolls away, then a white sticky bar: the wordmark, the home page's
    section links and "Explore", a menu of the pages kept off the home page
    (the 3D journey, the technology, the investors' page), and at the right
-   end the phone, Instagram and LinkedIn as three marks. The number itself
-   is not on show: a click on the phone opens it under the mark. Over a dark
+   end Instagram and LinkedIn as marks (no phone: the user's own number is
+   not to be on the web until there is a company line). Over a dark
    stage the bar turns dark too. On a phone the bar is the wordmark and a
    menu button (three lines) at the right, which slides a drawer in from the
    right over the whole height of the screen, the bar too (as Gmail's does),
@@ -17,7 +17,6 @@ import { usePopover } from "../lib/usePopover";
    a phone, and the phone, Instagram and LinkedIn marks sit at the foot of
    the page (Footer). */
 
-const PHONE = "+972 54-398-9698";
 const SOCIAL = [
   { href: "https://www.instagram.com/cyphix.co/", label: "Cyphix on Instagram", Icon: Instagram },
   { href: "https://www.linkedin.com/company/cyphixmedical/", label: "Cyphix on LinkedIn", Icon: LinkedIn },
@@ -25,7 +24,6 @@ const SOCIAL = [
 
 export default function Header({ page = "home" }: { page?: PageKey }) {
   const [dark, setDark] = useState(false);
-  const call = usePopover();
   const explore = usePopover();
   const [menuOpen, setMenuOpen] = useState(false);
   const burger = useRef<HTMLButtonElement>(null);
@@ -112,22 +110,6 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
             </div>
           </nav>
           <div className="bar-end">
-            <div className="bar-call" ref={call.ref}>
-              <button
-                ref={call.button}
-                type="button"
-                className="bar-social"
-                aria-label={call.open ? "Hide our phone number" : "Show our phone number"}
-                aria-expanded={call.open}
-                aria-controls="bar-call-number"
-                onClick={() => call.setOpen((o) => !o)}
-              >
-                <Phone width={19} height={19} />
-              </button>
-              <div id="bar-call-number" className={`bar-pop${call.open ? " is-open" : ""}`}>
-                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-              </div>
-            </div>
             {SOCIAL.map(({ href, label, Icon }) => (
               <a key={href} className="bar-social" href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
                 <Icon width={20} height={20} />
@@ -193,6 +175,7 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
   );
 }
 
+// v0.38.18 — no phone in the bar (the user: not his own number on the web until there is a company line)
 // v0.38.17 — the cross focused without scrolling the drawer's layer (it jumped sideways as it opened)
 // v0.38.16 — the drawer over the whole screen, the bar too (the user: like Gmail), in a layer that clips it (the closed drawer let a phone pan sideways)
 // v0.38.14 — a phone: the menu a narrow drawer from the right with Explore's pages only; no section links; the marks moved to the foot of the page (the user)

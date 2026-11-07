@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Check, Mail, Phone, Pin } from "./Icons";
+import { ArrowRight, Check, Mail, Pin } from "./Icons";
 import { CAPTCHA_POLICY_URL, LEADS_URL } from "../config/api";
 
 /* ==================================================================
@@ -25,7 +25,6 @@ const LIMITS = { nameMin: 2, nameMax: 80, organizationMax: 120, messageMax: 1000
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js";
 const EMAIL = "elio123elio1234@gmail.com";
-const PHONE = "+972 54-398-9698";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
@@ -175,6 +174,7 @@ export default function ContactForm() {
     }
   };
 
+  const [shown, setShown] = useState<"mail" | "place" | null>(null);
   const bad = (k: keyof typeof problems) => (touched && problems[k] ? " is-invalid" : "");
 
   return (
@@ -187,20 +187,36 @@ export default function ContactForm() {
           <p className="body-lg">
             Tell us who you are. We will send the deck and find a time to talk.
           </p>
-          <ul className="direct">
-            <li>
+          {/* marks only; a tap shows what is behind one (the user: nothing on show). Side by side
+              on a phone, the shown line under them; beside its mark on a wider screen */}
+          <div className="direct">
+            <button
+              type="button"
+              className="direct-mark"
+              aria-label={shown === "mail" ? "Hide our e-mail" : "Show our e-mail"}
+              aria-expanded={shown === "mail"}
+              aria-controls="direct-mail"
+              onClick={() => setShown((s) => (s === "mail" ? null : "mail"))}
+            >
               <Mail />
+            </button>
+            <span id="direct-mail" className={`direct-text${shown === "mail" ? " is-open" : ""}`}>
               <a href={`mailto:${EMAIL}?subject=Cyphix%20%E2%80%94%20deck%20request`}>{EMAIL}</a>
-            </li>
-            <li>
-              <Phone />
-              <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-            </li>
-            <li>
+            </span>
+            <button
+              type="button"
+              className="direct-mark"
+              aria-label={shown === "place" ? "Hide where we are" : "Show where we are"}
+              aria-expanded={shown === "place"}
+              aria-controls="direct-place"
+              onClick={() => setShown((s) => (s === "place" ? null : "place"))}
+            >
               <Pin />
-              <span>Kiryat Ono, Israel</span>
-            </li>
-          </ul>
+            </button>
+            <span id="direct-place" className={`direct-text${shown === "place" ? " is-open" : ""}`}>
+              Kiryat Ono, Israel
+            </span>
+          </div>
         </div>
 
         <div className="contact-panel">

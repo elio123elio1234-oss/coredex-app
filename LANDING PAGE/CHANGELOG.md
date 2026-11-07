@@ -1,5 +1,40 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.18 — 2026-11-07 — no phone number; the contact line as marks; the footer's wordmark
+
+**Why.** Three requests from the user:
+- **No phone at all.** "I don't need my phone exposed to everyone on the internet until there is a
+  company phone." The number was the user's own.
+- **"Request the deck":** the e-mail, phone and place stood there in full. Now there are marks
+  only, and a tap reveals what is behind one. On a phone the marks sit side by side.
+- **The footer, on a phone:** drop "Clinical Depth. Wearable Ease." and enlarge the wordmark to the
+  row's full width, centred. The e-mail joins Instagram and LinkedIn at the bottom.
+
+**What changed.**
+- **The phone is gone everywhere:**
+  - the wide bar's phone mark and its pop-up number;
+  - the footer's Contact column;
+  - the phone marks at the footer's foot;
+  - the contact line.
+- **The contact line** is two marks, an envelope and a pin. A tap shows the e-mail (a link that
+  writes to it) or "Kiryat Ono, Israel".
+  - On a wide screen the line shows beside its mark.
+  - On a phone the marks sit side by side and the line shows under them.
+  - Only one line shows at a time; a second tap hides it.
+- **The footer:**
+  - "Clinical Depth. Wearable Ease." is removed on every screen.
+  - On a phone the CYPHIX wordmark spans the row (350 px of 390) and is centred.
+  - Under it, centred, are the e-mail, Instagram and LinkedIn marks.
+
+Checked in WebKit (iPhone 13 profile) and Chrome, phone and 1440 wide:
+- no number in the page's text;
+- the marks reveal and hide;
+- the footer's wordmark spans the row;
+- no errors.
+
+**Not changed:** the investors' one-pager PDF (`CYPHIX_ONE_PAGER/`) still prints the number. It is a
+separate document, left for the user's call.
+
 ## v0.38.17 — 2026-11-07 — two iPhone bugs, reproduced in WebKit
 
 **Why.** The user, on the iPhone, rightly angry that v0.38.16 was not checked where it runs: the

@@ -1,5 +1,5 @@
 import Logo from "./Logo";
-import { Instagram, LinkedIn, Phone } from "./Icons";
+import { Instagram, LinkedIn, Mail } from "./Icons";
 import hands from "../assets/photos/contact-hands.webp";
 import { APP_VERSION } from "../config/version";
 
@@ -7,11 +7,12 @@ import { APP_VERSION } from "../config/version";
    right, then a pale band with the small print and the build badge. The whole
    upper area is frosted glass over the user's heart-hands image, on white; the
    text sits straight on it, dark, with the red wordmark as in the bar. On a
-   phone the bar has no room for its marks, so the phone, Instagram and
-   LinkedIn stand here, under the tagline, as marks (a tap on the phone calls). */
+   phone the wordmark spans the row, centred, and the e-mail, Instagram and
+   LinkedIn stand under it as marks. No tagline (the user), and no phone
+   anywhere: the user's own number stays off the web until there is a
+   company line. */
 
 const EMAIL = "elio123elio1234@gmail.com";
-const PHONE = "+972 54-398-9698";
 
 export default function Footer() {
   return (
@@ -26,10 +27,9 @@ export default function Footer() {
               <a className="foot-brand" href="#top" aria-label="Cyphix, back to top">
                 <Logo className="foot-logo" />
               </a>
-              <p className="foot-tagline">Clinical Depth. Wearable Ease.</p>
               <p className="foot-marks">
-                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`} aria-label="Call Cyphix">
-                  <Phone width={20} height={20} />
+                <a href={`mailto:${EMAIL}`} aria-label="E-mail Cyphix">
+                  <Mail width={20} height={20} />
                 </a>
                 <a href="https://www.instagram.com/cyphix.co/" target="_blank" rel="noopener noreferrer" aria-label="Cyphix on Instagram">
                   <Instagram width={20} height={20} />
@@ -79,9 +79,6 @@ export default function Footer() {
                 <li>
                   <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </li>
-                <li>
-                  <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-                </li>
                 <li>Kiryat Ono, Israel</li>
               </ul>
             </div>
@@ -105,6 +102,7 @@ export default function Footer() {
   );
 }
 
+// v0.38.18 — no tagline, no phone; the marks are the e-mail, Instagram and LinkedIn; on a phone the wordmark the row's width, centred (the user)
 // v0.38.14 — a phone: the phone, Instagram and LinkedIn marks under the tagline (they left the phone's bar; the user)
 // v0.37.0 — the version as plain small print (no capsule); Visualizations in the page map
 // v0.35.0 — the page map reaches every page: the home page's sections by "/#…", One strap. Any watch., Technology, and the investors' page; the small print allows for the working prototype's photographs
