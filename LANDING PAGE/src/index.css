@@ -606,7 +606,9 @@ section[id] {
   position: fixed;
   inset: 0;
   z-index: 100;
+  /* clip, not hidden: a hidden box can still be scrolled (focus did, and the drawer jumped) */
   overflow: hidden;
+  overflow: clip;
   pointer-events: none;
   visibility: hidden;
   transition: visibility 0s linear 0.4s;
@@ -2821,6 +2823,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.17 — the drawer's layer clips (overflow: clip), so focus cannot scroll it sideways
    v0.38.16 — the phone's drawer a fixed layer over the whole screen and the bar (like Gmail), clipping its own edges (no sideways pan)
    v0.38.15 — Request the deck: the fields and the send button square, like the hero's chip
    v0.38.14 — stacked, "Who it's for" holds its wheel again, moving one pixel for one pixel with the scroll (scroll timeline, keyframes wheel-0/1/2)

@@ -50,7 +50,9 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
   // the drawer: focus moves into it and back to the button; Escape closes it
   useEffect(() => {
     if (!menuOpen) return;
-    closer.current?.focus();
+    // without scrolling: focusing the cross while the panel was still sliding in scrolled the
+    // clipping layer sideways, and on an iPhone the drawer jumped (the user)
+    closer.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeMenu();
     };
@@ -191,6 +193,7 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
   );
 }
 
+// v0.38.17 — the cross focused without scrolling the drawer's layer (it jumped sideways as it opened)
 // v0.38.16 — the drawer over the whole screen, the bar too (the user: like Gmail), in a layer that clips it (the closed drawer let a phone pan sideways)
 // v0.38.14 — a phone: the menu a narrow drawer from the right with Explore's pages only; no section links; the marks moved to the foot of the page (the user)
 // v0.38.13 — a phone: a menu button (three lines) at the right in place of Explore and the marks; the phone, Instagram and LinkedIn at the panel's foot (the user)

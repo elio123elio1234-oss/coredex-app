@@ -1,5 +1,33 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.17 — 2026-11-07 — two iPhone bugs, reproduced in WebKit
+
+**Why.** The user, on the iPhone, rightly angry that v0.38.16 was not checked where it runs: the
+menu "opens from the right, then jumps back"; and "Who it's for" scrolls perfectly but flickers:
+"it starts well, jumps to the last row, then to the first, and only then settles". Both had been
+checked only in Chrome. They are now reproduced and verified in WebKit (Safari's engine, via
+Playwright, iPhone 13 profile).
+
+**The drawer's jump.** On opening, the drawer moved focus to its close cross while the panel was
+still off the screen's edge. Focus scrolls the nearest scrollable box to reveal what it focuses,
+and the layer clipping the drawer (`overflow: hidden`) is scrollable: WebKit scrolled it 78 px
+sideways, then 17, then 3, then back. Now the cross is focused with `preventScroll`, and the layer
+clips with `overflow: clip`, which cannot be scrolled at all. WebKit, frame by frame: the panel
+slides 271, 167, 118, 100, 93, 90 px and stops, with no sideways offset.
+
+**The wheel's jump.** The browser draws the wheel from the scroll position, between two scroll
+positions the hook gives it. v0.38.14 measured them from the screen (`getBoundingClientRect` +
+`scrollY`) on every scroll. On an iPhone, while Safari's bars slide away or the page coasts, those
+two readings disagree for a frame. A range too early shows the wheel at its end (the last row), a
+range too late at its start (the first), until the next frame corrects it: exactly what the user
+saw. Now the range comes from the layout alone (the wrapper's offset in the page), measured on
+load, resize and layout change, never while scrolling. And while the wheel follows the scroll, it
+no longer re-renders the rows at each step. WebKit, a scroll walked at 4, 12 and 30 px a frame:
+one range throughout, rows moving exactly with the scroll, no jump.
+
+Real iPhone momentum and Safari's bars cannot be reproduced on Windows; the user's phone remains
+the final check.
+
 ## v0.38.16 — 2026-11-07 — the drawer over the bar; no sideways pan
 
 **Why.** The user, on the iPhone: the scroll is now perfect, but the page "moves to the side and

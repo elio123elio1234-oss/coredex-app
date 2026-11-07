@@ -68,7 +68,10 @@ export function useScrollSteps(
           });
         range = "";
         // redraw once React has applied the change (it sets or clears the rows' own places)
-        window.setTimeout(() => window.dispatchEvent(new Event("scroll")), 0);
+        window.setTimeout(() => {
+          place();
+          window.dispatchEvent(new Event("scroll"));
+        }, 0);
       }
     };
 
@@ -80,16 +83,9 @@ export function useScrollSteps(
       const p = travel > 0 ? clamp01((s.top - r.top) / travel) : 0;
       const at = Math.min(count - 1, Math.floor(p * count));
       if (isSmooth) {
-        if (timeline) {
-          // the scroll positions where the hold begins and ends, for the browser's own timeline
-          const start = Math.round(r.top + window.scrollY - parseFloat(getComputedStyle(box).top));
-          const next = `${start}px ${start + Math.round(travel)}px`;
-          if (next !== range) {
-            range = next;
-            wrap.style.setProperty("--wheel-a", `${start}px`);
-            wrap.style.setProperty("--wheel-b", `${start + Math.round(travel)}px`);
-          }
-        } else {
+        // the browser draws it from its own scroll timeline (place()); nothing to do while scrolling,
+        // and no re-render either (a step change would restyle the rows mid-scroll)
+        if (!timeline) {
           // one pixel of scroll, one pixel of the wheel: the rows' places from the scroll itself
           const pos = p * (count - 1);
           rows().forEach((li) => {
@@ -101,24 +97,48 @@ export function useScrollSteps(
           });
         }
       }
-      if (at !== current) {
+      if (at !== current && !isSmooth) {
         current = at;
         setStep(at);
       }
+    };
+
+    /* where the hold begins and ends, as scroll positions, for the browser's timeline: from the
+       layout alone (the wrapper's offset in the page), measured when the layout changes, never
+       while scrolling. v0.38.14 measured it from the screen on every scroll; on an iPhone, while
+       Safari's bars slide or the page coasts, that reading drifts for a frame, and the wheel
+       jumped to its last row, then its first, before settling (the user). */
+    const place = () => {
+      if (!isSmooth || !timeline) return;
+      let top = 0;
+      for (let el: HTMLElement | null = wrap; el; el = el.offsetParent as HTMLElement | null)
+        top += el.offsetTop;
+      const start = Math.round(top - parseFloat(getComputedStyle(box).top));
+      const end = start + Math.round(wrap.offsetHeight - box.offsetHeight);
+      const next = `${start} ${end}`;
+      if (next === range) return;
+      range = next;
+      wrap.style.setProperty("--wheel-a", `${start}px`);
+      wrap.style.setProperty("--wheel-b", `${end}px`);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(draw);
     };
     const onResize = () => {
       fit();
+      place();
       onScroll();
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
     // the page above can grow after load (images), moving where the hold begins
-    const ro = new ResizeObserver(onScroll);
+    const ro = new ResizeObserver(() => {
+      place();
+      onScroll();
+    });
     ro.observe(document.body);
     fit();
+    place();
     draw();
     return () => {
       window.removeEventListener("scroll", onScroll);
@@ -131,6 +151,7 @@ export function useScrollSteps(
   return { pin, stage, step, held, smooth };
 }
 
+// v0.38.17 — the timeline's range measured from the layout when it changes, never from the screen while scrolling (on an iPhone the wheel jumped to its last row and back); no step re-render while it follows the scroll
 // v0.38.14 — stacked, the wheel held again (v0.38.12 took it away, also from narrow desktop windows) and moving one pixel for one pixel with the scroll: drawn by the browser's scroll timeline where it has one
 // v0.38.12 — the finger-following wheel retired: stacked, nothing holds (the user: it "sank" the page)
 // v0.38.11 — the following wheel glides toward the finger (0.08 s), drawn on every frame until it settles

@@ -77,7 +77,7 @@ export default function WhoFor() {
                             "--ad": Math.abs(i - step),
                           } as CSSProperties)
                     }
-                    aria-hidden={held && i !== step ? true : undefined}
+                    aria-hidden={held && !smooth && i !== step ? true : undefined}
                   >
                     <Icon className="row-icon" />
                     <p>
@@ -122,6 +122,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.17 — following the scroll, every row stays readable (no aria-hidden by step)
 // v0.38.14 — stacked, the wheel holds again (the user: "that is not what I asked"; it had also left narrow desktop windows), moving one pixel for one pixel with the scroll
 // v0.38.12 — a phone never holds (the user: the held wheel "sank" the page): the page scrolls at its own pace, the rows turn in CSS
 // v0.38.9 — on a phone the wheel follows the finger (the user); the phone image centred
