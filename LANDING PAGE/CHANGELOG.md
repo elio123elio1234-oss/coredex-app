@@ -1,5 +1,21 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.19 — 2026-11-07 — the footer's marks across the row, not the wordmark
+
+**Why.** The user: "I asked for the Instagram, LinkedIn… marks to take the whole width, not my
+logo." v0.38.18 read the request as the wordmark and stretched CYPHIX across the row. That was
+wrong.
+
+**What changed (phones).**
+- **The wordmark is back to its own size** (106 × 22).
+- **The e-mail, Instagram and LinkedIn marks span the row.** Each takes a third of the width and is
+  centred in it, with the glyph at 34 px instead of 20 and a 72 px tap area.
+
+Checked in WebKit:
+- **iPhone 13:** the row runs 20–370 px of 390, with the marks centred at 77, 195 and 313.
+- **iPhone SE:** the row runs 20–300 px of 320.
+- **Wide screen:** unchanged; the footer shows no marks there.
+
 ## v0.38.18 — 2026-11-07 — no phone number; the contact line as marks; the footer's wordmark
 
 **Why.** Three requests from the user:

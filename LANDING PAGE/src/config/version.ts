@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.18";
+export const APP_VERSION = "0.38.19";
 export const APP_BUILD_LABEL =
-  "No phone number anywhere; Request the deck: marks that reveal; the footer's wordmark full width";
+  "Footer on a phone: the e-mail, Instagram and LinkedIn marks across the row; the wordmark its own size";
 
+// v0.38.19 — footer on a phone: the marks span the row, not the wordmark
 // v0.38.18 — no phone number anywhere; the contact line as marks; the footer without its tagline, its wordmark the row's width on a phone
 // v0.38.17 — the drawer opens without a sideways jump; the wheel's range measured from the layout, not mid-scroll
 // v0.38.16 — the phone's drawer over the whole screen, the bar too; it no longer lets the page pan sideways

@@ -2672,20 +2672,21 @@ section[id] {
     display: block;
     margin-left: auto;
   }
-  /* the bar's marks, at the foot of the page instead, centred under the wordmark; the wordmark
-     the row's whole width (the user) */
+  /* the bar's marks, at the foot of the page instead: the e-mail, Instagram and LinkedIn spread
+     over the row's whole width, larger, each centred in its third (the user; v0.38.18 widened the
+     wordmark instead, which was not what was asked) */
   .foot-marks {
     display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin: 28px 0 0;
+    margin: 24px 0 0;
   }
-  .foot-brand {
-    display: block;
+  .foot-marks a {
+    flex: 1 1 0;
+    width: auto;
+    height: 72px;
   }
-  .foot-logo {
-    width: 100%;
-    height: auto;
+  .foot-marks svg {
+    width: 34px;
+    height: 34px;
   }
   .bar-explore {
     position: static;
@@ -2873,6 +2874,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.19 — footer on a phone: the three marks span the row, larger; the wordmark back to its size
    v0.38.18 — Request the deck: marks only, a tap shows the line; no phone anywhere; the footer without its tagline, its wordmark the row's width on a phone
    v0.38.17 — the drawer's layer clips (overflow: clip), so focus cannot scroll it sideways
    v0.38.16 — the phone's drawer a fixed layer over the whole screen and the bar (like Gmail), clipping its own edges (no sideways pan)
