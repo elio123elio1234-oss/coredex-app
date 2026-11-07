@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 
 /* Noise, solved in hardware (the user's submission, hardware slide): a single electrode against the
-   Cyphix array, the same beats on both, drawn as an ECG printout: black ink on the faint red grid
-   of ECG paper. On the single electrode the three noises a wearable meets are bracketed: motion
+   Cyphix array, the same beats on both, drawn as a schematic: ink lines on white over a hairline baseline,
+   like the cross-sections beside them. On the single electrode the three noises a wearable meets are bracketed: motion
    (the baseline wanders), loose contact (the signal sinks, its beats fade) and muscle (fast,
    irregular noise). Under the array the same beats come through clean. Drawn here from a synthetic
    heartbeat, seeded, so it is the same on every load: an illustration, labelled so; it reads
@@ -69,16 +69,6 @@ function strips() {
     noisy.push(`${x ? "L" : "M"}${x} ${(BASE - n * AMP).toFixed(1)}`);
   }
   return { clean: clean.join(""), noisy: noisy.join("") };
-}
-
-/* ECG paper: small squares, every fifth line heavier */
-function Paper() {
-  const lines = [];
-  for (let x = 0; x <= W; x += 10)
-    lines.push(<line key={`v${x}`} x1={x} y1={0} x2={x} y2={H} className={x % 50 ? "nf-grid" : "nf-grid is-major"} />);
-  for (let y = 0; y <= H; y += 10)
-    lines.push(<line key={`h${y}`} x1={0} y1={y} x2={W} y2={y} className={y % 50 ? "nf-grid" : "nf-grid is-major"} />);
-  return <g aria-hidden="true">{lines}</g>;
 }
 
 /* the two contacts in cross-section, drawn as an engineering figure: skin hatched, metal grey,
@@ -176,8 +166,7 @@ function Row({ kind }: { kind: "noisy" | "clean" }) {
           </ul>
         )}
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="nf-svg" aria-hidden="true">
-          <rect width={W} height={H} className="nf-paper" />
-          <Paper />
+          <line x1={0} y1={BASE} x2={W} y2={BASE} className="nf-base" />
           <path d={noisy ? paths.noisy : paths.clean} className="nf-trace" vectorEffect="non-scaling-stroke" />
         </svg>
       </div>
@@ -198,6 +187,7 @@ export default function NoiseFigure() {
   );
 }
 
+// v0.38.32 — the strips schematic: ink on white, a hairline baseline, no ECG paper (the user: to match the page's cleanness and the cross-sections)
 // v0.38.31 — the two contacts back, as engineering cross-sections (skin hatched, metal grey, ink lines): without them the comparison was unclear (the user)
 // v0.38.30 — an ECG printout: black ink on ECG paper, the noises bracketed in grey; no devices, no colour, no band (the user: "childish, colourful, less medical")
 // v0.38.29 — the noisy single electrode against the Cyphix array, the three noises named (the user's submission; the user: "it isn't there")

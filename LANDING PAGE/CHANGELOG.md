@@ -1,5 +1,16 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.32 — 2026-11-07 — the strips, schematic
+
+**Why.** The user, on v0.38.31: "Nice, but make the signals themselves look schematic too, not on a
+grid, so it fits the page's cleanness."
+
+**What changed.** The two strips lose their ECG paper. Each is now an ink line on white over a
+hairline baseline, in the same hand as the cross-sections beside it. The noise brackets, the
+labels and the caption ("Illustrative signals") are unchanged.
+
+Checked in WebKit at 1440 and on iPhone 13: no sideways overflow, no errors.
+
 ## v0.38.31 — 2026-11-07 — the electrode and the skin, drawn as an engineer would
 
 **Why.** The user, on v0.38.30: "still doesn't look professional, and now it's somehow less clear,
