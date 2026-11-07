@@ -1,5 +1,72 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.26 — 2026-11-07 — the Explore pages, from the challenge submission
+
+**Why.** The user sent their Future Health Digital Innovation Challenge submission (16 slides) and
+asked to add what the Explore pages were missing. Two instructions came with it:
+- The home page stays exactly as it is ("it's perfect").
+- The submission's pyramid of whom it is for goes on the Investors page.
+
+**/investors, added:**
+- **Who it's for, most urgent first:** the four-tier pyramid.
+  1. Undiagnosed transient symptoms.
+  2. Active rhythm management.
+  3. Post-discharge monitoring.
+  4. Prevention and longevity.
+
+  Beside it, the intended outcome for patients, clinicians and health systems, and the aim:
+  cut the time to diagnosis for elusive arrhythmias from months to days.
+- **How success will be measured:**
+  - **Clinical-grade signal:** against a standard ECG machine, measured as lead-by-lead agreement
+    and the share of recordings a blinded cardiologist rates diagnostic.
+  - **Earlier detection:** in the 20–50-patient feasibility study.
+  - Also tracked: first recordings made without help.
+- **The timeline in months:** now, months 9–13, month 13 on, by month ~51. Under it sit
+  stakeholders, integration (web view and PDF first, HL7 FHIR later), the regulatory path (expected
+  FDA Class II, likely 510(k)) and sustainability (fitting remote-monitoring reimbursement).
+- **Risks and safeguards:** the submission's seven-row table. On a phone it becomes a list.
+- **The team's capabilities:**
+  - Elio: B.Sc. EE at Tel Aviv University; four years and more in hardware and chip design; built
+    the prototype end to end.
+  - Tamir: physician, a Technion graduate and a paediatrics resident; supported the proof of
+    concept; translates clinical needs.
+- **Touched:** "What has been done" (clinical) now says requirements were developed with
+  cardiologists and a first patient study is agreed. "Ten wearable prototypes" and "the data to
+  train its model" join the milestones.
+
+**/technology, added:**
+- **Six views, not one.** A drawn diagram of the frontal plane: a watch's one lead against the six
+  limb leads at their standard angles, with the inferior wall (II, III, aVF) shaded. It is anatomy,
+  not a reading.
+- **The three noise sources** the array handles: motion, loose contact, muscle.
+- **After the recording:**
+  - **The clinician's portal,** available from the first day.
+  - **The AI baseline, marked "In development".** It is worded as the submission's own safeguards:
+    it supports the clinician and never replaces them, a clinician reads every recording, and
+    Cyphix never tells a patient they are fine.
+- **The hardware:**
+  - the working prototype;
+  - the final form;
+  - sourcing;
+  - safety and standards: "designed toward" IEC 60601-1, ISO 10993 and ISO 13485, a direction,
+    not a claim of compliance.
+- **See it working:** the no-login web demo and the prototype video, as links only, not embedded,
+  so YouTube sets no cookies.
+
+**Left out on purpose:**
+- **Sheba,** named as the secured study site in the submission. No partner has been named on the
+  site since v0.35.0, and that waits for the user's word.
+- **Samsung,** which the user removed from the site.
+- **"Tnufa" on the home page.** It stays where it already was, on Investors.
+- **No round amount.**
+
+**A first for the site: AI.** The submission's AI Heart ID is described here, as in development.
+The product itself still displays data and does not interpret (the standing rule). The site's
+wording keeps to the submission's own limits, and the user can withdraw it.
+
+Checked in WebKit, at 1440 wide and on iPhone 13: both pages hold no sideways overflow and no
+errors. axe-core (WCAG 2.1 A/AA) finds no violations on either page. The home page is unchanged.
+
 ## v0.38.25 — 2026-11-07 — the wheel on a shorter laptop window
 
 **Why.** The user, on the computer at 100 % zoom: "the scrolling disappears in this part. It must
