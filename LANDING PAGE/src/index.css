@@ -1117,11 +1117,14 @@ section[id] {
   height: clamp(240px, 30vw, 440px);
 }
 /* the home page's band (v0.38.21, the user's mock-up): the room blurred behind (blurred in the
-   file, not live), the man in his armchair in front, centred, his head rising above the band's
-   top edge into the section above; the navy card rises over his legs */
+   file, not live), the man in his armchair in front (on a phone on the band's right side, as in the
+   mock-up: v0.38.21 centred him there, "why?"; the computer as it was), his head rising above the band's top edge into the
+   section above; the navy card rises over his legs. The band clips its sides (his chair may run past
+   the screen's edge, as in the mock-up) but not its top. */
 .solution-media.is-scene {
   position: relative;
   overflow: visible;
+  overflow-x: clip;
   height: clamp(260px, 30vw, 440px);
 }
 .solution-room {
@@ -2783,6 +2786,7 @@ section[id] {
     height: 250px;
   }
   .solution-media.is-scene .solution-man {
+    left: 66%;
     height: 116%;
   }
   .solution-media.is-scene + .wrap .solution-card {
@@ -2889,6 +2893,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.22 — on a phone the man on the band's right side (66 %), as in the user's mock-up; the computer unchanged; the band clips its sides
    v0.38.21 — the solution band's scene: the room blurred, the man in his armchair in front, his head above the band
    v0.38.20 — stacked, "Who it's for" flows: the rows scroll with the page between a held heading and a held image (no scroll timeline, no jumps)
    v0.38.19 — footer on a phone: the three marks span the row, larger; the wordmark back to its size

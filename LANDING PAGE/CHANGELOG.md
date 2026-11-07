@@ -1,5 +1,23 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.22 — 2026-11-07 — on a phone, the man on the band's right
+
+**Why.** The user: "You put him in the middle when the reference clearly has him more on the right
+of the band. Why?" Then: "On the computer I wouldn't touch it, it's good. On the phone he's in the
+middle, why?" v0.38.21 centred him on a phone against the user's own mock-up.
+
+**What changed (phones only).**
+- **The man sits right of the middle,** his centre at 66 % of the screen, as in the mock-up.
+- **70 % was tried first** but showed a sliver of his white shoe beside the navy card; at 66 % the
+  card covers it.
+- **The band clips its sides** (`overflow-x: clip`), so his chair may run to the screen's edge, as in
+  the mock-up, without the page gaining width. It does not clip its top, so his head still rises
+  above the band.
+- **Untouched, as the user said:** the computer (64 % side by side) and every width over 719 px.
+
+Checked in WebKit on iPhone 13, iPhone SE and iPhone 15 Pro Max: centred at 66 % on each, no
+sideways overflow. A desktop width check at 1440 is unchanged.
+
 ## v0.38.21 — 2026-11-07 — the solution band's scene
 
 **Why.** The user wanted to try a scene in place of the empty grey band under "Universal Fit.

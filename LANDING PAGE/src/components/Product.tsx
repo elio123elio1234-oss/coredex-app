@@ -39,6 +39,7 @@ export default function Product() {
   );
 }
 
+// v0.38.22 — on a phone the man sits on the band's right side, as in the mock-up (styles in index.css)
 // v0.38.21 — the band's scene, the user's two images: the room blurred, the man in his armchair in front, his head above the band
 // v0.37.9 — the card's words, the user's: "Universal Fit. Clinical Power." and its paragraph, in place of "Our solution"
 // v0.37.0 — the band kept, empty; its four watches moved to /visualizations (WearStills)
