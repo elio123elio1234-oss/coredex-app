@@ -1,5 +1,28 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.12 — 2026-11-07 — the phone scrolls at its own pace
+
+**Why.** The user, on an iPhone: scrolling "Who it's for" with the finger "doesn't feel natural and
+isn't as fast as the rest of the page… it feels like it sinks the page". v0.38.11 made the wheel
+smooth, but the wheel itself was the problem: it held the section for about 2.7 screens of scroll
+while the page stood still, so the finger moved and nothing went by. No glide fixes that; a held
+stage on a phone reads as the page getting stuck.
+
+**What changed.**
+- **Stacked (a phone, a portrait tablet), "Who it's for" never holds.** It is a plain section, about
+  one screen and a half tall, and it scrolls exactly like the rest of the page.
+- **The wheel stays, done by the browser.** Each row comes up from the bottom tilted back and faint,
+  stands upright and full in the middle of the screen, and tilts away as it leaves at the top. It
+  is a CSS scroll-driven animation (`animation-timeline: view()`), drawn on the graphics chip from
+  the scroll itself, with no script in between, so it can never lag the finger. Where the browser
+  has no scroll timeline, or the visitor asks for reduced motion, the rows read plainly.
+- **The finger-following code is retired** (`smooth`, the glide, `data-wheel-i`): nothing uses it.
+- **The wide screen is unchanged:** the held, notched wheel stays.
+
+Checked in headless Chrome at 390 × 700: the section is 980 px of ordinary page (it was held), the
+rows turn as they pass, no errors; at 1440 × 900 the held wheel is as it was. How it feels under the
+finger needs the user's iPhone.
+
 ## v0.38.11 — 2026-11-07 — the phone's wheel, smooth
 
 **Why.** The user, on an iPhone: "In 'Who it's for' the text's roll feels choppy, as if it ran on

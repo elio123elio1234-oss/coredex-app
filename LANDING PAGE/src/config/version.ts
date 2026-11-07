@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.11";
+export const APP_VERSION = "0.38.12";
 export const APP_BUILD_LABEL =
-  "Who it's for: the phone's wheel glides with the finger (no mask, its own layers)";
+  "Who it's for on a phone: no hold, the page scrolls at its own pace; the rows turn in CSS";
 
+// v0.38.12 — a phone: Who it's for no longer holds; the rows turn from the scroll in CSS
 // v0.38.11 — the phone's wheel smooth: a short glide, its rows on their own layers, no mask
 // v0.38.10 — phones: the announcement line hidden
 // v0.38.9 — phones: the opening plain, the scene a section below; the wheel follows the finger
