@@ -1116,6 +1116,7 @@ section[id] {
   mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
 }
 .who-pin.is-held .rows li {
+  will-change: transform, opacity;
   position: absolute;
   top: 50%;
   left: 0;
@@ -1191,9 +1192,19 @@ section[id] {
   .who-pin.is-held .rows p {
     font-size: 16px;
   }
-  /* following the finger: no transition, the place is the scroll's */
+  /* following the finger: no transition, the place is the scroll's; each row its own layer for
+     the graphics chip, and no mask over them (a mask made the phone repaint the wheel on every
+     frame: "choppy, as if it ran on 200-year-old hardware"); the rows clip at the wheel's edge and
+     fade by their own opacity */
+  .who-pin.is-smooth .rows {
+    overflow: hidden;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
   .who-pin.is-smooth .rows li {
     transition: none;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
   }
   .who-pin.is-held .rows-grid .rows-media {
     max-width: min(300px, 80vw);
@@ -2558,6 +2569,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.11 — the wheel's rows on their own layers; on a phone no mask over them (it repainted every frame)
    v0.38.10 — phones: the blue announcement line hidden
    v0.38.9 — the wheel follows the finger on a phone; the phone image centred when stacked
    v0.38.9 — phones and portrait screens: no held scene; the clinician's screen a plain section under the band

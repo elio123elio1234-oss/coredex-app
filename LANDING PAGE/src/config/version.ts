@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.10";
+export const APP_VERSION = "0.38.11";
 export const APP_BUILD_LABEL =
-  "Phones: no blue announcement line at the top";
+  "Who it's for: the phone's wheel glides with the finger (no mask, its own layers)";
 
+// v0.38.11 — the phone's wheel smooth: a short glide, its rows on their own layers, no mask
 // v0.38.10 — phones: the announcement line hidden
 // v0.38.9 — phones: the opening plain, the scene a section below; the wheel follows the finger
 // v0.38.8 — phones: the hand fits, the physician at 56 %, the wheel from 540 px

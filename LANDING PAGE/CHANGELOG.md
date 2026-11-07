@@ -1,5 +1,33 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.11 — 2026-11-07 — the phone's wheel, smooth
+
+**Why.** The user, on an iPhone: "In 'Who it's for' the text's roll feels choppy, as if it ran on
+200-year-old hardware. Why isn't it just smooth?"
+
+Two causes:
+- **The mask.** The rows sat under a fading mask (`mask-image`), so the phone repainted the whole
+  wheel on every frame.
+- **The scroll events.** v0.38.9 placed the rows only when a scroll event came. A phone sends those
+  unevenly during a swipe, so the wheel stepped from one to the next.
+
+**What changed.**
+- **No mask on a phone.** The wheel clips at its edge, and its rows fade by their own opacity.
+- **Each row its own layer** (`will-change: transform, opacity`, `backface-visibility: hidden`), so
+  moving it is the graphics chip's work, not a repaint. The wide screen's notched wheel gets the
+  layers too.
+- **A short glide.** The drawn position glides toward the scroll's over about 0.08 s, drawn every
+  frame until it settles. It moves at the finger's pace, evenly, and comes to rest exactly on the
+  scroll's position.
+
+**Checked.**
+- Typecheck and build pass.
+- At 390 × 700, a finger-like scroll in 120 small steps: row 2's place runs 1.00 → 0.84 → 0.61 →
+  0.36 → 0.11 → −0.14 → … → −1.00, with no jumps, and settles at the scroll's own position. No
+  page errors.
+- The feel on the user's iPhone is the real test.
+
+
 ## v0.38.10 — 2026-11-07 — phones: no announcement line
 
 **Why.** The user: "On the phone, let's drop the blue bar at the top of the page."
