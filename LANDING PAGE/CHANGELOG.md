@@ -1,5 +1,15 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.15 — 2026-11-07 — Request the deck, square
+
+**Why.** The user: in "Request the deck", make the rectangles' corners sharper, like the top of the
+landing page. The hero's chip ("In development · Not for sale") and the form's own panel are
+square; the fields inside the panel were rounded (14 px) and the send button 10 px, so the form
+read softer than the rest of the page.
+
+**What changed.** The form's fields and its send button are square (radius 0), with the button's
+focus ring square too. Only this section: the button on the pages behind Explore keeps its corners.
+
 ## v0.38.14 — 2026-11-07 — two corrections: the phone's menu, and the wheel back
 
 **Why.** The user, on v0.38.12 and v0.38.13: "you didn't understand me at all." Both were wrong.

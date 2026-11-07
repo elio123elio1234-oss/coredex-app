@@ -2226,7 +2226,8 @@ section[id] {
   width: 100%;
   padding: 14px 16px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  /* square, like the hero's chip and the panel around them (the user: sharper corners) */
+  border-radius: 0;
   background: var(--mist-2);
   color: var(--ink);
   font: 400 16px/1.45 var(--sans);
@@ -2263,6 +2264,11 @@ section[id] {
   margin: 0;
   font-size: 14px;
   color: var(--red);
+}
+/* the send button square too, and its focus ring with it */
+.contact .btn,
+.contact .btn:focus-visible {
+  border-radius: 0;
 }
 .form-actions {
   display: flex;
@@ -2786,6 +2792,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.15 — Request the deck: the fields and the send button square, like the hero's chip
    v0.38.14 — stacked, "Who it's for" holds its wheel again, moving one pixel for one pixel with the scroll (scroll timeline, keyframes wheel-0/1/2)
    v0.38.14 — a phone's menu a narrow drawer from the right (Explore's pages only); the phone, Instagram and LinkedIn marks at the foot of the page
    v0.38.13 — a phone's bar: the wordmark and a menu button; the links, Explore's pages and the phone, Instagram and LinkedIn in its panel
