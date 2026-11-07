@@ -29,11 +29,15 @@ export default defineConfig({
             investors: "investors.html",
             "one-strap": "one-strap.html",
             visualizations: "visualizations.html",
+            privacy: "privacy.html",
+            terms: "terms.html",
+            accessibility: "accessibility.html",
           },
         },
   },
 });
 
+// v0.38.23 — the legal pages: /privacy, /terms, /accessibility
 // v0.37.0 — a fifth: /visualizations
 // v0.35.0 — four documents: the home page, /technology, /investors and /one-strap
 // v0.8.0 — the lazy three.js chunk is expected; warning limit raised to 700 kB

@@ -3,7 +3,22 @@
    behind "Explore" are their own documents (technology.html and its
    siblings, served without the extension). */
 
-export type PageKey = "home" | "one-strap" | "technology" | "investors" | "visualizations";
+export type PageKey =
+  | "home"
+  | "one-strap"
+  | "technology"
+  | "investors"
+  | "visualizations"
+  | "privacy"
+  | "terms"
+  | "accessibility";
+
+/* the legal pages, linked from every page's footer */
+export const LEGAL = [
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/accessibility", label: "Accessibility" },
+];
 
 export const SECTIONS = [
   { href: "/#solution", label: "Product" },
@@ -18,6 +33,7 @@ export const EXPLORE: { key: PageKey; href: string; title: string; text: string 
   { key: "visualizations", href: "/visualizations", title: "Visualizations", text: "The four ways to wear it, side by side" },
 ];
 
+// v0.38.23 — the legal pages (privacy, terms, accessibility)
 // v0.37.3 — the Visualizations line without "concept imagery"
 // v0.37.0 — "Visualizations", the four watches off the home page
 // v0.35.0 — the site's map: the home page's sections, and the three pages behind "Explore"

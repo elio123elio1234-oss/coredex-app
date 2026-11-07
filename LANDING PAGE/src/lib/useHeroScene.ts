@@ -64,7 +64,12 @@ export function useHeroScene(enabled = true) {
       hero.forEach((el) => (el.style.opacity = String(1 - out)));
       // the light sits outside the scene, so it is set on every frame: set only while the scene
       // showed, a fast scroll back up left it half-lit over the hero (v0.37.3–v0.37.5)
-      if (bg) bg.style.opacity = String(light);
+      if (bg) {
+        bg.style.opacity = String(light);
+        // unlit, out of the way: a transparent layer over the hero made accessibility checkers
+        // measure the hero's text against white (a false contrast failure, v0.38.23)
+        bg.style.visibility = light > 0 ? "" : "hidden";
+      }
 
       // out of the layout until it begins to fade in, so its monitor starts as it appears
       const on = light > 0;
@@ -97,6 +102,7 @@ export function useHeroScene(enabled = true) {
   return { pin, stage, moment };
 }
 
+// v0.38.23 — the light hidden while unlit (checkers read the hero's text against it)
 // v0.38.9 — `enabled`: off on phones and portrait screens, where the scene is a plain section
 // v0.37.6 — the light reset on every frame (scrolling back up left the hero hazy); "Catch the Invisible." in place of the swap, a shorter hold
 // v0.37.5 — the slide withdrawn: the page answers the browser's zoom like any page (the user: "smooth access for everyone")

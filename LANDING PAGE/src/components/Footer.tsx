@@ -2,6 +2,7 @@ import Logo from "./Logo";
 import { Instagram, LinkedIn, Mail } from "./Icons";
 import hands from "../assets/photos/contact-hands.webp";
 import { APP_VERSION } from "../config/version";
+import { LEGAL } from "../config/nav";
 
 /* The close, AliveCor-style: the wordmark on the left, link columns on the
    right, then a pale band with the small print and the build badge. The whole
@@ -93,6 +94,13 @@ export default function Footer() {
             concept imagery unless labelled otherwise. Cyphix is in development and is not
             available for sale. It records and displays ECG data; it does not provide a diagnosis.
           </p>
+          <nav className="foot-legal" aria-label="Legal">
+            {LEGAL.map((l) => (
+              <a key={l.href} href={l.href}>
+                {l.label}
+              </a>
+            ))}
+          </nav>
           <span className="badge" title="Build version">
             v{APP_VERSION}
           </span>
@@ -102,6 +110,7 @@ export default function Footer() {
   );
 }
 
+// v0.38.23 — the legal links (Privacy, Terms, Accessibility) in the small print's band
 // v0.38.18 — no tagline, no phone; the marks are the e-mail, Instagram and LinkedIn; on a phone the wordmark the row's width, centred (the user)
 // v0.38.14 — a phone: the phone, Instagram and LinkedIn marks under the tagline (they left the phone's bar; the user)
 // v0.37.0 — the version as plain small print (no capsule); Visualizations in the page map

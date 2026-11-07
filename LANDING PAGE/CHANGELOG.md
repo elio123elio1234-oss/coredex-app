@@ -1,5 +1,68 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.23 — 2026-11-07 — legal pages and an accessibility pass
+
+**Why.** The user: "add to my site everything it needs so it isn't exposed to lawsuits (cookies or
+terms, I don't know, tell me)". They do not know this field, so the work started from what the
+site actually does, not from a template.
+
+**The audit first.** All five pages were loaded live and scrolled, and the form was touched.
+- **No cookies, no browser storage, no analytics or trackers.** Fonts are self-hosted.
+- **One outside request:** the Cyphix server's captcha policy.
+- **The server, read in `CYPHIX_SERVER/src/routes/contact.ts`:** the form stores name, e-mail,
+  organisation, message, IP address and user agent, on Render and Neon in Frankfurt, and sends two
+  e-mails through Resend.
+
+So **no cookie banner**: there is nothing to consent to, and a banner would only cost the page.
+What a site like this does need is below.
+
+**What changed.**
+- **/privacy, a privacy policy** written from that audit:
+  - what is collected and why;
+  - "no cookies or trackers";
+  - each processor by name (Vercel, Render, Neon, Resend, Google, Cloudflare if Turnstile is on);
+  - transfers abroad;
+  - rights under Israel's Protection of Privacy Law and GDPR;
+  - retention;
+  - children;
+  - contact.
+- **/terms, terms of use.** These are the protections that matter most for this site:
+  - not medical advice;
+  - a device in development that is not cleared by the FDA, a notified body or the Israeli
+    Ministry of Health;
+  - emergency: call 101;
+  - **not an offer of securities**, since the site announces a seed round;
+  - forward-looking statements;
+  - generated imagery;
+  - intellectual property and the pending patent;
+  - no confidentiality without an NDA;
+  - limitation of liability;
+  - Israeli law, Tel Aviv-Jaffa courts.
+- **/accessibility, the accessibility statement Israeli law requires** (Service Accessibility
+  Regulations 2013, reg. 35): the standard (WCAG 2.1 AA, covering IS 5568), what was done, the known
+  limitations as they are, how it was checked, and the coordinator (Elio El Hassrouny, by e-mail).
+  No accessibility overlay plugin, deliberately: those do not make a site accessible, and they have
+  drawn lawsuits of their own.
+- **Notice at collection:** the form's note now links the privacy policy.
+- **The footer** links Privacy, Terms and Accessibility on every page.
+
+**The accessibility audit** (axe-core, WCAG 2.1 A/AA, every page, desktop and iPhone):
+- **Fixed:** the Technology page's step numbers and the Investors page's "next" label were coral on
+  white at 3.4:1. Small coral text now uses `--coral-ink` (#c73a30, 5.2:1).
+- **Fixed:** the wheel's out-of-frame rows are now `visibility: hidden`, not only transparent.
+- **Fixed:** the hero's unlit light layer is hidden. Checkers measured the hero's text against it
+  (a false failure).
+- **Remaining by design, and stated:** the faded rows of "Who it's for" are below 4.5:1 while out of
+  focus. They show in full ink for anyone whose device asks for more contrast.
+- The three new pages pass clean.
+
+**A draft, not legal advice.** The texts are written to fit the site as it is, but a lawyer should
+review them, especially:
+- the company's legal name and number once it is incorporated;
+- whether the seed-round announcement is acceptable under Israeli securities law;
+- the accessibility coordinator's phone number, which the regulations ask for and the user does not
+  want published yet.
+
 ## v0.38.22 — 2026-11-07 — on a phone, the man on the band's right
 
 **Why.** The user: "You put him in the middle when the reference clearly has him more on the right

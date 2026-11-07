@@ -41,6 +41,9 @@
   --hair-2: rgba(11, 26, 48, 0.07);
   --rule: #b9c6d8;
   --coral: #f2574c;
+  /* the coral for small text: 5.2:1 on white (the coral itself is 3.4:1, enough only for large type;
+     WCAG 1.4.3, found by the accessibility audit of v0.38.23) */
+  --coral-ink: #c73a30;
   --red: #c7362c;
   --red-deep: #a92b22;
 
@@ -1336,6 +1339,8 @@ section[id] {
 }
 .who-pin.is-held .rows li.is-far {
   opacity: 0;
+  /* out of the frame: hidden outright, so no reader or checker meets invisible text */
+  visibility: hidden;
 }
 .rows p {
   margin: 0;
@@ -1444,6 +1449,15 @@ section[id] {
     display: block;
     width: min(300px, 80vw);
     margin-inline: auto;
+  }
+}
+
+/* a visitor who asks for more contrast reads every row in full ink, wherever it stands on the wheel
+   (the faded rows are the wheel's look, below 4.5:1; WCAG 1.4.3) */
+@media (prefers-contrast: more) {
+  .who-pin .rows li,
+  .who-pin.is-held .rows li.is-near {
+    opacity: 1 !important;
   }
 }
 
@@ -1897,7 +1911,7 @@ section[id] {
   font-family: var(--mono);
   font-size: 13px;
   letter-spacing: 0.14em;
-  color: var(--coral);
+  color: var(--coral-ink);
 }
 .step-title {
   margin: 0 0 12px;
@@ -2169,7 +2183,7 @@ section[id] {
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--coral);
+  color: var(--coral-ink);
 }
 .ms.is-later .ms-dot {
   background: var(--ground);
@@ -2529,6 +2543,118 @@ section[id] {
   font-size: 11px;
   letter-spacing: 0.06em;
   color: var(--ink-3);
+}
+
+/* ---------- legal pages: privacy, terms, accessibility ---------- */
+
+.legal {
+  padding: clamp(48px, 7vw, 96px) 0 var(--section);
+}
+.legal-inner {
+  max-width: 760px;
+}
+.legal-kicker {
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--coral-ink);
+}
+.legal h1 {
+  margin: 0;
+  font-size: clamp(34px, 4.4vw, 52px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.legal-updated {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.legal-intro {
+  margin-top: 28px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--hair);
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.legal-intro p {
+  margin: 0;
+}
+.legal-clause {
+  padding-top: 36px;
+}
+.legal-clause h2 {
+  margin: 0 0 14px;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.legal-n {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.legal-clause p,
+.legal-clause li {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+.legal-clause p {
+  margin: 0 0 14px;
+}
+.legal-clause ul {
+  margin: 0 0 14px;
+  padding-left: 1.2em;
+}
+.legal-clause li + li {
+  margin-top: 8px;
+}
+.legal-clause strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.legal a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--hair);
+  overflow-wrap: anywhere;
+}
+.legal a:hover {
+  text-decoration-color: currentColor;
+}
+/* the legal links beside the small print */
+.foot-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-left: auto;
+  font-size: 13.5px;
+}
+.foot-legal a {
+  padding: 6px 0;
+  color: var(--blue);
+  text-decoration: none;
+}
+.foot-legal a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 719px) {
+  .foot-legal {
+    margin-left: 0;
+  }
+  .foot-legal a {
+    padding: 10px 0;
+  }
+}
+.form-note a {
+  color: inherit;
+  text-underline-offset: 3px;
 }
 
 /* ---------- arrival: the hero once, on load ---------- */
@@ -2893,6 +3019,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.23 — legal pages (privacy, terms, accessibility) and their footer links; contrast fixes from the accessibility audit (--coral-ink for small coral text; the wheel's far rows hidden; full ink on prefers-contrast)
    v0.38.22 — on a phone the man on the band's right side (66 %), as in the user's mock-up; the computer unchanged; the band clips its sides
    v0.38.21 — the solution band's scene: the room blurred, the man in his armchair in front, his head above the band
    v0.38.20 — stacked, "Who it's for" flows: the rows scroll with the page between a held heading and a held image (no scroll timeline, no jumps)

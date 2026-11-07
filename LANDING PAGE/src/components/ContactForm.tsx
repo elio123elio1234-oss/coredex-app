@@ -306,7 +306,10 @@ export default function ContactForm() {
                   {status === "sending" ? "Sending…" : "Request the deck"}
                   {status !== "sending" && <ArrowRight />}
                 </button>
-                <span className="form-note">We use your details only to answer this request.</span>
+                <span className="form-note">
+                  We use your details only to answer this request. See our{" "}
+                  <a href="/privacy">Privacy Policy</a>.
+                </span>
               </div>
             </form>
           )}
@@ -324,3 +327,4 @@ export default function ContactForm() {
 //          posts orgType "other" until the lead contract has an investor type
 // v0.1.0 — the "Request access" form: posts a lead to the API, Turnstile only when the
 //          server's policy asks for it, a sent state, honest errors (LAUNCH_PLAN 5.4, L1)
+// v0.38.23 — the form's note links the privacy policy (notice at collection); the contact line as marks (v0.38.18)
