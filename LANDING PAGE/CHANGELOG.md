@@ -1,5 +1,46 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.29 — 2026-11-07 — Technology, engineered; the noise figure
+
+**Why.** The user: the Technology page "doesn't feel innovative or professional enough". They also
+asked whether the submission's figure was missing: the noisy standard electrode against the Cyphix
+electrode's clean signal. It was. The page only had two strips from the deck, without the three
+noises named. And on Investors: "without 'The need, the market and the plan are below; the deck
+has the rest.', it's childish."
+
+**What changed.**
+- **The system in figures** under the head, as a navy band:
+  - **6** limb leads from one strap;
+  - **10 s** to a recording;
+  - **320 Hz** sampling (the firmware's rate).
+
+  The units stay on one line.
+- **"Noise, solved in hardware" is the page's signature,** a navy band right after "How it works":
+  - **The kicker:** "Multi-element array · Patent pending".
+  - **The headline and the mechanism.**
+  - **The figure (`NoiseFigure`).** It mirrors the submission's hardware slide:
+    - two rows, a standard electrode and the Cyphix array (three elements), drawn;
+    - the same seven synthetic beats on an ECG grid, seeded so they never change;
+    - on the single electrode, the three noises a wearable meets: motion (the baseline wanders),
+      loose contact (the signal sinks and its beats fade) and muscle (fast irregular noise). Each
+      is marked over its stretch, and the row is "Noisy signal";
+    - on the array the same beats come through clean, the three names checked, "Clean signal".
+
+    It is drawn in SVG, so it is sharp at any size, and captioned "Illustrative signals". It reads
+    nothing.
+  - **A legend** of the three noises.
+  - **The deck's two strips** (raw, weighted) under it, on white cards, captioned "From the
+    investor deck. Illustrative".
+- **On a phone:** the device and the verdict share a line and the strip takes the full width. On
+  the narrowest phones (under 375 px) the middle label reads "Contact".
+- **Investors:** the head's lede is just "Cyphix is raising its seed round."
+
+Checked in WebKit:
+- **Widths:** 1440, 1142 × 600, iPhone 13 and iPhone SE.
+- **Labels:** apart and inside the strip at every width.
+- **Overflow:** none sideways.
+- **axe-core (WCAG 2.1 A/AA):** no violations on Technology or Investors.
+
 ## v0.38.28 — 2026-11-07 — Investors: a sharper image; a plainer heading
 
 **Why.** Two notes from the user on the Investors page:

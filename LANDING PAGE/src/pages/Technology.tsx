@@ -5,6 +5,7 @@ import PageHead from "../components/PageHead";
 import NextLinks from "../components/NextLinks";
 import { ArrowRight, LineGlobe, LinePulse, LineShield, LineWatch } from "../components/Icons";
 import SixViews from "../components/SixViews";
+import NoiseFigure from "../components/NoiseFigure";
 import wear from "../assets/deck/proto-wear.webp";
 import electrodes from "../assets/deck/proto-electrodes.webp";
 import appLeads from "../assets/img/app-limb-leads.webp";
@@ -105,6 +106,23 @@ export default function Technology() {
           lede="A smartwatch sees the heart from one angle. The Cyphix strap sees it from six, as a test in the clinic does, in ten seconds."
         />
 
+        <section className="facts is-specs" aria-label="The system in figures">
+          <div className="wrap facts-grid">
+            <div className="fact">
+              <span className="fact-figure">6</span>
+              <p>Limb leads from one strap: I, II, III, aVR, aVL, aVF</p>
+            </div>
+            <div className="fact">
+              <span className="fact-figure">10 s</span>
+              <p>A recording, the moment a symptom strikes</p>
+            </div>
+            <div className="fact">
+              <span className="fact-figure">320 Hz</span>
+              <p>Sampling, every element of the array read on its own</p>
+            </div>
+          </div>
+        </section>
+
         <section className="section" aria-labelledby="how-title">
           <div className="wrap">
             <div className="rule-head">
@@ -130,6 +148,47 @@ export default function Technology() {
           </div>
         </section>
 
+        <section className="tech-signal" aria-labelledby="noise-title">
+          <div className="wrap">
+            <header className="tech-signal-head">
+              <p className="tech-signal-kicker">
+                <LineShield className="tech-signal-kicker-icon" />
+                Multi-element array · Patent pending
+              </p>
+              <h2 id="noise-title" className="tech-signal-title">
+                Noise, solved in hardware.
+              </h2>
+              <p className="tech-signal-lede">
+                Where the electrode meets the skin is where a wearable ECG picks up its noise: a single
+                electrode carries every change in that contact straight into the trace. Cyphix splits
+                each contact point into an array of elements, each with its own ADC, and weights them
+                in real time by the quality of their contact. An element losing its contact counts
+                for less, and the lead keeps its detail.
+              </p>
+            </header>
+            <NoiseFigure />
+            <ul className="tech-signal-legend" aria-label="The three noises a wearable ECG meets">
+              {NOISE.map((n) => (
+                <li key={n.title}>
+                  <strong>{n.title}</strong>
+                  {n.text}
+                </li>
+              ))}
+            </ul>
+            <figure className="tech-signal-deck">
+              <div className="tech-trace">
+                <p className="tech-trace-label">One electrode, raw</p>
+                <img src={traceRaw} width={1182} height={405} alt="An ECG strip from a single electrode, with heavy noise between the beats." loading="lazy" decoding="async" />
+              </div>
+              <div className="tech-trace">
+                <p className="tech-trace-label">The same lead, weighted across the array</p>
+                <img src={traceWeighted} width={1025} height={350} alt="The same lead after weighting: a clean strip with a clear shape to each beat." loading="lazy" decoding="async" />
+              </div>
+              <figcaption className="nf-cap">From the investor deck. Illustrative.</figcaption>
+            </figure>
+          </div>
+        </section>
+
         <section className="section" aria-labelledby="views-title">
           <div className="wrap tech-views">
             <div className="tech-views-copy">
@@ -144,49 +203,6 @@ export default function Technology() {
               </p>
             </div>
             <SixViews />
-          </div>
-        </section>
-
-        <section className="section" aria-labelledby="noise-title">
-          <div className="wrap tech-noise">
-            <div className="tech-noise-copy">
-              <h2 id="noise-title" className="h2">
-                Noise, solved in hardware.
-              </h2>
-              <p className="body-lg">
-                Where the electrode meets the skin is where a wearable ECG picks up its noise. A
-                single electrode carries every change in that contact straight into the trace.
-              </p>
-              <p className="body-lg">
-                Cyphix splits each contact point into an array of elements, each with its own ADC,
-                and weights them in real time by the quality of their actual contact. An element
-                losing its contact counts for less, and the lead keeps its detail.
-              </p>
-              <ul className="tech-noise-list" aria-label="The three noise sources the array handles">
-                {NOISE.map((n) => (
-                  <li key={n.title}>
-                    <strong>{n.title}.</strong> {n.text}
-                  </li>
-                ))}
-              </ul>
-              <p className="tech-patent">
-                <LineShield className="tech-patent-icon" />
-                <span>
-                  <strong>Multi-element array.</strong> Patent filed in Israel.
-                </span>
-              </p>
-            </div>
-            <figure className="tech-traces">
-              <div className="tech-trace">
-                <p className="tech-trace-label">One electrode, raw</p>
-                <img src={traceRaw} width={1182} height={405} alt="An ECG strip from a single electrode, with heavy noise between the beats." loading="lazy" decoding="async" />
-              </div>
-              <div className="tech-trace">
-                <p className="tech-trace-label">The same lead, weighted across the array</p>
-                <img src={traceWeighted} width={1025} height={350} alt="The same lead after weighting: a clean strip with a clear shape to each beat." loading="lazy" decoding="async" />
-              </div>
-              <figcaption className="media-note">Illustrative.</figcaption>
-            </figure>
           </div>
         </section>
 
@@ -266,6 +282,7 @@ export default function Technology() {
   );
 }
 
+// v0.38.29 — more engineered (the user: "not innovative or professional enough"): the system in figures under the head; the noisy electrode against the array as the page's dark signature band, its three noises named (the submission's figure, which was missing)
 // v0.38.26 — from the user's Future Health Challenge submission: six views against one, the three noise sources, after the recording (the portal; the AI baseline in development, decision support only), the hardware, the demo and the video
 // v0.37.0 — the app's limb-lead phone in the user's sharper image (1719 x 871)
 // v0.35.0 — Technology: how it works in three steps (the working prototype, its band, the app), and the innovation, the multi-element array weighted by contact quality (patent filed in Israel), from the investor deck

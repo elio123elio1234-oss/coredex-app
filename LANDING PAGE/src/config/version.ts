@@ -1,7 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.28";
-export const APP_BUILD_LABEL = "Investors: the need's image sharper (the user's); the pyramid's heading just \u201cWho it's for\u201d";
+export const APP_VERSION = "0.38.29";
+export const APP_BUILD_LABEL =
+  "Technology: the noisy electrode against the Cyphix array as a signature band; the system in figures";
 
+// v0.38.29 — Technology more engineered: the noise figure (single electrode against the array), the system in figures; Investors' lede trimmed
 // v0.38.28 — Investors: the user's sharper clinic-door image; "most urgent first" dropped from the heading
 // v0.38.27 — Explore opens on For investors
 // v0.38.26 — Investors and Technology filled in from the user's Future Health Challenge submission; the home page untouched

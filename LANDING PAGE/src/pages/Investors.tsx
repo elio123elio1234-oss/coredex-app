@@ -220,7 +220,7 @@ export default function Investors() {
           chip="Investors"
           title="The ECG that stays"
           accent="with the patient."
-          lede="Cyphix is raising its seed round. The need, the market and the plan are below; the deck has the rest."
+          lede="Cyphix is raising its seed round."
           action
         />
 
@@ -519,6 +519,7 @@ export default function Investors() {
   );
 }
 
+// v0.38.29 — the head's lede just "Cyphix is raising its seed round." (the user: the rest read as childish)
 // v0.38.28 — the need's image in the user's sharper version (1170 x 966, soft edges baked in); the pyramid's heading just "Who it's for"
 // v0.38.26 — from the user's Future Health Challenge submission: whom it is for (most urgent first) and the outcome, how success is measured, the timeline in months with its stakeholders, integration, regulatory path and sustainability, risks and safeguards, the team's capabilities (no study site or employer named)
 // v0.37.3 — the team link without Samsung; no "Concept imagery" caption (the user)
