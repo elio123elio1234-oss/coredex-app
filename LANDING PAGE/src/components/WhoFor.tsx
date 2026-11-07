@@ -30,20 +30,24 @@ const ROWS = [
   },
 ];
 
-/* the wheel holds only side by side, where the window has 500 px under the bar. Stacked (a phone)
-   it never holds: the page scrolls at the finger's pace and the rows turn by CSS alone (index.css,
-   row-wheel); a held wheel there "sank" the page (the user, v0.38.12) */
+/* the wheel holds where the window has the room for it: 500 px under the bar side by side, 540 px
+   stacked (a phone, a narrow window: the heading, the wheel and the phone image under it). Stacked,
+   it moves one pixel for one pixel with the scroll, so the finger never feels held (the user) */
 const HOLD = {
   wide: "(min-width: 1024px), (min-aspect-ratio: 5/4)",
   minRoom: 500,
+  minRoomStacked: 540,
 };
 
 export default function WhoFor() {
   const photo = PHOTOS.clinic;
-  const { pin, stage, step, held } = useScrollSteps(ROWS.length, HOLD);
+  const { pin, stage, step, held, smooth } = useScrollSteps(ROWS.length, HOLD);
   return (
     <section className="section who" id="who" aria-labelledby="who-title">
-      <div ref={pin} className={`who-pin${held ? " is-held" : ""}`}>
+      <div
+        ref={pin}
+        className={`who-pin${held ? " is-held" : ""}${smooth ? " is-smooth" : ""}`}
+      >
         <div ref={stage} className="who-stage">
           {/* the heading holds with its rows, so the gap between them is the page's own */}
           <div className="wrap who-inner">
@@ -64,11 +68,14 @@ export default function WhoFor() {
                           ? "is-near"
                           : "is-far"
                     }
+                    data-wheel-i={i}
                     style={
-                      {
-                        "--d": i - step,
-                        "--ad": Math.abs(i - step),
-                      } as CSSProperties
+                      smooth
+                        ? undefined
+                        : ({
+                            "--d": i - step,
+                            "--ad": Math.abs(i - step),
+                          } as CSSProperties)
                     }
                     aria-hidden={held && i !== step ? true : undefined}
                   >
@@ -115,6 +122,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.14 — stacked, the wheel holds again (the user: "that is not what I asked"; it had also left narrow desktop windows), moving one pixel for one pixel with the scroll
 // v0.38.12 — a phone never holds (the user: the held wheel "sank" the page): the page scrolls at its own pace, the rows turn in CSS
 // v0.38.9 — on a phone the wheel follows the finger (the user); the phone image centred
 // v0.38.8 — holds from 540 px stacked (an iPhone with Safari's bars shown has about 600 under the bar)

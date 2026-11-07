@@ -11,9 +11,10 @@ import { usePopover } from "../lib/usePopover";
    end the phone, Instagram and LinkedIn as three marks. The number itself
    is not on show: a click on the phone opens it under the mark. Over a dark
    stage the bar turns dark too. On a phone the bar is the wordmark and a
-   menu button (three lines) at the right: one panel under the bar with the
-   section links, the pages behind Explore, and at its foot, as the least
-   important, the phone number, Instagram and LinkedIn (the user). */
+   menu button (three lines) at the right, which slides a narrow drawer in
+   from the right with the pages behind Explore, nothing else: the section
+   links are not on a phone, and the phone, Instagram and LinkedIn marks sit
+   at the foot of the page (Footer). */
 
 const PHONE = "+972 54-398-9698";
 const SOCIAL = [
@@ -130,21 +131,13 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
             </button>
             <div
               id="bar-burger-menu"
-              className={`bar-sheet${menu.open ? " is-open" : ""}`}
+              className={`bar-drawer${menu.open ? " is-open" : ""}`}
               onClick={(e) => {
                 if ((e.target as HTMLElement).closest("a")) menu.setOpen(false);
               }}
             >
-              <nav aria-label="Site, menu">
-                <ul className="bar-sheet-main">
-                  {SECTIONS.map((l) => (
-                    <li key={l.href}>
-                      <a href={l.href}>{l.label}</a>
-                    </li>
-                  ))}
-                </ul>
-                <p className="bar-sheet-label">Explore</p>
-                <ul className="bar-sheet-pages">
+              <nav aria-label="Explore">
+                <ul>
                   {EXPLORE.map((e) => (
                     <li key={e.key}>
                       <a href={e.href} aria-current={e.key === page ? "page" : undefined}>
@@ -155,24 +148,17 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
                   ))}
                 </ul>
               </nav>
-              <div className="bar-sheet-foot">
-                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`}>{PHONE}</a>
-                <span className="bar-sheet-social">
-                  {SOCIAL.map(({ href, label, Icon }) => (
-                    <a key={href} className="bar-social" href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
-                      <Icon width={20} height={20} />
-                    </a>
-                  ))}
-                </span>
-              </div>
             </div>
           </div>
         </div>
+        {/* the page behind the open drawer, dimmed a little; a tap on it closes the drawer */}
+        <div className={`bar-scrim${menu.open ? " is-open" : ""}`} aria-hidden="true" />
       </header>
     </>
   );
 }
 
+// v0.38.14 — a phone: the menu a narrow drawer from the right with Explore's pages only; no section links; the marks moved to the foot of the page (the user)
 // v0.38.13 — a phone: a menu button (three lines) at the right in place of Explore and the marks; the phone, Instagram and LinkedIn at the panel's foot (the user)
 // v0.35.0 — "Explore": a menu of the pages kept off the home page (the 3D journey, Technology, Investors); the section links reach the home page from every page; the open/close rule shared (lib/usePopover)
 // v0.34.0 — the number is no longer on show: the phone is a mark beside Instagram and LinkedIn, and a click opens the number under it (the user)

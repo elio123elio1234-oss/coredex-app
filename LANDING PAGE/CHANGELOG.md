@@ -1,5 +1,35 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.14 — 2026-11-07 — two corrections: the phone's menu, and the wheel back
+
+**Why.** The user, on v0.38.12 and v0.38.13: "you didn't understand me at all." Both were wrong.
+- **The menu.** v0.38.13 put Product, Stage and Team in a full-width panel and turned the phone mark
+  into the number. What was asked: those links do not belong on a phone at all; the menu opens a
+  little from the side, not over the whole screen, and holds what Explore held. The phone,
+  Instagram and LinkedIn are marks (the phone too, not its number), at the bottom of the page.
+- **The wheel.** v0.38.12 took the held wheel away on a phone. What was asked: the scroll should
+  feel natural, "as if there is no scroll effect", but the wheel's look must stay. It also took the
+  wheel away from a desktop window narrow enough to lay out in one column (a browser beside an
+  editor), which the user saw: "you removed it on the computer too".
+
+**What changed.**
+- **The phone's menu (up to 719 px)** is a drawer about 300 px wide that slides in from the right,
+  under the bar, with the four pages behind Explore and nothing else. The page beside it dims a
+  little; a tap there, on a page, or Escape closes it. The section links are gone from the phone.
+- **The phone, Instagram and LinkedIn marks** stand in the footer under "Clinical Depth. Wearable
+  Ease." on a phone; a tap on the phone mark calls. The wide bar keeps its own marks, unchanged.
+- **Stacked (a phone, a narrow window), "Who it's for" holds its wheel again**, but it is not
+  notched there: it moves one pixel for one pixel with the scroll. The hold lasts exactly the
+  wheel's own travel (two rows of 230 px), so the rows move at the finger's speed. The browser
+  draws it from the scroll position itself (CSS scroll timeline, keyframes `wheel-0/1/2`), so it
+  cannot lag; where there is no scroll timeline, the hook writes each row's place every scroll frame
+  with no glide.
+- **The wide screen is untouched:** its notched wheel and its bar are as they were.
+
+Checked in headless Chrome: at 390 × 700 and 960 × 1000 the wheel holds, and 115 px of scroll moves
+the rows about 114 px; at 1440 × 900 the notched wheel is unchanged; the drawer opens from the right
+with the four pages only; the marks show in the footer on the phone only; no errors.
+
 ## v0.38.13 — 2026-11-07 — a menu button on the phone
 
 **Why.** The user: on a phone, put a menu button (three lines) on the right in place of "Explore",

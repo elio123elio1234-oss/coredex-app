@@ -1,11 +1,14 @@
 import Logo from "./Logo";
+import { Instagram, LinkedIn, Phone } from "./Icons";
 import hands from "../assets/photos/contact-hands.webp";
 import { APP_VERSION } from "../config/version";
 
 /* The close, AliveCor-style: the wordmark on the left, link columns on the
    right, then a pale band with the small print and the build badge. The whole
    upper area is frosted glass over the user's heart-hands image, on white; the
-   text sits straight on it, dark, with the red wordmark as in the bar. */
+   text sits straight on it, dark, with the red wordmark as in the bar. On a
+   phone the bar has no room for its marks, so the phone, Instagram and
+   LinkedIn stand here, under the tagline, as marks (a tap on the phone calls). */
 
 const EMAIL = "elio123elio1234@gmail.com";
 const PHONE = "+972 54-398-9698";
@@ -24,6 +27,17 @@ export default function Footer() {
                 <Logo className="foot-logo" />
               </a>
               <p className="foot-tagline">Clinical Depth. Wearable Ease.</p>
+              <p className="foot-marks">
+                <a href={`tel:${PHONE.replace(/[^+\d]/g, "")}`} aria-label="Call Cyphix">
+                  <Phone width={20} height={20} />
+                </a>
+                <a href="https://www.instagram.com/cyphix.co/" target="_blank" rel="noopener noreferrer" aria-label="Cyphix on Instagram">
+                  <Instagram width={20} height={20} />
+                </a>
+                <a href="https://www.linkedin.com/company/cyphixmedical/" target="_blank" rel="noopener noreferrer" aria-label="Cyphix on LinkedIn">
+                  <LinkedIn width={20} height={20} />
+                </a>
+              </p>
             </div>
             <nav aria-labelledby="foot-company">
               <h2 id="foot-company">Company</h2>
@@ -91,6 +105,7 @@ export default function Footer() {
   );
 }
 
+// v0.38.14 — a phone: the phone, Instagram and LinkedIn marks under the tagline (they left the phone's bar; the user)
 // v0.37.0 — the version as plain small print (no capsule); Visualizations in the page map
 // v0.35.0 — the page map reaches every page: the home page's sections by "/#…", One strap. Any watch., Technology, and the investors' page; the small print allows for the working prototype's photographs
 // v0.24.5 — white behind the hands, white glass, dark text (styles in index.css)

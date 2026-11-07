@@ -552,9 +552,11 @@ section[id] {
   color: var(--ink-3);
 }
 
-/* a phone's menu: three lines at the bar's right, turning to a cross; under the bar one panel,
-   the bar's width, with the section links, the pages behind Explore, and at its foot the phone
-   number, Instagram and LinkedIn. Hidden wherever the bar has room for its nav (above 719 px). */
+/* a phone's menu: three lines at the bar's right, turning to a cross; a narrow drawer slides in
+   from the right under the bar with the pages behind Explore, and the page beside it dims a little.
+   It never covers the whole screen (the user). Hidden wherever the bar has its nav (above 719 px).
+   Placed against the bar (absolute, from its lower edge), not the window: over a dark stage the
+   bar's backdrop filter would make a fixed drawer the bar's own child. */
 .bar-burger {
   display: none;
 }
@@ -597,125 +599,85 @@ section[id] {
 .bar-burger-btn[aria-expanded="true"] span:nth-child(3) {
   transform: rotate(-45deg);
 }
-.bar-sheet {
+.bar-drawer,
+.bar-scrim {
   position: absolute;
   top: 100%;
-  left: 0;
+  height: calc(100vh - var(--bar));
+  height: calc(100dvh - var(--bar));
+}
+.bar-drawer {
   right: 0;
-  max-height: calc(100svh - var(--bar));
+  z-index: 1;
+  width: min(300px, 80vw);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: #fff;
-  border-top: 1px solid var(--hair);
-  box-shadow: 0 18px 40px rgba(11, 26, 48, 0.12);
-  opacity: 0;
+  border-left: 1px solid var(--hair);
+  box-shadow: -18px 0 40px rgba(11, 26, 48, 0.1);
   visibility: hidden;
-  transform: translateY(-6px);
+  transform: translateX(100%);
   transition:
-    opacity 0.2s ease,
-    transform 0.25s var(--ease),
-    visibility 0s linear 0.25s;
+    transform 0.4s var(--ease),
+    visibility 0s linear 0.4s;
 }
-.bar-sheet.is-open {
-  opacity: 1;
+.bar-drawer.is-open {
   visibility: visible;
   transform: none;
-  transition:
-    opacity 0.2s ease,
-    transform 0.25s var(--ease);
+  transition: transform 0.4s var(--ease);
 }
-.bar-sheet ul {
+.bar-drawer ul {
   margin: 0;
-  padding: 0;
+  padding: 12px 0;
   list-style: none;
 }
-.bar-sheet .bar-sheet-main {
-  padding: 8px 0;
-}
-.bar-sheet-main a {
-  display: block;
-  padding: 14px var(--gutter);
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  text-decoration: none;
-}
-.bar-sheet-label {
-  margin: 0;
-  padding: 18px var(--gutter) 6px;
-  border-top: 1px solid var(--hair);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.bar-sheet .bar-sheet-pages {
-  padding-bottom: 10px;
-}
-.bar-sheet-pages a {
+.bar-drawer a {
   position: relative;
   display: grid;
   gap: 3px;
-  padding: 12px var(--gutter);
+  padding: 16px 24px;
   color: var(--ink);
   text-decoration: none;
 }
-.bar-sheet-pages a[aria-current="page"]::before {
+.bar-drawer a[aria-current="page"]::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 12px;
-  bottom: 12px;
+  top: 16px;
+  bottom: 16px;
   width: 2px;
   background: var(--coral);
 }
-.bar-sheet-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px var(--gutter) 18px;
-  border-top: 1px solid var(--hair);
-  background: var(--mist-2);
+.bar-scrim {
+  display: none;
+  left: 0;
+  right: 0;
+  background: rgba(11, 26, 48, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s ease,
+    visibility 0s linear 0.3s;
 }
-.bar-sheet-foot > a {
-  padding: 10px 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink-2);
-  text-decoration: none;
-}
-.bar-sheet-social {
-  display: flex;
-  gap: 4px;
+.bar-scrim.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease;
 }
 .bar.is-dark .bar-burger-btn {
   color: #fff;
 }
-.bar.is-dark .bar-sheet {
+.bar.is-dark .bar-drawer {
   background: #111725;
   border-color: rgba(255, 255, 255, 0.1);
 }
-.bar.is-dark .bar-sheet-main a,
-.bar.is-dark .bar-sheet-pages a {
+.bar.is-dark .bar-drawer a {
   color: #fff;
-}
-.bar.is-dark .bar-sheet-label,
-.bar.is-dark .bar-sheet-foot > a {
-  color: #b7c0cf;
-}
-.bar.is-dark .bar-sheet-label,
-.bar.is-dark .bar-sheet-foot {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-.bar.is-dark .bar-sheet-foot {
-  background: rgba(255, 255, 255, 0.04);
 }
 @media (prefers-reduced-motion: reduce) {
   .bar-burger-btn span,
-  .bar-sheet {
+  .bar-drawer,
+  .bar-scrim {
     transition: none;
   }
 }
@@ -1347,44 +1309,99 @@ section[id] {
     transform: translateY(calc(-50% + var(--d) * var(--notch, 150px)));
   }
 }
-/* stacked (a phone, a portrait tablet): nothing holds, the page scrolls at the finger's own pace
-   (a held wheel there "sank" the page: the user scrolled while it stood still). The wheel stays as
-   a gentle turn the browser draws from the scroll itself, on the graphics chip, no script: each row
-   comes up from the bottom tilted back and faint, stands upright and full in the middle of the
-   screen, and tilts away as it leaves at the top. Where the browser has no scroll timeline, the
-   rows simply read plainly. */
+/* stacked (a phone, a narrow window): the wheel holds too, a little shorter, its notch longer since a
+   row runs to six or eight lines; the phone image under it. It is not notched here: it moves one
+   pixel for one pixel with the scroll, the hold exactly as long as the wheel's own travel, so the
+   finger never feels held (v0.38.12 dropped the hold instead: "that is not what I asked"). No mask
+   over the rows (it repainted every frame); they clip at the wheel's edge and fade on their own. */
 @media (max-width: 1023px) and (max-aspect-ratio: 5/4) {
-  @supports (animation-timeline: view()) {
-    .rows {
-      perspective: 900px;
+  .who-pin.is-held {
+    --notch: 230px;
+    height: calc(100vh - var(--bar) + 2 * var(--notch));
+    height: calc(100lvh - var(--bar) + 2 * var(--notch));
+  }
+  .who-pin.is-held .rows {
+    height: clamp(250px, 40svh, 360px);
+    overflow: hidden;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .who-pin.is-held .rows p {
+    font-size: 16px;
+  }
+  .who-pin.is-smooth .rows li {
+    transition: none;
+    backface-visibility: hidden;
+  }
+  .who-pin.is-held .rows-grid .rows-media {
+    max-width: min(300px, 80vw);
+  }
+  .who-pin.is-held .rows-grid {
+    gap: clamp(16px, 3svh, 28px);
+  }
+  /* drawn by the browser from the scroll position, on the graphics chip: the hook gives the hold's
+     first and last scroll positions; each row's keyframes are its places on the wheel at the three
+     steps (its distance d from the middle: translated d notches, tilted, smaller and fainter) */
+  @supports (animation-timeline: scroll()) and (animation-range: 0px 1px) {
+    .who-pin.is-smooth .rows li {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-duration: auto;
+      animation-timeline: scroll(root block);
+      animation-range: var(--wheel-a, 0px) var(--wheel-b, 1px);
     }
-    .rows li {
-      transition: none;
-      transform-origin: 50% 50%;
-      animation: row-wheel linear both;
-      animation-timeline: view();
-      animation-range: cover 0% cover 100%;
+    .who-pin.is-smooth .rows li[data-wheel-i="0"] {
+      animation-name: wheel-0;
+    }
+    .who-pin.is-smooth .rows li[data-wheel-i="1"] {
+      animation-name: wheel-1;
+    }
+    .who-pin.is-smooth .rows li[data-wheel-i="2"] {
+      animation-name: wheel-2;
     }
   }
 }
-@keyframes row-wheel {
+/* a row d notches from the middle: d = 0 upright and full; 1 tilted back, smaller, faint; 2 gone */
+@keyframes wheel-0 {
   0% {
-    opacity: 0.2;
-    transform: rotateX(-24deg) scale(0.93);
-  }
-  32%,
-  68% {
     opacity: 1;
-    transform: none;
+    transform: translateY(-50%) rotateX(0deg) scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translateY(calc(-50% - var(--notch))) rotateX(26deg) scale(0.9);
   }
   100% {
-    opacity: 0.2;
-    transform: rotateX(24deg) scale(0.93);
+    opacity: 0;
+    transform: translateY(calc(-50% - 2 * var(--notch))) rotateX(52deg) scale(0.8);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .rows li {
-    animation: none !important;
+@keyframes wheel-1 {
+  0% {
+    opacity: 0.3;
+    transform: translateY(calc(-50% + var(--notch))) rotateX(-26deg) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) rotateX(0deg) scale(1);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateY(calc(-50% - var(--notch))) rotateX(26deg) scale(0.9);
+  }
+}
+@keyframes wheel-2 {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(-50% + 2 * var(--notch))) rotateX(-52deg) scale(0.8);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translateY(calc(-50% + var(--notch))) rotateX(-26deg) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) rotateX(0deg) scale(1);
   }
 }
 
@@ -2362,6 +2379,19 @@ section[id] {
   font-weight: 500;
   color: var(--ink-2);
 }
+/* the phone, Instagram and LinkedIn as marks: on a phone only (the bar has them elsewhere) */
+.foot-marks {
+  display: none;
+  gap: 4px;
+  margin: 14px 0 0 -10px;
+}
+.foot-marks a {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--ink-2);
+}
 .foot h2 {
   margin: 0 0 18px;
   font-size: 15px;
@@ -2563,6 +2593,13 @@ section[id] {
     display: block;
     margin-left: auto;
   }
+  .bar-scrim {
+    display: block;
+  }
+  /* the bar's three marks, at the foot of the page instead */
+  .foot-marks {
+    display: flex;
+  }
   .bar-explore {
     position: static;
   }
@@ -2749,6 +2786,8 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.14 — stacked, "Who it's for" holds its wheel again, moving one pixel for one pixel with the scroll (scroll timeline, keyframes wheel-0/1/2)
+   v0.38.14 — a phone's menu a narrow drawer from the right (Explore's pages only); the phone, Instagram and LinkedIn marks at the foot of the page
    v0.38.13 — a phone's bar: the wordmark and a menu button; the links, Explore's pages and the phone, Instagram and LinkedIn in its panel
    v0.38.12 — stacked, Who it's for never holds: the rows turn from the scroll itself (animation-timeline: view()), the finger-following wheel retired
    v0.38.11 — the wheel's rows on their own layers; on a phone no mask over them (it repainted every frame)
