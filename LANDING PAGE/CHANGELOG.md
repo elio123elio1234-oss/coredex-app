@@ -1,5 +1,16 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.10 — 2026-11-07 — phones: no announcement line
+
+**Why.** The user: "On the phone, let's drop the blue bar at the top of the page."
+
+**What changed.** Under 720 px, on every page, the blue announcement line ("Now raising our seed
+round | Request the deck") is hidden, so the page opens on the white bar. Tablets and desktops keep
+it. The deck request is still at the foot of every page.
+
+**Checked.** Typecheck and build pass. At 390 × 760 the line is hidden; at 1440 × 900 it shows.
+
+
 ## v0.38.9 — 2026-11-07 — phones: no held opening; the wheel follows the finger
 
 **Why.** The user, on an iPhone, on v0.38.8: "No, now it's small and not good. Maybe on such

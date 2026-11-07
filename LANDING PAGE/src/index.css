@@ -2358,8 +2358,9 @@ section[id] {
   :root {
     --bar: 64px;
   }
+  /* phones: no announcement line at the top; the page opens on the bar (the user) */
   .announce {
-    font-size: 13px;
+    display: none;
   }
   .bar-inner {
     gap: 16px;
@@ -2557,6 +2558,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.10 — phones: the blue announcement line hidden
    v0.38.9 — the wheel follows the finger on a phone; the phone image centred when stacked
    v0.38.9 — phones and portrait screens: no held scene; the clinician's screen a plain section under the band
    v0.38.8 — phones: the hand fits under the copy; the physician at 56 %; the wheel holds with less room
