@@ -1,5 +1,35 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.20 — 2026-11-07 — "Who it's for" on a phone, once and for all
+
+**Why.** The user, on the iPhone, after v0.38.17: "Who it's for flickers again, why? Fix it once
+and for all."
+
+**What went wrong, three times.** From v0.38.9 to v0.38.17 the rows were placed from the scroll
+position: in script, then in the browser's own scroll timeline, then with that timeline's range
+measured more carefully. Every version passed in Chrome and in WebKit on Windows. None of them can
+reproduce what an iPhone does while the page coasts and Safari's bars slide, and on the phone the
+computed place kept jumping. The flaw was not in a number but in the approach: anything that
+computes where the rows are can disagree with where the page is.
+
+**What changed: nothing computes the rows' place any more.** Stacked (a phone, a narrow window),
+the rows are ordinary content and scroll with the page itself, at the finger's own pace, so they
+cannot jump. The wheel's look stays as a window they pass through:
+- "Who it's for" holds at the top of the screen (CSS sticky).
+- The app's phone image holds at the bottom.
+- Each sits on the page's white, with a soft fade toward the rows.
+- One row at a time passes between them, upright and full in the middle and fading toward the
+  edges.
+
+The tilt and the fade are the only things script still sets. They are read from where each row
+really is on screen, so a late frame can only shade a row a touch off, never move it. When the
+section ends, the heading and the image let go and the page carries on. The wide screen's held,
+notched wheel is unchanged.
+
+Checked in WebKit (iPhone 13 profile) and at 960 × 1000, walking the section 6 px a frame: in no
+frame did a row move other than with the page (0 frames off by more than 3 px), and no sideways
+overflow. The scroll timeline and its keyframes are gone.
+
 ## v0.38.19 — 2026-11-07 — the footer's marks across the row, not the wordmark
 
 **Why.** The user: "I asked for the Instagram, LinkedIn… marks to take the whole width, not my

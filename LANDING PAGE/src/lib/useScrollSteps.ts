@@ -3,19 +3,19 @@ import { useEffect, useRef, useState } from "react";
 /* Steps through a held stage by scroll: the stage holds under the bar while the visitor scrolls
    through its wrapper, whose travel is split evenly between the steps, and the hook reports the
    step in view (a re-render only when it changes). The stage holds only where the caller says it
-   fits (a media query and the room under the bar); elsewhere `held` is false and nothing holds.
+   fits (a media query and the room under the bar).
 
-   Where the stage holds but the layout is stacked (a phone, a narrow window), `smooth` is true:
-   the wheel is not notched but moves exactly with the scroll, one pixel for one pixel, so it
-   feels like no effect at all (the user). Where the browser has scroll timelines, the browser
-   itself draws it from the scroll position (index.css, wheel-0/1/2); the hook only tells it where
-   the hold begins and ends (--wheel-a, --wheel-b on the wrapper). Elsewhere the hook writes each
-   row's place on every scroll frame, with no glide in between. */
+   Stacked (a phone, a narrow window) nothing holds: `flow` is true, and the rows scroll with the
+   page itself, between a heading held at the top and an image held at the bottom (CSS sticky).
+   Their place is the page's own scroll, so nothing can make them jump; the hook only tilts and
+   fades each row by its distance from the middle of that window, read from where the row really
+   is on screen. (v0.38.12 to v0.38.17 moved the rows by the scroll, in script or in the browser's
+   scroll timeline; on an iPhone, while Safari's bars slide or the page coasts, both jumped.) */
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /* where it holds: `minRoom`, the height under the bar the held stage needs where `wide` (a media
-   query) matches, and `minRoomStacked` where it does not (by default it never holds there) */
+   query) matches, and `minRoomStacked` where it does not (the room the flowing wheel needs) */
 type Opts = { wide?: string; minRoom?: number; minRoomStacked?: number };
 
 export function useScrollSteps(
@@ -26,7 +26,7 @@ export function useScrollSteps(
   const stage = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
   const [held, setHeld] = useState(false);
-  const [smooth, setSmooth] = useState(false);
+  const [flow, setFlow] = useState(false);
 
   useEffect(() => {
     const wrap = pin.current;
@@ -35,16 +35,9 @@ export function useScrollSteps(
     let raf = 0;
     let current = -1;
     let isHeld = false;
-    let isSmooth = false;
-    let range = "";
-    const timeline =
-      typeof CSS !== "undefined" &&
-      CSS.supports("animation-timeline: scroll()") &&
-      CSS.supports("animation-range: 0px 1px");
+    let isFlow = false;
 
     const rows = () => Array.from(wrap.querySelectorAll<HTMLElement>("[data-wheel-i]"));
-
-    // does the held stage fit: the layout it needs, and the room under the bar (the sticky top)?
     const mq = window.matchMedia(wide);
     const fit = () => {
       const bar =
@@ -53,106 +46,85 @@ export function useScrollSteps(
         ) || 72;
       // the layout viewport: on a phone it does not change as the toolbars come and go
       const room = document.documentElement.clientHeight - bar;
-      const fits = room >= (mq.matches ? minRoom : minRoomStacked);
-      if (fits !== isHeld) {
-        isHeld = fits;
-        setHeld(fits);
+      const holds = mq.matches && room >= minRoom;
+      const flows = !mq.matches && room >= minRoomStacked;
+      if (holds !== isHeld) {
+        isHeld = holds;
+        setHeld(holds);
       }
-      const follow = fits && !mq.matches;
-      if (follow !== isSmooth) {
-        isSmooth = follow;
-        setSmooth(follow);
-        if (!follow)
+      if (flows !== isFlow) {
+        isFlow = flows;
+        setFlow(flows);
+        if (!flows)
           rows().forEach((li) => {
+            li.style.removeProperty("transform");
             li.style.removeProperty("opacity");
           });
-        range = "";
-        // redraw once React has applied the change (it sets or clears the rows' own places)
-        window.setTimeout(() => {
-          place();
-          window.dispatchEvent(new Event("scroll"));
-        }, 0);
+        window.setTimeout(() => window.dispatchEvent(new Event("scroll")), 0);
       }
+    };
+
+    // flowing: each row tilted and faded by its distance from the window's middle, in rows
+    const shade = () => {
+      const head = wrap.querySelector<HTMLElement>(".rule-head");
+      const foot = wrap.querySelector<HTMLElement>(".rows-media");
+      const list = rows();
+      if (!head || !foot || list.length < 2) return;
+      const top = head.getBoundingClientRect().bottom;
+      const bottom = foot.getBoundingClientRect().top;
+      const mid = (top + bottom) / 2;
+      const boxes = list.map((li) => li.getBoundingClientRect());
+      const notch = boxes[1].top + boxes[1].height / 2 - (boxes[0].top + boxes[0].height / 2) || 1;
+      list.forEach((li, i) => {
+        const b = boxes[i];
+        const d = (b.top + b.height / 2 - mid) / notch;
+        const ad = Math.min(Math.abs(d), 1.5);
+        li.style.transform = `rotateX(${(-22 * Math.max(-1.5, Math.min(1.5, d))).toFixed(2)}deg) scale(${(1 - ad * 0.08).toFixed(4)})`;
+        li.style.opacity = Math.max(0.15, 1 - ad * 0.75).toFixed(3);
+      });
     };
 
     const draw = () => {
       raf = 0;
+      if (isFlow) {
+        shade();
+        return;
+      }
+      if (!isHeld) return;
       const r = wrap.getBoundingClientRect();
       const s = box.getBoundingClientRect();
       const travel = r.height - s.height;
       const p = travel > 0 ? clamp01((s.top - r.top) / travel) : 0;
       const at = Math.min(count - 1, Math.floor(p * count));
-      if (isSmooth) {
-        // the browser draws it from its own scroll timeline (place()); nothing to do while scrolling,
-        // and no re-render either (a step change would restyle the rows mid-scroll)
-        if (!timeline) {
-          // one pixel of scroll, one pixel of the wheel: the rows' places from the scroll itself
-          const pos = p * (count - 1);
-          rows().forEach((li) => {
-            const d = Number(li.dataset.wheelI) - pos;
-            const ad = Math.min(Math.abs(d), 2);
-            li.style.setProperty("--d", d.toFixed(4));
-            li.style.setProperty("--ad", ad.toFixed(4));
-            li.style.opacity = (ad <= 1 ? 1 - ad * 0.7 : 0.3 * (2 - ad)).toFixed(3);
-          });
-        }
-      }
-      if (at !== current && !isSmooth) {
+      if (at !== current) {
         current = at;
         setStep(at);
       }
-    };
-
-    /* where the hold begins and ends, as scroll positions, for the browser's timeline: from the
-       layout alone (the wrapper's offset in the page), measured when the layout changes, never
-       while scrolling. v0.38.14 measured it from the screen on every scroll; on an iPhone, while
-       Safari's bars slide or the page coasts, that reading drifts for a frame, and the wheel
-       jumped to its last row, then its first, before settling (the user). */
-    const place = () => {
-      if (!isSmooth || !timeline) return;
-      let top = 0;
-      for (let el: HTMLElement | null = wrap; el; el = el.offsetParent as HTMLElement | null)
-        top += el.offsetTop;
-      const start = Math.round(top - parseFloat(getComputedStyle(box).top));
-      const end = start + Math.round(wrap.offsetHeight - box.offsetHeight);
-      const next = `${start} ${end}`;
-      if (next === range) return;
-      range = next;
-      wrap.style.setProperty("--wheel-a", `${start}px`);
-      wrap.style.setProperty("--wheel-b", `${end}px`);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(draw);
     };
     const onResize = () => {
       fit();
-      place();
       onScroll();
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
-    // the page above can grow after load (images), moving where the hold begins
-    const ro = new ResizeObserver(() => {
-      place();
-      onScroll();
-    });
-    ro.observe(document.body);
     fit();
-    place();
     draw();
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
-      ro.disconnect();
       if (raf) cancelAnimationFrame(raf);
     };
   }, [count, wide, minRoom, minRoomStacked]);
 
-  return { pin, stage, step, held, smooth };
+  return { pin, stage, step, held, flow };
 }
 
-// v0.38.17 — the timeline's range measured from the layout when it changes, never from the screen while scrolling (on an iPhone the wheel jumped to its last row and back); no step re-render while it follows the scroll
-// v0.38.14 — stacked, the wheel held again (v0.38.12 took it away, also from narrow desktop windows) and moving one pixel for one pixel with the scroll: drawn by the browser's scroll timeline where it has one
+// v0.38.20 — stacked, the rows scroll with the page itself (`flow`) between a held heading and a held image; the hook only tilts and fades them by where they are (the user: "it flickers again, fix it once and for all")
+// v0.38.17 — the timeline's range measured from the layout when it changes, never from the screen while scrolling
+// v0.38.14 — stacked, the wheel held again and moving one pixel for one pixel with the scroll: drawn by the browser's scroll timeline where it has one
 // v0.38.12 — the finger-following wheel retired: stacked, nothing holds (the user: it "sank" the page)
 // v0.38.11 — the following wheel glides toward the finger (0.08 s), drawn on every frame until it settles
 // v0.38.9 — `smooth`: stacked, the wheel follows the finger (each row's place written every frame, rows marked data-wheel-i)
