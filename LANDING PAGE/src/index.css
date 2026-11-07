@@ -552,6 +552,174 @@ section[id] {
   color: var(--ink-3);
 }
 
+/* a phone's menu: three lines at the bar's right, turning to a cross; under the bar one panel,
+   the bar's width, with the section links, the pages behind Explore, and at its foot the phone
+   number, Instagram and LinkedIn. Hidden wherever the bar has room for its nav (above 719 px). */
+.bar-burger {
+  display: none;
+}
+.bar-burger-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.bar-burger-btn span {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transition:
+    transform 0.35s var(--ease),
+    opacity 0.2s ease;
+}
+.bar-burger-btn span:nth-child(1) {
+  transform: translateY(-6px);
+}
+.bar-burger-btn span:nth-child(3) {
+  transform: translateY(6px);
+}
+.bar-burger-btn[aria-expanded="true"] span:nth-child(1) {
+  transform: rotate(45deg);
+}
+.bar-burger-btn[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+.bar-burger-btn[aria-expanded="true"] span:nth-child(3) {
+  transform: rotate(-45deg);
+}
+.bar-sheet {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: calc(100svh - var(--bar));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border-top: 1px solid var(--hair);
+  box-shadow: 0 18px 40px rgba(11, 26, 48, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s var(--ease),
+    visibility 0s linear 0.25s;
+}
+.bar-sheet.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s var(--ease);
+}
+.bar-sheet ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bar-sheet .bar-sheet-main {
+  padding: 8px 0;
+}
+.bar-sheet-main a {
+  display: block;
+  padding: 14px var(--gutter);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.bar-sheet-label {
+  margin: 0;
+  padding: 18px var(--gutter) 6px;
+  border-top: 1px solid var(--hair);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.bar-sheet .bar-sheet-pages {
+  padding-bottom: 10px;
+}
+.bar-sheet-pages a {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 12px var(--gutter);
+  color: var(--ink);
+  text-decoration: none;
+}
+.bar-sheet-pages a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--coral);
+}
+.bar-sheet-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px var(--gutter) 18px;
+  border-top: 1px solid var(--hair);
+  background: var(--mist-2);
+}
+.bar-sheet-foot > a {
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.bar-sheet-social {
+  display: flex;
+  gap: 4px;
+}
+.bar.is-dark .bar-burger-btn {
+  color: #fff;
+}
+.bar.is-dark .bar-sheet {
+  background: #111725;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.bar.is-dark .bar-sheet-main a,
+.bar.is-dark .bar-sheet-pages a {
+  color: #fff;
+}
+.bar.is-dark .bar-sheet-label,
+.bar.is-dark .bar-sheet-foot > a {
+  color: #b7c0cf;
+}
+.bar.is-dark .bar-sheet-label,
+.bar.is-dark .bar-sheet-foot {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.bar.is-dark .bar-sheet-foot {
+  background: rgba(255, 255, 255, 0.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-burger-btn span,
+  .bar-sheet {
+    transition: none;
+  }
+}
+
 /* ---------- hero: the slate band ---------- */
 
 .hero {
@@ -2385,9 +2553,15 @@ section[id] {
   .bar-logo {
     height: 17px;
   }
-  /* the section links leave the bar; "Explore" stays, its panel across the bar's width */
-  .bar-nav > a {
+  /* the bar is the wordmark and the menu button (the user): the nav, Explore and the three marks
+     move into the menu's panel */
+  .bar-nav,
+  .bar-end {
     display: none;
+  }
+  .bar-burger {
+    display: block;
+    margin-left: auto;
   }
   .bar-explore {
     position: static;
@@ -2575,6 +2749,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.13 — a phone's bar: the wordmark and a menu button; the links, Explore's pages and the phone, Instagram and LinkedIn in its panel
    v0.38.12 — stacked, Who it's for never holds: the rows turn from the scroll itself (animation-timeline: view()), the finger-following wheel retired
    v0.38.11 — the wheel's rows on their own layers; on a phone no mask over them (it repainted every frame)
    v0.38.10 — phones: the blue announcement line hidden

@@ -1,5 +1,23 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.13 — 2026-11-07 — a menu button on the phone
+
+**Why.** The user: on a phone, put a menu button (three lines) on the right in place of "Explore",
+and move the Instagram and LinkedIn marks and the rest down to the bottom, "because it's less
+important".
+
+**What changed (phones, up to 719 px; the wide bar is unchanged).**
+- **The bar is the wordmark and the menu button**, at the right edge. "Explore" and the phone,
+  Instagram and LinkedIn marks leave the bar.
+- **One panel under the bar**, its full width: the section links (Product, Stage, Team) large; the
+  pages behind Explore under a small "Explore" label, each with its line; and at the panel's foot,
+  on a pale band, the phone number (a tap calls) with Instagram and LinkedIn.
+- The three lines turn into a cross while it is open. A tap on a link, outside the panel, or Escape
+  closes it. Over a dark stage it turns dark with the bar.
+
+Checked in headless Chrome at 390 × 760 (home and /technology): the button is 44 × 44 at the right
+edge, the panel opens and a link closes it, no errors. At 1440 the bar is as it was.
+
 ## v0.38.12 — 2026-11-07 — the phone scrolls at its own pace
 
 **Why.** The user, on an iPhone: scrolling "Who it's for" with the finger "doesn't feel natural and
