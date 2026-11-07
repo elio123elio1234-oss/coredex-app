@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.32";
+export const APP_VERSION = "0.38.33";
 export const APP_BUILD_LABEL =
-  "Technology: the noise figure's strips schematic, ink on white without ECG paper";
+  "Technology: AI Heart ID, its own section: learns the baseline, compares, alerts the clinician (in development)";
 
+// v0.38.33 — AI Heart ID as its own section on Technology, at the user's request; a schematic of learn, compare, alert
 // v0.38.32 — the noise figure's strips schematic (no ECG paper)
 // v0.38.31 — the noise figure's contacts as engineering cross-sections: skin, electrode; the array's elements, ADCs and weighted sum
 // v0.38.30 — Technology: no navy band, the noise figure an ECG printout (black ink, ECG paper); step 02 the module's render

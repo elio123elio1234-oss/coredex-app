@@ -1,5 +1,47 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.33 — 2026-11-07 — AI Heart ID, its own section
+
+**Why.** The user: "add the section on the AI that maps the recordings and sends alerts to the
+doctor, as written in the deck". In the submission it is step 03, "AI Heart ID: AI learns each
+patient's baseline from every scan. Flags subtle changes early and alerts the clinician." Until
+now the page held it as one small card under "After the recording". The user asked for it
+explicitly, which the standing no-interpretation rule requires before any flagging feature
+reaches a screen. Here it is described as **in development**, within the submission's own
+safeguards.
+
+**What changed (Technology).**
+- **A section of its own,** after "After the recording":
+  - kicker "AI Heart ID · In development";
+  - headline "A baseline for every heart.";
+  - text: the model learns each patient's own ECG from every recording, sets each new one against
+    that baseline, and flags a change early to the clinician, with the recording and the baseline
+    in hand.
+- **A schematic in the noise figure's hand** (ink on white, mono labels, no colour), three panels:
+  1. **Learns:** the patient's earlier beats overlaid, with their mean.
+  2. **Compares:** a new beat over the baseline, a generic departure bracketed "Change". It names
+     no finding.
+  3. **Alerts:** a "For review" card to the clinician, with the recording (6 leads) and the
+     baseline attached.
+
+  The beats are synthetic and seeded, captioned "Illustrative. In development: the model supports
+  the clinician's decision and makes none of its own."
+- **Its limits, from the submission's safeguards:**
+  - **Decision support only:** a clinician reads every recording.
+  - **Explainable:** each flag comes with the raw traces, the contact quality and the baseline.
+  - **Never reassures:** Cyphix never tells a patient they are fine; acute symptoms go to
+    emergency services.
+- **"After the recording":** the AI card gives way to "Built for clinical review" (the raw traces
+  and each electrode's contact quality, in the standard limb-lead layout), beside the portal.
+
+Checked in WebKit at 1440 and on iPhone 13:
+- the three captions align side by side and stack on a phone;
+- no sideways overflow;
+- axe-core finds no violations.
+
+The product itself still displays data and does not interpret. This section describes a feature
+in development.
+
 ## v0.38.32 — 2026-11-07 — the strips, schematic
 
 **Why.** The user, on v0.38.31: "Nice, but make the signals themselves look schematic too, not on a

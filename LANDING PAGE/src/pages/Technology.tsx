@@ -6,6 +6,7 @@ import NextLinks from "../components/NextLinks";
 import { ArrowRight, LineGlobe, LinePulse, LineShield, LineWatch } from "../components/Icons";
 import SixViews from "../components/SixViews";
 import NoiseFigure from "../components/NoiseFigure";
+import BaselineFigure from "../components/BaselineFigure";
 import wear from "../assets/deck/proto-wear.webp";
 import strapRender from "../assets/img/scene-strap.webp";
 import appLeads from "../assets/img/app-limb-leads.webp";
@@ -35,9 +36,9 @@ const AFTER = [
     text: "Clean 6-lead recordings reach the clinician in a web view and as PDF reports; integration with clinical systems through HL7 FHIR follows.",
   },
   {
-    tag: "In development",
-    title: "A baseline for every patient.",
-    text: "An AI model learns each patient's own baseline from every recording and points the clinician to changes from it. It supports the clinician's decision and never replaces it: a clinician reads every recording, and Cyphix never tells a patient they are fine.",
+    tag: "From the first day",
+    title: "Built for clinical review.",
+    text: "The raw traces and the contact quality of every electrode, in the standard limb-lead layout the clinician already reads.",
   },
 ];
 
@@ -212,6 +213,40 @@ export default function Technology() {
           </div>
         </section>
 
+        <section className="section" aria-labelledby="ai-title">
+          <div className="wrap">
+            <header className="tech-signal-head">
+              <p className="tech-signal-kicker">
+                <LinePulse className="tech-signal-kicker-icon" />
+                AI Heart ID · In development
+              </p>
+              <h2 id="ai-title" className="tech-signal-title">
+                A baseline for every heart.
+              </h2>
+              <p className="tech-signal-lede">
+                An AI model learns each patient's own ECG from every recording they make. Each new
+                recording is set against that personal baseline, and a change from it is flagged
+                early to the clinician, with the recording and the baseline behind the flag in hand.
+              </p>
+            </header>
+            <BaselineFigure />
+            <ul className="tech-signal-legend" aria-label="The model's limits">
+              <li>
+                <strong>Decision support only</strong>A clinician reads every recording; the model points, the
+                clinician decides.
+              </li>
+              <li>
+                <strong>Explainable</strong>Every flag comes with the raw traces, the contact quality of each
+                electrode and the baseline behind it.
+              </li>
+              <li>
+                <strong>Never reassures</strong>Cyphix never tells a patient they are fine; acute symptoms go to
+                emergency services.
+              </li>
+            </ul>
+          </div>
+        </section>
+
         <section className="section" aria-labelledby="hw-title">
           <div className="wrap">
             <div className="rule-head">
@@ -269,6 +304,7 @@ export default function Technology() {
   );
 }
 
+// v0.38.33 — AI Heart ID as its own section (the user: "add the section on the AI, as in the deck"): learns the patient's baseline, compares each recording, alerts the clinician; a schematic figure; its limits from the submission's safeguards. After the recording: the portal and clinical review
 // v0.38.30 — the signature section on the page's white, the figure as an ECG printout (the user: the blue band and the coloured drawings read as childish, not medical); step 02's picture the module's render, not the prototype band (the user: "a sixth-grade project"); the deck's two strips dropped (the figure says it)
 // v0.38.29 — more engineered (the user: "not innovative or professional enough"): the system in figures under the head; the noisy electrode against the array as the page's dark signature band, its three noises named (the submission's figure, which was missing)
 // v0.38.26 — from the user's Future Health Challenge submission: six views against one, the three noise sources, after the recording (the portal; the AI baseline in development, decision support only), the hardware, the demo and the video
