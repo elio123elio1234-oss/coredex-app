@@ -1,5 +1,27 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.16 — 2026-11-07 — the drawer over the bar; no sideways pan
+
+**Why.** The user, on the iPhone: the scroll is now perfect, but the page "moves to the side and
+scrolls sideways"; and the menu should open over the top bar too, as Gmail's does.
+
+**The sideways pan** was v0.38.14's drawer. Closed, it waited just past the screen's right edge,
+hung from the bar. A hidden box still counts as page width, and iPhone Safari lets the finger pan
+to it even though the page clips its sides (`overflow-x: clip` on the body does not stop the
+viewport's own pan there).
+
+**What changed.**
+- **The drawer is a fixed layer over the whole screen** (above the bar), which clips its own
+  edges. The closed panel waits inside that layer, so the page never gains width.
+- **It opens over the bar**, the full height of the screen, about 300 px wide, from the right. Its
+  head has the bar's height, with "Explore" and a close cross where the menu button was. The page
+  behind dims; a tap on it, on a page, on the cross, or Escape closes it.
+- Focus moves into the drawer when it opens and back to the menu button when it closes.
+
+Checked in headless Chrome at 390 × 760 on all five pages: no element, shown or hidden, reaches
+past the screen's sides; the drawer opens over the bar and closes from the cross and the dimmed
+page; no errors.
+
 ## v0.38.15 — 2026-11-07 — Request the deck, square
 
 **Why.** The user: in "Request the deck", make the rectangles' corners sharper, like the top of the

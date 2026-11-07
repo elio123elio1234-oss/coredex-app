@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Logo from "./Logo";
 import { Chevron, Instagram, LinkedIn, Phone } from "./Icons";
 import { EXPLORE, SECTIONS, type PageKey } from "../config/nav";
@@ -11,10 +11,11 @@ import { usePopover } from "../lib/usePopover";
    end the phone, Instagram and LinkedIn as three marks. The number itself
    is not on show: a click on the phone opens it under the mark. Over a dark
    stage the bar turns dark too. On a phone the bar is the wordmark and a
-   menu button (three lines) at the right, which slides a narrow drawer in
-   from the right with the pages behind Explore, nothing else: the section
-   links are not on a phone, and the phone, Instagram and LinkedIn marks sit
-   at the foot of the page (Footer). */
+   menu button (three lines) at the right, which slides a drawer in from the
+   right over the whole height of the screen, the bar too (as Gmail's does),
+   with the pages behind Explore, nothing else: the section links are not on
+   a phone, and the phone, Instagram and LinkedIn marks sit at the foot of
+   the page (Footer). */
 
 const PHONE = "+972 54-398-9698";
 const SOCIAL = [
@@ -26,7 +27,9 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
   const [dark, setDark] = useState(false);
   const call = usePopover();
   const explore = usePopover();
-  const menu = usePopover();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const burger = useRef<HTMLButtonElement>(null);
+  const closer = useRef<HTMLButtonElement>(null);
   const inside = EXPLORE.some((e) => e.key === page);
 
   useEffect(() => {
@@ -43,6 +46,21 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // the drawer: focus moves into it and back to the button; Escape closes it
+  useEffect(() => {
+    if (!menuOpen) return;
+    closer.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMenu();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    burger.current?.focus({ preventScroll: true });
+  };
 
   return (
     <>
@@ -114,50 +132,66 @@ export default function Header({ page = "home" }: { page?: PageKey }) {
               </a>
             ))}
           </div>
-          {/* a phone: the menu button and its panel (the bar's nav and marks hide there) */}
-          <div className="bar-burger" ref={menu.ref}>
+          {/* a phone: the menu button (the bar's nav and marks hide there); the drawer is below */}
+          <div className="bar-burger">
             <button
-              ref={menu.button}
+              ref={burger}
               type="button"
               className="bar-burger-btn"
-              aria-label={menu.open ? "Close the menu" : "Open the menu"}
-              aria-expanded={menu.open}
-              aria-controls="bar-burger-menu"
-              onClick={() => menu.setOpen((o) => !o)}
+              aria-label="Open the menu"
+              aria-expanded={menuOpen}
+              aria-controls="site-drawer"
+              onClick={() => setMenuOpen(true)}
             >
               <span />
               <span />
               <span />
             </button>
-            <div
-              id="bar-burger-menu"
-              className={`bar-drawer${menu.open ? " is-open" : ""}`}
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest("a")) menu.setOpen(false);
-              }}
-            >
-              <nav aria-label="Explore">
-                <ul>
-                  {EXPLORE.map((e) => (
-                    <li key={e.key}>
-                      <a href={e.href} aria-current={e.key === page ? "page" : undefined}>
-                        <span className="bar-menu-title">{e.title}</span>
-                        <span className="bar-menu-text">{e.text}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            </div>
           </div>
         </div>
-        {/* the page behind the open drawer, dimmed a little; a tap on it closes the drawer */}
-        <div className={`bar-scrim${menu.open ? " is-open" : ""}`} aria-hidden="true" />
       </header>
+      {/* the phone's drawer, over the whole screen's height, the bar too; a layer of its own that
+          clips its edges, so the closed drawer beside the screen never lets the page pan sideways */}
+      <div className={`drawer${menuOpen ? " is-open" : ""}`} aria-hidden={!menuOpen}>
+        <div className="drawer-scrim" onClick={closeMenu} />
+        <nav
+          id="site-drawer"
+          className="drawer-panel"
+          aria-label="Explore"
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest("a")) setMenuOpen(false);
+          }}
+        >
+          <div className="drawer-head">
+            <span className="drawer-label">Explore</span>
+            <button
+              ref={closer}
+              type="button"
+              className="drawer-close"
+              aria-label="Close the menu"
+              onClick={closeMenu}
+            >
+              <span />
+              <span />
+            </button>
+          </div>
+          <ul>
+            {EXPLORE.map((e) => (
+              <li key={e.key}>
+                <a href={e.href} aria-current={e.key === page ? "page" : undefined}>
+                  <span className="bar-menu-title">{e.title}</span>
+                  <span className="bar-menu-text">{e.text}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
     </>
   );
 }
 
+// v0.38.16 — the drawer over the whole screen, the bar too (the user: like Gmail), in a layer that clips it (the closed drawer let a phone pan sideways)
 // v0.38.14 — a phone: the menu a narrow drawer from the right with Explore's pages only; no section links; the marks moved to the foot of the page (the user)
 // v0.38.13 — a phone: a menu button (three lines) at the right in place of Explore and the marks; the phone, Instagram and LinkedIn at the panel's foot (the user)
 // v0.35.0 — "Explore": a menu of the pages kept off the home page (the 3D journey, Technology, Investors); the section links reach the home page from every page; the open/close rule shared (lib/usePopover)

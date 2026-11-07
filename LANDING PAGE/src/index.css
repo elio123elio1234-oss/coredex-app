@@ -599,39 +599,93 @@ section[id] {
 .bar-burger-btn[aria-expanded="true"] span:nth-child(3) {
   transform: rotate(-45deg);
 }
-.bar-drawer,
-.bar-scrim {
-  position: absolute;
-  top: 100%;
-  height: calc(100vh - var(--bar));
-  height: calc(100dvh - var(--bar));
+/* the drawer: a fixed layer over the whole screen, above the bar (as Gmail's), which clips its own
+   edges: the closed panel waits just past the right edge inside it, so the page never gains width
+   (v0.38.14 hung it beside the bar, and a phone could pan sideways to it) */
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear 0.4s;
 }
-.bar-drawer {
+.drawer.is-open {
+  pointer-events: auto;
+  visibility: visible;
+  transition: none;
+}
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 26, 48, 0.32);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.drawer.is-open .drawer-scrim {
+  opacity: 1;
+}
+.drawer-panel {
+  position: absolute;
+  top: 0;
   right: 0;
-  z-index: 1;
-  width: min(300px, 80vw);
+  bottom: 0;
+  width: min(300px, 82vw);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: #fff;
-  border-left: 1px solid var(--hair);
-  box-shadow: -18px 0 40px rgba(11, 26, 48, 0.1);
-  visibility: hidden;
+  box-shadow: -18px 0 40px rgba(11, 26, 48, 0.14);
   transform: translateX(100%);
-  transition:
-    transform 0.4s var(--ease),
-    visibility 0s linear 0.4s;
-}
-.bar-drawer.is-open {
-  visibility: visible;
-  transform: none;
   transition: transform 0.4s var(--ease);
 }
-.bar-drawer ul {
+.drawer.is-open .drawer-panel {
+  transform: none;
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--bar);
+  padding: 0 calc(var(--gutter) - 10px) 0 24px;
+  border-bottom: 1px solid var(--hair);
+}
+.drawer-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.drawer-close {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.drawer-close span {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 50%;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+.drawer-close span + span {
+  transform: rotate(-45deg);
+}
+.drawer-panel ul {
   margin: 0;
   padding: 12px 0;
   list-style: none;
 }
-.bar-drawer a {
+.drawer-panel a {
   position: relative;
   display: grid;
   gap: 3px;
@@ -639,7 +693,7 @@ section[id] {
   color: var(--ink);
   text-decoration: none;
 }
-.bar-drawer a[aria-current="page"]::before {
+.drawer-panel a[aria-current="page"]::before {
   content: "";
   position: absolute;
   left: 0;
@@ -648,36 +702,14 @@ section[id] {
   width: 2px;
   background: var(--coral);
 }
-.bar-scrim {
-  display: none;
-  left: 0;
-  right: 0;
-  background: rgba(11, 26, 48, 0.18);
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.3s ease,
-    visibility 0s linear 0.3s;
-}
-.bar-scrim.is-open {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.3s ease;
-}
 .bar.is-dark .bar-burger-btn {
-  color: #fff;
-}
-.bar.is-dark .bar-drawer {
-  background: #111725;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-.bar.is-dark .bar-drawer a {
   color: #fff;
 }
 @media (prefers-reduced-motion: reduce) {
   .bar-burger-btn span,
-  .bar-drawer,
-  .bar-scrim {
+  .drawer,
+  .drawer-scrim,
+  .drawer-panel {
     transition: none;
   }
 }
@@ -2599,9 +2631,6 @@ section[id] {
     display: block;
     margin-left: auto;
   }
-  .bar-scrim {
-    display: block;
-  }
   /* the bar's three marks, at the foot of the page instead */
   .foot-marks {
     display: flex;
@@ -2792,6 +2821,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.16 — the phone's drawer a fixed layer over the whole screen and the bar (like Gmail), clipping its own edges (no sideways pan)
    v0.38.15 — Request the deck: the fields and the send button square, like the hero's chip
    v0.38.14 — stacked, "Who it's for" holds its wheel again, moving one pixel for one pixel with the scroll (scroll timeline, keyframes wheel-0/1/2)
    v0.38.14 — a phone's menu a narrow drawer from the right (Explore's pages only); the phone, Instagram and LinkedIn marks at the foot of the page
