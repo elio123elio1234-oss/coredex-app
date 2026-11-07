@@ -81,12 +81,84 @@ function Paper() {
   return <g aria-hidden="true">{lines}</g>;
 }
 
+/* the two contacts in cross-section, drawn as an engineering figure: skin hatched, metal grey,
+   ink lines, small mono labels; no colour (the user, v0.38.31: without the electrode and the skin
+   the comparison was unclear; v0.38.29's cartoon devices were "childish") */
+function Skin({ id }: { id: string }) {
+  return (
+    <g>
+      <defs>
+        <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" className="xs-hatch" />
+        </pattern>
+      </defs>
+      <rect x="0" y="100" width="260" height="30" fill={`url(#${id})`} />
+      <line x1="0" y1="100" x2="260" y2="100" className="xs-skin-line" />
+      <text x="256" y="122" textAnchor="end" className="xs-label">
+        SKIN
+      </text>
+    </g>
+  );
+}
+
+function SingleSection() {
+  return (
+    <svg viewBox="0 0 260 130" className="nf-xs" role="img" aria-label="Cross-section: one electrode plate on the skin, one wire, one channel.">
+      <Skin id="xs-skin-a" />
+      <rect x="80" y="88" width="100" height="12" rx="2" className="xs-metal" />
+      <rect x="122" y="78" width="16" height="10" rx="2" className="xs-metal" />
+      <path d="M130 78 V44 H196" className="xs-wire" />
+      <text x="200" y="47" className="xs-label">
+        1 CHANNEL
+      </text>
+      <path d="M80 94 L52 66 H8" className="xs-leader" />
+      <text x="8" y="61" className="xs-label">
+        ELECTRODE
+      </text>
+    </svg>
+  );
+}
+
+function ArraySection() {
+  const xs = [52, 92, 132, 172];
+  return (
+    <svg viewBox="0 0 260 130" className="nf-xs" role="img" aria-label="Cross-section: the Cyphix contact as four elements on the skin, each read by its own ADC, combined into one lead weighted by contact quality.">
+      <Skin id="xs-skin-b" />
+      <rect x="44" y="50" width="172" height="50" rx="7" className="xs-housing" />
+      {xs.map((x) => (
+        <g key={x}>
+          <rect x={x} y="88" width="36" height="12" rx="2" className="xs-metal" />
+          <line x1={x + 18} y1="88" x2={x + 18} y2="76" className="xs-wire" />
+          <rect x={x + 4} y="60" width="28" height="16" rx="2" className="xs-adc" />
+          <text x={x + 18} y="71" textAnchor="middle" className="xs-adc-text">
+            ADC
+          </text>
+          <path d={`M${x + 18} 60 L130 31`} className="xs-wire" />
+        </g>
+      ))}
+      <circle cx="130" cy="20" r="11" className="xs-sum" />
+      <text x="130" y="23.5" textAnchor="middle" className="xs-sum-text">
+        {"\u03a3w"}
+      </text>
+      <path d="M141 20 H170" className="xs-wire" />
+      <text x="174" y="23" className="xs-label">
+        1 LEAD
+      </text>
+      <path d="M52 94 L36 74 H6" className="xs-leader" />
+      <text x="6" y="69" className="xs-label">
+        ARRAY
+      </text>
+    </svg>
+  );
+}
+
 function Row({ kind }: { kind: "noisy" | "clean" }) {
   const paths = useMemo(strips, []);
   const noisy = kind === "noisy";
   return (
     <div className={`nf-row is-${kind}`}>
       <div className="nf-side">
+        {noisy ? <SingleSection /> : <ArraySection />}
         <p className="nf-side-title">{noisy ? "Single electrode" : "Cyphix array"}</p>
         <p className="nf-side-sub">{noisy ? "One contact; its noise passes into the trace" : "Each contact an array, weighted by its quality"}</p>
       </div>
@@ -126,5 +198,6 @@ export default function NoiseFigure() {
   );
 }
 
+// v0.38.31 — the two contacts back, as engineering cross-sections (skin hatched, metal grey, ink lines): without them the comparison was unclear (the user)
 // v0.38.30 — an ECG printout: black ink on ECG paper, the noises bracketed in grey; no devices, no colour, no band (the user: "childish, colourful, less medical")
 // v0.38.29 — the noisy single electrode against the Cyphix array, the three noises named (the user's submission; the user: "it isn't there")

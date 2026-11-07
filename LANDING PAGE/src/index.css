@@ -2914,14 +2914,74 @@ section[id] {
 }
 .nf-row {
   display: grid;
-  grid-template-columns: clamp(150px, 16vw, 220px) minmax(0, 1fr);
-  gap: clamp(16px, 2.4vw, 36px);
-  align-items: end;
-  padding: 24px 0;
+  grid-template-columns: clamp(210px, 21vw, 280px) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 48px);
+  align-items: center;
+  padding: 28px 0;
   border-bottom: 1px solid var(--hair);
 }
-.nf-side {
-  padding-bottom: 6px;
+/* the contact in cross-section, an engineering figure: ink lines, grey metal, hatched skin */
+.nf-xs {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  margin-bottom: 14px;
+}
+.xs-hatch {
+  stroke: rgba(11, 26, 48, 0.22);
+  stroke-width: 1;
+}
+.xs-skin-line {
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+.xs-metal {
+  fill: #d9dee5;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+}
+.xs-housing {
+  fill: #f4f6f9;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+}
+.xs-adc {
+  fill: #fff;
+  stroke: var(--ink-3);
+  stroke-width: 0.9;
+}
+.xs-adc-text {
+  fill: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+}
+.xs-wire {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.xs-leader {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 0.8;
+}
+.xs-sum {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+}
+.xs-sum-text {
+  fill: var(--ink);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+.xs-label {
+  fill: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
 }
 .nf-side-title {
   margin: 0 0 4px;
@@ -3048,10 +3108,10 @@ section[id] {
 @media (max-width: 719px) {
   .nf-row {
     grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    gap: 14px;
   }
-  .nf-side {
-    padding-bottom: 0;
+  .nf-xs {
+    max-width: 260px;
   }
   .nf-marks li {
     font-size: 10px;
@@ -3807,6 +3867,7 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.31 — the noise figure's contacts as engineering cross-sections (skin, electrode; the array's elements, ADCs and weighted sum)
    v0.38.30 — the noise figure on white, as an ECG printout (black ink, ECG paper, grey brackets); step 02's render; no navy band
    v0.38.29 — Technology's signature band: the noisy electrode against the array (NoiseFigure), on navy
    v0.38.26 — Explore pages from the user's submission: the investors' pyramid, outcomes, measures, path, risks, team; technology's six views, noise sources, after the recording, hardware, demos

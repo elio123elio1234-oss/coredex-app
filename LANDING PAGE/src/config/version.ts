@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.30";
+export const APP_VERSION = "0.38.31";
 export const APP_BUILD_LABEL =
-  "Technology: the noise figure as an ECG printout on white; step 02 shows the module's render";
+  "Technology: the electrode and the array drawn back, as engineering cross-sections on the skin";
 
+// v0.38.31 — the noise figure's contacts as engineering cross-sections: skin, electrode; the array's elements, ADCs and weighted sum
 // v0.38.30 — Technology: no navy band, the noise figure an ECG printout (black ink, ECG paper); step 02 the module's render
 // v0.38.29 — Technology more engineered: the noise figure (single electrode against the array), the system in figures; Investors' lede trimmed
 // v0.38.28 — Investors: the user's sharper clinic-door image; "most urgent first" dropped from the heading

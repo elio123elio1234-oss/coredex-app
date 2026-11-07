@@ -1,5 +1,24 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.31 — 2026-11-07 — the electrode and the skin, drawn as an engineer would
+
+**Why.** The user, on v0.38.30: "still doesn't look professional, and now it's somehow less clear,
+because there's no electrode and skin." v0.38.30 rightly dropped v0.38.29's cartoon devices, but it
+took the explanation with them. Two strips side by side don't say why one is clean.
+
+**What changed.** Each row of the figure now opens on its contact in cross-section, drawn as an
+engineering or patent figure: ink lines, grey metal, hatched skin, small mono labels, no colour.
+- **Single electrode:** one plate on the skin, one wire, labelled "1 channel".
+- **Cyphix array:** the module's housing on the skin with four elements. Each element is wired to
+  its own ADC, and the four meet in a weighted sum (Σw), giving "1 lead". This is the mechanism
+  the text describes, now visible.
+
+The strips stay the ECG printout of v0.38.30 (black ink on ECG paper, the three noises bracketed in
+grey). On a phone each drawing stands over its strip.
+
+Checked in WebKit at 1440 and on iPhone 13: the labels clear the drawings, and there is no sideways
+overflow.
+
 ## v0.38.30 — 2026-11-07 — Technology, medical rather than colourful
 
 **Why.** The user, on v0.38.29: "I didn't like the screen suddenly turning blue; it became less
