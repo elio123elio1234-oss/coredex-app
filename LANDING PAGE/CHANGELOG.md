@@ -1,5 +1,39 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.21 — 2026-11-07 — the solution band's scene
+
+**Why.** The user wanted to try a scene in place of the empty grey band under "Universal Fit.
+Clinical Power.", and would drop it if it read as too busy. They sent a phone mock-up and two images
+through ChatGPT share links: a room, and a man in an armchair already cut out. The brief: blur the
+room, put the man on it, and let his head rise a little above the band, as in the mock-up.
+
+**What changed.**
+- **The band shows the room, blurred** (`solution-room.webp`). The blur is baked into the file
+  (Gaussian, radius 9), not applied live, so the browser does no work for it. 16 KB.
+- **The man stands in front** (`solution-man.webp`, the user's cut-out trimmed to its outline, 884 ×
+  1000 with alpha, 95 KB). He is 118 % of the band's height, standing on its lower edge, so his head
+  rises above the band's top into the white of the section above. The navy card, as before, rises
+  over his legs.
+- **Where he sits:**
+  - **On a phone:** centred; the band is 250 px, and the card rises 96 px over him, as in the
+    mock-up.
+  - **Side by side (1024 px and up):** right of the middle, at 64 %. There the section above ends
+    on the physician's photograph at the left, and his head should rise into the white beside it,
+    not over the photograph.
+- **No shadow under him.** A drop shadow drew a grey haze around his head on the white, so it was
+  removed.
+
+Checked in WebKit at:
+- iPhone 13;
+- 820 × 1180;
+- 1000 × 700;
+- 1280 × 720;
+- 1440 × 900.
+
+At every size the head rises 40–78 px above the band and never over the photograph or the text
+above. Nothing reaches past the screen's sides, and there are no errors. Both images are
+generated, sidecars in `assets/photos/`.
+
 ## v0.38.20 — 2026-11-07 — "Who it's for" on a phone, once and for all
 
 **Why.** The user, on the iPhone, after v0.38.17: "Who it's for flickers again, why? Fix it once

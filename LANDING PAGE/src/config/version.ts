@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.20";
+export const APP_VERSION = "0.38.21";
 export const APP_BUILD_LABEL =
-  "Who it's for on a phone: the rows scroll with the page between a held heading and image (cannot jump)";
+  "The solution band: the user's scene, a blurred room and a man in an armchair, his head above the band";
 
+// v0.38.21 — the solution band's scene: the room blurred, the man in front, his head above the band (the user's mock-up)
 // v0.38.20 — Who it's for, stacked: the rows flow with the page between a held heading and a held image
 // v0.38.19 — footer on a phone: the marks span the row, not the wordmark
 // v0.38.18 — no phone number anywhere; the contact line as marks; the footer without its tagline, its wordmark the row's width on a phone
