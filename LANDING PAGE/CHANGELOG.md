@@ -1,5 +1,28 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.25 — 2026-11-07 — the wheel on a shorter laptop window
+
+**Why.** The user, on the computer at 100 % zoom: "the scrolling disappears in this part. It must
+not happen." Their screenshot showed "Who it's for" as a plain list. The screen is scaled by
+Windows (about 1.7 device pixels per CSS pixel), so at 100 % the browser has under 500 px below the
+bar. The wheel held only from 500 px, so it switched itself off.
+
+**What changed.** Side by side, the wheel now holds from 420 px under the bar instead of 500.
+Measured, the held stage itself (the heading, the wheel and the phone image) needs about 380 px,
+so 500 was far more than it needs.
+
+Checked in Chrome at:
+
+| Window | Room under the bar |
+|---|---|
+| 1142 × 560 | 488 px |
+| 1280 × 520 | 448 px |
+| 1280 × 495 | 423 px |
+| 1920 × 560 | 488 px |
+
+At every one of these the wheel holds and the stage fits, with the heading and the phone image
+whole. WebKit holds at 1280 × 520 and 1440 × 900. Taller windows are unchanged.
+
 ## v0.38.24 — 2026-11-07 — no city
 
 **Why.** The user: "Take my city off the site, it's not relevant."

@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.24";
+export const APP_VERSION = "0.38.25";
 export const APP_BUILD_LABEL =
-  "No city on the site: the contact line is the e-mail alone; the footer's Contact column without it";
+  "Who it's for: the wheel holds on shorter laptop windows (from 420 px under the bar, was 500)";
 
+// v0.38.25 — the wheel holds from 420 px under the bar (it switched off on the user's laptop at 100 %)
 // v0.38.24 — the city removed (the user: not relevant)
 // v0.38.23 — /privacy, /terms, /accessibility and their footer links; the form links the policy; WCAG contrast fixes
 // v0.38.22 — on a phone the man on the band's right side (the user's mock-up); the computer unchanged

@@ -30,13 +30,15 @@ const ROWS = [
   },
 ];
 
-/* the wheel holds side by side where the window has 500 px under the bar. Stacked (a phone, a narrow
+/* the wheel holds side by side where the window has 420 px under the bar. Stacked (a phone, a narrow
    window, with 540 px) the rows flow: they scroll with the page itself between the heading, held at
    the top, and the phone image, held at the bottom, tilting and fading by their distance from the
    middle (lib/useScrollSteps). Nothing moves them but the page, so they cannot jump (the user) */
 const HOLD = {
   wide: "(min-width: 1024px), (min-aspect-ratio: 5/4)",
-  minRoom: 500,
+  // the held stage itself needs about 380 px (measured); 500 dropped the wheel on a laptop at 100 %
+  // (Windows display scaling: about 490 px under the bar). The user: "that must not happen"
+  minRoom: 420,
   minRoomStacked: 540,
 };
 
@@ -123,6 +125,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.25 — side by side the wheel holds from 420 px under the bar (500 turned it off on the user's laptop at 100 %)
 // v0.38.20 — stacked, the rows flow with the page between a held heading and a held image (no more jumps on the iPhone)
 // v0.38.17 — following the scroll, every row stays readable (no aria-hidden by step)
 // v0.38.14 — stacked, the wheel holds again (the user: "that is not what I asked"; it had also left narrow desktop windows), moving one pixel for one pixel with the scroll
