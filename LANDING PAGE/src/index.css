@@ -700,6 +700,22 @@ section[id] {
   padding-top: clamp(16px, 7vh, 72px);
   padding-bottom: clamp(16px, 7vh, 72px);
 }
+/* a phone or a portrait screen: nothing holds; the clinician's screen is a section of its own
+   under the band, in the day's light (Hero.tsx) */
+.hero-moment.is-flat {
+  position: relative;
+  padding: clamp(56px, 12vw, 88px) 0 clamp(64px, 14vw, 96px);
+  background:
+    radial-gradient(60% 60% at 70% 50%, #ffffff, transparent 70%),
+    linear-gradient(180deg, #f4f6f9 0%, #e7ecf3 100%);
+}
+.hero-moment.is-flat .hm-inner {
+  height: auto;
+}
+.hero-moment.is-flat .hm-copy,
+.hero-moment.is-flat .hm-media {
+  opacity: 1;
+}
 /* stacked (a phone, a portrait tablet), the hand and the tablet take only the room the copy leaves
    and shrink to fit it: on an iPhone with Safari's bars shown the hand ran past the band's lower
    edge and was cut (v0.38.7) */
@@ -1134,6 +1150,8 @@ section[id] {
   }
   .rows-grid .rows-media {
     max-width: 520px;
+    margin-inline: auto;
+    text-align: center;
   }
 }
 /* a landscape window under 1024 px (150 % zoom) keeps the two columns, as the opening does */
@@ -1172,6 +1190,10 @@ section[id] {
   }
   .who-pin.is-held .rows p {
     font-size: 16px;
+  }
+  /* following the finger: no transition, the place is the scroll's */
+  .who-pin.is-smooth .rows li {
+    transition: none;
   }
   .who-pin.is-held .rows-grid .rows-media {
     max-width: min(300px, 80vw);
@@ -2535,6 +2557,8 @@ section[id] {
 }
 
 /* v0.38.4 — "Who it's for" back to its rows (icon, the audience in bold, the text); the scroll moves through them, the row in view in full ink; tabs, points and slides retired
+   v0.38.9 — the wheel follows the finger on a phone; the phone image centred when stacked
+   v0.38.9 — phones and portrait screens: no held scene; the clinician's screen a plain section under the band
    v0.38.8 — phones: the hand fits under the copy; the physician at 56 %; the wheel holds with less room
    v0.38.7 — phones: the opening's stage in the large viewport (no white band), the need's photograph re-centred, the wheel held on a phone too
    v0.38.6 — "Who it's for" on a wheel (the row in view centred, its neighbours tilted back), 0.9 screen a row

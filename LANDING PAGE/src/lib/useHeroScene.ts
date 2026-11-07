@@ -28,7 +28,8 @@ const LIGHT = [0.31, 0.48] as const; // the day's light fades in
 const SCREEN = [0.42, 0.59] as const; // the clinician's screen fades in
 const COPY = [0.51, 0.68] as const; // the line fades in, rising a few pixels
 
-export function useHeroScene() {
+/* `enabled`: the held scene is on (a wide screen); off, its elements are not rendered */
+export function useHeroScene(enabled = true) {
   const pin = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const moment = useRef<HTMLElement>(null);
@@ -37,9 +38,11 @@ export function useHeroScene() {
     const wrap = pin.current;
     const box = stage.current;
     const scene = moment.current;
-    if (!wrap || !box || !scene) return;
+    if (!enabled || !wrap || !box || !scene) return;
     const hero = Array.from(
-      box.querySelectorAll<HTMLElement>(".hero .hero-copy, .hero .hero-arm, .hero .hero-system, .hero .media-note"),
+      box.querySelectorAll<HTMLElement>(
+        ".hero .hero-copy, .hero .hero-arm, .hero .hero-system, .hero .media-note",
+      ),
     );
     const bg = box.querySelector<HTMLElement>(".hm-bg");
     const screen = scene.querySelector<HTMLElement>(".hm-media");
@@ -77,7 +80,6 @@ export function useHeroScene() {
           words.style.translate = `0 ${((1 - rise) * 8).toFixed(1)}px`;
         }
       }
-
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(draw);
@@ -90,11 +92,12 @@ export function useHeroScene() {
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [enabled]);
 
   return { pin, stage, moment };
 }
 
+// v0.38.9 — `enabled`: off on phones and portrait screens, where the scene is a plain section
 // v0.37.6 — the light reset on every frame (scrolling back up left the hero hazy); "Catch the Invisible." in place of the swap, a shorter hold
 // v0.37.5 — the slide withdrawn: the page answers the browser's zoom like any page (the user: "smooth access for everyone")
 // v0.37.4 — the slide crops its empty top on short windows instead of shrinking

@@ -20,6 +20,7 @@ export function useScrollSteps(
   const stage = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
   const [held, setHeld] = useState(false);
+  const [smooth, setSmooth] = useState(false);
 
   useEffect(() => {
     const wrap = pin.current;
@@ -28,11 +29,15 @@ export function useScrollSteps(
     let raf = 0;
     let current = -1;
     let isHeld = false;
+    let isSmooth = false;
 
     // does the held stage fit: the layout it needs, and the room under the bar (the sticky top)?
     const mq = window.matchMedia(wide);
     const fit = () => {
-      const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar")) || 72;
+      const bar =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue("--bar"),
+        ) || 72;
       // the layout viewport: on a phone it does not change as the toolbars come and go
       const room = document.documentElement.clientHeight - bar;
       const fits = room >= (mq.matches ? minRoom : minRoomStacked);
@@ -40,7 +45,22 @@ export function useScrollSteps(
         isHeld = fits;
         setHeld(fits);
       }
+      // stacked (a phone), the wheel follows the finger: each row's place written every frame
+      const follow = fits && !mq.matches;
+      if (follow !== isSmooth) {
+        isSmooth = follow;
+        setSmooth(follow);
+        if (!follow)
+          rows().forEach((li) => {
+            li.removeAttribute("data-follow");
+            li.style.removeProperty("opacity");
+          });
+        // redraw once React has applied the change (it sets or clears the rows' own places)
+        window.setTimeout(() => window.dispatchEvent(new Event("scroll")), 0);
+      }
     };
+    const rows = () =>
+      Array.from(wrap.querySelectorAll<HTMLElement>("[data-wheel-i]"));
     const draw = () => {
       raf = 0;
       const r = wrap.getBoundingClientRect();
@@ -48,6 +68,18 @@ export function useScrollSteps(
       const travel = r.height - s.height;
       const p = travel > 0 ? clamp01((s.top - r.top) / travel) : 0;
       const at = Math.min(count - 1, Math.floor(p * count));
+      if (isSmooth) {
+        // the wheel's position, continuous: row i is centred in the middle of its step
+        const pos = Math.min(count - 1, Math.max(0, p * count - 0.5));
+        rows().forEach((li) => {
+          const d = Number(li.dataset.wheelI) - pos;
+          const ad = Math.abs(d);
+          li.dataset.follow = "";
+          li.style.setProperty("--d", d.toFixed(3));
+          li.style.setProperty("--ad", Math.min(ad, 2).toFixed(3));
+          li.style.opacity = Math.max(0, 1 - ad * 0.72).toFixed(3);
+        });
+      }
       if (at !== current) {
         current = at;
         setStep(at);
@@ -71,9 +103,10 @@ export function useScrollSteps(
     };
   }, [count, wide, minRoom, minRoomStacked]);
 
-  return { pin, stage, step, held };
+  return { pin, stage, step, held, smooth };
 }
 
+// v0.38.9 — `smooth`: stacked, the wheel follows the finger (each row's place written every frame, rows marked data-wheel-i)
 // v0.38.7 — a stacked minimum too (the wheel on a phone); the room from the layout viewport
 // v0.38.6 — where it holds is the caller's (a media query and the room it needs), not the plain layout's height
 // v0.38.4 — holds only where the content fits the window (`held`); the tabs' fill and jump retired with the tabs

@@ -1,5 +1,39 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.9 — 2026-11-07 — phones: no held opening; the wheel follows the finger
+
+**Why.** The user, on an iPhone, on v0.38.8: "No, now it's small and not good. Maybe on such
+screens don't have the transition effect, and just a screen below? Maybe that's the problem?" Then,
+on "Who it's for": "Here, the scroll should follow the pace of the finger (phone only). And why
+isn't the phone centred?"
+
+The user was right about the cause. Holding the opening on a phone meant fitting the copy, the hand
+and the tablet into one short window, and the hand shrank to fit (v0.38.8).
+
+**What changed.**
+- **The opening on a phone or a portrait screen** (anything not `min-width: 1024px` or
+  `min-aspect-ratio: 5/4`):
+  - Nothing holds. The band is in its own phone layout again, the forearm at full size.
+  - The clinician's screen ("Catch the Invisible.", its line, the live tablet) is a section of its
+    own under it, in the day's light.
+  - `useHeroScene(enabled)` stays off there.
+  - Wide screens keep the held scene, unchanged.
+- **The wheel follows the finger** on a phone.
+  - The rows' places are written every frame from the scroll (`--d`, `--ad`, opacity), with no
+    transition, so the wheel turns exactly as far as the finger moves and can rest between two
+    rows like a picker.
+  - On a wide screen it still turns a notch at a time.
+- **The phone image is centred when stacked.** It was capped in width but left-aligned; now
+  `margin-inline: auto`, with its caption centred too.
+
+**Checked.**
+- Typecheck and build pass.
+- 390 × 700 (phone): the opening plain, the scene as a section, the wheel at four scroll points
+  including between two rows, the image centred.
+- 1440 × 900: the held opening and the notched wheel unchanged.
+- No page errors.
+
+
 ## v0.38.8 — 2026-11-07 — the phone pass, second round
 
 **Why.** The user, on an iPhone, after v0.38.7: "Still, still the scrolling doesn't work for me.

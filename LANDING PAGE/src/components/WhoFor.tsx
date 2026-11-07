@@ -40,10 +40,13 @@ const HOLD = {
 
 export default function WhoFor() {
   const photo = PHOTOS.clinic;
-  const { pin, stage, step, held } = useScrollSteps(ROWS.length, HOLD);
+  const { pin, stage, step, held, smooth } = useScrollSteps(ROWS.length, HOLD);
   return (
     <section className="section who" id="who" aria-labelledby="who-title">
-      <div ref={pin} className={`who-pin${held ? " is-held" : ""}`}>
+      <div
+        ref={pin}
+        className={`who-pin${held ? " is-held" : ""}${smooth ? " is-smooth" : ""}`}
+      >
         <div ref={stage} className="who-stage">
           {/* the heading holds with its rows, so the gap between them is the page's own */}
           <div className="wrap who-inner">
@@ -64,11 +67,14 @@ export default function WhoFor() {
                           ? "is-near"
                           : "is-far"
                     }
+                    data-wheel-i={i}
                     style={
-                      {
-                        "--d": i - step,
-                        "--ad": Math.abs(i - step),
-                      } as CSSProperties
+                      smooth
+                        ? undefined
+                        : ({
+                            "--d": i - step,
+                            "--ad": Math.abs(i - step),
+                          } as CSSProperties)
                     }
                     aria-hidden={held && i !== step ? true : undefined}
                   >
@@ -115,6 +121,7 @@ export default function WhoFor() {
   );
 }
 
+// v0.38.9 — on a phone the wheel follows the finger (the user); the phone image centred
 // v0.38.8 — holds from 540 px stacked (an iPhone with Safari's bars shown has about 600 under the bar)
 // v0.38.7 — the wheel on a phone too (the user), stacked over the phone image, where the screen has 640 px under the bar
 // v0.38.6 — a wheel: the row in view centred, its neighbours tilted back and faded, the rest out of frame; slower (0.9 screen a row); clinics, clinicians, patients (the user)

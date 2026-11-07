@@ -1,6 +1,6 @@
 import heroRender from "../assets/img/render-hero.webp";
 import { PHOTOS } from "../config/photos";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useHeroScene } from "../lib/useHeroScene";
 import HeroTablet from "./HeroTablet";
 
@@ -12,61 +12,110 @@ import HeroTablet from "./HeroTablet";
    the hand (until a photo is supplied, the render of the team's 3D model
    stands in).
 
-   The band holds while the visitor scrolls (lib/useHeroScene): light opens
-   out of the tablet into the journey's closing scene, the clinician's screen
-   already writing, "The moment, in your hands."; a step further the line
-   changes to "on your hand.", and the page scrolls on. */
+   On a wide screen the band holds while the visitor scrolls
+   (lib/useHeroScene): its content fades out, the day's light and the
+   clinician's screen fade in, already writing, "Catch the Invisible.", and
+   the page scrolls on. On a phone or a portrait screen nothing holds (the
+   user: the held scene squeezed the hand): the band in its own phone layout,
+   and the clinician's screen as a section of its own under it. */
+
+/* the held scene needs the two columns side by side */
+const WIDE = "(min-width: 1024px), (min-aspect-ratio: 5/4)";
+
+function useWide() {
+  const [wide, setWide] = useState(() => window.matchMedia(WIDE).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(WIDE);
+    const on = () => setWide(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
+}
 
 export default function Hero() {
   const photo = PHOTOS.hero;
-  const { pin, stage, moment } = useHeroScene();
+  const wide = useWide();
+  const { pin, stage, moment } = useHeroScene(wide);
   // reduced motion: the clinician's screen holds still, its recording in full
   const [live] = useState(
     () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+
+  const band = (
+    <section className="hero" aria-labelledby="hero-title">
+      <div className="hero-copy">
+        <p className="chip">In development · Not for sale</p>
+        <h1 id="hero-title" className="hero-title">
+          Clinical Depth.
+          <span className="is-coral">Wearable Ease.</span>
+        </h1>
+        <p className="hero-lede">
+          A clinical-grade 6-lead ECG integrated into your everyday watch strap.
+          Capture transient symptoms the exact moment they strike, and share
+          pristine data directly with your clinician.
+        </p>
+      </div>
+      <figure className={`hero-media${photo ? " is-arm" : ""}`}>
+        {photo ? (
+          <>
+            <HeroTablet />
+            <img
+              className="hero-arm"
+              src={photo.src}
+              alt={photo.alt}
+              width={photo.w}
+              height={photo.h}
+              decoding="async"
+            />
+          </>
+        ) : (
+          <img
+            className="hero-render"
+            src={heroRender}
+            width={1289}
+            height={1358}
+            alt="The Cyphix strap on a smartwatch: the watch shows CYPHIX 6-lead ECG, the module with its electrodes sits on the band beside it."
+            decoding="async"
+          />
+        )}
+      </figure>
+    </section>
+  );
+
+  const scene = (
+    <div className="wrap hm-inner">
+      <div className="hm-copy">
+        <h2 id="moment-title" className="hm-title">
+          Catch the Invisible.
+        </h2>
+        <p className="hm-text">
+          Transient symptoms disappear quickly. Cyphix records clinical-grade
+          morphology at symptom onset, ensuring your clinician never misses a
+          critical event.
+        </p>
+      </div>
+      <div className="hm-media">
+        <HeroTablet live={live} full />
+      </div>
+    </div>
+  );
+
+  if (!wide) {
+    return (
+      <>
+        {band}
+        <section className="hero-moment is-flat" aria-labelledby="moment-title">
+          {scene}
+        </section>
+      </>
+    );
+  }
+
   return (
     <div ref={pin} className="hero-pin">
       <div ref={stage} className="hero-stage">
-        <div className="hero-slide">
-          <section className="hero" aria-labelledby="hero-title">
-            <div className="hero-copy">
-              <p className="chip">In development · Not for sale</p>
-              <h1 id="hero-title" className="hero-title">
-                Clinical Depth.
-                <span className="is-coral">Wearable Ease.</span>
-              </h1>
-              <p className="hero-lede">
-                A clinical-grade 6-lead ECG integrated into your everyday watch
-                strap. Capture transient symptoms the exact moment they strike,
-                and share pristine data directly with your clinician.
-              </p>
-            </div>
-            <figure className={`hero-media${photo ? " is-arm" : ""}`}>
-              {photo ? (
-                <>
-                  <HeroTablet />
-                  <img
-                    className="hero-arm"
-                    src={photo.src}
-                    alt={photo.alt}
-                    width={photo.w}
-                    height={photo.h}
-                    decoding="async"
-                  />
-                </>
-              ) : (
-                <img
-                  className="hero-render"
-                  src={heroRender}
-                  width={1289}
-                  height={1358}
-                  alt="The Cyphix strap on a smartwatch: the watch shows CYPHIX 6-lead ECG, the module with its electrodes sits on the band beside it."
-                  decoding="async"
-                />
-              )}
-            </figure>
-          </section>
-        </div>
+        <div className="hero-slide">{band}</div>
 
         {/* the day's light fills the whole stage, behind the scene's slide */}
         <div className="hm-bg" aria-hidden="true" />
@@ -79,21 +128,7 @@ export default function Hero() {
             aria-hidden="true"
             style={{ display: "none" }}
           >
-            <div className="wrap hm-inner">
-              <div className="hm-copy">
-                <h2 id="moment-title" className="hm-title">
-                  Catch the Invisible.
-                </h2>
-                <p className="hm-text">
-                  Transient symptoms disappear quickly. Cyphix records
-                  clinical-grade morphology at symptom onset, ensuring your
-                  clinician never misses a critical event.
-                </p>
-              </div>
-              <div className="hm-media">
-                <HeroTablet live={live} full />
-              </div>
-            </div>
+            {scene}
           </section>
         </div>
       </div>
@@ -101,6 +136,7 @@ export default function Hero() {
   );
 }
 
+// v0.38.9 — phones and portrait screens: no held scene (the user: "small and not good… maybe on such screens no transition, just a screen below"); the band in its phone layout, the clinician's screen a section under it
 // v0.37.6 — the scene's words, the user's: "Catch the Invisible." and its line (the "in your hands" / "on your hand" swap retired)
 // v0.37.5 — the slide's scaling withdrawn (its wrappers stay as the scene's layers)
 // v0.37.4 — the opening line, the user's new wording ("A clinical-grade 6-lead ECG integrated into your everyday watch strap…")
