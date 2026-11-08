@@ -47,8 +47,8 @@ export default function Hero() {
       <div className="hero-copy">
         <p className="chip">In development · Not for sale</p>
         <h1 id="hero-title" className="hero-title">
-          Clinical Depth.
-          <span className="is-coral">Wearable Ease.</span>
+          End the Diagnostic
+          <span className="is-coral">Blind Spot.</span>
         </h1>
         <p className="hero-lede">
           A clinical-grade 6-lead ECG integrated into your everyday watch strap.
@@ -136,6 +136,7 @@ export default function Hero() {
   );
 }
 
+// v0.38.34 — the headline "End the Diagnostic / Blind Spot." (the user: "let's try"), the same white over coral
 // v0.38.9 — phones and portrait screens: no held scene (the user: "small and not good… maybe on such screens no transition, just a screen below"); the band in its phone layout, the clinician's screen a section under it
 // v0.37.6 — the scene's words, the user's: "Catch the Invisible." and its line (the "in your hands" / "on your hand" swap retired)
 // v0.37.5 — the slide's scaling withdrawn (its wrappers stay as the scene's layers)

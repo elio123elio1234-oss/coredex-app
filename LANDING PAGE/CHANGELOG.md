@@ -1,5 +1,23 @@
 # Changelog — CYPHIX Landing
 
+## v0.38.34 — 2026-11-08 — "End the Diagnostic Blind Spot."
+
+**Why.** The user: "let's try replacing Clinical Depth. Wearable Ease. with the line End the
+Diagnostic Blind Spot. (in the same colour play)". It is a trial; the old line is one edit away.
+
+**What changed (home, hero only).**
+- The headline reads "End the Diagnostic" in white over "Blind Spot." in coral, the same two-line,
+  two-colour build as before.
+- "End the Diagnostic" is 9.25 em wide. At the old 60px it broke onto three lines at 1440. The
+  headline is now capped to its column (`min(…, 10.6cqi)` on a container-query `.hero-copy`), so it
+  holds two lines on every screen. The cost is about 55px instead of 60px on wide screens, and
+  about 30px on a 320px phone.
+- The page titles and share-card text still say "Clinical Depth. Wearable Ease.". They change only
+  if the line is kept.
+
+Checked in WebKit at 1024, 1280×680 (the held stage), 1440, iPhone 13 and iPhone SE: two lines
+everywhere, no sideways overflow.
+
 ## v0.38.33 — 2026-11-07 — AI Heart ID, its own section
 
 **Why.** The user: "add the section on the AI that maps the recordings and sends alerts to the
