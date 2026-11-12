@@ -7,6 +7,21 @@ history stays exactly where it was.
 
 ---
 
+## v0.1.3 — 2026-11-12 — the power section was wrong about VDD
+
+`WIRING.md` §3 said the module's `+5V` pad "is not a 5 V rail for the chip" and that
+the MIC5219 feeds the ADS1293. **That was wrong.** Re-reading the module's schematic
+(`Downloads\ADS1293 CJMCU-1293 69005 .PDF`): `+5V` goes through L1 straight to the
+chip's analog supply `VDD`, and the MIC5219-3.3 feeds only the digital `VDDIO`
+through L2. With USB power the ADS1293 runs `VDD` at 5 V (allowed, 2.7–5.5 V), behind
+an LC filter rather than a regulator.
+
+Nothing in the wiring changes: SPI and `DRDB` are still 3.3 V and still connect
+directly to the nRF52840. The `3V3 → +5V` fallback and the battery note were
+rewritten to say what each rail actually does in those cases.
+
+---
+
 ## v0.1.2 — 2026-09-09 — the GUI opens from an icon, not a command
 
 "How do I open the GUI" was asked twice, which means the answer was wrong both

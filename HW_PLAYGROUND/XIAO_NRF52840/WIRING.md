@@ -70,26 +70,33 @@ the left side, to pad `3`.
 
 ## 3. Power — read this before plugging in
 
-The module's `+5V` pad is **not** a 5 V rail for the chip. It is the *input* of
-the MIC5219-3.3 LDO sitting on the CJMCU board, which produces the 3.3 V that
-actually feeds the ADS1293. So:
+The module's `+5V` pad feeds the ADS1293 twice, differently (per the module's
+schematic, `Downloads\ADS1293 CJMCU-1293 69005 .PDF`):
 
-- **The ADS1293's supply and all its SPI lines are 3.3 V.** The nRF52840 is a
-  3.3 V part. **No level shifting, no series resistors — connect directly.**
-- Feeding `VUSB` (≈5 V from USB) into `+5V` gives that LDO ~1.7 V of headroom,
-  so it genuinely *regulates* — it rejects the ripple the nRF52840 puts on its
-  own rail every time the BLE radio transmits. For a front end resolving
-  microvolts, that isolation is worth having. **This is the recommended wiring.**
+- **Analog supply `VDD` = the `+5V` pad itself**, through the LC filter L1
+  (10 µH) + C5/C6/C7. It is filtered, **not** regulated. The ADS1293 accepts
+  2.7–5.5 V on `VDD`.
+- **Digital supply `VDDIO` = 3.3 V** from the MIC5219-3.3 LDO on the board,
+  through L2 + C9/C10/C11. The SPI lines and `DRDB` therefore swing 0–3.3 V.
+
+So:
+
+- **All the SPI lines are 3.3 V.** The nRF52840 is a 3.3 V part. **No level
+  shifting, no series resistors — connect directly.**
+- Feeding `VUSB` (≈5 V from USB) into `+5V` runs `VDD` at 5 V and gives the
+  LDO ~1.7 V of headroom for `VDDIO`. The radio's ripple on USB 5 V reaches the
+  analog rail only through L1's filter, not through a regulator. **This is the
+  recommended wiring.**
 
 **Verify before you trust it:** with USB plugged into the XIAO and nothing else
 connected, put a multimeter between `VUSB` and `GND`. You want ≈5 V.
 
 - **Reads ≈5 V** → use the table above, done.
-- **Reads 0 V** → wire `3V3` → `+5V` instead. It works (the LDO passes ~3.25 V
-  straight through, comfortably inside the ADS1293's supply range), but it is
-  in dropout, so it provides no regulation and the analog rail now shares every
-  disturbance on the XIAO's 3.3 V rail. Fine for bring-up; revisit it if you
-  see radio-correlated noise on the trace.
+- **Reads 0 V** → wire `3V3` → `+5V` instead. It works: `VDD` then runs at
+  ~3.3 V (inside 2.7–5.5 V), and the LDO is in dropout, so `VDDIO` sits a little
+  under 3.3 V (inside its 1.65–3.6 V range). Both rails now share every
+  disturbance on the XIAO's 3.3 V rail, behind only the L1/L2 filters. Fine for
+  bring-up; revisit it if you see radio-correlated noise on the trace.
 
 I could not confirm from Seeed's published documentation whether `VUSB` is
 connected to USB 5 V out of the box on every board revision, which is why the
@@ -97,9 +104,10 @@ meter check is step one rather than a footnote.
 
 **Battery operation:** the XIAO's `VUSB` is dead when USB is unplugged. For an
 untethered run, feed the module's `+5V` from the LiPo (the `BAT+` pad on the
-back of the XIAO, 3.7–4.2 V) — still enough headroom for the LDO to regulate,
-and it takes the whole ECG front end off mains entirely, which usually does
-more for 50 Hz than any register tweak.
+back of the XIAO, 3.7–4.2 V). `VDD` then follows the cell voltage, and the LDO
+keeps `VDDIO` at 3.3 V while the cell stays above it. It takes the whole ECG
+front end off mains entirely, which usually does more for 50 Hz than any
+register tweak.
 
 ---
 
@@ -147,3 +155,4 @@ independent Lead II pairs (six electrodes, no spare) if you want the full √2.
    and that both boards share `GND`.
 
 <!-- v0.1.0 — pad-name-exact wiring for CJMCU-1293 ↔ XIAO nRF52840, power options, preset-0 electrode plan -->
+<!-- v0.1.1 — power section corrected from the schematic: VDD = the +5V pad through L1 (filtered, not regulated); the MIC5219 feeds only VDDIO 3.3 V -->
