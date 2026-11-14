@@ -1,5 +1,31 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.2.0 — 2026-11-14
+
+**Why.** The owner said he already owns TI's ADS1298 kit, so stage 2 no longer
+needs a purchase or a board of our own: it needs a way to use the kit's small
+board without TI's motherboard. And he was promised a way to turn the model
+round himself; FreeCAD was not installed because the disk is nearly full, so
+the page does it instead.
+
+- `experiments/E2_ti_board_bench.md` — the stage 2 guide: jumpers, the three
+  supply points, the nine signal wires to the XIAO nRF52840, a meter check
+  after every step, the internal test signal before any electrode, and a
+  one-wire electrode patch that puts the four product channels on ADS channels
+  4–7. Researched against TI's board guide SBAU171D, its schematic and TI's
+  forum answers; **not yet tried on a board**, and it says so.
+- `electronics/DESIGN_INTENT.md` — what the main-board schematic has to do and
+  why, including five patient-safety requirements. One of them is new: the
+  charge contacts are bare metal that touches skin, so both must be high
+  impedance to the circuit unless the charge voltage is present. It also
+  records a deliberate deviation from the spec's PWR-01 (a linear-only power
+  tree instead of the BQ25120A), which the owner has not yet approved.
+- `mechanical/export_web.py` → `plan/model/band_alpha.json`, and a 3D viewer in
+  the plan page (rotate, exploded view, cover off, with the strap, flip to the
+  wrist side). Opened in headless Chrome before publishing.
+- The plan page now carries the size budget, the six renders, the model's
+  findings and the stage 1 instructions.
+
 ## v0.1.0 — 2026-11-14
 
 **Why this folder exists.** The owner wants to take the Band α specification,

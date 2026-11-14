@@ -17,17 +17,19 @@
     --accent: #2c5aa0;
     --done: #1f7a4d;
     --wait: #8a6a12;
+    --stage: #eef1f5;
+    --stage-ink: #263042;
     --font: "Heebo", "Segoe UI", "Arial Hebrew", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --desk: #0a0f18; --paper: #111925; --ink: #e8eef7; --text: #ccd4e0; --muted: #8c97a9; --line: #253149;
-      --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; color-scheme: dark;
+      --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; --stage: #cfd6e0; --stage-ink: #263042; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --desk: #0a0f18; --paper: #111925; --ink: #e8eef7; --text: #ccd4e0; --muted: #8c97a9; --line: #253149;
-    --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; color-scheme: dark;
+    --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; --stage: #cfd6e0; --stage-ink: #263042; color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body { background: var(--desk); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.65; }
@@ -58,6 +60,15 @@
   .shots img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #ffffff; }
   .shots figcaption { font-size: 15px; font-weight: 700; color: var(--ink); }
 
+  .viewer { display: grid; gap: 10px; }
+  .vbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .vbar button { font: inherit; font-size: 15px; font-weight: 500; color: var(--ink); background: var(--paper); border: 1px solid var(--ink); border-radius: 0; padding: 8px 14px; cursor: pointer; }
+  .vbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .vbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stage3d { position: relative; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; background: var(--stage); color: var(--stage-ink); border: 1px solid var(--line); touch-action: none; overflow: hidden; }
+  .stage3d canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  .vmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; max-width: none; padding: 16px; text-align: center; color: var(--stage-ink); }
+  .hint { color: var(--muted); font-size: 14px; }
   .nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px 28px; }
   .nums > div { border-top: 2px solid var(--ink); padding-top: 8px; min-width: 0; }
   .nums .n1 { font-size: 26px; font-weight: 700; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -116,6 +127,8 @@
     body { background: var(--paper); font-size: 15.5px; }
     .wrap { padding-block: 16px 40px; }
     .paper { border: 0; padding: 0; gap: 32px; }
+    .stage3d { aspect-ratio: 1 / 1; }
+    .vbar button { flex: 1 1 auto; padding: 9px 8px; }
     .stage { grid-template-columns: 44px minmax(0, 1fr); gap: 4px 12px; }
     .stage .num { font-size: 38px; }
     .facts div { grid-template-columns: 1fr; gap: 0; }
@@ -175,6 +188,20 @@
   <section>
     <h2>המודל המוצק הראשון</h2>
     <p>זה מודל התאמה, בנוי סביב הרכיבים בגודלם האמיתי, ונועד לענות על שאלה אחת: האם הכול נכנס, ואיפה כל דבר יושב. זה עוד לא העיצוב הסופי.</p>
+    <div class="viewer">
+      <div class="vbar" role="group" aria-label="תצוגת המודל">
+        <button type="button" id="v-explode" aria-pressed="false">מפורק</button>
+        <button type="button" id="v-lid" aria-pressed="false">בלי מכסה</button>
+        <button type="button" id="v-strap" aria-pressed="false">עם הרצועה</button>
+        <button type="button" id="v-flip" aria-pressed="false">צד היד</button>
+        <button type="button" id="v-reset">איפוס</button>
+      </div>
+      <div class="stage3d" id="stage3d">
+        <canvas id="c3d" aria-label="מודל תלת-ממדי של המודול. גוררים כדי לסובב."></canvas>
+        <p class="vmsg" id="vmsg">טוען את המודל</p>
+      </div>
+      <p class="hint">גוררים כדי לסובב. צביטה או גלגלת לזום.</p>
+    </div>
     <div class="shots">
       <figure><img src="img/cad_leg.webp" alt="המודול מצד הרגל, עם שלושה משטחי מתכת" width="1406" height="897"><figcaption>צד הרגל</figcaption></figure>
       <figure><img src="img/cad_wrist.webp" alt="המודול מצד היד, עם שני משטחי LA, חלון חיישן ומגעי טעינה" width="1391" height="892"><figcaption>צד היד</figcaption></figure>
@@ -372,4 +399,114 @@
 </article>
 </div>
 </div>
-<!-- v0.1.0 — Band α risk-reduction plan: stages 0-4, risk register, work parts, log -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  var stage = document.getElementById('stage3d');
+  var canvas = document.getElementById('c3d');
+  var msg = document.getElementById('vmsg');
+  var FALLBACK = 'המודל התלת-ממדי לא נטען כאן. התמונות שלמטה מראות אותו.';
+  if (!stage || !window.THREE || !THREE.OrbitControls) { if (msg) msg.textContent = FALLBACK; return; }
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
+  catch (e) { msg.textContent = FALLBACK; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(26, 4 / 3, 1, 3000);
+  var controls = new THREE.OrbitControls(camera, canvas);
+  controls.enablePan = false;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x7c8798, 0.95));
+  var key = new THREE.DirectionalLight(0xffffff, 0.7);
+  scene.add(key);
+
+  var root = new THREE.Group();          // the model is Z-up, the viewer is Y-up
+  root.rotation.x = -Math.PI / 2;
+  scene.add(root);
+
+  var parts = [];
+  var state = { explode: 0, goal: 0, lid: true, strap: false, flip: false };
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function decode(text, Type) {
+    var bin = atob(text), n = bin.length, bytes = new Uint8Array(n);
+    for (var k = 0; k < n; k++) bytes[k] = bin.charCodeAt(k);
+    return new Type(bytes.buffer);
+  }
+  function draw() { key.position.copy(camera.position); renderer.render(scene, camera); }
+  function size() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    draw();
+  }
+  function apply() {
+    parts.forEach(function (p) {
+      p.group.visible = (!p.lid || state.lid) && (!p.strap || state.strap);
+      p.group.position.z = p.lift * state.explode;
+    });
+  }
+  function frame() {
+    var far = state.strap ? 330 : (state.goal ? 250 : 170);
+    var centre = state.strap ? new THREE.Vector3(0, -18, 0) : new THREE.Vector3(0, 3, 0);
+    var dir = new THREE.Vector3(0.52, state.flip ? -0.62 : 0.62, 0.59).normalize();
+    controls.target.copy(centre);
+    camera.position.copy(centre).addScaledVector(dir, far);
+    controls.update();
+    draw();
+  }
+  function step() {
+    var d = state.goal - state.explode;
+    if (Math.abs(d) < 0.01 || reduce) { state.explode = state.goal; apply(); draw(); return; }
+    state.explode += d * 0.18;
+    apply(); draw();
+    requestAnimationFrame(step);
+  }
+  function build(data) {
+    data.parts.forEach(function (p) {
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(decode(p.p, Float32Array), 3));
+      g.setIndex(new THREE.BufferAttribute(decode(p.i, Uint32Array), 1));
+      var faces = g.toNonIndexed();
+      faces.computeVertexNormals();
+      var colour = new THREE.Color(p.color[0], p.color[1], p.color[2]).convertSRGBToLinear();
+      var mesh = new THREE.Mesh(faces, new THREE.MeshPhongMaterial({
+        color: colour, shininess: p.metal ? 70 : 10, specular: p.metal ? 0x777777 : 0x0a0a0a,
+        transparent: !!p.ghost, opacity: p.ghost ? 0.38 : 1, side: THREE.DoubleSide, depthWrite: !p.ghost
+      }));
+      var group = new THREE.Group();
+      group.add(mesh);
+      if (!p.ghost) {
+        group.add(new THREE.LineSegments(new THREE.EdgesGeometry(g, 32), new THREE.LineBasicMaterial({ color: 0x101826 })));
+      }
+      root.add(group);
+      parts.push({ group: group, lift: p.lift, lid: p.lid, strap: p.strap });
+    });
+    msg.hidden = true;
+    apply(); size(); frame();
+  }
+  function toggle(id, fn) {
+    var b = document.getElementById(id);
+    b.addEventListener('click', function () {
+      var on = b.getAttribute('aria-pressed') !== 'true';
+      if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', String(on));
+      fn(on);
+    });
+  }
+  toggle('v-explode', function (on) { state.goal = on ? 1 : 0; frame(); requestAnimationFrame(step); });
+  toggle('v-lid', function (on) { state.lid = !on; apply(); draw(); });
+  toggle('v-strap', function (on) { state.strap = on; apply(); frame(); });
+  toggle('v-flip', function (on) { state.flip = on; frame(); });
+  toggle('v-reset', function () { frame(); });
+  controls.addEventListener('change', draw);
+  if (window.ResizeObserver) new ResizeObserver(size).observe(stage); else window.addEventListener('resize', size);
+
+  fetch('model/band_alpha.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(build).catch(function () { msg.textContent = FALLBACK; });
+})();
+</script>
+<!-- v0.2.0 — Band α risk-reduction plan: stages, size budget, solid model with a 3D viewer, stage 1 guide, log -->
