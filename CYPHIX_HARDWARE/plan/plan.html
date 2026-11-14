@@ -1,0 +1,375 @@
+<title>CYPHIX Band α Risk Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap">
+<style>
+  /* Layout: one right-to-left sheet. A "now" band on top, then the staged path (big numerals,
+     one stage per row), the risk register, the work parts, the owner's tasks and a dated log. */
+  :root {
+    --desk: #eef1f5;
+    --paper: #ffffff;
+    --ink: #0d2041;
+    --text: #263042;
+    --muted: #616c80;
+    --line: #dde2ea;
+    --soft: #f4f6f9;
+    --accent: #2c5aa0;
+    --done: #1f7a4d;
+    --wait: #8a6a12;
+    --font: "Heebo", "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --desk: #0a0f18; --paper: #111925; --ink: #e8eef7; --text: #ccd4e0; --muted: #8c97a9; --line: #253149;
+      --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --desk: #0a0f18; --paper: #111925; --ink: #e8eef7; --text: #ccd4e0; --muted: #8c97a9; --line: #253149;
+    --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--desk); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.65; }
+  .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+  #doc { color: var(--text); }
+  .paper { max-width: 900px; margin: 0 auto; background: var(--paper); color: var(--text); border: 1px solid var(--line); padding: clamp(20px, 4vw, 48px); display: grid; gap: 40px; }
+  .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+  header { display: grid; gap: 6px; }
+  .eyebrow { font-size: 13px; font-weight: 500; color: var(--muted); }
+  h1 { margin: 0; font-size: clamp(28px, 4.4vw, 40px); line-height: 1.15; color: var(--ink); text-wrap: balance; }
+  .lead { margin: 6px 0 0; font-size: 18px; max-width: 60ch; color: var(--text); }
+
+  section { display: grid; gap: 14px; min-width: 0; }
+  h2 { margin: 0; font-size: 24px; line-height: 1.25; color: var(--ink); text-wrap: balance; }
+  h3 { margin: 0; font-size: 18px; line-height: 1.3; color: var(--ink); }
+  p { margin: 0; max-width: 68ch; }
+  strong { color: var(--ink); font-weight: 700; }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .now { border-inline-start: 4px solid var(--accent); background: var(--soft); color: var(--text); padding: 16px 18px; display: grid; gap: 10px; }
+  .now .label { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .now .big { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .now ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .shots figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+  .shots img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #ffffff; }
+  .shots figcaption { font-size: 15px; font-weight: 700; color: var(--ink); }
+
+  .nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px 28px; }
+  .nums > div { border-top: 2px solid var(--ink); padding-top: 8px; min-width: 0; }
+  .nums .n1 { font-size: 26px; font-weight: 700; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .nums .n2 { color: var(--muted); }
+  .cmp { width: 100%; border-collapse: collapse; }
+  .cmp th { text-align: start; font-weight: 500; color: var(--muted); padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .cmp td { padding: 8px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .cmp tr.pick td { font-weight: 700; color: var(--ink); }
+  .scroll { overflow-x: auto; }
+  details { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px 0; }
+  summary { cursor: pointer; font-weight: 700; color: var(--accent); font-size: 17px; }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  details .inner { display: grid; gap: 14px; padding-top: 14px; }
+  details ol, details ul { margin: 0; padding-inline-start: 22px; display: grid; gap: 6px; max-width: 68ch; }
+  .steps { width: 100%; border-collapse: collapse; min-width: 440px; }
+  .steps th { text-align: start; font-weight: 500; color: var(--muted); padding: 7px 0 7px 12px; border-bottom: 1px solid var(--line); }
+  .steps td { padding: 7px 0 7px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .steps td:first-child { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .warn { border-inline-start: 4px solid var(--wait); padding: 10px 14px; background: var(--soft); color: var(--text); }
+  .stages { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .stage { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px 18px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .stage .num { grid-row: 1 / span 3; font-size: 52px; font-weight: 700; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .stage.on .num { color: var(--accent); }
+  .stage .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+  .stage .cost { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .stage .state { font-size: 14px; font-weight: 700; }
+  .state.on { color: var(--accent); }
+  .state.done { color: var(--done); }
+  .state.wait { color: var(--muted); }
+  .facts { display: grid; gap: 6px; margin: 4px 0 0; }
+  .facts div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
+  .facts dt { color: var(--muted); font-weight: 500; }
+  .facts dd { margin: 0; }
+  dl { margin: 0; }
+
+  .risks { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .risk { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) 64px; gap: 6px 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .risk .what { font-weight: 700; color: var(--ink); }
+  .risk .why { display: block; font-weight: 400; color: var(--muted); font-size: 15px; }
+  .risk .when { font-weight: 700; color: var(--accent); white-space: nowrap; text-align: end; }
+  .rhead { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) 64px; gap: 20px; font-size: 13px; font-weight: 700; color: var(--muted); padding-bottom: 6px; }
+  .rhead span:last-child { text-align: end; }
+
+  .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px 32px; }
+  .part { display: grid; gap: 4px; align-content: start; min-width: 0; border-top: 2px solid var(--ink); padding-top: 10px; }
+  .part .state { margin-top: 2px; }
+
+  .todo { display: grid; gap: 10px; margin: 0; padding-inline-start: 22px; }
+  .log { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .entry { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 18px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .entry time { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .entry .body { display: grid; gap: 10px; min-width: 0; }
+  .foot { font-size: 14px; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    body { background: var(--paper); font-size: 15.5px; }
+    .wrap { padding-block: 16px 40px; }
+    .paper { border: 0; padding: 0; gap: 32px; }
+    .stage { grid-template-columns: 44px minmax(0, 1fr); gap: 4px 12px; }
+    .stage .num { font-size: 38px; }
+    .facts div { grid-template-columns: 1fr; gap: 0; }
+    .rhead { display: none; }
+    .risk { grid-template-columns: 1fr; gap: 4px; }
+    .risk .when { text-align: start; }
+    .risk .when::before { content: "שלב "; color: var(--muted); font-weight: 500; }
+    .entry { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>
+
+<div id="doc" lang="he" dir="rtl">
+<div class="wrap">
+<article class="paper">
+
+  <header>
+    <div class="eyebrow">CYPHIX Band α · חומרה · עודכן 14.11.2026</div>
+    <h1>תכנית הורדת סיכונים</h1>
+    <p class="lead">בודקים כל סיכון בדרך הזולה ביותר, ורק כשהוא עובר משלמים על השלב הבא. חמישה שלבים, מהמחשב ועד יחידה שאפשר לענוד.</p>
+  </header>
+
+  <section class="now" aria-label="מה קורה עכשיו">
+    <div class="label">עכשיו</div>
+    <div class="big">שלב 0: סוגרים את התכנון על המחשב</div>
+    <ul>
+      <li>חישוב הגודל והסוללה מהרכיבים עצמם: גרסה ראשונה מוכנה, למטה.</li>
+      <li>מודל תלת-ממד מוצק ראשון של המודול: מוכן, למטה. הכול נכנס, בלי התנגשויות.</li>
+      <li>לוח ה-ADS1298 של TI: נבדק מול מדריך הלוח, ואפשר לחווט אותו ישירות ל-XIAO.</li>
+      <li>קושחה לשלב 2: בעבודה.</li>
+      <li>הוראות לניסוי שלב 1: מוכנות, למטה.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>הגודל שיצא מהחישוב</h2>
+    <p>שטח הלוח חושב מרשימת הרכיבים, הסוללה מצריכת הזרם, והעובי מהערימה של מה שיושב זה על זה.</p>
+    <div class="nums">
+      <div><div class="n1"><span class="ltr">48.5 × 30 × 7.3</span> מ״מ</div><div class="n2">המודול, עם לוח ראשון מרווח</div></div>
+      <div><div class="n1"><span class="ltr">41.8 × 30 × 7.3</span> מ״מ</div><div class="n2">אחרי צמצום הלוח</div></div>
+      <div><div class="n1"><span class="ltr">100 mAh</span></div><div class="n2">כשבועיים במרפאה, 60 הקלטות ביום</div></div>
+      <div><div class="n1">כ-30 גרם</div><div class="n2">עם הרצועה. המותר במפרט: 40</div></div>
+    </div>
+    <div class="scroll">
+      <table class="cmp">
+        <thead><tr><th>מקור</th><th>אורך × רוחב × עובי, מ״מ</th><th>מה זה</th></tr></thead>
+        <tbody>
+          <tr><td>ההדמיה</td><td><span class="ltr">35 × 26 × 6</span></td><td>לא חושב מהרכיבים</td></tr>
+          <tr><td>המפרט</td><td><span class="ltr">45 × 30 × 12</span></td><td>לא חושב מהרכיבים</td></tr>
+          <tr class="pick"><td>החישוב, סוללה לצד הלוח</td><td><span class="ltr">48.5 × 30 × 7.3</span></td><td>ההמלצה: דק</td></tr>
+          <tr><td>החישוב, סוללה מעל הלוח</td><td><span class="ltr">36 × 28 × 11.6</span></td><td>קצר אבל עבה</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>יצא שטח קרוב למפרט ועובי קרוב להדמיה. הקלטה של 10 שניות צורכת מעט מאוד, ולכן מספיקה סוללה של <span class="ltr">100 mAh</span> במקום <span class="ltr">150–300</span> שבמפרט, וזה מה שמאפשר מודול דק. המספרים יתעדכנו כשכל מידה תאומת מול דף היצרן.</p>
+  </section>
+
+  <section>
+    <h2>המודל המוצק הראשון</h2>
+    <p>זה מודל התאמה, בנוי סביב הרכיבים בגודלם האמיתי, ונועד לענות על שאלה אחת: האם הכול נכנס, ואיפה כל דבר יושב. זה עוד לא העיצוב הסופי.</p>
+    <div class="shots">
+      <figure><img src="img/cad_leg.webp" alt="המודול מצד הרגל, עם שלושה משטחי מתכת" width="1406" height="897"><figcaption>צד הרגל</figcaption></figure>
+      <figure><img src="img/cad_wrist.webp" alt="המודול מצד היד, עם שני משטחי LA, חלון חיישן ומגעי טעינה" width="1391" height="892"><figcaption>צד היד</figcaption></figure>
+      <figure><img src="img/cad_inside.webp" alt="המודול בלי המכסה: לוח עם רכיבים, מנוע רטט וסוללה" width="1500" height="1077"><figcaption>מה בפנים</figcaption></figure>
+      <figure><img src="img/cad_exploded.webp" alt="מבט מפורק: משטחים, מכסה, אטם, לוח, סוללה, תחתית" width="974" height="991"><figcaption>מבט מפורק</figcaption></figure>
+      <figure><img src="img/cad_section.webp" alt="חתך לאורך המודול: המשטחים, מגעי הקפיץ, הלוח והסוללה" width="1410" height="337"><figcaption>חתך לאורך</figcaption></figure>
+      <figure><img src="img/cad_worn.webp" alt="המודול על היד, עם הרצועה והמוליך ל-RA1 ול-RA2" width="1139" height="919"><figcaption>על היד, עם המוליך</figcaption></figure>
+    </div>
+    <h3>מה המודל מראה</h3>
+    <ul class="todo">
+      <li><strong>הכול נכנס.</strong> הלוח, הסוללה, מנוע הרטט וכל הרכיבים הגבוהים יושבים בחלל בלי אף התנגשות. הבדיקה רצה אוטומטית בכל שינוי.</li>
+      <li><strong>כל משטח מתכת מודבק על מדף במארז,</strong> ומגע קפיץ מהלוח נוגע בגב שלו דרך חלון. כך המשטח לא גוזל גובה מהחלל, ויש שטח הדבקה רחב לאטימה.</li>
+      <li><strong>המוליך ל-RA1 ול-RA2</strong> יוצא מקצה המודול ורץ בתוך הרצועה עד למעלה. הצד הזה של הרצועה קבוע למודול, כדי שהמוליך לא יעבור דרך ציר זז. הצד השני נשאר עם פין שחרור מהיר.</li>
+      <li><strong>ממצא שדורש החלטה:</strong> מודול של <span class="ltr">48.5</span> מ״מ ארוך ושטוח מול עקמומיות היד. מול חתך יד של <span class="ltr">59 × 42</span> מ״מ נשאר בקצוות מרווח של עד 9 מ״מ. המשטחים של LA יושבים במרכז ולכן נוגעים, אבל לנוחות צריך תחתית מעוקלת או את הגרסה הקצרה.</li>
+    </ul>
+    <p>מה עוד לא במודל: סגר הרצועה, ברגים, משטחים מעוצבים, ושיפועים לתבנית.</p>
+  </section>
+
+  <section>
+    <h2>השלבים</h2>
+    <p>כל שלב עונה על שאלה אחת. אם התשובה לא טובה, מתקנים לפני שממשיכים, והכסף של השלב הבא לא יצא.</p>
+    <div class="stages">
+
+      <div class="stage on">
+        <div class="num">0</div>
+        <div class="head"><h3>על המחשב</h3><span class="cost">בלי עלות</span></div>
+        <div class="state on">בעבודה</div>
+        <dl class="facts">
+          <div><dt>השאלה</dt><dd>האם התכנון סגור: הגודל מחושב, הסכמה מלאה, הרכיבים זמינים, והכול נכנס במארז?</dd></div>
+          <div><dt>איך</dt><dd>חישוב גודל וסוללה, מודל CAD מוצק, סכמה ורשימת רכיבים, סימולציה של הכניסות.</dd></div>
+          <div><dt>עובר אם</dt><dd>אין שגיאות בבדיקת החוקים, כל רכיב ניתן לקנייה, ואין התנגשויות במודל.</dd></div>
+          <div><dt>מי</dt><dd>אני.</dd></div>
+        </dl>
+      </div>
+
+      <div class="stage">
+        <div class="num">1</div>
+        <div class="head"><h3>אלקטרודות יבשות על האב-טיפוס הקיים</h3><span class="cost">כמעט בלי עלות</span></div>
+        <div class="state wait">הבא בתור</div>
+        <dl class="facts">
+          <div><dt>השאלה</dt><dd>האם משטחי מתכת יבשים בגודל המתוכנן נותנים אק״ג קריא? זה הסיכון הגדול ביותר, ואפשר לבדוק אותו כבר היום.</dd></div>
+          <div><dt>איך</dt><dd>מחליפים את מדבקות הג׳ל במשטחי נירוסטה ומקליטים עם האפליקציה הקיימת.</dd></div>
+          <div><dt>עובר אם</dt><dd>רואים פעימה ברורה בכל ליד, והרעש בין הפעימות קטן לפחות פי 10 מגובה הפעימה.</dd></div>
+          <div><dt>מי</dt><dd>אתה מחבר ומקליט לפי הוראות שאכתוב. אני מנתח את ההקלטות.</dd></div>
+        </dl>
+      </div>
+
+      <div class="stage">
+        <div class="num">2</div>
+        <div class="head"><h3>השבב החדש על השולחן</h3><span class="cost">כמעט בלי עלות</span></div>
+        <div class="state on">בבדיקה: חיווט ישיר של הלוח שכבר יש לך</div>
+        <dl class="facts">
+          <div><dt>השאלה</dt><dd>האם משפחת ה-ADS1294 וארבעת הערוצים עובדים עם האלקטרודות היבשות, והאפליקציה מציגה את האות?</dd></div>
+          <div><dt>איך</dt><dd>לוח השבב של TI שכבר קנית (ADS1298, אותה משפחה ואותה קושחה), בלי לוח האם שלו ובלי התוכנה של TI. מחווטים אותו ישירות ל-XIAO nRF52840 שלך. הקושחה משדרת בפורמט הקיים, כך שהאפליקציה לא משתנה.</dd></div>
+          <div><dt>עובר אם</dt><dd>הקלטה של 10 שניות מגיעה לאפליקציה מארבעה ערוצים, בלי דגימות חסרות.</dd></div>
+          <div><dt>מי</dt><dd>אני מכין את טבלת החיווט וכותב קושחה. אתה מחווט ומקליט.</dd></div>
+        </dl>
+      </div>
+
+      <div class="stage">
+        <div class="num">3</div>
+        <div class="head"><h3>יחידה לבישה ראשונה</h3><span class="cost"><span class="ltr">800–1,500</span> דולר ל-5 יחידות</span></div>
+        <div class="state wait">ממתין</div>
+        <dl class="facts">
+          <div><dt>השאלה</dt><dd>האם הלוח הממוזער, המארז, הרצועה והמוליך שבתוכה עובדים יחד על היד?</dd></div>
+          <div><dt>איך</dt><dd>לוחות מורכבים מהמפעל, מארז מודפס, מעגל גמיש ורצועה יצוקה.</dd></div>
+          <div><dt>עובר אם</dt><dd>10 הקלטות מלאות מתוך 10 על היד, הסוללה מחזיקה כמתוכנן, והמוליך שורד בדיקת כיפוף.</dd></div>
+          <div><dt>מי</dt><dd>אני מכין את קובצי הייצור. אתה מזמין, מרכיב ובודק. מהנדס אלקטרוניקה מבקר את הלוח לפני ההזמנה.</dd></div>
+        </dl>
+      </div>
+
+      <div class="stage">
+        <div class="num">4</div>
+        <div class="head"><h3>סבב תיקונים ובטיחות</h3><span class="cost"><span class="ltr">800–1,500</span> דולר, ועוד מעבדה</span></div>
+        <div class="state wait">ממתין</div>
+        <dl class="facts">
+          <div><dt>השאלה</dt><dd>האם היחידה בטוחה ויציבה מספיק לניסוי בבית חולים?</dd></div>
+          <div><dt>איך</dt><dd>סבב שני עם התיקונים, מדידת זרם מטופל במעבדה מוסמכת, חומרים עם תיעוד רפואי, בדיקת חיטוי.</dd></div>
+          <div><dt>עובר אם</dt><dd>המעבדה מאשרת את מדידות הבטיחות, והיחידה עומדת בניגוב חוזר באלכוהול.</dd></div>
+          <div><dt>מי</dt><dd>מעבדה מוסמכת והגורם המלווה בבית החולים. אני מכין את התיעוד.</dd></div>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>הסיכונים</h2>
+    <p>מסודרים לפי חומרה. לכל סיכון יש בדיקה זולה, והשלב שבו היא נעשית.</p>
+    <div>
+      <div class="rhead"><span>הסיכון</span><span>איך בודקים בזול</span><span>שלב</span></div>
+      <div class="risks">
+        <div class="risk"><div class="what">אלקטרודות יבשות לא נותנות אות נקי<span class="why">בלי אות אין מוצר.</span></div><div>משטחי נירוסטה על האב-טיפוס שכבר עובד, ואחר כך על לוח הניסוי.</div><div class="when"><span class="ltr">1, 2</span></div></div>
+        <div class="risk"><div class="what">האלקטרוניקה והסוללה לא נכנסות במודול נוח<span class="why">הגדלים בהדמיה ובמפרט לא חושבו מהרכיבים.</span></div><div>חישוב מהרכיבים האמיתיים, מודל CAD מוצק, ואחריו הדפסה למדידה על היד.</div><div class="when"><span class="ltr">0, 3</span></div></div>
+        <div class="risk"><div class="what">השבב החדש ותוכנית ארבעת הערוצים<span class="why">שבב אחר מזה שבאב-טיפוס, וקושחה חדשה.</span></div><div>לוח השבב של TI שכבר אצלך, מחווט ל-XIAO, לפני שמתכננים לוח משלנו.</div><div class="when"><span class="ltr">2</span></div></div>
+        <div class="risk"><div class="what">האפליקציה לא מקבלת את האות החדש<span class="why">האפליקציות נעולות היום על 320 דגימות בשנייה.</span></div><div>מצב תאימות בקושחה: המכשיר החדש משדר בפורמט הקיים. את האפליקציה מעדכנים רק אחרי שהחומרה מוכחת, ובאישורך.</div><div class="when"><span class="ltr">2</span></div></div>
+        <div class="risk"><div class="what">המוליך ברצועה נשבר או מתנתק<span class="why">RA1 ו-RA2 יושבות על הרצועה, מעבר לציר.</span></div><div>דגימת מעגל גמיש בבדיקת כיפוף, ויציקת ניסיון בסיליקון.</div><div class="when"><span class="ltr">3</span></div></div>
+        <div class="risk"><div class="what">רעש או קליטה חלשה בלוח הממוזער<span class="why">אות של מיקרו-וולטים ליד אנטנה.</span></div><div>הולכים לפי לוח הייחוס של TI, ומהנדס אלקטרוניקה מבקר לפני כל הזמנה.</div><div class="when"><span class="ltr">2, 3</span></div></div>
+        <div class="risk"><div class="what">רכיב חסר במלאי, או שהמפעל לא מרכיב אותו<span class="why">עיכוב של חודשים.</span></div><div>בדיקת זמינות לכל רכיב לפני שמקבעים את הסכמה, וחלופה לכל רכיב קריטי.</div><div class="when"><span class="ltr">0</span></div></div>
+        <div class="risk"><div class="what">זיעה מקצרת בין אלקטרודות, או שהאטימה נכשלת<span class="why">האות נעלם בשימוש אמיתי.</span></div><div>מרווח מבודד ואטם כבר ב-CAD, ובדיקת טפטוף על יחידה מודפסת.</div><div class="when"><span class="ltr">0, 3</span></div></div>
+        <div class="risk"><div class="what">בטיחות המטופל ותקינה<span class="why">תנאי לניסוי בבית חולים.</span></div><div>מתכננים לפי IEC 60601-1 מהיום הראשון: זרם מטופל מוגבל, אין הקלטה בזמן טעינה. מודדים במעבדה.</div><div class="when"><span class="ltr">0, 4</span></div></div>
+        <div class="risk"><div class="what">טעות שלי בתכנון<span class="why">אני לא מודד ולא מלחים.</span></div><div>כל שלב נבדק במדידה אמיתית לפני הבא, ואדם מבקר כל לוח לפני הזמנה.</div><div class="when">בכולם</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>חלקי העבודה</h2>
+    <p>שמונה חלקים שמתקדמים במקביל. ליד כל אחד כתוב מה קורה בו עכשיו.</p>
+    <div class="parts">
+      <div class="part"><h3>מערכת</h3><p>מה המכשיר צריך לעשות, ומה יוצא מזה: גודל, סוללה וזמן פעולה.</p><div class="state on">בעבודה: חישוב גודל וסוללה</div></div>
+      <div class="part"><h3>אלקטרודות</h3><p>צורה, שטח, חומר, והחיבור של כל משטח ללוח.</p><div class="state on">בעבודה: הוראות לניסוי שלב 1</div></div>
+      <div class="part"><h3>אלקטרוניקה</h3><p>סכמה, רשימת רכיבים, לוח ניסוי, ואחריו הלוח הממוזער.</p><div class="state on">בעבודה: בחירת רכיבים וסכמה</div></div>
+      <div class="part"><h3>קושחה</h3><p>התוכנה שרצה על המכשיר: דגימה מהשבב ושידור ב-BLE.</p><div class="state wait">מתחיל עם לוח הניסוי</div></div>
+      <div class="part"><h3>אפליקציה</h3><p>ארבעה ערוצים ו-500 דגימות בשנייה.</p><div class="state wait">רק אחרי שלב 2, ובאישורך</div></div>
+      <div class="part"><h3>עיצוב תעשייתי ומכני</h3><p>המודול, הרצועה, ומה שעובר בתוך הרצועה, כקבצים לייצור.</p><div class="state on">בעבודה: מודל מוצק ראשון</div></div>
+      <div class="part"><h3>ייצור ורכש</h3><p>קובצי ייצור, הזמנות והרכבה.</p><div class="state wait">מתחיל בשלב 2</div></div>
+      <div class="part"><h3>בטיחות ותקינה</h3><p>זרם מטופל, חומרים במגע עם העור, תיעוד לניסוי.</p><div class="state on">בעבודה: מגבלות הזרם נכנסות לסכמה</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>מה אני צריך ממך</h2>
+    <ol class="todo">
+      <li><strong>ניסוי שלב 1.</strong> להחליף את מדבקות הג׳ל במשטחי נירוסטה ולהקליט. ההוראות המלאות כאן למטה.</li>
+      <li><strong>לוח ה-ADS1298 של TI.</strong> למצוא אותו ואת ה-XIAO. טבלת החיווט תגיע כשהבירור מול מדריך הלוח יסתיים.</li>
+      <li><strong>שום קנייה כרגע.</strong> לפני כל קנייה אציג מה קונים, כמה זה עולה ולמה.</li>
+    </ol>
+    <details>
+      <summary>הוראות לניסוי שלב 1</summary>
+      <div class="inner">
+        <p class="warn"><strong>בטיחות:</strong> האב-טיפוס מחובר ב-USB רק למחשב נייד שמנותק מהמטען, או לסוללת גיבוי. אף פעם לא למשהו שמחובר לשקע בזמן שהאלקטרודות על הגוף.</p>
+        <h3>מה צריך</h3>
+        <ul>
+          <li>האב-טיפוס עם חמשת החוטים: RA, LA, LL#1, LL#2, RLD.</li>
+          <li>שבע חתיכות נירוסטה. לסבב ראשון מספיק מה שיש בבית: דסקיות נירוסטה M8, ידיות של כפיות, או פס נירוסטה גזור.</li>
+          <li>קליפס תנין או הלחמה, לחבר כל חתיכה לחוט שלה.</li>
+          <li>מדבקות הג׳ל הרגילות, להשוואה. קרטון קשיח וסרט הדבקה.</li>
+        </ul>
+        <h3>הגדלים שבודקים</h3>
+        <div class="scroll">
+          <table class="steps">
+            <thead><tr><th>משטח</th><th>הגודל במוצר</th><th>תחליף ביתי</th></tr></thead>
+            <tbody>
+              <tr><td>LL1, LL2, RLD</td><td><span class="ltr">7 × 21</span> מ״מ כל אחד, על הרגל</td><td>דסקית M8</td></tr>
+              <tr><td>LA</td><td>שני משטחים של <span class="ltr">5.5 × 21</span> מ״מ על חוט אחד, על שורש כף היד</td><td>שתי דסקיות M6 על חוט אחד</td></tr>
+              <tr><td>RA</td><td><span class="ltr">9.4 × 19</span> מ״מ, לאצבעות יד ימין</td><td>דסקית M8</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>את שלושת משטחי הרגל מדביקים בשורה על קרטון, במרווח של 2 מ״מ, בסדר LL1, RLD, LL2. זה הסידור שבמוצר.</p>
+        <h3>איך מניחים</h3>
+        <ol>
+          <li>שורש כף יד שמאל: משטחי ה-LA על הצד הפנימי, מוחזקים ברצועת הסקוטש.</li>
+          <li>רגל שמאל, על עור חשוף מעל הברך: הקרטון עם שלושת המשטחים. שורש כף היד נח על הקרטון ולוחץ אותו לרגל.</li>
+          <li>יד ימין: שתי אצבעות על משטח ה-RA.</li>
+          <li>מקליטים 10 שניות באפליקציה, בישיבה, בלי לדבר.</li>
+        </ol>
+        <h3>סדר ההקלטות</h3>
+        <p>שלוש הקלטות בכל מצב. בין מצב למצב רושמים שעה, מצב, ומה הרגשת: לחץ חזק או חלש, זיעה.</p>
+        <div class="scroll">
+          <table class="steps">
+            <thead><tr><th>מצב</th><th>מה עושים</th><th>למה</th></tr></thead>
+            <tbody>
+              <tr><td>A</td><td>מדבקות ג׳ל, כמו היום</td><td>קו הבסיס להשוואה</td></tr>
+              <tr><td>B</td><td>משטחים יבשים, עור יבש</td><td>המצב האמיתי</td></tr>
+              <tr><td>C</td><td>אותו דבר, אחרי ניגוב העור במטלית לחה</td><td>המקרה הטוב</td></tr>
+              <tr><td>D</td><td>חצי מכל משטח מכוסה בסרט בידוד</td><td>כמה הגודל משפיע</td></tr>
+              <tr><td>E</td><td>כמו B, עם חוט ה-RLD מנותק</td><td>האם ה-RLD באמת נחוץ</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>מה התוצאה קובעת</h3>
+        <ul>
+          <li><strong>עובר במצב B:</strong> ממשיכים עם משטחים בגודל הזה, בלי מגבר ליד כל אלקטרודה.</li>
+          <li><strong>עובר רק במצב C:</strong> צריך משטחים גדולים יותר או חומר אחר, והמודול גדל.</li>
+          <li><strong>נכשל גם ב-C:</strong> מוסיפים מגבר ליד כל אלקטרודה, שיש לו מקום בלוח, ובודקים שוב.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>יומן</h2>
+    <div class="log">
+      <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>המודל המוצק הראשון מוכן, עם קובצי STEP ושש תמונות. אפס התנגשויות. לוח ה-ADS1298 של TI נבדק מול המדריך שלו: אפשר לחווט אותו ישירות ל-XIAO עם <span class="ltr">5V</span>, <span class="ltr">3.3V</span> ואדמה בלבד.</p></div></div>
+      <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>חישוב הגודל הראשון מוכן: <span class="ltr">48.5 × 30 × 7.3</span> מ״מ עם סוללה של <span class="ltr">100 mAh</span> לצד הלוח. KiCad מותקן. הוראות ניסוי שלב 1 כתובות.</p></div></div>
+      <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>ערכת ה-ADS1298 של TI כבר אצלך, אז שלב 2 לא דורש קנייה. במקום לוח האם והתוכנה של TI, מחווטים את לוח השבב ישירות ל-XIAO. טבלת החיווט בבדיקה מול מדריך הלוח.</p></div></div>
+      <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>התכנית נכתבה. הכלים בהתקנה, ושני בירורים רצים: מידות וצריכת זרם של כל רכיב מול דפי היצרן, והאם ערכת הבדיקה של TI מתאימה לשלב 2.</p></div></div>
+    </div>
+  </section>
+
+  <p class="foot">המספרים בדף הם הערכות, והם מתעדכנים כשרשימת הרכיבים נסגרת.</p>
+
+</article>
+</div>
+</div>
+<!-- v0.1.0 — Band α risk-reduction plan: stages 0-4, risk register, work parts, log -->

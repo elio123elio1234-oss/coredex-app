@@ -1,0 +1,19 @@
+# Python environment for the CAD scripts (recreate with requirements.txt)
+.venv/
+__pycache__/
+*.pyc
+
+# PlatformIO build output
+.pio/
+
+# KiCad backups, locks and caches
+*-backups/
+*.lck
+*.kicad_prl
+fp-info-cache
+~*.kicad_*
+
+# scratch renders that are not part of a deliverable
+mechanical/out/tmp/
+
+# v0.1.0 - ignores for the hardware folder: venv, PlatformIO and KiCad scratch files

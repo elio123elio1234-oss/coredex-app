@@ -1,0 +1,8 @@
+# CAD + rendering for mechanical/ (Python 3.12). Install with wheels only:
+#   python -m venv .venv
+#   .venv\Scripts\python -m pip install --only-binary=:all: -r requirements.txt
+cadquery
+pyvista
+pillow
+trimesh
+# v0.1.0 - CAD and rendering packages for mechanical/
