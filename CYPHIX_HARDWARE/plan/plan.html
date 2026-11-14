@@ -56,9 +56,10 @@
   .now .big { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.3; }
   .now ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
   .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-  .shots figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+  .shots.wide { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 16px; }
+  .shots figure { margin: 0; display: grid; gap: 6px; min-width: 0; align-content: start; }
   .shots img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #ffffff; }
-  .shots figcaption { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .shots figcaption { font-size: 17px; font-weight: 700; color: var(--ink); }
 
   .viewer { display: grid; gap: 10px; }
   .vbar { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -145,7 +146,7 @@
 <article class="paper">
 
   <header>
-    <div class="eyebrow">CYPHIX Band α · חומרה · עודכן 14.11.2026</div>
+    <div class="eyebrow">CYPHIX Band α · חומרה · עודכן 15.11.2026</div>
     <h1>תכנית הורדת סיכונים</h1>
     <p class="lead">בודקים כל סיכון בדרך הזולה ביותר, ורק כשהוא עובר משלמים על השלב הבא. חמישה שלבים, מהמחשב ועד יחידה שאפשר לענוד.</p>
   </header>
@@ -154,12 +155,77 @@
     <div class="label">עכשיו</div>
     <div class="big">שלב 0: סוגרים את התכנון על המחשב</div>
     <ul>
-      <li>חישוב הגודל והסוללה מהרכיבים עצמם: גרסה ראשונה מוכנה, למטה.</li>
-      <li>מודל תלת-ממד מוצק ראשון של המודול: מוכן, למטה. הכול נכנס, בלי התנגשויות.</li>
-      <li>לוח ה-ADS1298 של TI: נבדק מול מדריך הלוח, ואפשר לחווט אותו ישירות ל-XIAO.</li>
-      <li>קושחה לשלב 2: בעבודה.</li>
-      <li>הוראות לניסוי שלב 1: מוכנות, למטה.</li>
+      <li>העיצוב התעשייתי תוכנן מחדש אחרי הביקורת שלך: אי קעור, רצועה רציפה עם סגירה סביב המוט, טעינה במגעים על מעמד, אלקטרודות גדולות ומוליך עם קו נפרד לכל משטח. הכול למטה.</li>
+      <li>קושחת שלב 2 מוכנה ונבנית בלי שגיאות. היא עוד לא רצה על חומרה.</li>
+      <li>הסכמה ואימות מידות הרכיבים נקטעו כשמכסת השימוש נגמרה. מה שנעשה שמור, והם ימשיכו.</li>
     </ul>
+  </section>
+
+  <section>
+    <h2>העיצוב התעשייתי, גרסה 1</h2>
+    <p>המודל הראשון רק בדק שהאלקטרוניקה נכנסת, ולא היה עיצוב. זה העיצוב: איך האי יושב על היד, איך הרצועה נסגרת ומתאימה את עצמה, איך טוענים, כמה שטח יש לאלקטרודות, ואיך המוליך מוחזק ברצועה ונכנס לאי.</p>
+    <div class="viewer">
+      <div class="vbar" role="group" aria-label="תצוגת המודל">
+        <button type="button" id="v-soft" aria-pressed="false">רצועה שקופה</button>
+        <button type="button" id="v-lid" aria-pressed="false">בלי מכסה</button>
+        <button type="button" id="v-explode" aria-pressed="false">מפורק</button>
+        <button type="button" id="v-flip" aria-pressed="false">צד היד</button>
+        <button type="button" id="v-reset">איפוס</button>
+      </div>
+      <div class="stage3d" id="stage3d">
+        <canvas id="c3d" aria-label="מודל תלת-ממדי של הרצועה. גוררים כדי לסובב."></canvas>
+        <p class="vmsg" id="vmsg">טוען את המודל</p>
+      </div>
+      <p class="hint">גוררים כדי לסובב. צביטה או גלגלת לזום. "רצועה שקופה" מראה את המוליך שבתוכה.</p>
+    </div>
+    <div class="shots wide">
+      <figure><img src="img/id_hero.webp" alt="הרצועה כולה: אי מעוקל עם שלושה משטחי פלדה, רצועה רציפה" width="1600" height="1377"><figcaption>הרצועה</figcaption></figure>
+      <figure><img src="img/id_wristface.webp" alt="הפנים הקעורים של האי: שני משטחי LA וארבעה מגעי טעינה מוזהבים" width="1600" height="1067"><figcaption>הצד שעל היד</figcaption></figure>
+      <figure><img src="img/id_profile.webp" alt="מבט מהצד על חתך יד: קו פנימי אחד רציף, אי קעור, והרצועה מקופלת חזרה" width="1600" height="1358"><figcaption>קו אחד רציף</figcaption></figure>
+      <figure><img src="img/id_closure.webp" alt="הרצועה עוברת מתחת למוט, מתלפפת סביבו וננעלת בפין" width="1600" height="1237"><figcaption>סגירה סביב המוט</figcaption></figure>
+      <figure><img src="img/id_flex.webp" alt="המעגל הגמיש בתוך הרצועה, עם קו נחושת נפרד לכל אחד משני משטחי ה-RA" width="1600" height="1236"><figcaption>שני קווים נפרדים</figcaption></figure>
+      <figure><img src="img/id_section.webp" alt="חתך לאורך האי: משטחים, מגעי קפיץ, לוח שטוח, סוללה, וכניסת המוליך" width="1600" height="1067"><figcaption>מה בפנים</figcaption></figure>
+      <figure><img src="img/id_dock.webp" alt="הרצועה תלויה על מעמד הטעינה" width="1600" height="1471"><figcaption>טעינה על מעמד</figcaption></figure>
+    </div>
+
+    <h3>התשובות לשאלות שלך</h3>
+    <ul class="todo">
+      <li><strong>טעינה.</strong> ארבעה מגעים מוזהבים, שקועים חצי מילימטר בפנים הקעורים של האי, בין שני משטחי ה-LA. אין חור USB ואין שום פתח במארז. תולים את הרצועה על מעמד: הזרוע שלו תופסת את מקום היד, ולכן הפנים הקעורים מתיישבים עליה מעצמם וארבעה פינים קפיציים פוגשים את המגעים. שניים לטעינה ושניים לשירות ולצריבה. המגנטים יושבים במעמד ולא במכשיר, כי מגנט חזק על היד של מטופל עם קוצב הוא סיכון. טעינה אלחוטית נפסלה: שני הפנים מכוסים פלדה, ואין לסליל חלון נקי ממתכת.</li>
+      <li><strong>סגירה והתאמה ליד.</strong> הרצועה רציפה מלמעלה, בלי פתח. צד אחד שלה קבוע לאי, ובו עובר המוליך. הצד השני יורד אל מוט פלדה מלוטש בקצה האי, עובר מתחתיו, מתלפף סביבו וחוזר למעלה על עצמו. פין פלדה בקצה הרצועה ננעל באחד משבעה חורים, במרווחים של 6 מ״מ. בצד העור כל חור מורחב, כך שרגל הפין שקועה ולא מורגשת. שלושה אורכי רצועה מכסים היקף יד מ-130 עד 210 מ״מ.</li>
+      <li><strong>אי קעור.</strong> הפנים הפנימיים של האי הם קו היד עצמו: רדיוס 44 מ״מ במרכז, ועומק קעירות של 4.2 מ״מ. הניחוש שלך (40 עד 50) היה נכון: יד ברוחב 61 ובעומק 42 מ״מ נותנת 44. הלוח בפנים נשאר שטוח, והסוללה יושבת לצידו בזווית, ולכן העובי נשאר 7.2 מ״מ.</li>
+      <li><strong>שטח האלקטרודות.</strong> שלושת המשטחים שעל הרגל הם <span class="ltr">264</span> ממ״ר כל אחד, לעומת <span class="ltr">147</span> בהדמיה: גדולים ב-80%. שני משטחי ה-LA הם <span class="ltr">278</span> ממ״ר כל אחד, ושני משטחי ה-RA <span class="ltr">234</span>. כולם פלדה מלוטשת, שקועים במארז עד פני השטח ועוקבים אחרי העקמומיות שלו בשני הצדדים.</li>
+      <li><strong>המוליך ברצועה.</strong> מעגל גמיש (FPC) יצוק בתוך רצועת פלואורואלסטומר (FKM), בגובה אמצע העובי, שם הכיפוף מותח אותו הכי פחות. חורים לאורך שני השוליים שלו נותנים לחומר הרצועה לעבור דרכו ולנעול אותו. <strong>לכל משטח RA יש קו נחושת משלו ופין משלו</strong>, וביניהם קו הגנה.</li>
+      <li><strong>החיבור לאי.</strong> הרצועה נכנסת לכתף האי בלשון, עם עיבוי בקצה ועוגן קשיח בתוכה. שני חצאי המארז נסגרים עליה בריתוך אולטרסוני, כך שאין בורג ואין תפר שמים נכנסים דרכו. המוליך עובר בחריץ אטום ונכנס למחבר על הלוח.</li>
+      <li><strong>רציפות.</strong> האי והרצועה בנויים על אותו קו, ולכן הפנים של הרצועה כולה הם עקומה אחת עגולה. האי מתחדד בכתף ארוכה עד לעובי הרצועה, והרצועה ממשיכה אותו.</li>
+    </ul>
+
+    <div class="nums">
+      <div><div class="n1"><span class="ltr">50 × 30 × 7.2</span> מ״מ</div><div class="n2">האי, ועוד 6 מ״מ לזיזי האבזם</div></div>
+      <div><div class="n1"><span class="ltr">R 44</span> מ״מ</div><div class="n2">קעירות הפנים שעל היד</div></div>
+      <div><div class="n1"><span class="ltr">24 × 2.8</span> מ״מ</div><div class="n2">הרצועה, FKM</div></div>
+      <div><div class="n1"><span class="ltr">+80%</span></div><div class="n2">שטח כל אלקטרודה על הרגל</div></div>
+    </div>
+
+    <h3>מה עוד פתוח בעיצוב</h3>
+    <ul class="todo">
+      <li><strong>אנטנה.</strong> הפס הכהה לאורך צד אחד של האי הוא האזור היחיד בלי מתכת מעליו, ושם יושבת האנטנה. את הקליטה אפשר לבדוק רק ביחידה אמיתית.</li>
+      <li><strong>אורך האי.</strong> הוא מצויר ללוח המצומצם, <span class="ltr">24 × 26</span> מ״מ. הלוח הראשון יהיה ארוך בכ-6 מ״מ, והאי איתו.</li>
+      <li><strong>פין וחור.</strong> נקי וקל לחיטוי בין מטופלים, אבל דורש אצבעות. צריך לנסות עם מטופלים מבוגרים לפני שמקבעים.</li>
+      <li><strong>שלושה אורכי רצועה,</strong> ובכל אחד משטחי ה-RA במקום אחר, כדי שיישארו בצד שקל לגעת בו.</li>
+      <li><strong>ליטוש צורני.</strong> זה תכנון הנדסי מדויק, ועדיין לא עבודה של מעצב תעשייתי. את המשטחים והפרופורציות כדאי שמעצבת תלטש על בסיס הקבצים האלה.</li>
+    </ul>
+
+    <details>
+      <summary>בדיקת ההתאמה הראשונה (מודל הקופסאות)</summary>
+      <div class="inner">
+        <p>המודל הקודם, שנועד רק לבדוק שהלוח, הסוללה והרכיבים נכנסים בחלל בלי התנגשויות. הוא לא עיצוב.</p>
+        <div class="shots">
+          <figure><img src="img/cad_inside.webp" alt="מודל ההתאמה בלי מכסה" width="1500" height="1077"><figcaption>מה בפנים</figcaption></figure>
+          <figure><img src="img/cad_exploded.webp" alt="מודל ההתאמה מפורק" width="974" height="991"><figcaption>מבט מפורק</figcaption></figure>
+          <figure><img src="img/cad_section.webp" alt="חתך במודל ההתאמה" width="1410" height="337"><figcaption>חתך</figcaption></figure>
+        </div>
+      </div>
+    </details>
   </section>
 
   <section>
@@ -183,41 +249,6 @@
       </table>
     </div>
     <p>יצא שטח קרוב למפרט ועובי קרוב להדמיה. הקלטה של 10 שניות צורכת מעט מאוד, ולכן מספיקה סוללה של <span class="ltr">100 mAh</span> במקום <span class="ltr">150–300</span> שבמפרט, וזה מה שמאפשר מודול דק. המספרים יתעדכנו כשכל מידה תאומת מול דף היצרן.</p>
-  </section>
-
-  <section>
-    <h2>המודל המוצק הראשון</h2>
-    <p>זה מודל התאמה, בנוי סביב הרכיבים בגודלם האמיתי, ונועד לענות על שאלה אחת: האם הכול נכנס, ואיפה כל דבר יושב. זה עוד לא העיצוב הסופי.</p>
-    <div class="viewer">
-      <div class="vbar" role="group" aria-label="תצוגת המודל">
-        <button type="button" id="v-explode" aria-pressed="false">מפורק</button>
-        <button type="button" id="v-lid" aria-pressed="false">בלי מכסה</button>
-        <button type="button" id="v-strap" aria-pressed="false">עם הרצועה</button>
-        <button type="button" id="v-flip" aria-pressed="false">צד היד</button>
-        <button type="button" id="v-reset">איפוס</button>
-      </div>
-      <div class="stage3d" id="stage3d">
-        <canvas id="c3d" aria-label="מודל תלת-ממדי של המודול. גוררים כדי לסובב."></canvas>
-        <p class="vmsg" id="vmsg">טוען את המודל</p>
-      </div>
-      <p class="hint">גוררים כדי לסובב. צביטה או גלגלת לזום.</p>
-    </div>
-    <div class="shots">
-      <figure><img src="img/cad_leg.webp" alt="המודול מצד הרגל, עם שלושה משטחי מתכת" width="1406" height="897"><figcaption>צד הרגל</figcaption></figure>
-      <figure><img src="img/cad_wrist.webp" alt="המודול מצד היד, עם שני משטחי LA, חלון חיישן ומגעי טעינה" width="1391" height="892"><figcaption>צד היד</figcaption></figure>
-      <figure><img src="img/cad_inside.webp" alt="המודול בלי המכסה: לוח עם רכיבים, מנוע רטט וסוללה" width="1500" height="1077"><figcaption>מה בפנים</figcaption></figure>
-      <figure><img src="img/cad_exploded.webp" alt="מבט מפורק: משטחים, מכסה, אטם, לוח, סוללה, תחתית" width="974" height="991"><figcaption>מבט מפורק</figcaption></figure>
-      <figure><img src="img/cad_section.webp" alt="חתך לאורך המודול: המשטחים, מגעי הקפיץ, הלוח והסוללה" width="1410" height="337"><figcaption>חתך לאורך</figcaption></figure>
-      <figure><img src="img/cad_worn.webp" alt="המודול על היד, עם הרצועה והמוליך ל-RA1 ול-RA2" width="1139" height="919"><figcaption>על היד, עם המוליך</figcaption></figure>
-    </div>
-    <h3>מה המודל מראה</h3>
-    <ul class="todo">
-      <li><strong>הכול נכנס.</strong> הלוח, הסוללה, מנוע הרטט וכל הרכיבים הגבוהים יושבים בחלל בלי אף התנגשות. הבדיקה רצה אוטומטית בכל שינוי.</li>
-      <li><strong>כל משטח מתכת מודבק על מדף במארז,</strong> ומגע קפיץ מהלוח נוגע בגב שלו דרך חלון. כך המשטח לא גוזל גובה מהחלל, ויש שטח הדבקה רחב לאטימה.</li>
-      <li><strong>המוליך ל-RA1 ול-RA2</strong> יוצא מקצה המודול ורץ בתוך הרצועה עד למעלה. הצד הזה של הרצועה קבוע למודול, כדי שהמוליך לא יעבור דרך ציר זז. הצד השני נשאר עם פין שחרור מהיר.</li>
-      <li><strong>ממצא שדורש החלטה:</strong> מודול של <span class="ltr">48.5</span> מ״מ ארוך ושטוח מול עקמומיות היד. מול חתך יד של <span class="ltr">59 × 42</span> מ״מ נשאר בקצוות מרווח של עד 9 מ״מ. המשטחים של LA יושבים במרכז ולכן נוגעים, אבל לנוחות צריך תחתית מעוקלת או את הגרסה הקצרה.</li>
-    </ul>
-    <p>מה עוד לא במודל: סגר הרצועה, ברגים, משטחים מעוצבים, ושיפועים לתבנית.</p>
   </section>
 
   <section>
@@ -327,7 +358,7 @@
     <h2>מה אני צריך ממך</h2>
     <ol class="todo">
       <li><strong>ניסוי שלב 1.</strong> להחליף את מדבקות הג׳ל במשטחי נירוסטה ולהקליט. ההוראות המלאות כאן למטה.</li>
-      <li><strong>לוח ה-ADS1298 של TI.</strong> למצוא אותו ואת ה-XIAO. טבלת החיווט תגיע כשהבירור מול מדריך הלוח יסתיים.</li>
+      <li><strong>לוח ה-ADS1298 של TI.</strong> לחבר את ה-XIAO למחשב ב-USB כדי שאצרוב עליו את הקושחה, ואז לחווט לפי ההוראות לשלב 2 שכאן למטה.</li>
       <li><strong>שום קנייה כרגע.</strong> לפני כל קנייה אציג מה קונים, כמה זה עולה ולמה.</li>
     </ol>
     <details>
@@ -382,11 +413,74 @@
         </ul>
       </div>
     </details>
+    <details>
+      <summary>הוראות לשלב 2: לוח TI מחובר ל-XIAO</summary>
+      <div class="inner">
+        <p class="warn"><strong>בטיחות:</strong> כשאלקטרודות על הגוף, ה-XIAO רץ מסוללה בלבד וכבל ה-USB מנותק. TI כותבת שהלוח אינו מיועד לחיבור ישיר למטופל: אין בו דיודות הגנה, ומה שמגביל זרם הוא נגד של <span class="ltr">32.1 kΩ</span> בכל כניסה. זה ניסוי שולחני שלך על עצמך, כמו האב-טיפוס. לא על מטופלים.</p>
+        <p>משתמשים רק בלוח הקטן של TI. לוח האם והתוכנה של TI נשארים בקופסה. החיווט נגזר מהסכמה של TI ועוד לא נוסה על לוח, ולכן כל צעד נגמר בבדיקה. את האב-טיפוס הישן מכבים בזמן הניסוי, כי שני המכשירים משדרים באותו שם.</p>
+        <h3>א. ג׳מפרים על הלוח של TI</h3>
+        <div class="scroll">
+          <table class="steps">
+            <thead><tr><th>ג׳מפר</th><th>לשנות ל</th><th>מה זה עושה</th></tr></thead>
+            <tbody>
+              <tr><td>JP2</td><td><span class="ltr">2-3</span></td><td>מתח אנלוגי חיובי בלבד, <span class="ltr">3.0V</span></td></tr>
+              <tr><td>JP20</td><td><span class="ltr">1-2</span></td><td>הצד השלילי לאדמה</td></tr>
+              <tr><td>JP23</td><td><span class="ltr">2-3</span></td><td>שעון פנימי</td></tr>
+              <tr><td>JP18</td><td>להסיר</td><td>מנתק את המתנד שעל הלוח</td></tr>
+              <tr><td>JP19</td><td><span class="ltr">2-3</span></td><td>מכבה את המתנד שעל הלוח</td></tr>
+              <tr><td>JP16</td><td>להסיר</td><td>מנתק את WCT מהפס המשותף</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>כל השאר נשארים כמו מהמפעל: JP24 על <span class="ltr">2-3</span>, JP21 על <span class="ltr">1-2</span>, JP22 על <span class="ltr">2-3</span>, JP4 ו-JP1 מותקנים, JP5 פתוח.</p>
+        <h3>ב. מתח, ובדיקה במודד</h3>
+        <div class="scroll">
+          <table class="steps">
+            <thead><tr><th>נקודה בלוח TI</th><th>מה</th><th>פד ב-XIAO</th></tr></thead>
+            <tbody>
+              <tr><td>TP7</td><td>כניסת <span class="ltr">5V</span></td><td><span class="ltr">VUSB</span> כשעל USB, <span class="ltr">BAT+</span> כשעל סוללה</td></tr>
+              <tr><td>TP10</td><td><span class="ltr">3.3V</span></td><td><span class="ltr">3V3</span></td></tr>
+              <tr><td>TP8</td><td>אדמה</td><td><span class="ltr">GND</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>בדיקה:</strong> TP7 מראה <span class="ltr">5V</span>, TP5 מראה <span class="ltr">3.0V</span>, הפין האמצעי של JP2 מראה <span class="ltr">3.0V</span>, של JP20 אפס, ושל JP24 <span class="ltr">3.3V</span>. אם אחד מהם שונה, עוצרים.</p>
+        <h3>ג. תשעה חוטי אותות</h3>
+        <div class="scroll">
+          <table class="steps">
+            <thead><tr><th>פין בלוח TI</th><th>אות</th><th>פד ב-XIAO</th></tr></thead>
+            <tbody>
+              <tr><td><span class="ltr">J3-3</span></td><td>SCLK</td><td>8</td></tr>
+              <tr><td><span class="ltr">J3-11</span></td><td>DIN</td><td>10</td></tr>
+              <tr><td><span class="ltr">J3-13</span></td><td>DOUT</td><td>9</td></tr>
+              <tr><td><span class="ltr">J3-1</span></td><td>CS</td><td>7</td></tr>
+              <tr><td><span class="ltr">J3-15</span></td><td>DRDY</td><td>3</td></tr>
+              <tr><td><span class="ltr">J3-14</span></td><td>START</td><td>2</td></tr>
+              <tr><td><span class="ltr">J3-8</span></td><td>RESET</td><td>1</td></tr>
+              <tr><td>JP5, הפין שבצד האות</td><td>PWDN</td><td>0</td></tr>
+              <tr><td><span class="ltr">J3-4</span></td><td>אדמה</td><td><span class="ltr">GND</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>J3 הוא שקע בתחתית הלוח, והמספור מתהפך כשמסתכלים מלמטה. <strong>בדיקה, בלי אלקטרודות:</strong> מחברים את ה-XIAO למחשב. הקושחה מדפיסה את מספר הזיהוי של השבב, והלוח הזה צריך להחזיר <span class="ltr">0x92</span>.</p>
+        <h3>ד. אות הבדיקה הפנימי, עד האפליקציה</h3>
+        <p>לשבב יש אות ריבועי פנימי של כמילי-וולט. מפעילים אותו מהמחשב, והאפליקציה הקיימת אמורה להציג גל ריבועי בכל הלידים. זה בודק את כל השרשרת (שבב, קושחה, BLE, אפליקציה) בלי אלקטרודה אחת על הגוף.</p>
+        <h3>ה. אלקטרודות, עם חוט אחד</h3>
+        <ol>
+          <li>מסירים את שני הג׳מפרים הקטנים מכל אחד מ-JP26, JP31, JP32, JP33. על JP27 עד JP30 הם נשארים.</li>
+          <li>חוט אחד מפין 3 של JP32 לפין 1 של JP33.</li>
+          <li>אלקטרודות למחבר J1: LA לפין 10, LL1 לפין 1, LL2 לפין 2, RA1 לפין 3, RA2 לפין 4, RLD לפין 14.</li>
+          <li>בודקים במודד: בין כל פין ב-J1 לפין 3 של הג׳מפר שלו צריך למדוד <span class="ltr">32.1 kΩ</span>.</li>
+          <li>עוברים לסוללה, מנתקים USB, ומקליטים 10 שניות באפליקציה. קודם עם מדבקות ג׳ל, אחר כך עם המשטחים היבשים.</li>
+        </ol>
+      </div>
+    </details>
   </section>
 
   <section>
     <h2>יומן</h2>
     <div class="log">
+      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>העיצוב התעשייתי תוכנן מחדש אחרי הביקורת: המודל הראשון היה בדיקת התאמה ולא עיצוב. בגרסה 1 האי קעור (רדיוס 44 מ״מ), הרצועה רציפה ונסגרת סביב מוט, הטעינה במגעים על מעמד, האלקטרודות גדולות ב-80%, ולכל משטח RA קו נפרד במעגל גמיש שיצוק ברצועה. קושחת שלב 2 נשמרה, והוראות החיווט ללוח TI בדף.</p></div></div>
       <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>המודל המוצק הראשון מוכן, עם קובצי STEP ושש תמונות. אפס התנגשויות. לוח ה-ADS1298 של TI נבדק מול המדריך שלו: אפשר לחווט אותו ישירות ל-XIAO עם <span class="ltr">5V</span>, <span class="ltr">3.3V</span> ואדמה בלבד.</p></div></div>
       <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>חישוב הגודל הראשון מוכן: <span class="ltr">48.5 × 30 × 7.3</span> מ״מ עם סוללה של <span class="ltr">100 mAh</span> לצד הלוח. KiCad מותקן. הוראות ניסוי שלב 1 כתובות.</p></div></div>
       <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>ערכת ה-ADS1298 של TI כבר אצלך, אז שלב 2 לא דורש קנייה. במקום לוח האם והתוכנה של TI, מחווטים את לוח השבב ישירות ל-XIAO. טבלת החיווט בבדיקה מול מדריך הלוח.</p></div></div>
@@ -418,16 +512,16 @@
   var camera = new THREE.PerspectiveCamera(26, 4 / 3, 1, 3000);
   var controls = new THREE.OrbitControls(camera, canvas);
   controls.enablePan = false;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x7c8798, 0.95));
-  var key = new THREE.DirectionalLight(0xffffff, 0.7);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x7c8798, 1.0));
+  var key = new THREE.DirectionalLight(0xffffff, 0.75);
   scene.add(key);
 
-  var root = new THREE.Group();          // the model is Z-up, the viewer is Y-up
+  var root = new THREE.Group();          // the model's island axis is Z; the viewer is Y-up
   root.rotation.x = -Math.PI / 2;
   scene.add(root);
 
   var parts = [];
-  var state = { explode: 0, goal: 0, lid: true, strap: false, flip: false };
+  var state = { explode: 0, goal: 0, lid: true, soft: false, flip: false };
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function decode(text, Type) {
@@ -446,16 +540,22 @@
   }
   function apply() {
     parts.forEach(function (p) {
-      p.group.visible = (!p.lid || state.lid) && (!p.strap || state.strap);
+      p.group.visible = !p.lid || state.lid;
       p.group.position.z = p.lift * state.explode;
+      if (p.soft) {
+        p.mesh.material.transparent = state.soft;
+        p.mesh.material.opacity = state.soft ? 0.16 : 1;
+        p.mesh.material.depthWrite = !state.soft;
+        p.mesh.renderOrder = state.soft ? 2 : 0;
+        if (p.edges) p.edges.visible = !state.soft;
+      }
     });
   }
   function frame() {
-    var far = state.strap ? 330 : (state.goal ? 250 : 170);
-    var centre = state.strap ? new THREE.Vector3(0, -18, 0) : new THREE.Vector3(0, 3, 0);
-    var dir = new THREE.Vector3(0.52, state.flip ? -0.62 : 0.62, 0.59).normalize();
+    var centre = new THREE.Vector3(0, state.goal ? -14 : -19, 0);
+    var dir = new THREE.Vector3(-0.5, state.flip ? -0.5 : 0.52, -0.7).normalize();
     controls.target.copy(centre);
-    camera.position.copy(centre).addScaledVector(dir, far);
+    camera.position.copy(centre).addScaledVector(dir, state.goal ? 300 : 232);
     controls.update();
     draw();
   }
@@ -471,26 +571,27 @@
       var g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(decode(p.p, Float32Array), 3));
       g.setIndex(new THREE.BufferAttribute(decode(p.i, Uint32Array), 1));
-      var faces = g.toNonIndexed();
-      faces.computeVertexNormals();
+      g.computeVertexNormals();
       var colour = new THREE.Color(p.color[0], p.color[1], p.color[2]).convertSRGBToLinear();
-      var mesh = new THREE.Mesh(faces, new THREE.MeshPhongMaterial({
-        color: colour, shininess: p.metal ? 70 : 10, specular: p.metal ? 0x777777 : 0x0a0a0a,
-        transparent: !!p.ghost, opacity: p.ghost ? 0.38 : 1, side: THREE.DoubleSide, depthWrite: !p.ghost
+      var mesh = new THREE.Mesh(g, new THREE.MeshPhongMaterial({
+        color: colour, shininess: p.metal ? 90 : 14, specular: p.metal ? 0x8a8a8a : 0x101010, side: THREE.DoubleSide
       }));
       var group = new THREE.Group();
       group.add(mesh);
-      if (!p.ghost) {
-        group.add(new THREE.LineSegments(new THREE.EdgesGeometry(g, 32), new THREE.LineBasicMaterial({ color: 0x101826 })));
+      var edges = null;
+      if (!p.soft) {
+        edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 38), new THREE.LineBasicMaterial({ color: 0x0c1322, transparent: true, opacity: 0.55 }));
+        group.add(edges);
       }
       root.add(group);
-      parts.push({ group: group, lift: p.lift, lid: p.lid, strap: p.strap });
+      parts.push({ group: group, mesh: mesh, edges: edges, lift: p.lift, lid: p.lid, soft: p.soft });
     });
     msg.hidden = true;
     apply(); size(); frame();
   }
   function toggle(id, fn) {
     var b = document.getElementById(id);
+    if (!b) return;
     b.addEventListener('click', function () {
       var on = b.getAttribute('aria-pressed') !== 'true';
       if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', String(on));
@@ -499,14 +600,14 @@
   }
   toggle('v-explode', function (on) { state.goal = on ? 1 : 0; frame(); requestAnimationFrame(step); });
   toggle('v-lid', function (on) { state.lid = !on; apply(); draw(); });
-  toggle('v-strap', function (on) { state.strap = on; apply(); frame(); });
+  toggle('v-soft', function (on) { state.soft = on; apply(); draw(); });
   toggle('v-flip', function (on) { state.flip = on; frame(); });
   toggle('v-reset', function () { frame(); });
   controls.addEventListener('change', draw);
   if (window.ResizeObserver) new ResizeObserver(size).observe(stage); else window.addEventListener('resize', size);
 
-  fetch('model/band_alpha.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+  fetch('model/band_id.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(build).catch(function () { msg.textContent = FALLBACK; });
 })();
 </script>
-<!-- v0.2.0 — Band α risk-reduction plan: stages, size budget, solid model with a 3D viewer, stage 1 guide, log -->
+<!-- v0.3.0 — Band α risk-reduction plan: industrial design v1 with its 3D viewer, size budget, stages, stage 1 and stage 2 guides, log -->

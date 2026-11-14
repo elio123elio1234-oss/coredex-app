@@ -27,7 +27,8 @@ published from `plan/plan.html`
 CYPHIX_HARDWARE/
 ├── plan/          the plan page (plan.html + img/); publish plan.html to update the page
 ├── system/        budget.py → BUDGET.md: size, battery and mass, computed bottom-up from the parts
-├── mechanical/    band_alpha.py (CadQuery solid model) + render.py; out/ holds STEP and pictures
+├── mechanical/    band_id.py = the industrial design model (render_id.py + studio/ make its pictures,
+│                  export_web_id.py feeds the page's 3D viewer); band_alpha.py = the first packaging check
 ├── electronics/   KiCad projects (product schematic and board)
 ├── firmware/      stage2_ads129x_xiao/: the bench firmware (XIAO nRF52840 + TI ADS1298 board)
 ├── experiments/   step-by-step protocols for the tests a person has to run
@@ -62,4 +63,4 @@ from here.
   `%LOCALAPPDATA%\Programs\KiCad\10.0` (`bin\kicad-cli.exe`).
 - PlatformIO at `%USERPROFILE%\.platformio\penv\Scripts\pio.exe`.
 
-<!-- v0.1.0 — what the hardware folder is, its stages, layout and rules -->
+<!-- v0.3.0 — what the hardware folder is, its stages, layout and rules -->
