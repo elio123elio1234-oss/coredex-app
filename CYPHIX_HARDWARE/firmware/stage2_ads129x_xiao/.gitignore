@@ -1,0 +1,4 @@
+# PlatformIO build output and per-machine state
+.pio/
+.vscode/
+# v0.1.0 - ignore PlatformIO build output for the stage-2 bench firmware
