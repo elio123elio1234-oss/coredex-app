@@ -8,6 +8,22 @@ Status: intent for the **first wearable spin** (stage 3 of the plan). Values
 marked *to compute* are computed in `DESIGN_NOTES.md` next to the schematic,
 with the datasheet section they come from.
 
+**Rev 0.1 is drawn** (2026-11-15): `main_board/band_alpha_main.kicad_sch`, with values and sources in
+`main_board/DESIGN_NOTES.md`. It is not reviewed yet. Drawing it changed five things in this brief:
+
+1. **Cell protection is on the main board** (DW01A + two FETs). Design concept v2 dropped the cell's own
+   protection board to make room. §4 below still says "with its own protection board"; that line is out of
+   date.
+2. **The single-fault patient current is IEC 60601-1's 50 µA DC, not 10 µA** (§5.2): 2 × 47.5 kΩ per line
+   gives 32 µA. 10 µA with a fault would need about 300 kΩ per line and triple the resistor noise. The
+   reviewer should confirm or reject this.
+3. **The charge-contact isolation is concrete:** a Schottky bridge, then a TPS3839 supervisor that switches a
+   P-FET in the positive output and an N-FET in the return. With the stand absent, the only DC path from a
+   contact is the supervisor's supply current, about 0.15 µA.
+4. **The PPG option is a MAX30102** (in KiCad's library, I2C, own 1.8 V LDO), not a MAXM86161.
+5. **The LED runs from VBAT through a FET:** a white LED needs more than the 3.0 V rail. The nRF stays in
+   normal-voltage mode (VDD = VDDH = +3V0D).
+
 ## 1. What the board is
 
 A battery-powered, body-worn 4-channel ECG recorder. Six dry electrodes on
@@ -181,5 +197,5 @@ These are requirements on the schematic, not notes.
 - Moving the apps to 4 channels and 500 SPS: needs the owner's approval; the
   board does not depend on it.
 
-<!-- v0.7.0 — design intent for the main board: 1 kSPS decimation and clock footprint, antenna in the frame (and in P1's ceramic body), two-contact charging either way round, light line + touch zone, one-metal 316L electrodes, PPG + thermometer window -->
+<!-- v0.8.0 — design intent for the main board: rev 0.1 is drawn (five changes listed at the top); 1 kSPS decimation and clock footprint, antenna in the frame (and in P1's ceramic body), two-contact charging either way round, light line + touch zone, one-metal 316L electrodes, PPG + thermometer window -->
 

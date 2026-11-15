@@ -1,0 +1,58 @@
+qty,value,footprint,fit,references
+1,LiPo 401225 ~100 mAh (no own PCM),,fit,BT1
+8,100n,Capacitor_SMD:C_0402_1005Metric,fit,C1 C9 C16 C18 C20 C22 C24 C31
+5,1n C0G,Capacitor_SMD:C_0402_1005Metric,fit,C10 C11 C12 C13 C14
+4,4u7,Capacitor_SMD:C_0603_1608Metric,fit,C2 C3 C4 C30
+1,10u,Capacitor_SMD:C_0603_1608Metric,fit,C23
+1,1n,Capacitor_SMD:C_0402_1005Metric,fit,C28
+1,1.5n,Capacitor_SMD:C_0402_1005Metric,fit,C29
+2,12p C0G,Capacitor_SMD:C_0402_1005Metric,fit,C32 C33
+11,1u,Capacitor_SMD:C_0402_1005Metric,fit,C5 C6 C7 C8 C15 C17 C19 C21 C25 C26 C27
+1,22u tantalum,Capacitor_Tantalum_SMD:CP_EIA-2012-12_Kemet-R,fit,C90
+5,MBR0520,Diode_SMD:D_SOD-123,fit,D1 D2 D3 D4 D7
+1,PESD5V0S1UL,Diode_SMD:D_SOD-882,fit,D5
+1,white 0402,LED_SMD:LED_0402_1005Metric,fit,D6
+1,"FPC 4p 0.5 mm, Amphenol F32Q (strap flex)",Connector_FFC-FPC:Amphenol_F32Q-1A7x1-11004_1x04-1MP_P0.5mm_Horizontal,fit,J1
+1,TC2030-NL,Connector:Tag-Connect_TC2030-IDC-NL_2x03_P1.27mm_Vertical,fit,J2
+1,coin motor 8 mm,,fit,M1
+6,DMG1012T,Package_TO_SOT_SMD:SOT-523,fit,Q1 Q2 Q4 Q5 Q6 Q7
+1,AO3401A,Package_TO_SOT_SMD:SOT-23,fit,Q3
+1,100,Resistor_SMD:R_0402_1005Metric,fit,R1
+2,10M,Resistor_SMD:R_0402_1005Metric,fit,R12 R13
+10,47.5k 0.1%,Resistor_SMD:R_0402_1005Metric,fit,R14 R15 R18 R19 R22 R23 R26 R27 R30 R31
+7,0,Resistor_SMD:R_0402_1005Metric,fit,R16 R20 R24 R28 R32 R36 R38
+3,1k,Resistor_SMD:R_0402_1005Metric,fit,R2 R42 R44
+4,1M,Resistor_SMD:R_0402_1005Metric,fit,R3 R4 R5 R37
+1,330,Resistor_SMD:R_0402_1005Metric,fit,R41
+1,20k,Resistor_SMD:R_0402_1005Metric,fit,R6
+6,100k,Resistor_SMD:R_0402_1005Metric,fit,R7 R9 R11 R34 R35 R43
+2,200k,Resistor_SMD:R_0402_1005Metric,fit,R8 R10
+1,spring contact LA pad 1,TestPoint:TestPoint_Pad_1.5x1.5mm,fit,SC1
+1,spring contact LA pad 2,TestPoint:TestPoint_Pad_1.5x1.5mm,fit,SC2
+1,spring contact LL1,TestPoint:TestPoint_Pad_1.5x1.5mm,fit,SC3
+1,spring contact LL2,TestPoint:TestPoint_Pad_1.5x1.5mm,fit,SC4
+1,spring contact RLD,TestPoint:TestPoint_Pad_1.5x1.5mm,fit,SC5
+1,charge contact A,TestPoint:TestPoint_Pad_D2.0mm,fit,TP1
+1,charge contact B,TestPoint:TestPoint_Pad_D2.0mm,fit,TP2
+1,ADS_CLK,TestPoint:TestPoint_Pad_D1.0mm,fit,TP3
+1,touch zone,TestPoint:TestPoint_Pad_2.0x2.0mm,fit,TP4
+1,DW01A,Package_TO_SOT_SMD:SOT-23-6,fit,U1
+2,TPD4E02B04DQA,Package_SON:USON-10_2.5x1.0mm_P0.5mm,fit,U10 U11
+1,TPS3839K33DBZR,Package_TO_SOT_SMD:SOT-23,fit,U2
+1,MCP73831-2-OT,Package_TO_SOT_SMD:SOT-23-5,fit,U3
+1,XC6206P302MR,Package_TO_SOT_SMD:SOT-23-3,fit,U4
+1,LP5907MFX-3.0,Package_TO_SOT_SMD:SOT-23-5,fit,U5
+1,ADS1294IPAG,Package_QFP:TQFP-64_10x10mm_P0.5mm,fit,U6
+1,MDBT50Q-1MV2,RF_Module:Raytac_MDBT50Q,fit,U7
+1,"32.768 kHz, CL 9 pF",Crystal:Crystal_SMD_2012-2Pin_2.0x1.2mm,fit,Y1
+1,100n,Capacitor_SMD:C_0402_1005Metric,DNP,C34
+1,10u,Capacitor_SMD:C_0603_1608Metric,DNP,C35
+1,1u,Capacitor_SMD:C_0402_1005Metric,DNP,C36
+7,0,Resistor_SMD:R_0402_1005Metric,DNP,R17 R21 R25 R29 R33 R39 R40
+2,4.7k,Resistor_SMD:R_0402_1005Metric,DNP,R45 R46
+2,10k,Resistor_SMD:R_0402_1005Metric,DNP,R47 R48
+1,XC6206P182MR,Package_TO_SOT_SMD:SOT-23-3,DNP,U12
+5,AD8603,Package_TO_SOT_SMD:TSOT-23-5,DNP,U20 U21 U22 U23 U24
+1,TMP117AIDRVR,Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm,DNP,U8
+1,MAX30102,OptoDevice:Maxim_OLGA-14_3.3x5.6mm_P0.8mm,DNP,U9
+1,ASDMB-2.048MHz,Oscillator:Oscillator_SMD_Abracon_ASDMB-4Pin_2.5x2.0mm,DNP,Y2

@@ -1,0 +1,28 @@
+ERC report (2026-11-15T19:56:11, Encoding UTF8)
+Report includes: Errors, Warnings
+
+***** Sheet /
+[pin_to_pin]: Pins of type Bidirectional and Power output are connected
+    ; warning
+    @(447.04 mm, 299.72 mm): Symbol U6 Pin 42 [GPIO1, Bidirectional, Line]
+    @(195.58 mm, 50.80 mm): Symbol #FLG01 Pin 1 [Power output, Line]
+[pin_to_pin]: Pins of type Bidirectional and Power output are connected
+    ; warning
+    @(447.04 mm, 302.26 mm): Symbol U6 Pin 44 [GPIO2, Bidirectional, Line]
+    @(195.58 mm, 50.80 mm): Symbol #FLG01 Pin 1 [Power output, Line]
+[pin_to_pin]: Pins of type Bidirectional and Power output are connected
+    ; warning
+    @(447.04 mm, 304.80 mm): Symbol U6 Pin 45 [GPIO3, Bidirectional, Line]
+    @(195.58 mm, 50.80 mm): Symbol #FLG01 Pin 1 [Power output, Line]
+[pin_to_pin]: Pins of type Bidirectional and Power output are connected
+    ; warning
+    @(447.04 mm, 307.34 mm): Symbol U6 Pin 46 [GPIO4, Bidirectional, Line]
+    @(195.58 mm, 50.80 mm): Symbol #FLG01 Pin 1 [Power output, Line]
+
+ ** ERC messages: 4  Errors 0  Warnings 4
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Assigned footprint doesn't match footprint filters
