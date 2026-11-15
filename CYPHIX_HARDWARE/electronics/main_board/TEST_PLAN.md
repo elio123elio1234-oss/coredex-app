@@ -5,7 +5,7 @@ Three kinds of checking, in this order. Each catches what the one before cannot.
 | Level | Where | What it proves | Status |
 |---|---|---|---|
 | 1. Design checks | On the computer: KiCad ERC, DRC, board/schematic parity | Every pin is on the net the design says. Copper meets the board house's rules. The board matches the schematic. | Done for rev 0.1 (see DESIGN_NOTES.md §8–9) |
-| 2. Bench test of the chip | Stage 2: the owner's TI ADS1298 board wired to the XIAO nRF52840 (`firmware/stage2_ads129x_xiao/`, `experiments/E2/`) | The AFE settings, SPI, the 1 kSPS → 500 SPS chain, noise, and electrodes on a person, before any board of ours exists | Firmware builds; waiting for the owner's bench |
+| 2. Bench test of the chip | Stage 2: the owner's TI ADS1298 board wired to the XIAO nRF52840 (`firmware/stage2_ads129x_xiao/`, `experiments/E2/`) | The AFE settings, SPI, noise, and electrodes on a person (the bench firmware samples at 500 SPS directly; the 1 kSPS → 500 SPS decimation exists only in the product firmware, which is not written yet, so it is proven on our board, not on the bench), before any board of ours exists | Firmware builds; waiting for the owner's bench |
 | 3. Bring-up of our board | When boards arrive (stage 3), with the steps below | That **this** board works: rails, radio, AFE, charging isolation, then a real recording | Needs boards (after review + order) |
 
 Levels 1 and 2 are why level 3 should be short. A board that fails level 3 sends us back to level 1 with
@@ -42,4 +42,4 @@ recorded is worth more than a pass that nobody wrote down.
 - **AFE_PWR_EN:** the analog rail can be switched and measured on its own.
 - **VBUS_DET and CHG_STAT:** the firmware can see the charger.
 
-<!-- v0.1.0 — bring-up and verification plan for main board rev 0.1: design checks, stage-2 bench, 12-step board bring-up with pass criteria; test pads TP5-TP9 -->
+<!-- v0.1.1 — the bench does not prove the 1 kSPS → 500 decimation (it samples at 500 directly); earlier:  v0.1.0 — bring-up and verification plan for main board rev 0.1: design checks, stage-2 bench, 12-step board bring-up with pass criteria; test pads TP5-TP9 -->

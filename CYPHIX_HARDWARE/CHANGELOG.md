@@ -1,5 +1,48 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.16.0 — 2026-11-16
+
+**Why.** After the flex, the test points and the board fit each turned up missing only when the owner
+asked, the owner concluded the plan itself was built badly. They were right. The plan was a list of risks,
+and anything that did not look risky never became anyone's task. An independent audit (an agent that did not
+write the design and did not read the plan's structure first) then went through every file and found much
+more: the routed board does not fit the housing, positions differ between the model and the board, there is
+no dock electronics and no firmware for our board, the design contradicts the specification in several
+places, and no safety, EMC, biocompatibility or study work is planned. The main claims were re-checked
+against the files before anything was written down.
+
+**What changed.**
+
+- **`system/product_tree.py` (new): the plan is now built from the product.**
+  - 37 deliverables: inside the device, the strap, charging, software, test and assembly, and safety,
+    standards and the study.
+  - 18 interfaces between two parts. An interface counts as defined only when the files of both sides agree.
+  - All 13 requirement IDs on the specification page, each with what answers it and how it is proven.
+  - `check()` fails on a row with no owner or stage, a file that does not exist, an interface whose sides
+    are not parts, or a specification ID with no row. A new state, `conflict`, marks two files that give
+    different values.
+  - Today: nothing is `done` (nothing has been measured). Before stage 3, 50 items are open.
+- **`system/tree_html.py` (new)** writes the three tables into the plan page between TREE markers, so they
+  are generated, never hand-edited.
+- **Plan page v0.16.0.**
+  - New sections: why the plan missed things, what is missing (in order), contradictions to decide (with
+    who decides), and the generated tables.
+  - Stage 0 passes only when nothing needed for stage 3 is `missing` or `conflict`, an independent reviewer
+    finds no hole, and an engineer signs off on the board.
+  - Stage 3 cost withdrawn: the old $800–1,500 left out custom steel, sapphire, ceramic, the strap mould
+    and the dock. It will be recomputed from the parts list.
+  - Two new risks: interfaces nobody owns, and mass over 40 g.
+  - The old "work parts" section is gone, because the tree replaces it.
+- **Corrections to earlier claims.**
+  - **Open nets.** v0.15.0 said the 6 open pieces were "nearly all VBAT". They are four VBAT pieces, one GND,
+    and +3V0D at U8 pad 5.
+  - **Part count and DRC.** `DESIGN_NOTES.md` said 131 parts and "DRC violations 0". It is now 136
+    footprints (128 to buy plus 8 bare pads) and 3 one-sided vias.
+  - **`TEST_PLAN.md`** claimed the bench proves the 1 kSPS → 500 decimation. It cannot: the bench firmware
+    samples at 500 directly.
+  - **"Zero collisions in the model"** (v0.10.0 onward) was true only because the real board was never put
+    inside the model.
+
 ## v0.15.0 — 2026-11-16
 
 **Why.** The owner asked why the flexible circuit to the RA electrodes was missing, how we will know the board

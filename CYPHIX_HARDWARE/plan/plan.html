@@ -17,6 +17,7 @@
     --accent: #2c5aa0;
     --done: #1f7a4d;
     --wait: #8a6a12;
+    --miss: #b3261e;
     --stage: #eef1f5;
     --stage-ink: #263042;
     --font: "Heebo", "Segoe UI", "Arial Hebrew", Arial, sans-serif;
@@ -24,12 +25,12 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --desk: #0a0f18; --paper: #111925; --ink: #e8eef7; --text: #ccd4e0; --muted: #8c97a9; --line: #253149;
-      --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; --stage: #cfd6e0; --stage-ink: #263042; color-scheme: dark;
+      --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; --miss: #ff8a80; --stage: #cfd6e0; --stage-ink: #263042; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --desk: #0a0f18; --paper: #111925; --ink: #e8eef7; --text: #ccd4e0; --muted: #8c97a9; --line: #253149;
-    --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; --stage: #cfd6e0; --stage-ink: #263042; color-scheme: dark;
+    --soft: #172133; --accent: #8fb0e6; --done: #6fcf9c; --wait: #e0bd5c; --miss: #ff8a80; --stage: #cfd6e0; --stage-ink: #263042; color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body { background: var(--desk); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.65; }
@@ -117,6 +118,19 @@
   .rhead { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) 64px; gap: 20px; font-size: 13px; font-weight: 700; color: var(--muted); padding-bottom: 6px; }
   .rhead span:last-child { text-align: end; }
 
+  .tree { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .tree .row { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr) 52px; gap: 6px 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .tree .what { font-weight: 700; color: var(--ink); }
+  .tree .why { display: block; font-weight: 400; color: var(--muted); font-size: 15px; }
+  .tree .when { font-weight: 700; color: var(--ink); white-space: nowrap; text-align: end; }
+  .st { font-weight: 700; }
+  .st.done { color: var(--done); }
+  .st.draft, .st.partial { color: var(--accent); }
+  .st.missing, .st.conflict { color: var(--miss); }
+  .tree .row.head { font-size: 13px; font-weight: 700; color: var(--muted); padding: 0 0 6px; border-bottom: 1px solid var(--line); }
+  .tree .row.head div:last-child { text-align: end; }
+  .gaps { display: grid; gap: 10px; margin: 0; padding-inline-start: 24px; }
+  .gaps li::marker { font-weight: 700; color: var(--ink); }
   .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px 32px; }
   .part { display: grid; gap: 4px; align-content: start; min-width: 0; border-top: 2px solid var(--ink); padding-top: 10px; }
   .part .state { margin-top: 2px; }
@@ -142,6 +156,10 @@
     .risk .when { text-align: start; }
     .risk .when::before { content: "שלב "; color: var(--muted); font-weight: 500; }
     .entry { grid-template-columns: 1fr; gap: 2px; }
+    .tree .row { grid-template-columns: 1fr; gap: 3px; }
+    .tree .row.head { display: none; }
+    .tree .when { text-align: start; }
+    .tree .when::before { content: "נחוץ לפני שלב "; color: var(--muted); font-weight: 500; }
   }
 </style>
 
@@ -150,19 +168,84 @@
 <article class="paper">
 
   <header>
-    <div class="eyebrow">CYPHIX Band α · חומרה · עודכן 15.11.2026</div>
-    <h1>תכנית הורדת סיכונים</h1>
-    <p class="lead">בודקים כל סיכון בדרך הזולה ביותר, ורק כשהוא עובר משלמים על השלב הבא. חמישה שלבים, מהמחשב ועד יחידה שאפשר לענוד.</p>
+    <div class="eyebrow">CYPHIX Band α · חומרה · עודכן 16.11.2026</div>
+    <h1>התכנית: מהמחשב למפעל</h1>
+    <p class="lead">התכנית בנויה מהמוצר עצמו: כל חלק, כל חיבור בין שני חלקים וכל דרישה, ולכל אחד קובץ, בדיקה ושלב. חמשת השלבים והסיכונים נשארו, והם עוברים על הרשימה הזאת.</p>
   </header>
 
   <section class="now" aria-label="מה קורה עכשיו">
     <div class="label">עכשיו</div>
-    <div class="big">שלב 0: סוגרים את התכנון על המחשב</div>
+    <div class="big">שלב 0 לא נגמר: הרשימה המלאה מראה מה עוד חסר</div>
     <ul>
-      <li>חדש: גרסה 3.2, העיצוב של 3.1 עם משטח פלדה אחד בכל צד במקום אלקטרודות נפרדות.</li>
-      <li>קושחת שלב 2 מוכנה ונבנית בלי שגיאות. היא עוד לא רצה על חומרה.</li>
-      <li>חדש: המעגל הגמיש לאלקטרודות ה-RA, נקודות בדיקה על הלוח ותכנית בדיקה, והלוח והפלקס בתלת-ממד בתצוגה למעלה.</li>
+      <li>התכנית נבנתה מחדש מהמוצר, אחרי ששאלת למה המעגל הגמיש חסר. הרשימה המלאה למטה, ועוד אף פריט בה לא נבדק במדידה.</li>
+      <li>בדיקה עצמאית, שלא אני כתבתי, עברה על כל הקבצים. היא מצאה שהלוח לא נכנס במארז, שאין מעמד ואין קושחה ללוח שלנו, וסתירות מול דף הדרישות.</li>
+      <li>הבא בתור: קובץ מיקומים אחד שגם המודל וגם הלוח קוראים ממנו, ואז האי מחדש סביב הלוח האמיתי.</li>
     </ul>
+  </section>
+
+  <section>
+    <h2>למה התכנית פספסה</h2>
+    <p>התכנית הקודמת נבנתה מרשימת סיכונים, ומה שלא נראה מסוכן לא הפך למשימה של אף אחד. כך נפלו המעגל הגמיש, נקודות הבדיקה ותכנית הבדיקה, וההתאמה של הלוח למארז. כל אחד מהם נמצא רק כששאלת.</p>
+    <h3>מה השתנה</h3>
+    <ul class="todo">
+      <li><strong>התכנית בנויה מהמוצר.</strong> כל מה שספק, מפעל או בית החולים צריכים לקבל, כולל המעמד, הקושחה, ההרכבה והתקינה. הכול בקובץ אחד בתיקייה, והטבלאות בדף נוצרות ממנו.</li>
+      <li><strong>כל חיבור בין שני חלקים הוא שורה.</strong> חיבור מוגדר רק כששני הקבצים מסכימים על אותה מידה. כאן נפלו הפלקס והלוח הארוך.</li>
+      <li><strong>לכל דרישה בדף הדרישות יש בדיקה.</strong> דרישה בלי בדיקה מסומנת באדום.</li>
+      <li><strong>בדיקה אוטומטית.</strong> היא נכשלת אם יש שורה בלי קובץ, בלי אחראי או בלי שלב, או דרישה מדף הדרישות בלי שורה.</li>
+      <li><strong>לפני כל שלב, בודק עצמאי.</strong> מישהו שלא כתב את התכנון עובר על כל הקבצים, כמו היום. שלב לא מתחיל כשחסר משהו שהוא צריך.</li>
+    </ul>
+    <h3>מה אמרתי ולא היה מדויק</h3>
+    <ul class="todo">
+      <li>אמרתי ששישת החיבורים החסרים בלוח הם כולם בסוללה. ארבעה כן, אחד באדמה ואחד ב-<span class="ltr">3V</span> של המדחום.</li>
+      <li>״אפס התנגשויות במודל״ היה נכון רק כי הלוח האמיתי לא היה בתוך המודל.</li>
+      <li>שלב 0 דרש ש״כל רכיב ניתן לקנייה״. זה לא נבדק.</li>
+      <li>בהערות התכנון היה כתוב 131 רכיבים ו-0 שגיאות. נכון: 136 על הלוח, מהם 128 לקנייה, ו-3 מעברים שמחוברים רק בצד אחד. תוקן.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>מה חסר, לפי הסדר</h2>
+    <p>קודם מה שעוצר את ההזמנה של חמש היחידות הראשונות, אחר כך מה שעוצר את הניסוי בבית החולים.</p>
+    <h3>לפני ההזמנה של שלב 3</h3>
+    <ol class="gaps">
+      <li><strong>מארז ללוח האמיתי.</strong> הלוח <span class="ltr">32</span> מ״מ והאי מצויר ל-<span class="ltr">25</span>. הקפיצים, המנוע, הסוללה והנורית נמצאים במקומות שונים במודל ובלוח. קודם קובץ מיקומים אחד, ואז אי חדש.</li>
+      <li><strong>לסגור את הלוח.</strong> 6 חיבורים, מעבר ידני על הכניסות, שכבות וסימוני יישור, קובצי ייצור, ומהנדס שמבקר.</li>
+      <li><strong>רשימת רכיבים שאפשר להזמין.</strong> מק״ט ומלאי לכל רכיב, וסוללה עם תעודות.</li>
+      <li><strong>חלקים מכניים שאפשר לייצר.</strong> שרטוטים, אטימה, אחיזה ללוח, וגרסה מודפסת לאב-טיפוס.</li>
+      <li><strong>הרצועה.</strong> תבנית, חומר, מידות, הלחיצה של פיני ה-RA על הפלקס, וצד המגעים במחבר.</li>
+      <li><strong>המעמד והספק.</strong> חשמל, הגבלת זרם, ומה מחזיק את הצמיד במקום.</li>
+      <li><strong>קושחת המוצר.</strong> כולל החסימה של הקלטה בזמן טעינה.</li>
+      <li><strong>ניתוח סיכונים.</strong> לפני שיחידה שלנו עולה על אדם, גם עליך.</li>
+      <li><strong>שלבים 1 ו-2 על חומרה.</strong> הם מחכים לך. ההוראות של שלב 1 מתעדכנות לגדלים של גרסה 3.2.</li>
+    </ol>
+    <h3>לפני הניסוי בבית החולים</h3>
+    <ol class="gaps" start="10">
+      <li><strong>בדיקות במעבדה.</strong> בטיחות חשמלית, תאימות אלקטרומגנטית, ביצועי האק״ג, וחומרים במגע עם העור.</li>
+      <li><strong>האפליקציה ב-4 ערוצים ו-500 דגימות, עם חיבור מוצפן.</strong> רק באישורך.</li>
+      <li><strong>תיק הניסוי.</strong> תכנית ניסוי, תוויות, הוראות שימוש וועדת הלסינקי.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>סתירות שצריך להחליט</h2>
+    <p>כאן שני קבצים, או התכנון ודף הדרישות, אומרים דברים שונים. ליד כל אחת כתוב מי מחליט.</p>
+    <div class="scroll">
+      <table class="steps">
+        <thead><tr><th>מה</th><th>מה כתוב, ואיפה</th><th>מי מחליט</th></tr></thead>
+        <tbody>
+          <tr><td>סוללה ומטען</td><td>דף הדרישות: <span class="ltr">150–300 mAh</span> ו-<span class="ltr">BQ25120A</span>. התכנון: <span class="ltr">100 mAh</span> ו-<span class="ltr">MCP73831</span>.</td><td>אתה</td></tr>
+          <tr><td>כפתור</td><td>דף הדרישות: כפתור. התכנון: משטח מגע.</td><td>אתה</td></tr>
+          <tr><td>אטימה</td><td>דף הדרישות: <span class="ltr">IP54</span>. כוונת התכנון: <span class="ltr">IP68</span>.</td><td>אתה</td></tr>
+          <tr><td>רצועה</td><td>דף הדרישות: סיליקון, <span class="ltr">22</span> מ״מ. המודל: FKM, <span class="ltr">24</span> מ״מ.</td><td>אתה, עם המעצבת</td></tr>
+          <tr><td>זרם מטופל בתקלה</td><td>דף הדרישות: מתחת ל-<span class="ltr">10 µA</span>. התכנון: <span class="ltr">32 µA</span>, מתחת למגבלת התקן, <span class="ltr">50 µA</span>.</td><td>המהנדס ואתה</td></tr>
+          <tr><td>משקל</td><td>דף הדרישות: עד <span class="ltr">40</span> גרם. החישוב נעשה לסיליקון ולמשטחים הקטנים.</td><td>אני מחשב שוב</td></tr>
+          <tr><td>גודל הלוח והמיקומים</td><td>הלוח <span class="ltr">32</span> מ״מ, האי מצויר ל-<span class="ltr">25</span>, וארבעה חלקים במקומות שונים.</td><td>אני</td></tr>
+          <tr><td>חיישן אופטי</td><td>בסכמה <span class="ltr">MAX30102</span>, במודל <span class="ltr">MAXM86161</span>.</td><td>אני</td></tr>
+          <tr><td>אנטנה</td><td>חישוב הגודל: אנטנה בכתף המארז. הלוח: האנטנה של המודול.</td><td>מהנדס RF</td></tr>
+          <tr><td>קצב דגימה</td><td>נספח א: השבב דוגם <span class="ltr">500</span>. התכנון: <span class="ltr">1,000</span> והפחתה, כי ב-<span class="ltr">500</span> רוחב הפס של השבב <span class="ltr">131 Hz</span> בלבד.</td><td>אני, ונסגר בשלב 2</td></tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <section>
@@ -349,6 +432,124 @@
     <p>יצא שטח קרוב למפרט ועובי קרוב להדמיה. הקלטה של 10 שניות צורכת מעט מאוד, ולכן מספיקה סוללה של <span class="ltr">100 mAh</span> במקום <span class="ltr">150–300</span> שבמפרט, וזה מה שמאפשר מודול דק. העובי עלה ב-<span class="ltr">0.2</span> מ״מ כשנכנס חיישן ה-PPG מתחת ללוח. החישוב הזה הוא לקופסה שטוחה. באי המעוקל החלקים הגבוהים יושבים באמצע, שם יש הכי הרבה גובה, ולכן האי נשאר <span class="ltr">7.2</span>. המספרים יתעדכנו כשכל מידה תאומת מול דף היצרן.</p>
   </section>
 
+<!-- TREE:BEGIN -->
+  <section id="tree">
+    <h2>כל מה שצריך להיות מוכן</h2>
+    <p>כל מה שהמפעל צריך לקבל, חלק אחרי חלק. הרשימה נוצרת מקובץ אחד בתיקייה, <span class="ltr">system/product_tree.py</span>, ובדיקה אוטומטית נכשלת אם לחלק אין קובץ, אין בדיקה או אין אחראי.</p>
+    <div class="nums">
+      <div><div class="n1"><span class="ltr">37</span> חלקים</div><div class="n2"><span class="ltr">23</span> חסרים, <span class="ltr">2</span> סותרים, <span class="ltr">0</span> נבדקו</div></div>
+      <div><div class="n1"><span class="ltr">18</span> חיבורים</div><div class="n2"><span class="ltr">7</span> סותרים, <span class="ltr">3</span> לא מוגדרים</div></div>
+      <div><div class="n1"><span class="ltr">13</span> דרישות</div><div class="n2"><span class="ltr">6</span> בלי בדיקה, <span class="ltr">3</span> סותרות את התכנון</div></div>
+    </div>
+    <h3>בתוך המכשיר</h3>
+    <div class="tree">
+      <div class="row head"><div>מה המפעל מקבל</div><div>מצב, ומה חסר</div><div>שלב</div></div>
+      <div class="row"><div class="what">הלוח האלקטרוני<span class="why">קובצי ייצור: <span class="ltr">Gerber</span>, קידוח, מיקום רכיבים, שרטוט שכבות ושרטוט הרכבה</span></div><div><span class="st partial">חלקי</span><span class="why">מצויר ומחובר כמעט כולו. חסרים 6 חיבורים: 4 בסוללה, אחד באדמה ואחד ב-<span class="ltr">3V</span>. חסרים גם מעבר ידני על הכניסות האנלוגיות וסימוני יישור, ושום קובץ ייצור עוד לא הופק.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">רשימת רכיבים להזמנה<span class="why">מק״ט יצרן וחלופה לכל רכיב, ובדיקת מלאי</span></div><div><span class="st partial">חלקי</span><span class="why">יש ערכים ותבניות ל-128 רכיבים. אין מק״ט לסוללה, למנוע, לקפיצים ולרכיבים הקטנים, ואף רכיב לא נבדק במלאי.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הסוללה<span class="why">דגם מסוים, דף נתונים ותעודות <span class="ltr">IEC 62133-2</span> ו-<span class="ltr">UN 38.3</span></span></div><div><span class="st missing">חסר</span><span class="why">יש רק גודל: <span class="ltr">401225</span>, כ-<span class="ltr">100 mAh</span>. בדף הדרישות כתוב <span class="ltr">150–300 mAh</span>.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">מגעי הקפיץ<span class="why">דגם קפיץ, גובה וכוח לחיצה, ומשטח נחיתה על הפלדה. 5 לאלקטרודות ו-2 לטעינה</span></div><div><span class="st missing">חסר</span><span class="why">בלוח יש במקומם משטחים ריקים בלבד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">מנוע הרטט<span class="why">דגם, ואיך הוא מוחזק במארז</span></div><div><span class="st missing">חסר</span><span class="why">כתוב רק ״מנוע מטבע <span class="ltr">8</span> מ״מ״, בלי דגם ובלי תושבת.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">המארז: שני החצאים והזיזים<span class="why">שרטוטים עם טולרנסים, חומר, חיבור בין החצאים, אחיזה ללוח, וגרסה להדפסה</span></div><div><span class="st partial">חלקי</span><span class="why">קיים כמודל עיצוב בלבד, ומצויר ללוח של <span class="ltr">25</span> מ״מ. הלוח האמיתי <span class="ltr">32</span> מ״מ ולא נכנס. אין שרטוטים, אין חיבור בין החצאים ואין אחיזה ללוח.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">משטחי הפלדה של היד והרגל<span class="why">שרטוטים, פלדת <span class="ltr">316L</span> בדרגה שעוברת <span class="ltr">EN 1811</span> (שחרור ניקל), גימור ושיטת ייצור</span></div><div><span class="st partial">חלקי</span><span class="why">קיימים במודל בלבד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">חלון הספיר, המרכז הקרמי ומגעי הטעינה<span class="why">שרטוטים ומפרט חומר; לחלון גם מפרט אופטי</span></div><div><span class="st partial">חלקי</span><span class="why">קיימים במודל בלבד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">אטימה והדבקה<span class="why">אטם, דבק ותהליך לכל מפגש: החצאים, המשטחים, החלון וכניסת הפלקס</span></div><div><span class="st missing">חסר</span><span class="why">אין אטם או דבק במודל, ויש חור במארז מאחורי כל משטח פלדה. הדרישה היא <span class="ltr">IP54</span>.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">מוביל האור של הנורית<span class="why">חלק שקוף במארז, מעל הנורית שבלוח</span></div><div><span class="st missing">חסר</span><span class="why">מוזכר בקוד המודל, לא מצויר.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">האנטנה<span class="why">בדיקת קליטה על היד, בתוך המארז</span></div><div><span class="st partial">חלקי</span><span class="why">משתמשים באנטנה של המודול, ויש אזור אסור בלוח. אין ניתוח ואין בדיקה.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">חיישן הדופק האופטי והמדחום (אופציה)<span class="why">דגם אחד שמוסכם בלוח ובמודל, ומחסום אור בין הנורית לגלאי</span></div><div><span class="st conflict">סותר</span><span class="why">בסכמה <span class="ltr">MAX30102</span>, במודל ובחישוב הגודל <span class="ltr">MAXM86161</span>. לא מותקנים ביחידות הראשונות.</span></div><div class="when">4</div></div>
+    </div>
+    <h3>הרצועה</h3>
+    <div class="tree">
+      <div class="row head"><div>מה המפעל מקבל</div><div>מצב, ומה חסר</div><div>שלב</div></div>
+      <div class="row"><div class="what">המעגל הגמיש<span class="why"><span class="ltr">Gerber</span>, שרטוט עם השכבות, המחזק והכיסוי, לכל אורך רצועה</span></div><div><span class="st partial">חלקי</span><span class="why">מצויר ועובר את בדיקת KiCad, באורך אחד. חסרים שרטוט ייצור, אימות צד המגעים מול שרטוט המחבר, ושלושת האורכים.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">רצועת ה-FKM<span class="why">תבנית יציקה, סוג החומר, איך מכניסים את הפלקס, ושלוש מידות</span></div><div><span class="st partial">חלקי</span><span class="why">מודל לפרק יד אחד בלבד. אין תבנית ואין חומר מוגדר. לחמש יחידות: יציקה בתבנית מודפסת.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">משטחי ה-RA והפינים שלהם<span class="why">שרטוט, ואיך הפין נשאר לחוץ על הפלקס לאורך זמן</span></div><div><span class="st partial">חלקי</span><span class="why">המיקומים מסכימים עם הפלקס. החיבור עצמו הוא לחיצה בתוך הגומי, בלי חלק ובלי תהליך.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הסקוטש, הלולאה והמוט<span class="why">ספק סקוטש, הדבקה לגומי, ואיך המוט ננעל בזיזים</span></div><div><span class="st partial">חלקי</span><span class="why">במודל בלבד.</span></div><div class="when">3</div></div>
+    </div>
+    <h3>הטעינה</h3>
+    <div class="tree">
+      <div class="row head"><div>מה המפעל מקבל</div><div>מצב, ומה חסר</div><div>שלב</div></div>
+      <div class="row"><div class="what">המעמד<span class="why">סכמה, לוח, פינים קפיציים, הגבלת זרם ומארז</span></div><div><span class="st partial">חלקי</span><span class="why">יש רק צורה במודל. אין בו אלקטרוניקה ואין מגנטים, וממילא פלדת <span class="ltr">316L</span> לא נמשכת למגנט, אז צריך דרך אחרת להחזיק את הצמיד במקום.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">ספק הכוח והכבל<span class="why">ספק <span class="ltr">USB</span> עם אישור בטיחות, וכבל</span></div><div><span class="st missing">חסר</span><span class="why">לא נבחרו.</span></div><div class="when">3</div></div>
+    </div>
+    <h3>תוכנה</h3>
+    <div class="tree">
+      <div class="row head"><div>מה המפעל מקבל</div><div>מצב, ומה חסר</div><div>שלב</div></div>
+      <div class="row"><div class="what">קושחת המוצר<span class="why">קושחה על <span class="ltr">nRF Connect SDK</span>: דגימה מה-ADS1294, הפחתה ל-<span class="ltr">500</span>, Bluetooth מוצפן, חסימת הקלטה בזמן טעינה, סוללה, נורית ורטט</span></div><div><span class="st missing">חסר</span><span class="why">יש רק קושחת שולחן ל-XIAO, ב-Arduino. חלק מהדרייבר של השבב ישמש שוב.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">עדכון קושחה חתום<span class="why"><span class="ltr">MCUboot</span>, עדכון חתום דרך Bluetooth, ושמירת המפתחות</span></div><div><span class="st missing">חסר</span><span class="why">בלעדיו אי אפשר לעדכן יחידה סגורה: נקודות הצריבה בתוך המארז.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">קושחת בדיקה למפעל<span class="why">תוכנה שבודקת כל לוח בסוף הייצור ורושמת מספר סידורי</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל.</span></div><div class="when">מפעל</div></div>
+      <div class="row"><div class="what">האפליקציה: 4 ערוצים ו-500 דגימות<span class="why">פרוטוקול חדש ב-<span class="ltr">CYPHIX_SHARED</span>, ב-Web, ב-iOS וב-Android</span></div><div><span class="st missing">חסר</span><span class="why">היום רק <span class="ltr">320 Hz</span>, כך שרוחב הפס של <span class="ltr">SYS-02</span> לא מגיע לרופא.</span></div><div class="when">4</div></div>
+    </div>
+    <h3>בדיקה והרכבה</h3>
+    <div class="tree">
+      <div class="row head"><div>מה המפעל מקבל</div><div>מצב, ומה חסר</div><div>שלב</div></div>
+      <div class="row"><div class="what">ניסוי שלב 1: אלקטרודות יבשות<span class="why">הוראות ניסוי בגדלים של גרסה 3.2</span></div><div><span class="st conflict">סותר</span><span class="why">ההוראות בודקות משטחים של <span class="ltr">7 × 21</span> מ״מ במרווח <span class="ltr">2</span> מ״מ. בגרסה 3.2 המשטחים גדולים פי <span class="ltr">2.7</span> והמרווח <span class="ltr">0.6</span> מ״מ. לעדכן לפני ההרצה.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">תכנית הבדיקה של הלוח<span class="why">12 צעדים, מהחשמל הראשון ועד אדם</span></div><div><span class="st draft">טיוטה</span><span class="why">כתובה, לא נוסתה. חסרות בדיקות לרוחב הפס, לעכבת הכניסה ולהתאמה בין הערוצים.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">צריבה ובדיקת סוף קו<span class="why">כבל <span class="ltr">TC2030</span> לצריבה, ומתקן פינים לבדיקה</span></div><div><span class="st missing">חסר</span><span class="why">רק הכבל נבחר בשם.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">סימולטור אק״ג<span class="why">מכשיר שמזריק אות ידוע לאלקטרודות, לבדיקה בלי אדם</span></div><div><span class="st missing">חסר</span><span class="why">מוזכר בצעד 10 של תכנית הבדיקה, לא נבחר.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הוראות הרכבה<span class="why">סדר הרכבה, הדבקה, אטימה ובדיקה, לחמש היחידות הראשונות</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">תווית, מספר סידורי, אריזה והוראות שימוש<span class="why">תווית ״מכשיר בניסוי״, מספר סידורי לכל יחידה, הוראות שימוש וניקוי</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל.</span></div><div class="when">4</div></div>
+    </div>
+    <h3>בטיחות, תקינה והניסוי</h3>
+    <div class="tree">
+      <div class="row head"><div>מה המפעל מקבל</div><div>מצב, ומה חסר</div><div>שלב</div></div>
+      <div class="row"><div class="what">ניתוח סיכונים, <span class="ltr">ISO 14971</span><span class="why">רשימת כשלים ומה מונע כל אחד: מגעי הטעינה, זיעה בין המשטחים, סוג החלק שבמגע עם המטופל</span></div><div><span class="st missing">חסר</span><span class="why">נחוץ לפני שיחידה שלנו עולה על אדם, גם עליך.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">בטיחות חשמלית ותאימות אלקטרומגנטית<span class="why">בדיקות <span class="ltr">IEC 60601-1</span>, <span class="ltr">IEC 60601-1-2</span>, ו-<span class="ltr">IEC 60601-1-11</span> לשימוש בבית</span></div><div><span class="st missing">חסר</span><span class="why">בסכמה יש מגבלות זרם לפי התקן. שום בדיקה עוד לא תוכננה.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">ביצועי האק״ג<span class="why">בדיקות לפי <span class="ltr">IEC 60601-2-25</span> או <span class="ltr">60601-2-47</span>: רוחב פס, רעש, דחיית אות משותף, עכבת כניסה</span></div><div><span class="st missing">חסר</span><span class="why">איזה מהשניים חל תלוי בייעוד שנכתוב למכשיר.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">חומרים במגע עם העור<span class="why">רשימת חומרים עם נתוני <span class="ltr">ISO 10993</span> (חלקים 5, 10, 23), שחרור ניקל <span class="ltr">EN 1811</span>, וחומר חיטוי מאושר</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">אישורי רדיו<span class="why">אישור משרד התקשורת. בהמשך: <span class="ltr">EN 300 328</span>, <span class="ltr">EN 301 489</span>, <span class="ltr">FCC Part 15</span></span></div><div><span class="st missing">חסר</span><span class="why">למודול יש אישורים משלו; למוצר השלם צריך לבדוק.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">תיעוד התוכנה ואבטחת מידע<span class="why"><span class="ltr">IEC 62304</span>: תכנית, דרישות, בדיקות ורשימת רכיבי צד שלישי. <span class="ltr">IEC 81001-5-1</span> לאבטחה</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל, ונכתב יחד עם קושחת המוצר.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">תיק הניסוי בבית החולים<span class="why">תכנית ניסוי לפי <span class="ltr">ISO 14155</span>, חוברת חוקר, ועדת הלסינקי והגשה למשרד הבריאות</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">שמישות, <span class="ltr">IEC 62366-1</span><span class="why">בדיקה שמבוגרים מצליחים לשים, להקליט ולטעון בלי עזרה</span></div><div><span class="st missing">חסר</span><span class="why">לא התחיל.</span></div><div class="when">מפעל</div></div>
+      <div class="row"><div class="what">מערכת איכות, <span class="ltr">ISO 13485</span><span class="why">נהלים, רישום שינויים ומעקב אחרי כל יחידה</span></div><div><span class="st missing">חסר</span><span class="why">נחוץ לפני ייצור סדרתי.</span></div><div class="when">מפעל</div></div>
+    </div>
+  </section>
+  <section id="faces">
+    <h2>החיבורים בין החלקים</h2>
+    <p>כאן נפלו הפלקס והלוח הארוך: כל חלק היה בסדר לבד, והחיבור ביניהם לא היה של אף אחד. חיבור מוגדר רק כששני הקבצים, משני הצדדים, מסכימים על אותה מידה.</p>
+    <div class="tree">
+      <div class="row head"><div>על מה שני הצדדים צריכים להסכים</div><div>מצב</div><div>שלב</div></div>
+      <div class="row"><div class="what">הלוח בתוך המארז<span class="why">אורך הלוח, מקומו, גובה הרכיבים מול הקירות, והסוללה לידו</span></div><div><span class="st conflict">סותר</span><span class="why">הלוח <span class="ltr">32</span> מ״מ והמודל מצויר ל-<span class="ltr">25</span>. הסוללה במודל יושבת איפה שהלוח האמיתי נגמר. הערכה ראשונה: הארכת האי לבד לא מספיקה, צריך גם עובי או סידור אחר.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הקפיצים אל משטחי הפלדה<span class="why">מיקום כל קפיץ לאורך האי</span></div><div><span class="st conflict">סותר</span><span class="why">ארבעת הקפיצים במקום אחר במודל ובלוח, הפרש של <span class="ltr">2</span> עד <span class="ltr">6.3</span> מ״מ. כל קפיץ עדיין מתחת למשטח הנכון, אבל לא מול החור שלו במארז.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">מנוע הרטט<span class="why">מקום המנוע</span></div><div><span class="st conflict">סותר</span><span class="why"><span class="ltr">13.3</span> מ״מ בין המקום במודל למקום בלוח.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הסוללה אל הלוח<span class="why">מקום הלשוניות</span></div><div><span class="st conflict">סותר</span><span class="why"><span class="ltr">4.8</span> מ״מ בין המודל ללוח.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הנורית אל קו האור<span class="why">מקום הנורית</span></div><div><span class="st conflict">סותר</span><span class="why"><span class="ltr">3.1</span> מ״מ בין המודל ללוח, ואין מוביל אור ביניהם.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הפלקס אל המחבר בלוח<span class="why">רוחב הזנב, מספר המגעים וצד המגעים</span></div><div><span class="st conflict">סותר</span><span class="why">בפלקס זנב של <span class="ltr">2.5</span> מ״מ למחבר של 4 מגעים. במודל הזנב ברוחב <span class="ltr">13.4</span> מ״מ. צד המגעים לא אומת.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">פיני ה-RA אל הפלקס<span class="why"><span class="ltr">34.5</span> ו-<span class="ltr">49.1</span> מ״מ מקצה האי</span></div><div><span class="st draft">טיוטה</span><span class="why">המיקומים מסכימים. הלחיצה עצמה לא מוגדרת ולא נבדקה.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הרצועה אל האי, בצד הקבוע<span class="why">הלשון, העוגן, והאטימה בכניסת הפלקס</span></div><div><span class="st partial">חלקי</span><span class="why">במודל בלבד. האטימה בכניסת הפלקס לא מוגדרת.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הרצועה אל האי, בצד החופשי<span class="why">המוט בזיזים, ואיך הוא ננעל</span></div><div><span class="st partial">חלקי</span><span class="why">המוט קיים, הנעילה שלו לא.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הסקוטש אל הגומי<span class="why">שיטת הדבקה וחוזק</span></div><div><span class="st missing">חסר</span><span class="why">לא מוגדר.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">שני חצאי המארז זה לזה<span class="why">סוג החיבור, האטם והטולרנס</span></div><div><span class="st missing">חסר</span><span class="why">כתוב ״מרותכים באמצע הגובה״. אין תכנון לחיבור.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">המשטחים, החלון והקרמיקה בתוך המארז<span class="why">איך כל אחד מוחזק ונאטם</span></div><div><span class="st missing">חסר</span><span class="why">אין אטם ואין דבק, ויש חור מאחורי כל משטח.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">החיישן האופטי אל החלון<span class="why">גובה החיישן מול הבליטה שבחלון</span></div><div><span class="st conflict">סותר</span><span class="why">המודל מצויר לחיישן בגובה <span class="ltr">1.4</span> מ״מ, ובסכמה <span class="ltr">MAX30102</span> שגבוה יותר.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">מגעי הטעינה אל הלוח<span class="why"><span class="ltr">±9</span> מ״מ, במרכז האי</span></div><div><span class="st draft">טיוטה</span><span class="why">המיקומים מסכימים. דגם המגע והאטימה שלו לא נבחרו.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">הצמיד אל המעמד<span class="why">מקום הפינים, מתח וזרם, ואיך הצמיד נשאר במקום</span></div><div><span class="st partial">חלקי</span><span class="why">הפינים מסכימים במודל. אין חשמל במעמד ואין מה שיחזיק את הצמיד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">האנטנה מול המארז והיד<span class="why">מרחק מהפלדה ומהיד, וטווח</span></div><div><span class="st partial">חלקי</span><span class="why">אזור אסור בלוח בלבד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what">המכשיר אל האפליקציה<span class="why">פרוטוקול ה-Bluetooth</span></div><div><span class="st partial">חלקי</span><span class="why">קיים רק פורמט התאימות של <span class="ltr">320 Hz</span>. אין פרוטוקול ל-4 ערוצים ו-500, ואין הצפנה.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what">המכשיר אל הצריבה<span class="why">גישה לנקודות הצריבה</span></div><div><span class="st partial">חלקי</span><span class="why">הנקודות בלוח. במארז סגור אין אליהן גישה.</span></div><div class="when">3</div></div>
+    </div>
+  </section>
+  <section id="reqs">
+    <h2>כל דרישה ואיך בודקים אותה</h2>
+    <p>כל דרישה מדף הדרישות הטכניות, מה בתכנון עונה עליה, ואיך מוכיחים שהיא מתקיימת.</p>
+    <div class="tree">
+      <div class="row head"><div>מה בתכנון עונה עליה</div><div>איך מוכיחים</div><div>שלב</div></div>
+      <div class="row"><div class="what"><span class="ltr">SYS-01</span> שני לידים, כל אחד פעמיים, ומהם 6<span class="why">4 ערוצים: LA מול RA1 ומול RA2, LL1 ו-LL2 מול LA</span></div><div><span class="st partial">חלקי</span><span class="why">צעד 11 בתכנית הבדיקה, על אדם אחד, בלי מדד דיוק. ההשוואה למכשיר 12 לידים תהיה בניסוי.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what"><span class="ltr">SYS-02</span> 500 דגימות בשנייה, <span class="ltr">0.05–150 Hz</span><span class="why">השבב דוגם <span class="ltr">1,000</span> והקושחה מפחיתה ל-<span class="ltr">500</span>. הקושחה הזאת עוד לא קיימת</span></div><div><span class="st missing">חסר</span><span class="why">אין. צריך מדידת תגובת תדר מסימולטור. גם האפליקציה היום ב-<span class="ltr">320</span> בלבד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">ELC-01</span> 6 אלקטרודות יבשות על 7 משטחים<span class="why">משטחי <span class="ltr">316L</span> של גרסה 3.2</span></div><div><span class="st partial">חלקי</span><span class="why">ניסוי שלב 1, אבל ההוראות בגדלים ישנים.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">ELC-02</span> <span class="ltr">ADS1294</span> בכל יחידה<span class="why"><span class="ltr">ADS1294IPAG</span> בסכמה ובלוח</span></div><div><span class="st draft">טיוטה</span><span class="why">צעד 6: קריאת מספר הזיהוי של השבב.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">ELC-03</span> עכבה גבוהה, רכיבים מותאמים, מקום למגבר<span class="why">נגדים של <span class="ltr">0.1%</span>, קבלים <span class="ltr">C0G</span>, מקום למגבר ליד כל אלקטרודה</span></div><div><span class="st missing">חסר</span><span class="why">אין. צריך מדידה של עכבת הכניסה, ההתאמה בין הערוצים ודחיית אות משותף.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">ELC-04</span> <span class="ltr">nRF52840</span> במודול עם אישורים<span class="why"><span class="ltr">MDBT50Q-1MV2</span></span></div><div><span class="st partial">חלקי</span><span class="why">צעד 5: חיבור ב-1 וב-5 מטר. חסרה בדיקת טווח כשהצמיד על היד.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">FW-01</span> קושחה על <span class="ltr">nRF Connect SDK</span>, עדכון חתום, דגימה לפי <span class="ltr">DRDY</span><span class="why">אין עדיין. קושחת השולחן כתובה ב-Arduino</span></div><div><span class="st missing">חסר</span><span class="why">אין.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">PWR-01</span> סוללה, מטען, ווסת שקט, טעינה במגעים<span class="why"><span class="ltr">100 mAh</span>, מטען <span class="ltr">MCP73831</span>, מגעים שטוחים. בדף הדרישות: <span class="ltr">150–300 mAh</span>, <span class="ltr">BQ25120A</span>, פיני <span class="ltr">pogo</span></span></div><div><span class="st conflict">סותר</span><span class="why">צעדים 3, 7 ו-9. אין שיטה למדידת זמן הסוללה.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">SAF-01</span> בלי הקלטה בזמן טעינה, מגעים מבודדים, זרם מתחת ל-<span class="ltr">10 µA</span><span class="why">גשר, מפקח מתח ושני טרנזיסטורים שמנתקים את המגעים, ו-<span class="ltr">47.5 kΩ</span> פעמיים בכל קו</span></div><div><span class="st conflict">סותר</span><span class="why">צעדים 8, 9 ו-12. החסימה בקושחה לא קיימת. <span class="ltr">10</span> או <span class="ltr">50 µA</span> בתקלה בודדת עדיין פתוח.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">MEC-01</span> בערך <span class="ltr">46 × 30 × 7.2</span> מ״מ, עד <span class="ltr">40</span> גרם, <span class="ltr">IP54</span><span class="why">המודל בגודל הזה, אבל הלוח האמיתי לא נכנס בו</span></div><div><span class="st missing">חסר</span><span class="why">אין בדיקה לגודל, למשקל או לאטימה. חישוב המשקל נעשה לרצועת סיליקון ולמשטחים הקטנים; עם FKM ומשטחי 3.2 הוא עלול לעבור <span class="ltr">40</span> גרם.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">UI-01</span> כפתור, נורית ורטט<span class="why">נורית, רטט ומשטח מגע. אין כפתור</span></div><div><span class="st conflict">סותר</span><span class="why">אין.</span></div><div class="when">3</div></div>
+      <div class="row"><div class="what"><span class="ltr">OPT-01</span> מקום לחיישן אופטי ומדחום<span class="why">מקום בלוח וחלון במארז; שני דגמים שונים בסכמה ובמודל</span></div><div><span class="st missing">חסר</span><span class="why">אין.</span></div><div class="when">4</div></div>
+      <div class="row"><div class="what"><span class="ltr">REG-01</span> <span class="ltr">IEC 60601-1</span>, חומרים עם <span class="ltr">ISO 10993</span>, בדיקות מקדימות<span class="why">מגבלות הזרם בסכמה</span></div><div><span class="st missing">חסר</span><span class="why">רק ״מעבדה מוסמכת״ בצעד 12. ISO 10993 והבדיקות המקדימות לא מוגדרות.</span></div><div class="when">4</div></div>
+    </div>
+  </section>
+<!-- TREE:END -->
+
   <section>
     <h2>השלבים</h2>
     <p>כל שלב עונה על שאלה אחת. אם התשובה לא טובה, מתקנים לפני שממשיכים, והכסף של השלב הבא לא יצא.</p>
@@ -360,9 +561,9 @@
         <div class="state on">בעבודה</div>
         <dl class="facts">
           <div><dt>השאלה</dt><dd>האם התכנון סגור: הגודל מחושב, הסכמה מלאה, הרכיבים זמינים, והכול נכנס במארז?</dd></div>
-          <div><dt>איך</dt><dd>חישוב גודל וסוללה, מודל CAD מוצק, סכמה ורשימת רכיבים, סימולציה של הכניסות.</dd></div>
-          <div><dt>עובר אם</dt><dd>אין שגיאות בבדיקת החוקים, כל רכיב ניתן לקנייה, ואין התנגשויות במודל.</dd></div>
-          <div><dt>מי</dt><dd>אני.</dd></div>
+          <div><dt>איך</dt><dd>רשימה של כל החלקים, החיבורים והדרישות, ולכל אחד קובץ. חישוב גודל וסוללה, מודל, סכמה ולוח, פלקס, ותכנית בדיקה.</dd></div>
+          <div><dt>עובר אם</dt><dd>ברשימה אין ״חסר״ או ״סותר״ שנחוץ לשלב 3, הבודק העצמאי לא מוצא חור, ומהנדס חתם על הלוח.</dd></div>
+          <div><dt>מי</dt><dd>אני, ובודק עצמאי לפני שעוברים שלב.</dd></div>
         </dl>
       </div>
 
@@ -392,11 +593,12 @@
 
       <div class="stage">
         <div class="num">3</div>
-        <div class="head"><h3>יחידה לבישה ראשונה</h3><span class="cost"><span class="ltr">800–1,500</span> דולר ל-5 יחידות</span></div>
+        <div class="head"><h3>יחידה לבישה ראשונה</h3><span class="cost">המחיר מחושב מחדש</span></div>
         <div class="state wait">ממתין</div>
         <dl class="facts">
           <div><dt>השאלה</dt><dd>האם הלוח הממוזער, המארז, הרצועה והמוליך שבתוכה עובדים יחד על היד?</dd></div>
-          <div><dt>איך</dt><dd>לוחות מורכבים מהמפעל, מארז מודפס, מעגל גמיש ורצועה יצוקה.</dd></div>
+          <div><dt>איך</dt><dd>לוחות מורכבים מהמפעל, מארז מודפס, משטחי פלדה, מעגל גמיש, רצועה יצוקה ומעמד טעינה.</dd></div>
+          <div><dt>המחיר</dt><dd>ההערכה הקודמת, <span class="ltr">800–1,500</span> דולר ל-5 יחידות, לא כללה פלדה בעבודה אישית, ספיר, קרמיקה, תבנית לרצועה ואת המעמד. היא תחושב מחדש מרשימת הרכיבים.</dd></div>
           <div><dt>עובר אם</dt><dd>10 הקלטות מלאות מתוך 10 על היד, הסוללה מחזיקה כמתוכנן, והמוליך שורד בדיקת כיפוף.</dd></div>
           <div><dt>מי</dt><dd>אני מכין את קובצי הייצור. אתה מזמין, מרכיב ובודק. מהנדס אלקטרוניקה מבקר את הלוח לפני ההזמנה.</dd></div>
         </dl>
@@ -432,23 +634,10 @@
         <div class="risk"><div class="what">רכיב חסר במלאי, או שהמפעל לא מרכיב אותו<span class="why">עיכוב של חודשים.</span></div><div>בדיקת זמינות לכל רכיב לפני שמקבעים את הסכמה, וחלופה לכל רכיב קריטי.</div><div class="when"><span class="ltr">0</span></div></div>
         <div class="risk"><div class="what">זיעה מקצרת בין אלקטרודות, או שהאטימה נכשלת<span class="why">האות נעלם בשימוש אמיתי.</span></div><div>מרווח מבודד ואטם כבר ב-CAD, ובדיקת טפטוף על יחידה מודפסת.</div><div class="when"><span class="ltr">0, 3</span></div></div>
         <div class="risk"><div class="what">בטיחות המטופל ותקינה<span class="why">תנאי לניסוי בבית חולים.</span></div><div>מתכננים לפי IEC 60601-1 מהיום הראשון: זרם מטופל מוגבל, אין הקלטה בזמן טעינה. מודדים במעבדה.</div><div class="when"><span class="ltr">0, 4</span></div></div>
-        <div class="risk"><div class="what">טעות שלי בתכנון<span class="why">אני לא מודד ולא מלחים.</span></div><div>כל שלב נבדק במדידה אמיתית לפני הבא, ואדם מבקר כל לוח לפני הזמנה.</div><div class="when">בכולם</div></div>
+        <div class="risk"><div class="what">חלקים שכל אחד בסדר לבד, ויחד לא מתחברים<span class="why">כך נפלו הפלקס והלוח הארוך.</span></div><div>כל חיבור הוא שורה ברשימה, וקובץ מיקומים אחד שגם המודל וגם הלוח קוראים ממנו.</div><div class="when"><span class="ltr">0</span></div></div>
+        <div class="risk"><div class="what">המשקל עובר <span class="ltr">40</span> גרם<span class="why">רצועת FKM כבדה מסיליקון, והמשטחים גדלו.</span></div><div>חישוב מחדש מהמודל, ושקילה של יחידה מודפסת.</div><div class="when"><span class="ltr">0, 3</span></div></div>
+        <div class="risk"><div class="what">טעות שלי בתכנון<span class="why">אני לא מודד ולא מלחים, והחמצתי חלקים שלמים.</span></div><div>כל שלב נבדק במדידה אמיתית, אדם מבקר כל לוח לפני הזמנה, ובודק עצמאי עובר על כל הקבצים לפני כל שלב.</div><div class="when">בכולם</div></div>
       </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>חלקי העבודה</h2>
-    <p>שמונה חלקים שמתקדמים במקביל. ליד כל אחד כתוב מה קורה בו עכשיו.</p>
-    <div class="parts">
-      <div class="part"><h3>מערכת</h3><p>מה המכשיר צריך לעשות, ומה יוצא מזה: גודל, סוללה וזמן פעולה.</p><div class="state on">בעבודה: חישוב גודל וסוללה</div></div>
-      <div class="part"><h3>אלקטרודות</h3><p>צורה, שטח, חומר, והחיבור של כל משטח ללוח.</p><div class="state on">בעבודה: הוראות לניסוי שלב 1</div></div>
-      <div class="part"><h3>אלקטרוניקה</h3><p>סכמה, רשימת רכיבים, לוח ניסוי, ואחריו הלוח הממוזער.</p><div class="state on">סכמה ולוח 0.1 מוכנים, ממתינים לבדיקה של מהנדס</div></div>
-      <div class="part"><h3>קושחה</h3><p>התוכנה שרצה על המכשיר: דגימה מהשבב ושידור ב-BLE.</p><div class="state wait">מתחיל עם לוח הניסוי</div></div>
-      <div class="part"><h3>אפליקציה</h3><p>ארבעה ערוצים ו-500 דגימות בשנייה.</p><div class="state wait">רק אחרי שלב 2, ובאישורך</div></div>
-      <div class="part"><h3>עיצוב תעשייתי ומכני</h3><p>המודול, הרצועה, ומה שעובר בתוך הרצועה, כקבצים לייצור.</p><div class="state on">בעבודה: מודל מוצק ראשון</div></div>
-      <div class="part"><h3>ייצור ורכש</h3><p>קובצי ייצור, הזמנות והרכבה.</p><div class="state wait">מתחיל בשלב 2</div></div>
-      <div class="part"><h3>בטיחות ותקינה</h3><p>זרם מטופל, חומרים במגע עם העור, תיעוד לניסוי.</p><div class="state on">בעבודה: מגבלות הזרם נכנסות לסכמה</div></div>
     </div>
   </section>
 
@@ -578,6 +767,7 @@
   <section>
     <h2>יומן</h2>
     <div class="log">
+      <div class="entry"><time datetime="2026-11-16">16.11.2026</time><div class="body"><p>התכנית נבנתה מחדש מהמוצר, אחרי ששאלת למה המעגל הגמיש חסר. בדיקה עצמאית עברה על כל הקבצים ומצאה שהלוח לא נכנס במארז, שמיקומים שונים במודל ובלוח, שאין מעמד ואין קושחה ללוח שלנו, סתירות מול דף הדרישות, ובטיחות ותקינה שלא תוכננו. הכול עכשיו ברשימה אחת עם בדיקה אוטומטית. תוקנו גם שלוש שורות שגויות בהערות התכנון ובתכנית הבדיקה.</p></div></div>
       <div class="entry"><time datetime="2026-11-16">16.11.2026</time><div class="body"><p>המעגל הגמיש שבתוך הרצועה תוכנן כלוח לייצור: <span class="ltr">61.7</span> מ״מ, קו נפרד לכל אלקטרודת RA ושומר ביניהם, משטחי מגע בדיוק במקום הפינים של המודל, וזנב למחבר בלוח. ללוח נוספו נקודות בדיקה לכל המתחים, ונכתבה תכנית בדיקה של 12 צעדים. בתצוגה התלת-ממדית אפשר עכשיו לסובב גם את הלוח ואת הפלקס.</p></div></div>
       <div class="entry"><time datetime="2026-11-16">16.11.2026</time><div class="body"><p>הקווים בנחושת צוירו אוטומטית בתוכנה Freerouting: 1,541 קטעים ו-174 מעברים בין שכבות, על לוח של 6 שכבות עם שכבת אדמה ושכבת סוללה. ב-4 שכבות זה לא נסגר. בדיקת KiCad עוברת בלי שגיאות, נשאר חיבור סוללה אחד, ומהנדס צריך לעבור על הקווים של האות האנלוגי לפני הזמנה.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>הלוח הראשון: 32 על 26 מ״מ, 4 שכבות. מגעי הקפיץ לאלקטרודות, מגעי הטעינה, החיישנים מתחת לחלון והסוללה ממוקמים בדיוק לפי המודל התלת-ממדי. שבב ה-ADS1294 ומודול ה-Bluetooth מוקמו ביד, וכל השאר אוטומטית ליד הרגליים שהם משרתים. KiCad בדק: אין התנגשויות, והלוח תואם לסכמה. הקווים בנחושת עוד לא צוירו.</p></div></div>
@@ -755,4 +945,4 @@
   load('model/band_id.json');
 })();
 </script>
-<!-- v0.15.0 — Band α risk-reduction plan: strap flex, test pads + test plan, board and flex in the 3D viewer (bracelet | board | flex) -->
+<!-- v0.16.0 — Band α plan rebuilt from the product: why the risk-only plan missed parts, ordered gaps, contradictions to decide, and the generated tree (parts, interfaces, requirement checks) from system/product_tree.py -->

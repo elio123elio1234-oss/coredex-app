@@ -5,9 +5,11 @@ dry electrodes that replaces the ESP32 + ADS1293 prototype. Requirements come
 from the Band α specification (the bilingual artifact page,
 `claude.ai/artifact/PpmwYJec8DWmWGM8rhy5re`).
 
-This folder is run as a **risk-reduction plan**: every risk is tested in the
-cheapest way that can prove it, and the next stage is paid for only after the
-previous one passes. The plan, with its live progress log, is the Hebrew page
+The plan is built from the **product**: `system/product_tree.py` lists every deliverable, every
+interface between two parts and every specification requirement with how it is proven, and its check
+fails on an incomplete row. Risks are still tested in the cheapest way that can prove them, and the next
+stage is paid for only after the previous one passes. (Until v0.16.0 the plan was built from risks alone,
+and whole parts fell through it: the strap flex, the test plan, the board's fit in the housing.) The plan, with its live progress log, is the Hebrew page
 published from `plan/plan.html`
 (`claude.ai/artifact/PyT22bDzE1Ed9x9vdyoaew`).
 
@@ -18,7 +20,7 @@ published from `plan/plan.html`
 | 0 | On the computer | the design closes: size from the parts, schematic, parts available, everything fits in a solid model | none |
 | 1 | Dry pads on the existing prototype | steel pads at the planned size give a readable ECG | about none |
 | 2 | The new chip on the bench | the ADS129x family, the 4-channel plan and the existing apps work together | about none: the TI ADS1298 board is already owned |
-| 3 | First wearable | miniature board, housing, strap and the flex inside it work on a wrist | $800–1,500 for five |
+| 3 | First wearable | miniature board, housing, strap and the flex inside it work on a wrist | being recomputed: the old $800–1,500 for five left out custom steel, sapphire, ceramic, the strap mould and the dock |
 | 4 | Fixes and safety | safe and stable enough for a hospital study | $800–1,500 plus an accredited lab |
 
 ## Layout
@@ -26,7 +28,8 @@ published from `plan/plan.html`
 ```
 CYPHIX_HARDWARE/
 ├── plan/          the plan page (plan.html + img/); publish plan.html to update the page
-├── system/        budget.py → BUDGET.md: size, battery and mass, computed bottom-up from the parts
+├── system/        product_tree.py: every deliverable, interface and requirement check (tree_html.py puts it on the plan page);
+│                  budget.py → BUDGET.md: size, battery and mass, computed bottom-up from the parts
 ├── mechanical/    band_id.py = the industrial design model, concept v3.2 (render_v32.py + studio/ make its pictures,
 │                  render_id.py the v3.1 ones; export_web_id.py feeds the page's 3D viewer); band_premium.py = the premium side variant P1, DROPPED by the owner
 │                  2026-11-15 and off the page (code kept for reference only; its render/export scripts are not part of the page)
@@ -56,6 +59,8 @@ from here.
   collision-free model and a compiling firmware prove the design is
   well-formed, not that it works.
 - A person with electronics experience reviews every board before it is ordered.
+- **A stage starts only when the product tree has nothing `missing` or `conflict` that the stage needs**,
+  and an independent reviewer (someone who did not write the design) has been through every file.
 
 ## Tools
 
@@ -65,4 +70,4 @@ from here.
   `%LOCALAPPDATA%\Programs\KiCad\10.0` (`bin\kicad-cli.exe`).
 - PlatformIO at `%USERPROFILE%\.platformio\penv\Scripts\pio.exe`.
 
-<!-- v0.15.0 — what the hardware folder is, its stages, layout (concept v3.2; the premium side variant dropped, code kept) and rules -->
+<!-- v0.16.0 — the plan is built from the product tree (system/product_tree.py); stage-3 cost withdrawn; stage gate rule; earlier: what the folder is, its stages, layout (concept v3.2) and rules -->

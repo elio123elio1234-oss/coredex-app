@@ -9,7 +9,8 @@ any board is ordered (plan, stage 3). Nothing here has been built or measured.
   read the file back and checks that every pin landed on its net (449 pins, 0 mismatches), then runs ERC.
 - ERC: 0 errors and 4 warnings. All four warnings are ADS1294 GPIO1–4 tied to ground, as the datasheet
   says to do with unused GPIOs.
-- BOM: `bom.csv`. 131 parts; the DNP ones are marked.
+- BOM: `bom.csv`. 128 parts to buy (105 fitted, 23 not fitted). The board has 136 footprints: the other 8 are
+  bare pads with nothing to buy, TP3–TP9 and the J2 programming footprint.
 
 Sources: TI SBAS459K (ADS129x), Raytac MDBT50Q datasheet ver. K, Microchip MCP73831 datasheet, TI LP5907
 datasheet. Numbers this file has not yet re-read from a datasheet are marked **(confirm)** and are listed at
@@ -260,10 +261,10 @@ cost: a 6-layer board costs more to make than a 4-layer one. The reviewer may pu
 
 | Check | Result |
 |---|---|
-| DRC violations | 0 |
+| DRC violations | 3, all vias connected on one layer only (warnings) |
 | Board vs. schematic (parity) | 0 errors |
 | Copper | 1,541 track segments, 174 vias |
-| Unconnected | 6, plus 3 vias connected on one layer only. Almost all are VBAT pieces cut off where signal tracks split the In4 VBAT plane; Freerouting itself closed 314 of 315. (The run before the test pads ended with 1; the routing varies with placement.) |
+| Unconnected | 6: four VBAT pieces, one GND piece, and +3V0D at U8 pad 5 (the thermometer). The VBAT pieces are cut off where signal tracks split the In4 VBAT plane. (Before 2026-11-16 this line said "almost all VBAT", which hid the GND and +3V0D ones.) Freerouting itself closed 314 of 315. (The run before the test pads ended with 1; the routing varies with placement.) |
 
 **Left for the human layout pass:**
 1. Close the open VBAT pieces and the dangling vias.
@@ -290,4 +291,4 @@ A reviewer checks the result before anything is ordered.
 | nRF52840 | VBUS handling with USB unused; low-frequency-only pins |
 | ADS1294 | full absolute-maximum table: any AVDD–DVDD limit with AVDD off |
 
-<!-- v0.4.0 — design notes for main board rev 0.1 (+ test pads, latest routing result) (+ 6-layer placed and autorouted board, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->
+<!-- v0.4.1 — corrected 2026-11-16: part count (128 bought + 8 bare pads = 136), DRC (3 dangling vias), and which nets are open (VBAT ×4, GND, +3V0D); earlier:  v0.4.0 — design notes for main board rev 0.1 (+ test pads, latest routing result) (+ 6-layer placed and autorouted board, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->
