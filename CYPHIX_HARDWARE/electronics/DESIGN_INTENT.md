@@ -142,10 +142,15 @@ These are requirements on the schematic, not notes.
   path: electrode contact, through the ADS1294 lead-off comparators. The touch
   electrode is disabled while recording. Fallback if the owner wants a real
   click: a tact switch under a thin flexible membrane at the same spot.
-- **Electrode finish (v3):** each plate is 316L-class steel with a dark
-  conductive PVD face and a bright polished edge, as in the owner's render.
-  The coating must be shown not to raise skin contact impedance against bare
-  steel (stage 1); fallback: bright faces.
+- **Electrode material (v3.1):** every plate is 316L stainless steel, the SAME
+  metal on all seven (LL1, LL2, RLD, LA x 2, RA1, RA2): different metals on
+  different electrodes give fixed half-cell offsets between them. Satin
+  (bead-blasted) face, polished edge: two finishes of one metal. v3.0's dark
+  coating on the face with bare steel at the edge was withdrawn (two materials
+  on one electrode; most dark coatings conduct poorly). Buy a grade that passes
+  the EU nickel-release test (EN 1811). Options for later: titanium + TiN
+  (nickel-free, low impedance, gold colour); a dark coating only if it covers
+  the whole plate and passes an impedance test against bare steel.
 - One coin vibration motor, 8 mm, on the leg side of the board near its
   middle (where the curved shell leaves the most height), from the cell
   through a FET with a flyback diode (UI-01).
@@ -173,5 +178,5 @@ These are requirements on the schematic, not notes.
 - Moving the apps to 4 channels and 500 SPS: needs the owner's approval; the
   board does not depend on it.
 
-<!-- v0.5.0 — design intent for the main board: 1 kSPS decimation and clock footprint, antenna in the frame (concept v3), two-contact charging either way round, light line + touch zone, dark electrode finish to test, PPG + thermometer window -->
+<!-- v0.6.0 — design intent for the main board: 1 kSPS decimation and clock footprint, antenna in the frame, two-contact charging either way round, light line + touch zone, one-metal 316L electrodes, PPG + thermometer window -->
 

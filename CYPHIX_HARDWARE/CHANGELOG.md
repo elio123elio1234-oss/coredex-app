@@ -1,5 +1,31 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.6.0 — 2026-11-15
+
+**Why.** Two remarks from the owner on concept v3, both right:
+
+1. "The right bar is superfluous: no strap wraps round it." v3 put a bar and
+   lugs at the fixed end only to copy the render's symmetry; the fixed strap
+   ran under it into the end face, so the bar did nothing.
+2. "Are the electrode materials good?" No, not as v3 drew them: a dark coating
+   on each plate's face with bare steel at its edge puts two materials on one
+   electrode (a small offset between them, on the skin), and most dark
+   coatings conduct poorly (DLC is nearly an insulator). v0.5.0's entry called
+   it "a dark conductive finish to be tested"; that was too generous.
+
+**What changed (`mechanical/band_id.py` v3.1.0).**
+
+- Bar and lugs only at the free end, where the strap goes round. The fixed end
+  narrows from 30 to the strap's 24 mm and down to 5 mm high, stays on the
+  skin, and the strap leaves from under it on the same inner line; inside, the
+  tongue, bead, anchor and flex sit in the 4 mm end wall as before. The island
+  is 52 mm long with the lugs (59 in v3.0).
+- Every plate is one metal, 316L stainless steel, the same on all seven: a
+  satin (bead-blasted) face and a polished edge. The plan page gains a
+  materials section (why 316L, its weakness against Ag/AgCl, nickel, options
+  for later, the other materials).
+- `electronics/DESIGN_INTENT.md`: the electrode material requirement.
+
 ## v0.5.0 — 2026-11-15
 
 **Why.** The owner sent a picture of their own render of Band α (the landing

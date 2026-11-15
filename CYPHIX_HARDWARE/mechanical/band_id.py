@@ -11,6 +11,12 @@ size (the render's 35 x 26 x 6 mm cannot hold the parts; this is the render's
 look at the computed size) and the plates (about twice the render's area,
 because the owner asked for larger electrodes).
 
+v3.1 (same day, the owner): the bar at the fixed end did nothing - no strap
+goes round it - so it and its lugs are gone; the fixed end narrows to the
+strap's width and the strap leaves from under it. And the plates are one
+metal, 316L stainless (satin face, polished edge), instead of a dark coating
+on bare steel.
+
 v1 (2026-11-15) drew the concept: concave island on one master curve,
 loop-through closure, flush electrodes, flex with two traces, contact charging.
 The owner then found three faults in it, all real:
@@ -61,7 +67,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out_id"
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 
 # ------------------------------------------------------------ master curve
 A, B = 30.5, 21.0          # design wrist: half breadth, half depth
@@ -238,13 +244,16 @@ def pin(s: float, y: float, d0: float, d1: float, r: float) -> cq.Workplane:
 T0, W0 = 7.2, 30.0                    # thickness and width of the island's body
 RT0, RB0 = 3.2, 2.2                   # edge radius on the leg face / on the wrist face
 T_STRAP, W_STRAP, R_STRAP = 2.8, 24.0, 1.2
-# v3: the island is the same at both ends, like the owner's render - two short lugs at each end with
-# the bar's ends showing at the four corners. The fixed end of the strap runs under its bar into the
-# end face; the free end runs under its bar, round it and back (hook-and-loop).
+# v3.1: a bar only where the strap goes round one. The free end has two short lugs and the bar (its
+# ends show at the corners); the strap runs under it, round it and back (hook-and-loop). The fixed end
+# has no bar and no lugs (the owner: "no strap wraps round it, it is superfluous"): the island narrows
+# to the strap's width and the strap comes straight out from under it, on the same inner line.
 S_TAPER = 17.0                        # each end starts to slim here
-S_NOSE = 23.0                         # the end faces between the lugs, at -S_NOSE and +S_NOSE
+S_NOSE = 23.0                         # the end face between the lugs at +S_NOSE; the fixed end at -S_NOSE
 S_ROOT = -S_NOSE                      # where the fixed end of the strap enters the island
-S_BAR = 27.5                          # the bars, at -S_BAR and +S_BAR
+S_NECK = 19.0                         # the fixed end narrows from here ...
+T_FIX = 5.0                           # ... to the strap's width and this height at -S_NOSE
+S_BAR = 27.5                          # the bar at the free end
 D_BAR = T_STRAP / 2 + 1.0 + 0.15 + T_STRAP / 2     # bar centre above the skin
 R_LUGEND = 1.95                       # lug ends are rounded round the bar's own axis
 T_LUG, D_LUG = D_BAR + R_LUGEND, D_BAR - R_LUGEND
@@ -255,26 +264,30 @@ PLATE = 0.8                           # electrode plate thickness
 
 
 def t_top(s: float) -> float:
-    return ramp(abs(s), S_TAPER, S_BAR, T0, T_LUG)
+    if s < 0:
+        return ramp(-s, S_TAPER, S_NOSE, T0, T_FIX)
+    return ramp(s, S_TAPER, S_BAR, T0, T_LUG)
 
 
 def d_bot(s: float) -> float:
-    return ramp(abs(s), S_NOSE - 2.0, S_BAR, 0.0, D_LUG)  # both ends lift off the skin a little
+    if s < 0:
+        return 0.0                                         # the fixed end stays on the skin: the strap leaves flush
+    return ramp(s, S_NOSE - 2.0, S_BAR, 0.0, D_LUG)       # the free end lifts off the skin a little
 
 
 def w_isl(s: float) -> float:
-    return W0
+    return ramp(-s, S_NECK, S_NOSE, W0, W_STRAP) if s < 0 else W0
 
 
 def rt_isl(s: float) -> float:
-    return ramp(abs(s), S_TAPER, S_BAR, RT0, 1.6)
+    return ramp(-s, S_TAPER, S_NOSE, RT0, 1.8) if s < 0 else ramp(s, S_TAPER, S_BAR, RT0, 1.6)
 
 
 def rb_isl(s: float) -> float:
-    return ramp(abs(s), S_TAPER, S_BAR, RB0, 1.2)
+    return ramp(-s, S_TAPER, S_NOSE, RB0, R_STRAP) if s < 0 else ramp(s, S_TAPER, S_BAR, RB0, 1.2)
 
 
-STATIONS = sorted(set([round(v, 3) for v in span(-S_END, -15.5, 0.9) + span(-14.0, 14.0, 2.5)
+STATIONS = sorted(set([round(v, 3) for v in span(-S_NOSE, -15.5, 0.75) + span(-14.0, 14.0, 2.5)
                        + span(15.5, S_END, 0.9)]))
 
 
@@ -291,8 +304,10 @@ def island_solid(delta: float = 0.0, stations=None) -> cq.Workplane:
 
 
 # leg face: three pill plates side by side inside a slim frame, as in the owner's render, but each about
-# twice the render's area (the owner asked for larger electrodes). Each plate is one piece of steel: a
-# dark conductive finish on its face, its bright polished edge showing round it.
+# twice the render's area (the owner asked for larger electrodes). Every plate on the device is the SAME
+# metal, 316L stainless steel: a bead-blasted (satin) face and a polished edge, two finishes of one
+# metal. v3.0 drew a dark coating on the face and bare steel on the edge, which puts two materials on one
+# electrode (an offset between them) and most dark coatings conduct poorly.
 LEG = {"LL1": -11.6, "RLD": 0.0, "LL2": 11.6}        # centres (s); 13.5 mm apart on the outer face
 LEG_L, LEG_W, LEG_R = 12.0, 25.0, 3.5                # measured on the outer face
 # wrist face: two LA pills, and between them the sensor window with a charge contact each side
@@ -386,23 +401,21 @@ def build_island():
     cav_st = [S_CAV0] + [s for s in STATIONS if S_CAV0 + 0.3 < s < S_CAV1 - 0.3] + [S_CAV1]
     cav = island_solid(WALL, cav_st)
     body = body.cut(cav).cut(make_tongue(0.05)).cut(make_bead(0.08)).cut(make_flex_tail(0.25))
-    body = end_cut(end_cut(body, 1), -1)
+    body = end_cut(body, 1)                               # lugs and bar at the free end only
 
     # shells: the leg-side lid and the wrist-side tray, welded at mid height; the lugs belong to the tray
-    upper = loft(span(-S_NOSE + 0.5, S_NOSE - 0.5, 1.5), 50.0, lambda s: t_top(s) / 2, lambda s: t_top(s) + 6.0, 0.2)
+    upper = loft(span(-S_NOSE - 1.0, S_NOSE - 0.5, 1.5), 50.0, lambda s: t_top(s) / 2, lambda s: t_top(s) + 6.0, 0.2)
     parts["shell_leg"] = body.intersect(upper)
     wrist = body.cut(upper)
-    for sign, names in ((1, ("lug_a", "lug_b")), (-1, ("lug_c", "lug_d"))):
-        for sy, name in zip((-1, 1), names):
-            zone = cq.Workplane(plane_on(sign * S_BAR, D_BAR, sy * (W_SLOT / 2 + 5.0))).center(sign * -1.5, 0.0).box(13.0, 10.0, 16.0)
-            parts[name] = wrist.intersect(zone)
-            wrist = wrist.cut(zone)
+    for sy, name in zip((-1, 1), ("lug_a", "lug_b")):
+        zone = cq.Workplane(plane_on(S_BAR, D_BAR, sy * (W_SLOT / 2 + 5.0))).center(-1.5, 0.0).box(13.0, 10.0, 16.0)
+        parts[name] = wrist.intersect(zone)
+        wrist = wrist.cut(zone)
     parts["shell_wrist"] = wrist
-    # the bars run right through the lugs: their ends show as small steel dots at the four corners
-    for sign, name in ((1, "bar"), (-1, "bar_fixed")):
-        cyl = (cq.Workplane(cq.Plane(origin=pt(sign * S_BAR, D_BAR, 0), xDir=(1, 0, 0), normal=(0, 1, 0)))
-               .circle(1.0).extrude(16.0, both=True))
-        parts[name] = cyl.intersect(solid)
+    # the bar runs right through the lugs: its ends show as small steel dots at the corners
+    cyl = (cq.Workplane(cq.Plane(origin=pt(S_BAR, D_BAR, 0), xDir=(1, 0, 0), normal=(0, 1, 0)))
+           .circle(1.0).extrude(16.0, both=True))
+    parts["bar"] = cyl.intersect(solid)
     return parts, solid, cav
 
 
@@ -645,7 +658,7 @@ def build_wrist() -> cq.Workplane:
 # ------------------------------------------------------------------ export
 MATERIAL = {
     "shell_": "body", "lug_": "body", "led": "led", "window": "glass",
-    "el_": "electrode", "elc_": "electrode_dark", "bar": "steel_dark", "post_": "steel",
+    "el_": "electrode", "elc_": "electrode_satin", "bar": "steel_dark", "post_": "steel",
     "chg_": "gold", "dock_pin_": "gold", "spring_": "gold",
     "strap": "fkm", "tongue": "fkm", "anchor": "anchor", "hook": "hook", "loop": "loop",
     "cell_pcm": "pcb", "cell_tab": "steel",
@@ -815,8 +828,8 @@ if __name__ == "__main__":
             hits.append([name, round(v, 2)])
     checks["inside_parts_touching_the_shells_mm3"] = hits
     checks["strap_vs_island_mm3"] = round(common(strap["strap"], island["shell_wrist"]) + common(strap["strap"], island["shell_leg"]), 3)
-    checks["strap_vs_lugs_mm3"] = round(sum(common(strap["strap"], island[k]) for k in ("lug_a", "lug_b", "lug_c", "lug_d")), 3)
-    checks["strap_vs_bars_mm3"] = round(common(strap["strap"], island["bar"]) + common(strap["strap"], island["bar_fixed"]), 3)
+    checks["strap_vs_lugs_mm3"] = round(sum(common(strap["strap"], island[k]) for k in ("lug_a", "lug_b")), 3)
+    checks["strap_vs_bar_mm3"] = round(common(strap["strap"], island["bar"]), 3)
     bb = solid.val().BoundingBox()
     checks["island_symmetric_across_mm"] = round(bb.ymax + bb.ymin, 4)
 
@@ -861,10 +874,10 @@ if __name__ == "__main__":
     print(json.dumps(info, indent=2))
 
     if "--step" in sys.argv:          # solid CAD for a designer or a factory: one assembly, every part named
-        assy = cq.Assembly(name="band_alpha_id_v3")
+        assy = cq.Assembly(name="band_alpha_id_v3_1")
         for name, wp in {**band, **dock}.items():
             assy.add(wp, name=name)
         assy.save(str(OUT / "band_id.step"))
         print("STEP ->", OUT / "band_id.step")
 
-# v3.0.0 - the owner's render language: island the same at both ends (lugs + bar ends at four corners), framed pill plates with dark faces and bright edges, light line in the frame; v2 engineering kept
+# v3.1.0 - bar and lugs only at the free end (the fixed end narrows into the strap), all plates one metal (316L: satin face, polished edge); v3: the owner's render language on v2's engineering

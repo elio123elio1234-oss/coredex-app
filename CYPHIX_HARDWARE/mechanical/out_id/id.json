@@ -1,5 +1,5 @@
 {
-  "version": "3.0.0",
+  "version": "3.1.0",
   "design_wrist_mm": {
     "circumference": 163.2,
     "breadth": 61.0,
@@ -35,13 +35,13 @@
     "inside_parts_touching_the_shells_mm3": [],
     "strap_vs_island_mm3": 0.0,
     "strap_vs_lugs_mm3": 0.0,
-    "strap_vs_bars_mm3": 0.0,
+    "strap_vs_bar_mm3": 0.0,
     "island_symmetric_across_mm": 0.0
   },
   "triangles": {
-    "band": 612081,
-    "section": 219254,
+    "band": 614479,
+    "section": 222098,
     "dock": 36384
   },
-  "seconds": 206
+  "seconds": 134
 }

@@ -24,8 +24,8 @@ const P = THREE.MeshPhysicalMaterial;
 const SPEC: Record<string, THREE.MeshPhysicalMaterialParameters> = {
   // the island: graphite, as in the owner's render - near-black with a soft gloss
   body: { color: 0x16181d, metalness: 0, roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.14 },
-  // the plates' faces: a dark conductive finish on the same polished steel (the bright edge is "electrode")
-  electrode_dark: { color: 0x2c3038, metalness: 1, roughness: 0.17, clearcoat: 0.6, clearcoatRoughness: 0.06 },
+  // the plates' faces: the same 316L steel, bead-blasted to a satin grey (the polished edge is "electrode")
+  electrode_satin: { color: 0xaab0b9, metalness: 1, roughness: 0.42 },
   steel_dark: { color: 0x50555e, metalness: 1, roughness: 0.22 },
   // sapphire over the PPG sensor: dark, polished, and just see-through enough to show what is behind it
   glass: { color: 0x0b1019, metalness: 0, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, opacity: 0.66 },
@@ -161,4 +161,4 @@ main().catch((e) => {
   pre.textContent = String(e && (e.stack || e));
   document.body.appendChild(pre);
 });
-// v3.0.0 - the owner's render palette: graphite body, dark plate faces with bright edges, dark bars, slate strap; glass / PPG materials, per-shot "up", surface normals kept
+// v3.1.0 - the owner's render palette: graphite body, satin 316L plate faces with polished edges (one metal), dark bar, slate strap; glass / PPG materials, per-shot "up", surface normals kept

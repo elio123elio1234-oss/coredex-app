@@ -26,7 +26,7 @@ import band_id as M  # noqa: E402
 OUT = HERE.parent / "plan" / "model" / "band_id.json"
 
 COLOR = {
-    "body": (0.086, 0.094, 0.114), "electrode": (0.86, 0.88, 0.91), "electrode_dark": (0.19, 0.205, 0.235),
+    "body": (0.086, 0.094, 0.114), "electrode": (0.86, 0.88, 0.91), "electrode_satin": (0.6, 0.63, 0.67),
     "steel_dark": (0.33, 0.35, 0.39),
     "steel": (0.82, 0.84, 0.87), "gold": (0.84, 0.68, 0.31), "fkm": (0.31, 0.36, 0.47),
     "polyimide": (0.79, 0.54, 0.17), "copper": (0.82, 0.48, 0.26), "copper_dim": (0.66, 0.42, 0.27),
@@ -36,7 +36,7 @@ COLOR = {
     "pd": (0.14, 0.11, 0.23), "tpad": (0.55, 0.59, 0.65),
     "loop": (0.29, 0.34, 0.44), "hook": (0.2, 0.23, 0.31),
 }
-METAL = {"electrode", "electrode_dark", "steel", "steel_dark", "gold", "copper", "copper_dim", "shield", "cell"}
+METAL = {"electrode", "electrode_satin", "steel", "steel_dark", "gold", "copper", "copper_dim", "shield", "cell"}
 LID = ("shell_leg", "el_LL", "elc_LL", "el_RLD", "elc_RLD", "led")
 WRIST_SIDE = ("shell_wrist", "el_LA", "elc_LA", "chg_", "lug_", "bar", "window")
 SOFT = ("strap", "tongue", "hook", "loop")
@@ -77,4 +77,4 @@ if __name__ == "__main__":
     OUT.write_text(json.dumps({"version": M.VERSION, "parts": out}, separators=(",", ":")), encoding="utf-8")
     print(f"{len(out)} parts, {total} triangles, {OUT.stat().st_size / 1024:.0f} kB -> {OUT}")
 
-# v3.0.0 - surface normals per vertex (int8), glass flag, v3 part names and the render palette (dark plate faces, slate strap, four lugs, two bars)
+# v3.1.0 - surface normals per vertex (int8), glass flag, v3 part names and the render palette (satin 316L plate faces, slate strap, lugs and bar at the free end only)
