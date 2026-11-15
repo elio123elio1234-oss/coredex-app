@@ -4,6 +4,10 @@ Run:   .venv/Scripts/python mechanical/render_id.py [shot ...]
 Needs: mechanical/out_id/*.glb (run band_id.py first), Node, Chrome, and the
        LANDING PAGE project's node_modules (three + esbuild) for the bundle.
 Makes: mechanical/out_id/id_<shot>.png and plan/img/id_<shot>.webp
+
+Since band_id.py 3.2.0 the model is concept v3.2, and render_v32.py makes its pictures (it reuses this file's
+cameras and light). The plan page's id_*.webp are the v3.1 pictures: running this file again overwrites them
+with v3.2 renders, so do that only on purpose (the v3.1 pictures can be remade from git tag/commit 076024c).
 """
 from __future__ import annotations
 
@@ -165,4 +169,4 @@ if __name__ == "__main__":
     finally:
         server.shutdown()
 
-# v3.0.0 - shots for design concept v3: hero, top (square on), wrist face with the sensor window, profile, closure, flex, inside, section, charging stand
+# v3.0.1 - note: the model is now v3.2 (render_v32.py); this file's id_*.webp are the v3.1 pictures. v3.0.0 - shots for design concept v3: hero, top (square on), wrist face with the sensor window, profile, closure, flex, inside, section, charging stand

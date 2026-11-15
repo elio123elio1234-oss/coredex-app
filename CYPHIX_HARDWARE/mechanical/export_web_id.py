@@ -26,7 +26,9 @@ import band_id as M  # noqa: E402
 OUT = HERE.parent / "plan" / "model" / "band_id.json"
 
 COLOR = {
-    "body": (0.086, 0.094, 0.114), "electrode": (0.86, 0.88, 0.91), "electrode_satin": (0.6, 0.63, 0.67),
+    # v3.2: the premium variant's steel (lighter satin face, brighter polished line), black ceramic centre, flush contacts
+    "body": (0.086, 0.094, 0.114), "electrode": (0.93, 0.94, 0.96), "electrode_satin": (0.74, 0.76, 0.8),
+    "back": (0.045, 0.05, 0.06), "contact": (0.88, 0.89, 0.91),
     "steel_dark": (0.33, 0.35, 0.39),
     "steel": (0.82, 0.84, 0.87), "gold": (0.84, 0.68, 0.31), "fkm": (0.31, 0.36, 0.47),
     "polyimide": (0.79, 0.54, 0.17), "copper": (0.82, 0.48, 0.26), "copper_dim": (0.66, 0.42, 0.27),
@@ -36,9 +38,9 @@ COLOR = {
     "pd": (0.14, 0.11, 0.23), "tpad": (0.55, 0.59, 0.65),
     "loop": (0.29, 0.34, 0.44), "hook": (0.2, 0.23, 0.31),
 }
-METAL = {"electrode", "electrode_satin", "steel", "steel_dark", "gold", "copper", "copper_dim", "shield", "cell"}
+METAL = {"electrode", "electrode_satin", "steel", "steel_dark", "gold", "copper", "copper_dim", "shield", "cell", "contact"}
 LID = ("shell_leg", "el_LL", "elc_LL", "el_RLD", "elc_RLD", "led")
-WRIST_SIDE = ("shell_wrist", "el_LA", "elc_LA", "chg_", "lug_", "bar", "window")
+WRIST_SIDE = ("shell_wrist", "el_LA", "elc_LA", "chg_", "lug_", "bar", "window", "back")
 SOFT = ("strap", "tongue", "hook", "loop")
 INNER = ("pcb", "radio", "afe", "conn", "chip_", "low_", "motor", "cell", "spring_", "ppg", "temp", "tpad")
 
@@ -77,4 +79,4 @@ if __name__ == "__main__":
     OUT.write_text(json.dumps({"version": M.VERSION, "parts": out}, separators=(",", ":")), encoding="utf-8")
     print(f"{len(out)} parts, {total} triangles, {OUT.stat().st_size / 1024:.0f} kB -> {OUT}")
 
-# v3.1.0 - surface normals per vertex (int8), glass flag, v3 part names and the render palette (satin 316L plate faces, slate strap, lugs and bar at the free end only)
+# v3.2.0 - concept v3.2: premium steel colours, the black centre ("back") and flush contacts; v3.1.0 - surface normals per vertex (int8), glass flag, v3 part names and the render palette (satin 316L plate faces, slate strap, lugs and bar at the free end only)

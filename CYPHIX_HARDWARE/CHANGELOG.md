@@ -1,5 +1,50 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.10.0 — 2026-11-15
+
+**Why.** The owner, after P1.2: "I liked the design of version 3.1, but with
+the premium version's electrodes." So concept v3.2 is v3.1 with one change:
+the body, lugs, bar, strap and hook-and-loop closure stay as they were, and
+the electrodes are the premium variant's. It becomes the main concept (first
+on the plan page, the viewer's default); P1.2 stays beside it.
+
+**What changed (`mechanical/band_id.py` 3.2.0).**
+
+- Leg face: one rounded steel face (a plan-view rounded rectangle projected
+  onto the curved face, corners smoothed by a C2 spline), cut into
+  LL1 | RLD | LL2 by two hairlines of the body's material, one polished line
+  round it. v3.1 had three separate framed pills.
+- Wrist face: the same outline, LA1 | black ceramic centre | LA2. The centre
+  holds the sapphire lens, now domed 0.35 mm so it meets the skin, and two
+  flush charge contacts (v3.1: a flat window and two contacts recessed in
+  dishes). The stand gets a shallow pocket for the dome.
+- Larger electrodes: LL1/LL2 394 mm² each (v3.1: 290), RLD 287, LA 296 each
+  (v3.1: 265). Same metal everywhere (316L), satin face + polished line; the
+  RA pads keep their shape with the same 0.35 mm polished line.
+- The status light moved 0.4 mm towards the end and is 2 mm deep instead of
+  3, so it clears the steel face and the strap's tongue.
+- Flush contacts always touch the skin, which makes the existing safety
+  requirement in `electronics/DESIGN_INTENT.md` (both contacts high-impedance
+  unless the charger is present) more important. Nothing in it changes.
+
+**Kernel traps met on the way (fixed, and now checked).**
+
+- Splitting the lugs off the wrist tray left an invalid tray and an empty
+  second lug. v3.1's split box began at s = 19.5 with a face exactly on the
+  slot's wall; it worked there by luck. The box now holds only the lug
+  (from s = 22.6) with its inner face 0.3 mm inside the empty slot, and the
+  build checks that the two lugs come out equal (79.3 mm³ each).
+- The premium variant's "turn inside-out booleans the right way round"
+  wrapper is now in `band_id.py` too.
+- Checks: nothing inside touches the shells or the black centre; strap,
+  tongue and status light touch nothing; no inlay touches the body or
+  another inlay; all solids valid, volumes positive, symmetric to 0.0 mm.
+
+Also: `render_v32.py` (v3.1's cameras and light with the premium steel
+finish, so a v3.1 and a v3.2 picture differ only where the design does; a
+lighter copy of the model for the pictures), `export_web_id.py` 3.2.0
+(steel colours, black centre, flush contacts).
+
 ## v0.9.0 — 2026-11-15
 
 **Why.** The owner on P1.1: "the island looks glued on top of the strap and
@@ -382,4 +427,4 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.9.0 — the hardware folder's history, newest first; latest: P1.2, the strap flows out of the body -->
+<!-- v0.10.0 — the hardware folder's history, newest first; latest: concept v3.2, v3.1's design with the premium electrodes -->

@@ -1,12 +1,12 @@
 {
-  "version": "3.1.0",
+  "version": "3.2.0",
   "design_wrist_mm": {
     "circumference": 163.2,
     "breadth": 61.0,
     "depth": 42.0
   },
   "island_mm": {
-    "length_over_electrodes": 38.6,
+    "length_over_electrodes": 40.7,
     "length_root_to_lug_ends": 52.5,
     "width": 30.0,
     "thickness": 7.2,
@@ -22,26 +22,38 @@
     "ra_gap": 1.0
   },
   "electrode_area_mm2": {
-    "LL1": 290.0,
-    "RLD": 290.0,
-    "LL2": 290.0,
-    "LA1": 265.0,
-    "LA2": 265.0,
+    "LL1": 394.0,
+    "RLD": 287.0,
+    "LL2": 394.0,
+    "LA1": 296.0,
+    "LA2": 296.0,
     "RA1": 234.0,
     "RA2": 233.0
   },
   "window_diameter_mm": 8.6,
+  "lens_dome_mm": 0.35,
+  "electrodes": "premium faces: one leg face split LL1 | RLD | LL2, one wrist face split LA1 | black centre | LA2, 316L",
   "checks": {
     "inside_parts_touching_the_shells_mm3": [],
     "strap_vs_island_mm3": 0.0,
     "strap_vs_lugs_mm3": 0.0,
     "strap_vs_bar_mm3": 0.0,
+    "tongue_vs_shells_mm3": 0.0,
+    "led_vs_tongue_mm3": 0.0,
+    "inlays_vs_shells_mm3": 0.0,
+    "inlays_vs_each_other_mm3": 0.0,
+    "lugs_mm3": [
+      79.3,
+      79.3
+    ],
+    "solids_valid": true,
+    "volumes_positive": true,
     "island_symmetric_across_mm": 0.0
   },
   "triangles": {
-    "band": 614479,
-    "section": 222098,
-    "dock": 36384
+    "band": 613647,
+    "section": 222398,
+    "dock": 42890
   },
-  "seconds": 134
+  "seconds": 220
 }

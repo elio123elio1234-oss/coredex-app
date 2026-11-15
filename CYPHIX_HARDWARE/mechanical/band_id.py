@@ -1,4 +1,13 @@
-"""CYPHIX Band alpha - industrial design concept v3.
+"""CYPHIX Band alpha - industrial design concept v3.2.
+
+v3.2 (2026-11-15, the owner: "I liked the design of version 3.1, but with the premium version's electrodes"):
+v3.1's body, lugs, bar, strap and closure stay exactly as they were; the electrodes are the premium side
+variant's (band_premium.py). The leg face is one rounded steel face, cut into LL1 | RLD | LL2 by two hairline
+lines of the body's own material, with one polished line round the outside (v3.1: three separate framed pills).
+The wrist face has the same outline: LA1 | a black ceramic centre with the domed sapphire lens and two flush
+charge contacts | LA2 (v3.1: two pills, a flat window and two recessed contacts in dishes). Same metal (316L),
+same finishes (satin face, polished line), larger plates. The status light moved 0.4 mm further out and became
+shallower so it clears the steel face and the strap's tongue.
 
 v3 (2026-11-15) brings v2's engineering back into the owner's own design
 language (the landing page render): a compact framed island that is the same at
@@ -67,7 +76,44 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out_id"
-VERSION = "3.1.0"
+VERSION = "3.2.0"
+
+
+# --- kernel quirk (found in the premium variant, met again in v3.2 when the lugs were split off the wrist shell
+# after the steel-face pockets): some booleans return a correct solid that is inside out (negative volume), and the
+# next operation on it comes back empty. Every cut / intersect / union result is checked and turned the right way out.
+def _right_way_out(wp: cq.Workplane) -> cq.Workplane:
+    from OCP.BRepGProp import BRepGProp
+    from OCP.GProp import GProp_GProps
+    out, flipped = [], False
+    for v in wp.vals():
+        if not isinstance(v, cq.Shape):
+            return wp
+        for so in (v.Solids() if v.ShapeType() in ("Compound", "CompSolid") else [v]):
+            if so.ShapeType() != "Solid":
+                out.append(so)
+                continue
+            g = GProp_GProps()
+            BRepGProp.VolumeProperties_s(so.wrapped, g)
+            if g.Mass() < 0:
+                so = cq.Solid(so.wrapped.Reversed())
+                flipped = True
+                print("  note: a boolean came back inside out and was turned round", flush=True)
+            out.append(so)
+    if not flipped:
+        return wp
+    return cq.Workplane("XY").add(out[0] if len(out) == 1 else cq.Compound.makeCompound(out))
+
+
+if not getattr(cq.Workplane, "_cyphix_right_way_out", False):
+    for _op in ("cut", "intersect", "union"):
+        _orig = getattr(cq.Workplane, _op)
+
+        def _wrapped(self, *a, _orig=_orig, **k):
+            return _right_way_out(_orig(self, *a, **k))
+
+        setattr(cq.Workplane, _op, _wrapped)
+    cq.Workplane._cyphix_right_way_out = True
 
 # ------------------------------------------------------------ master curve
 A, B = 30.5, 21.0          # design wrist: half breadth, half depth
@@ -303,21 +349,26 @@ def island_solid(delta: float = 0.0, stations=None) -> cq.Workplane:
     return cq.Workplane("XY").add(cq.Solid.makeLoft(island_wires(delta, stations)))
 
 
-# leg face: three pill plates side by side inside a slim frame, as in the owner's render, but each about
-# twice the render's area (the owner asked for larger electrodes). Every plate on the device is the SAME
-# metal, 316L stainless steel: a bead-blasted (satin) face and a polished edge, two finishes of one
-# metal. v3.0 drew a dark coating on the face and bare steel on the edge, which puts two materials on one
-# electrode (an offset between them) and most dark coatings conduct poorly.
-LEG = {"LL1": -11.6, "RLD": 0.0, "LL2": 11.6}        # centres (s); 13.5 mm apart on the outer face
-LEG_L, LEG_W, LEG_R = 12.0, 25.0, 3.5                # measured on the outer face
-# wrist face: two LA pills, and between them the sensor window with a charge contact each side
-WRIST = {"LA1": -11.0, "LA2": 11.0}
-WRIST_L, WRIST_W, WRIST_R = 11.0, 25.0, 3.5
-RIM = 0.45                                           # the bright edge round each plate's dark face
-WIN_R = 4.3                                          # sapphire window: PPG sensor + skin thermometer
-CHG_Y = (-9.0, 9.0)                                  # two charge contacts; the input does not care which is which
-S_LED = -19.2                                        # status light + touch zone, in the frame at the fixed end, centre line
-GAP = 0.12                                           # the line round every inlaid part
+# v3.2: the premium variant's steel faces (band_premium.py). Every plate on the device is the SAME metal,
+# 316L stainless steel: a bead-blasted (satin) face and a polished line round it, two finishes of one metal.
+# The leg face is ONE rounded steel face (a plan-view rounded rectangle projected onto the curved face), cut
+# into LL1 | RLD | LL2 by two hairline lines of the body's material; the wrist face is the same outline cut
+# into LA1 | black ceramic centre | LA2. (v3.0-v3.1: separate framed pills; v3.0 also put a dark coating on
+# the face, two materials on one electrode, withdrawn in v3.1.)
+LENS_S = 17.5                        # the steel faces end here (skin arc), on both faces
+LENS_W = 24.0                        # across the band
+LENS_RC = 6.5                        # plan corner, softened by the spline (no curvature jump)
+SPLIT_TOP = 5.4                      # LL1 | RLD | LL2: the springs land at s = -11.35, 2.0 and 6.8
+SPLIT_BOT = 5.5                      # LA1 | centre | LA2: the springs land at s = -12.0 and 6.5
+HR = 0.26                            # half a split line (skin arc): about 0.6 mm wide on the leg face
+RIM = 0.35                           # the polished line round each face (and round the RA pads on the strap)
+WIN_R = 4.3                          # sapphire window: PPG sensor + skin thermometer
+DOME = 0.35                          # the sapphire lens stands this far proud at its centre: it meets the skin
+CHG_Y = (-9.0, 9.0)                  # two flush charge contacts in the black centre; the input does not care which is which
+R_CHG = 1.0
+S_LED = -19.6                        # status light + touch zone at the fixed end, centre line, clear of the steel face
+LED_DEPTH = 2.0                      # the light line's depth into the end wall (a light pipe below it): clears the strap's tongue
+GAP = 0.12                           # the line round every inlaid part
 
 
 def top_plane(s: float, inset: float = 0.0) -> cq.Plane:
@@ -332,28 +383,42 @@ def top_plane(s: float, inset: float = 0.0) -> cq.Plane:
     return cq.Plane(origin=(o[0] - inset * nx, 0.0, o[2] - inset * nz), xDir=(tx, 0, tz), normal=(nx, 0, nz))
 
 
-def dish(plane: cq.Plane, chord_r: float, depth: float) -> cq.Workplane:
-    """A shallow spherical dish into the surface at the plane's origin."""
-    R = (chord_r * chord_r + depth * depth) / (2 * depth)
-    c = plane.origin + plane.zDir * (R - depth)
-    return cq.Workplane("XY").add(cq.Solid.makeSphere(R, cq.Vector(c.x, c.y, c.z), angleDegrees1=-90, angleDegrees2=90))
-
-
-def wrist_plane(s: float, y: float) -> cq.Plane:
-    """Plane on the wrist face looking out of the body (towards the wrist)."""
-    _, t, n = frame(s)
-    return cq.Plane(origin=pt(s, 0.0, y), xDir=(t[0], 0, t[1]), normal=(-n[0], 0, -n[1]))
-
-
 S_CAV0, S_CAV1 = -19.0, 21.4         # the fixed end keeps a 4 mm solid wall that holds the strap's tongue
 
 
-def framed_plate(skin: cq.Workplane, s: float, l: float, w: float, r: float, d: float):
-    """(bright edge, dark face, pocket) of one plate: the same 0.8 mm steel, two finishes."""
-    face = skin.intersect(prism(s, 0.0, l - 2 * RIM, w - 2 * RIM, r - RIM, d=d, depth=3.0))
-    edge = skin.intersect(prism(s, 0.0, l, w, r, d=d, depth=3.0)).cut(face)
-    pocket = skin.intersect(prism(s, 0.0, l + 2 * GAP, w + 2 * GAP, r + GAP, d=d, depth=3.0))
-    return edge, face, pocket
+def soft_rect(hx: float, hy: float, r: float, z0: float, z1: float) -> cq.Workplane:
+    """A rounded rectangle in the XY plane whose corners are smoothed by a C2 spline, extruded along Z
+    (the plan outline of a steel face; the same as band_premium.soft_rect)."""
+    pts = []
+    nl, nc = 6, 9
+
+    def line(a, b, n):
+        for i in range(n):
+            f = i / n
+            pts.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f))
+
+    def arc(c, a0, n):
+        for i in range(n):
+            a = a0 + (math.pi / 2) * i / n
+            pts.append((c[0] + r * math.cos(a), c[1] + r * math.sin(a)))
+
+    line((-(hx - r), -hy), (hx - r, -hy), 2 * nl)
+    arc((hx - r, -hy + r), -math.pi / 2, nc)
+    line((hx, -hy + r), (hx, hy - r), nl)
+    arc((hx - r, hy - r), 0.0, nc)
+    line((hx - r, hy), (-(hx - r), hy), 2 * nl)
+    arc((-(hx - r), hy - r), math.pi / 2, nc)
+    line((-hx, hy - r), (-hx, -hy + r), nl)
+    arc((-(hx - r), -hy + r), math.pi, nc)
+    vs = [cq.Vector(x, y, z0) for x, y in pts]
+    wire = cq.Wire.assembleEdges([cq.Edge.makeSpline(vs, periodic=True)])
+    face = cq.Face.makeFromWires(wire)
+    return cq.Workplane("XY").add(cq.Solid.extrudeLinear(face, cq.Vector(0, 0, z1 - z0)))
+
+
+def slab(a: float, b: float) -> cq.Workplane:
+    """Everything between arc positions a and b, cut square to the band."""
+    return loft(span(a, b, 1.0), 44.0, -7.0, 16.0, 0.2)
 
 
 def end_cut(body: cq.Workplane, sign: int) -> cq.Workplane:
@@ -371,30 +436,60 @@ def build_island():
     parts: dict[str, cq.Workplane] = {}
     solid = island_solid()
     body = solid
-    skin = solid.cut(island_solid(PLATE))                 # the outer 0.8 mm everywhere: plates are cut from it
+    # the outer 0.8 mm over the middle of the island: the steel faces are cut from it
+    skin = solid.cut(island_solid(PLATE, [s for s in STATIONS if abs(s) <= 20.5]))
+    upper = loft(span(-S_NOSE - 1.0, S_NOSE - 0.5, 1.5), 50.0, lambda s: t_top(s) / 2, lambda s: t_top(s) + 6.0, 0.2)
+    lower = loft(span(-S_NOSE - 1.0, S_NOSE - 0.5, 1.5), 50.0, -6.0, lambda s: t_top(s) / 2, 0.2)
+    # both halves by intersection (in the premium variant "skin minus upper" came back inside out)
+    skin_top, skin_bot = skin.intersect(upper), skin.intersect(lower)
+    x_top = pt(LENS_S, t_top(LENS_S))[0]
+    x_bot = pt(LENS_S, 0.0)[0]
 
-    for name, s in LEG.items():
-        parts[f"el_{name}"], parts[f"elc_{name}"], pocket = framed_plate(skin, s, LEG_L, LEG_W, LEG_R, T0)
-        body = body.cut(pocket)
-    for name, s in WRIST.items():
-        parts[f"el_{name}"], parts[f"elc_{name}"], pocket = framed_plate(skin, s, WRIST_L, WRIST_W, WRIST_R, 0.0)
-        body = body.cut(pocket)
+    def lens(sk, hx, grow=0.0):
+        return sk.intersect(soft_rect(hx + grow, LENS_W / 2 + grow, LENS_RC + grow, -30.0, 30.0))
 
-    # sensor window, flush with the concave face, with a boss inside that meets the PPG sensor
-    win = solid.intersect(pin(0.0, 0.0, -2.0, WALL, WIN_R)).union(pin(0.0, 0.0, WALL - 0.05, WALL + 0.3, 3.1))
-    parts["window"] = win
-    body = body.cut(pin(0.0, 0.0, -2.0, WALL + 0.01, WIN_R + GAP))
+    # leg face: one steel face, three electrodes
+    top_all, top_face = lens(skin_top, x_top), lens(skin_top, x_top, -RIM)
+    top_rim = top_all.cut(top_face)
+    top_pocket = lens(skin_top, x_top, GAP)
+    for name, (a, b) in {"LL1": (-20.0, -SPLIT_TOP - HR), "RLD": (-SPLIT_TOP + HR, SPLIT_TOP - HR),
+                         "LL2": (SPLIT_TOP + HR, 20.0)}.items():
+        sl = slab(a, b)
+        parts[f"el_{name}"] = top_rim.intersect(sl)
+        parts[f"elc_{name}"] = top_face.intersect(sl)
+        body = body.cut(top_pocket.intersect(slab(a - GAP, b + GAP)))
 
-    # charge contacts: a shallow dish each, a gold contact at its floor
+    # wrist face: the same outline, LA1 | black ceramic centre | LA2
+    bot_all, bot_face = lens(skin_bot, x_bot), lens(skin_bot, x_bot, -RIM)
+    bot_rim = bot_all.cut(bot_face)
+    bot_pocket = lens(skin_bot, x_bot, GAP)
+    for name, (a, b) in {"LA1": (-20.0, -SPLIT_BOT - HR), "LA2": (SPLIT_BOT + HR, 20.0)}.items():
+        sl = slab(a, b)
+        parts[f"el_{name}"] = bot_rim.intersect(sl)
+        parts[f"elc_{name}"] = bot_face.intersect(sl)
+        body = body.cut(bot_pocket.intersect(slab(a - GAP, b + GAP)))
+    back = bot_all.intersect(slab(-SPLIT_BOT + HR, SPLIT_BOT - HR))
+    body = body.cut(bot_pocket.intersect(slab(-SPLIT_BOT + HR - GAP, SPLIT_BOT - HR + GAP)))
+
+    # sapphire lens through the centre, domed towards the skin, with the boss that meets the PPG sensor
+    r_sph = (WIN_R ** 2 + DOME ** 2) / (2 * DOME)
+    dome = (cq.Workplane("XY").add(cq.Solid.makeSphere(r_sph, cq.Vector(0, 0, -DOME + r_sph), angleDegrees1=-90, angleDegrees2=90))
+            .intersect(pin(0.0, 0.0, -1.0, 0.2, WIN_R)))
+    parts["window"] = solid.intersect(pin(0.0, 0.0, -2.0, WALL, WIN_R)).union(dome).union(pin(0.0, 0.0, WALL - 0.05, WALL + 0.3, 3.1))
+    hole = pin(0.0, 0.0, -2.0, WALL + 0.01, WIN_R + GAP)
+    body, back = body.cut(hole), back.cut(hole)
+    # two flush charge contacts in the black centre
     for i, y in enumerate(CHG_Y):
-        body = body.cut(dish(wrist_plane(0.0, y), 1.9, 0.35)).cut(pin(0.0, y, -1.0, 2.4, 1.25))
-        parts[f"chg_{i + 1}"] = pin(0.0, y, 0.35, 2.2, 1.2)
+        parts[f"chg_{i + 1}"] = solid.intersect(pin(0.0, y, -1.0, 2.2, R_CHG))
+        h = pin(0.0, y, -1.0, 2.4, R_CHG + GAP)
+        body, back = body.cut(h), back.cut(h)
+    parts["back"] = back
 
-    # status light: a short light line in the frame at the fixed end, on the centre line. The frame round it
-    # is the touch zone (capacitive, under the plastic); the device also wakes when the plates are touched.
+    # status light: a short light line at the fixed end, on the centre line. The body round it is the touch
+    # zone (capacitive, under the plastic); the device also wakes when the plates are touched.
     lp = top_plane(S_LED, 0.6)
-    led = cq.Workplane(lp).sketch().rect(1.1, 7.0).vertices().fillet(0.54).finalize().extrude(3.0)
-    led_cut = cq.Workplane(top_plane(S_LED, 0.62)).sketch().rect(1.1 + 2 * GAP, 7.0 + 2 * GAP).vertices().fillet(0.6).finalize().extrude(3.0)
+    led = cq.Workplane(lp).sketch().rect(1.1, 7.0).vertices().fillet(0.54).finalize().extrude(LED_DEPTH)
+    led_cut = cq.Workplane(top_plane(S_LED, 0.62)).sketch().rect(1.1 + 2 * GAP, 7.0 + 2 * GAP).vertices().fillet(0.6).finalize().extrude(LED_DEPTH)
     parts["led"] = solid.intersect(led)
     body = body.cut(led_cut)
 
@@ -404,11 +499,13 @@ def build_island():
     body = end_cut(body, 1)                               # lugs and bar at the free end only
 
     # shells: the leg-side lid and the wrist-side tray, welded at mid height; the lugs belong to the tray
-    upper = loft(span(-S_NOSE - 1.0, S_NOSE - 0.5, 1.5), 50.0, lambda s: t_top(s) / 2, lambda s: t_top(s) + 6.0, 0.2)
     parts["shell_leg"] = body.intersect(upper)
     wrist = body.cut(upper)
     for sy, name in zip((-1, 1), ("lug_a", "lug_b")):
-        zone = cq.Workplane(plane_on(S_BAR, D_BAR, sy * (W_SLOT / 2 + 5.0))).center(-1.5, 0.0).box(13.0, 10.0, 16.0)
+        # v3.2: the zone holds only the lug (from s = 22.6, past the cavity's end and the lid's edge) and its inner face
+        # is 0.3 mm inside the empty slot. v3.1's zone began at 19.5 with its face exactly on the slot's wall; with the
+        # steel-face pockets the kernel then returned an invalid tray and an empty second lug (the volumes are checked)
+        zone = cq.Workplane(plane_on(S_BAR, D_BAR, sy * (W_SLOT / 2 - 0.3 + 5.0))).center(0.05, 0.0).box(9.9, 10.0, 16.0)
         parts[name] = wrist.intersect(zone)
         wrist = wrist.cut(zone)
     parts["shell_wrist"] = wrist
@@ -648,6 +745,10 @@ def build_dock():
         d[f"dock_pin_{i + 1}"] = cq.Workplane("XY").circle(0.75).extrude(2.3).translate((0, y, -2.0 + 0.02))
     d["dock_usb"] = (cq.Workplane("XZ").sketch().rect(9.0, 3.3).vertices().fillet(1.6).finalize().extrude(0.6)
                      .translate((0, 51.4, -78.0)))
+    # v3.2: a shallow pocket where the domed lens sits
+    pocket = cq.Workplane("XY").circle(WIN_R + 0.8).extrude(2.0).translate((0, 0, -1.4))
+    for k in ("dock_stand", "dock_pad"):
+        d[k] = d[k].cut(pocket)
     return d
 
 
@@ -657,9 +758,9 @@ def build_wrist() -> cq.Workplane:
 
 # ------------------------------------------------------------------ export
 MATERIAL = {
-    "shell_": "body", "lug_": "body", "led": "led", "window": "glass",
+    "shell_": "body", "lug_": "body", "led": "led", "window": "glass", "back": "back",
     "el_": "electrode", "elc_": "electrode_satin", "bar": "steel_dark", "post_": "steel",
-    "chg_": "gold", "dock_pin_": "gold", "spring_": "gold",
+    "chg_": "contact", "dock_pin_": "gold", "spring_": "gold",
     "strap": "fkm", "tongue": "fkm", "anchor": "anchor", "hook": "hook", "loop": "loop",
     "cell_pcm": "pcb", "cell_tab": "steel",
     "flex": "polyimide", "trace_guard": "copper_dim", "trace_": "copper",
@@ -730,7 +831,7 @@ def mesh(wp: cq.Workplane, lin: float, ang: float):
     return np.array(V), np.array(N), np.array(F, dtype=np.int64)
 
 
-SMOOTH = ("el_", "elc_", "shell_", "lug_", "strap", "bar", "led", "window", "dock_stand", "dock_pad", "chg_", "hook", "loop")
+SMOOTH = ("el_", "elc_", "shell_", "lug_", "strap", "bar", "led", "window", "dock_stand", "dock_pad", "chg_", "hook", "loop", "back")
 
 
 def export(parts: dict[str, cq.Workplane], path: Path, cut_y: float | None = None) -> int:
@@ -806,7 +907,7 @@ def assemble():
     # each spring reaches its plate through a small window in the shell
     for name, wp in inside.items():
         if name.startswith("spring_") or name in ("tpad",):
-            for sh in ("shell_leg", "shell_wrist"):
+            for sh in ("shell_leg", "shell_wrist", "back"):
                 island[sh] = island[sh].cut(wp)
     return island, solid, strap, inside
 
@@ -820,24 +921,40 @@ if __name__ == "__main__":
     print(f"built in {time.time() - t_start:.0f}s")
 
     checks = {}
-    shells = island["shell_leg"].union(island["shell_wrist"])
+    # shell by shell (in the premium variant a union of the two shells failed in the kernel's clean-up step)
+    def vs_shells(wp):
+        return sum(common(wp, island[k]) for k in ("shell_leg", "shell_wrist"))
+
     hits = []
     for name, wp in inside.items():
-        v = common(wp, shells)
+        v = vs_shells(wp) + common(wp, island["back"])
         if v > 0.02:
             hits.append([name, round(v, 2)])
     checks["inside_parts_touching_the_shells_mm3"] = hits
-    checks["strap_vs_island_mm3"] = round(common(strap["strap"], island["shell_wrist"]) + common(strap["strap"], island["shell_leg"]), 3)
+    checks["strap_vs_island_mm3"] = round(vs_shells(strap["strap"]), 3)
     checks["strap_vs_lugs_mm3"] = round(sum(common(strap["strap"], island[k]) for k in ("lug_a", "lug_b")), 3)
     checks["strap_vs_bar_mm3"] = round(common(strap["strap"], island["bar"]), 3)
+    checks["tongue_vs_shells_mm3"] = round(vs_shells(strap["tongue"]), 3)
+    checks["led_vs_tongue_mm3"] = round(common(island["led"], strap["tongue"]) + common(island["led"], strap["flex"]), 3)
+    # every steel part, the black centre, the lens and the contacts against the body and each other
+    inlays = [k for k in island if k.startswith(("el_", "elc_", "chg_")) or k in ("back", "window", "led")]
+    checks["inlays_vs_shells_mm3"] = round(sum(vs_shells(island[k]) for k in inlays), 3)
+    checks["inlays_vs_each_other_mm3"] = round(sum(common(island[a], island[b]) for i, a in enumerate(inlays)
+                                                   for b in inlays[i + 1:]), 3)
+    # the two lugs must come out the same (v3.2's first build lost the second one in a failed boolean)
+    checks["lugs_mm3"] = [round(vol(island["lug_a"]), 1), round(vol(island["lug_b"]), 1)]
+    checks["solids_valid"] = all(v.val().isValid() for k, v in island.items() if k.startswith(("shell_", "el_", "elc_", "lug_"))
+                                 or k in ("back", "window"))
+    checks["volumes_positive"] = all(vol(v) > 0 for k, v in island.items() if k.startswith(("shell_", "el_", "elc_", "lug_"))
+                                     or k in ("back",))
     bb = solid.val().BoundingBox()
     checks["island_symmetric_across_mm"] = round(bb.ymax + bb.ymin, 4)
 
     areas = {}
-    for name in ("LL1", "RLD", "LL2"):
-        areas[name] = round(sum(area_mm2(island[f"{k}_{name}"], frame3n(LEG[name])) for k in ("el", "elc")), 0)
-    for name in ("LA1", "LA2"):
-        n = frame3n(WRIST[name])
+    for name, s in (("LL1", -11.5), ("RLD", 0.0), ("LL2", 11.5)):
+        areas[name] = round(sum(area_mm2(island[f"{k}_{name}"], frame3n(s)) for k in ("el", "elc")), 0)
+    for name, s in (("LA1", -11.5), ("LA2", 11.5)):
+        n = frame3n(s)
         areas[name] = round(sum(area_mm2(island[f"{k}_{name}"], (-n[0], 0, -n[2])) for k in ("el", "elc")), 0)
     for name in ("RA1", "RA2"):
         areas[name] = round(sum(area_mm2(strap[f"{k}_{name}"], frame3n(RA[name])) for k in ("el", "elc")), 0)
@@ -858,7 +975,7 @@ if __name__ == "__main__":
     info = {
         "version": VERSION,
         "design_wrist_mm": {"circumference": round(CIRC, 1), "breadth": 2 * A, "depth": 2 * B},
-        "island_mm": {"length_over_electrodes": round(2 * 16.6 * (R_CENTRE + T0) / R_CENTRE, 1),
+        "island_mm": {"length_over_electrodes": round(2 * LENS_S * (R_CENTRE + T0) / R_CENTRE, 1),
                       "length_root_to_lug_ends": round(S_END - 0.6 - S_ROOT, 1), "width": W0, "thickness": T0,
                       "inner_radius_at_centre": round(R_CENTRE, 1), "concavity_depth_at_19mm": round(-p_end[1], 2)},
         "strap_mm": {"width": W_STRAP, "thickness": T_STRAP, "closure": "hook-and-loop",
@@ -866,6 +983,8 @@ if __name__ == "__main__":
                      "ra_gap": round(abs(RA["RA1"] - RA["RA2"]) - RA_L, 1)},
         "electrode_area_mm2": areas,
         "window_diameter_mm": 2 * WIN_R,
+        "lens_dome_mm": DOME,
+        "electrodes": "premium faces: one leg face split LL1 | RLD | LL2, one wrist face split LA1 | black centre | LA2, 316L",
         "checks": checks,
         "triangles": {"band": n1, "section": n2, "dock": n3},
         "seconds": round(time.time() - t_start),
@@ -874,10 +993,10 @@ if __name__ == "__main__":
     print(json.dumps(info, indent=2))
 
     if "--step" in sys.argv:          # solid CAD for a designer or a factory: one assembly, every part named
-        assy = cq.Assembly(name="band_alpha_id_v3_1")
+        assy = cq.Assembly(name="band_alpha_id_v3_2")
         for name, wp in {**band, **dock}.items():
             assy.add(wp, name=name)
         assy.save(str(OUT / "band_id.step"))
         print("STEP ->", OUT / "band_id.step")
 
-# v3.1.0 - bar and lugs only at the free end (the fixed end narrows into the strap), all plates one metal (316L: satin face, polished edge); v3: the owner's render language on v2's engineering
+# v3.2.0 - v3.1's body, lugs, strap and closure with the premium variant's electrodes (one split steel face per side, black ceramic centre, domed lens, flush contacts); v3.1.0 - bar and lugs only at the free end (the fixed end narrows into the strap), all plates one metal (316L: satin face, polished edge); v3: the owner's render language on v2's engineering

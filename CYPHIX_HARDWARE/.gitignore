@@ -25,6 +25,7 @@ mechanical/out_id/render.log
 mechanical/studio/harness.js
 mechanical/studio/shots.json
 mechanical/studio/shots_p.json
+mechanical/studio/shots_v32.json
 
 # premium side variant: same rule (band_premium.py + render_p.py regenerate it); p.json and band_p.step are kept
 mechanical/out_p/*.glb
@@ -33,4 +34,4 @@ mechanical/out_p/_chrome/
 mechanical/out_p/build.log
 mechanical/out_p/render.log
 
-# v0.7.0 - ignores for the hardware folder: venv, build output and log, KiCad scratch files, heavy render output (v3.1 and the premium variant)
+# v0.10.0 - ignores for the hardware folder: venv, build output and log, KiCad scratch files, heavy render output (v3.2, the premium variant, the v3.2 shot list)
