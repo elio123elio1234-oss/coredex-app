@@ -21,7 +21,7 @@ import band_premium as P  # noqa: E402
 
 DROP = ("pcb", "radio", "afe", "conn", "chip_", "low_", "motor", "cell", "spring_", "flex", "trace_", "post_",
         "tongue", "anchor", "latch")
-REMESH = ("strap", "strap_b", "hook", "loop")
+REMESH = ("strap", "hook", "loop")
 REMESH_ISLAND = ("end_a", "end_b")         # the rounded ends: 190k triangles each at the finest setting
 
 
@@ -45,9 +45,7 @@ if __name__ == "__main__":
             continue
         lite.add_geometry(g, node_name=name, geom_name=name)
         kept += len(g.faces)
-    ring = P.build_ring()
-    straps = P.build_strap_a(ring)
-    straps.update(P.build_strap_b())
+    straps = P.build_strap()
     for name in REMESH:
         kept += add(lite, name, straps[name], 0.025, 0.2)
     island, _ = P.build_island()
@@ -56,4 +54,4 @@ if __name__ == "__main__":
     lite.export(str(P.OUT / "band_p_lite.glb"), include_normals=True)
     print(f"{kept} triangles -> {P.OUT / 'band_p_lite.glb'}")
 
-# v1.1.0 - light copy of the premium model for the studio pictures: straps re-meshed to 0.025 mm, the rounded ends to 0.012 mm, hidden inner parts left out
+# v1.2.0 - one strap (P1.1); light copy of the premium model for the studio pictures: straps re-meshed to 0.025 mm, the rounded ends to 0.012 mm, hidden inner parts left out

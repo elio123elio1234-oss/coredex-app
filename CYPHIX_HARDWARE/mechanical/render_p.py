@@ -64,7 +64,7 @@ LEG_FACE = R.LEG_FACE
 SIDE = R.SIDE
 NIGHT = [dict(w=6.0, h=3.0, intensity=2.4, pos=[1.5, 6.5, 2.5]), dict(w=0.7, h=6.5, intensity=5.0, pos=[-6.5, 1.5, -3.5]),
          dict(w=0.7, h=6.5, intensity=3.2, pos=[6.5, 1.0, -3.0]), dict(w=6.0, h=0.8, intensity=0.5, pos=[0.0, -2.5, 6.5])]
-GROUND = -50.0                       # the band stands on the fold at the back of the wrist
+GROUND = -45.0                       # the band stands on the plain back of the strap
 
 SHOTS = {
     "hero": dict(files=BAND, orient="island", pos=[-118, 205, 104], target=[0, 0, -18], fov=22, ground=GROUND,
@@ -80,9 +80,8 @@ SHOTS = {
                       strips=R.WRIST_FACE, bg="apple", palette=COLOURWAYS["navy"]),
     "end": dict(files=BAND, orient="island", pos=[-82, 52, 34], target=at(-22.5, 2.6), fov=15, ground=None,
                 hide=HIDE, strips=LEG_FACE, bg="apple", palette=COLOURWAYS["starlight"]),
-    "ring": dict(files=BAND, orient="wrist", pos=view(-84, 125, 70, along=-20), target=at(-86, 4.0), fov=17, ground=None,
-                 hide=HIDE, strips=SIDE + [dict(w=6.0, h=4.0, intensity=1.0, pos=[0.0, 6.0, 3.0])], bg="apple",
-                 palette=COLOURWAYS["navy"]),
+    "ring": dict(files=BAND, orient="island", pos=[95, 88, 52], target=at(P.S_FB - 2.0, 3.0), fov=15, ground=None,
+                 hide=HIDE, strips=LEG_FACE, bg="apple", palette=COLOURWAYS["navy"]),
     "profile": dict(files=BAND + ["../out_p/wrist.glb"], orient="wrist", pos=[2, 520, -21], target=[2, 0, -21], fov=9.6,
                     ground=None, hide=HIDE, strips=SIDE, bg="apple", palette=COLOURWAYS["navy"]),
 }
@@ -175,4 +174,4 @@ if __name__ == "__main__":
     finally:
         server.shutdown()
 
-# v1.0.0 - shots for the premium side variant: hero (navy, Apple grey), night (graphite on black), top, wrist face, the end and its slot (starlight), the ring at the back, profile on the wrist, and a three-colour lineup
+# v1.1.0 - the ring shot now at the island's free end (P1.1); shots for the premium side variant: hero (navy, Apple grey), night (graphite on black), top, wrist face, the end and its slot (starlight), the ring at the back, profile on the wrist, and a three-colour lineup

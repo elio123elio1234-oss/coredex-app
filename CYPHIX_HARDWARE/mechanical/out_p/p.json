@@ -1,12 +1,12 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "island_mm": {
     "length": 52.0,
     "width": 30.0,
     "thickness": 7.2,
     "ends": "rounded, band slot in each"
   },
-  "closure": "ring at the back of the wrist, plain strap folds back (hook-and-loop); plain strap S / M / L",
+  "closure": "steel ring at the island's free end (inside of the wrist); the strap goes through it and folds back (hook-and-loop)",
   "ring_mm": {
     "outer_width": 28.2,
     "wire": 1.8
@@ -18,16 +18,15 @@
     "LL2": 394.0,
     "LA1": 296.0,
     "LA2": 296.0,
-    "RA1": 235.0,
+    "RA1": 234.0,
     "RA2": 233.0
   },
   "checks": {
     "inside_parts_touching_the_shells_mm3": [],
     "strap_vs_island_mm3": 0.0,
-    "plain_strap_vs_island_mm3": 0.0,
-    "plain_strap_vs_ring_mm3": 0.0,
-    "plain_strap_vs_strap_mm3": 0.0,
     "strap_vs_ring_mm3": 0.0,
+    "strap_vs_ring_tongue_mm3": 0.0,
+    "ring_vs_island_mm3": 0.0,
     "solids_valid": true,
     "volumes_positive": true,
     "latch_vs_shells_mm3": 0.0,
@@ -37,9 +36,9 @@
     "ends_symmetric_across_mm": 0.0
   },
   "triangles": {
-    "band": 1083382,
-    "section": 375808,
+    "band": 717446,
+    "section": 272538,
     "dock": 42890
   },
-  "seconds": 324
+  "seconds": 863
 }

@@ -1,5 +1,31 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.8.0 — 2026-11-15
+
+**Why.** The owner on P1.0: the ring was on "the part that should be the top
+of the strap - not comfortable, and certainly not fashionable". Right: worn
+with the island on the inside of the wrist, the back of the wrist is what
+everyone sees, and a buckle and a fold there press on it. v0.7.0 presented
+the back-of-wrist closure as "where every watch closes"; for this band, whose
+island sits on the inside, that was the wrong way round.
+
+**What changed (`mechanical/band_premium.py` P1.1, 1.1.0).**
+
+- The polished steel ring moves to the island's free end, on the inside of
+  the wrist, held by a steel tongue in that end's slot (the slot is now the
+  tongue's size). One strap: from the fixed end round the wrist, over the top
+  (only RA1 and RA2 on it), under the ring's far bar, up and back onto itself
+  with hook-and-loop, beside the island - the way Apple's Sport Loop closes
+  next to the case. The tail is 8 mm shorter than the first P1.1 render
+  showed (tip at s = 58), so on the design wrist it stays on the inside half
+  and never climbs to the top.
+- The plain S / M / L strap of P1.0 is gone with the junction it needed, so
+  "three strap lengths" is open again, as in v3.1. RA1/RA2 are back at v3.1's
+  places (-55 / -69).
+- Checks: nothing inside touches the shell; the strap touches neither the
+  body, the ring nor the ring's tongue; the ring clears the body; all solids
+  valid.
+
 ## v0.7.0 — 2026-11-15
 
 **Why.** The owner on concept v3.1: "Can it be upgraded to look like an Apple
@@ -333,4 +359,4 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.7.0 — the hardware folder's history, newest first; latest: the premium side variant P1 -->
+<!-- v0.8.0 — the hardware folder's history, newest first; latest: P1.1, the ring beside the island -->

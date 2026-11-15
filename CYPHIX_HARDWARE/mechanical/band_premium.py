@@ -8,15 +8,16 @@ board, cell, sensors, springs, flex, same 7.2 mm and 30 mm that the parts set); 
     The section is the same all along, and both ends are rounded off the same way, with one 3 mm radius.
   * The strap goes into a slot in each end, the way a watch band goes into its case, between two solid,
     well-rounded corners. The strap is 22 mm (v3.1: 24), narrower than the 30 mm body, as a watch band is. The
-    fixed end holds the strap with the conductor (overmoulded, as before). The free end takes a plain strap that clicks in on a latch - so the plain strap can come in
-    S / M / L (the "three strap lengths" item of v3.1), and the strap with the conductor never needs sizes.
+    fixed end holds the strap with the conductor (overmoulded, as before); the free end holds the ring.
   * The steel is flush and continuous: the leg face is one rounded steel face cut into LL1 | RLD | LL2 by two
     hairline lines of the body's own material, with one polished line round the outside. The wrist face is
     the same outline: LA1 | black ceramic centre with a domed sapphire lens and two flush contacts | LA2.
     Same metal on every plate (316L), same finishes (satin face, polished edge) as v3.1.
-  * The closure moves to the back of the wrist, where every watch closes: the strap with the conductor ends in
-    a polished steel ring, the plain strap goes through it and folds back onto itself (hook-and-loop). The
-    ring has a job (the strap turns round it). The tail lies on the plain strap, so it can never cover RA1/RA2.
+  * The closure is beside the island, on the inside of the wrist, where nobody sees it (Apple's Sport Loop
+    closes the same way, next to the case): a polished steel ring sits at the island's free end, held by a
+    tongue in that end's slot, and the one strap goes round the wrist, through the ring and back onto itself
+    (hook-and-loop). P1.0 put the ring at the back of the wrist; the owner: "that is the top of the strap - not
+    comfortable, and certainly not fashionable". The top of the strap now carries only RA1 and RA2.
 
 What is NOT claimed: that this is manufacturable at a given price (zirconia housings cost several times a
 plastic one and are bonded, not ultrasonically welded), that the antenna works (steel on both faces, as in
@@ -43,7 +44,7 @@ from band_id import (CIRC, blend, box_at, common, frame, frame3n, loft, mesh, pi
                      ramp, sec_wire, sec_yd, section, span, vol, PARAMS)
 
 OUT = HERE / "out_p"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 # --- kernel quirk: with the rounded ends, some booleans return a correct solid that is inside out (negative volume),
@@ -102,7 +103,7 @@ RT_E, RB_E = RT0, 2.4
 # width all along and the end's corners beside it are 3 mm wide with a 2.4 mm round: solid, no step, no thin wall.
 D_HOOD = T_STRAP + GAP               # top of each slot
 S_ROOT = -24.0                       # the strap with the conductor becomes its tongue here (inside the fixed end)
-S_ROOT_B = 24.0                      # the plain strap's end and its latch, inside the free end
+S_ROOT_B = 24.0                      # (P1.0: the plain strap's end) - the ring's tongue reaches in to LATCH_S0
 S_CAV0, S_CAV1 = M.S_CAV0, M.S_CAV1  # the same cavity as v3.1
 
 
@@ -276,11 +277,12 @@ def build_island():
     body = body.cut(island_solid(WALL, cav_st))
     # what reaches into the ends is cut from the body AND the end pieces: the strap's tongue, bead and flex,
     # the two band slots (the strap goes into the body, not round a bar), the plain strap's latch pocket
-    latch = loft(span(LATCH_S0, S_ROOT_B, 0.4), 17.0, 0.7, 2.3, 0.3)
+    # the ring's tongue: a steel plate from the ring's near bar into the free end, caught inside (the ring is
+    # one steel part with it; drawn as two)
+    latch = loft(span(LATCH_S0, S_NB, 0.4), 17.0, D_NB - 0.8, D_NB + 0.8, 0.3)
     for tool in (make_tongue(0.05), make_bead(0.08), make_flex_tail(0.25),
                  loft(span(-S_E - 1.6, S_ROOT + 0.05, 0.5), W_STRAP + 2 * GAP, -0.4, D_HOOD, R_STRAP + GAP),
-                 loft(span(S_ROOT_B - 0.05, S_E + 1.6, 0.5), W_STRAP + 2 * GAP, -0.4, D_HOOD, R_STRAP + GAP),
-                 loft(span(LATCH_S0 - 0.1, S_ROOT_B + 0.1, 0.4), 17.0 + 2 * GAP, 0.7 - GAP, 2.3 + GAP, 0.35)):
+                 loft(span(LATCH_S0 - 0.1, S_E + 1.6, 0.4), 17.0 + 2 * GAP, D_NB - 0.8 - GAP, D_NB + 0.8 + GAP, 0.35)):
         body = body.cut(tool)
         for k in ends:
             ends[k] = ends[k].cut(tool)
@@ -327,17 +329,14 @@ def make_flex_tail(grow: float = 0.0) -> cq.Workplane:
                 lambda s: flex_d(s) + 0.15 + grow, 0.05)
 
 
-RA = {"RA1": -53.0, "RA2": -67.0}      # 2 mm closer to the island than v3.1, still 1 mm apart
+RA = {"RA1": -55.0, "RA2": -69.0}      # as in v3.1: 1 mm apart, each on its own trace
 RA_L, RA_W = M.RA_L, M.RA_W
 RA_POST_Y = M.RA_POST_Y
-S_A_END = -81.0                        # end of the strap with the conductor: it holds the ring here
-NOSE = 1.4                             # its end rounds off over this length
-
-# the ring: polished 316L, the plain strap turns round its far bar
+# the ring: polished 316L at the island's free end; the strap turns round its far bar
 R_RING = 0.9
-S_NB, D_NB = -78.5, T_STRAP / 2        # near bar, moulded inside the strap's end
-S_FB = -85.6                           # far bar ...
-D_FB = T_STRAP + 0.15 + R_RING         # ... high enough for the plain strap to pass under it
+S_NB, D_NB = S_E + 1.25, 1.5           # near bar, just off the free end, on the tongue's centre line
+S_FB = S_NB + 5.4                      # far bar: room for the strap to come up between the bars and fold back
+D_FB = T_STRAP + 0.15 + R_RING         # high enough for the strap to pass under it
 Y_RING, RC_RING = 13.2, 2.0            # 28.2 mm wide: 1.3 mm of steel each side of the 22 mm strap
 
 
@@ -378,20 +377,43 @@ def neck(s: float) -> float:
     return W_STRAP
 
 
-def build_strap_a(ring: cq.Workplane):
+RM = R_RING + 0.15 + T_STRAP / 2       # centre-line radius round the far bar
+D_TAIL = T_STRAP + 0.02                # underside of the folded-back tail: it lies on the strap
+S_TIP = 58.0                           # tail tip on the design wrist: it stays on the inside half of the wrist
+TIP_R = 10.0                           # the tail's last 10 mm narrows along an ellipse
+HOOK_S = (S_FB + 6.5, S_TIP - 3.0)     # hooks under the tail, 3 mm short of the tip (the lip a finger lifts)
+LOOP_S = (S_FB + 4.0, 86.0)            # loops on the strap's outer face; they end before RA2 (at +89.7)
+VELCRO_W, VELCRO_T = 18.0, 0.6
+
+
+def strap_path() -> list:
+    """Centre line: from the fixed end round the wrist (over the top, past RA1/RA2), under the ring's far bar,
+    round it towards the island, and back out on top of itself."""
+    pts = [pt(s, T_STRAP / 2) for s in span(S_ROOT, S_FB - CIRC, 0.6)]
+    pb, tb, nb = frame(S_FB)
+    cb = (pb[0] + D_FB * nb[0], pb[1] + D_FB * nb[1])
+    for k in range(1, 31):
+        a = math.pi * k / 30
+        pts.append((cb[0] + RM * (-math.cos(a) * nb[0] - math.sin(a) * tb[0]), 0.0,
+                    cb[1] + RM * (-math.cos(a) * nb[1] - math.sin(a) * tb[1])))
+    top = D_FB + RM
+    for s in span(S_FB, S_TIP, 0.6)[1:]:
+        d = (D_TAIL + T_STRAP / 2) + (top - D_TAIL - T_STRAP / 2) * (1 - blend((s - S_FB) / 9.0))
+        pts.append(pt(s, d))
+    return pts
+
+
+def build_strap():
     parts: dict[str, cq.Workplane] = {}
-    ss = span(S_ROOT, S_A_END + NOSE, 0.6)
-    ss = [s for i, s in enumerate(ss) if i % 3 == 0 or i == len(ss) - 1 or abs(s) < S_E + 9.5]
-    nose = [S_A_END + NOSE * (1 - f) for f in (0.2, 0.4, 0.55, 0.7, 0.8, 0.88, 0.94, 0.97)]
-    th = [T_STRAP] * len(ss) + [max(T_STRAP * math.sqrt(1 - f * f), 0.66) for f in (0.2, 0.4, 0.55, 0.7, 0.8, 0.88, 0.94, 0.97)]
-    allss = ss + nose
-    pts = [pt(s, T_STRAP / 2) for s in allss]
-    strap = loft_path(pts, [neck(s) for s in allss], th)
-    # the ring's near bar is moulded into the strap's end: a straight round hole for it (cutting the whole ring
-    # out of the strap left an invalid solid)
-    pn = cq.Vector(*pt(S_NB, D_NB))
-    hole = cq.Workplane(cq.Plane(origin=(pn.x, -13.0, pn.z), xDir=(1, 0, 0), normal=(0, 1, 0))).circle(R_RING + 0.02).extrude(26.0)
-    strap = strap.cut(hole)
+    pts = strap_path()
+    n = len(pts)
+    tip_from = n - 1 - int(round(TIP_R / 0.6)) - 1
+    sel = [i for i in range(0, n, 3) if i < tip_from] + list(range(tip_from, n))
+    widths = []
+    for i in sel:
+        x = ((S_TIP - 0.6 * (n - 1 - i)) - (S_TIP - TIP_R)) / TIP_R
+        widths.append(W_STRAP if (i < tip_from or x <= 0) else max(W_STRAP * math.sqrt(max(1.0 - x * x, 0.0)), 6.0))
+    strap = loft_path([pts[i] for i in sel], widths, [T_STRAP] * len(sel))
 
     for name, s in RA.items():
         sl = loft(span(s - 8.5, s + 8.5, 1.2), 30.0, T_STRAP - 0.6, T_STRAP + 2.0, 0.15)
@@ -400,7 +422,11 @@ def build_strap_a(ring: cq.Workplane):
         parts[f"elc_{name}"] = face
         strap = strap.cut(sl.intersect(M.prism(s, 0.0, RA_L + 2 * GAP, RA_W + 2 * GAP, 4.2 + GAP, d=T_STRAP)))
         parts[f"post_{name}"] = pin(s, RA_POST_Y[name], 1.47, T_STRAP - 0.6, 0.9)
-    parts["strap"] = strap
+    hook = loft(span(HOOK_S[0], HOOK_S[1], 1.0), VELCRO_W, D_TAIL - 0.005, D_TAIL + VELCRO_T, 0.3)
+    loopp = loft(span(LOOP_S[0], LOOP_S[1], 1.0), VELCRO_W, T_STRAP - VELCRO_T, T_STRAP + 0.005, 0.3)
+    parts["strap"] = strap.cut(hook).cut(loopp)
+    parts["hook"] = hook
+    parts["loop"] = loopp
     parts["tongue"] = make_tongue().union(make_bead())
     parts["anchor"] = box_at(S_ANCHOR, 1.75, 0.0, 4.0, 0.7, 18.0)
 
@@ -422,54 +448,9 @@ def build_strap_a(ring: cq.Workplane):
     return parts
 
 
-# --------------------------------------------------------- the plain strap
-S_FB_B = S_FB + CIRC                   # the far bar, counted from the free end
-RM = R_RING + 0.15 + T_STRAP / 2       # centre-line radius round the far bar
-D_TAIL = T_STRAP + 0.02
-S_TIP_B = 41.0                         # tail tip on the design wrist (S / M / L straps move it)
-TIP_R = 10.0
-HOOK_S = (S_TIP_B + 3.0, 69.0)
-LOOP_S = (37.0, 76.0)
-VELCRO_W, VELCRO_T = 18.0, 0.6
-
-
-def build_strap_b():
-    parts: dict[str, cq.Workplane] = {}
-    under = span(S_ROOT_B, S_FB_B, 0.6)
-    pts = [pt(s, T_STRAP / 2) for s in under]
-    pb, tb, nb = frame(S_FB_B)
-    cb = (pb[0] + D_FB * nb[0], pb[1] + D_FB * nb[1])
-    for k in range(1, 31):
-        a = math.pi * k / 30
-        pts.append((cb[0] + RM * (-math.cos(a) * nb[0] + math.sin(a) * tb[0]), 0.0,
-                    cb[1] + RM * (-math.cos(a) * nb[1] + math.sin(a) * tb[1])))
-    top = D_FB + RM
-    tail = span(S_FB_B, S_TIP_B, 0.6)[1:]
-    for s in tail:
-        d = (D_TAIL + T_STRAP / 2) + (top - D_TAIL - T_STRAP / 2) * (1 - blend((S_FB_B - s) / 9.0))
-        pts.append(pt(s, d))
-    n = len(pts)
-    n_tip = int(round(TIP_R / 0.6)) + 1
-    widths = []
-    for i in range(n):
-        k = n - 1 - i                                         # points from the tip
-        x = 1.0 - (0.6 * k) / TIP_R
-        w = W_STRAP if x <= 0 else max(W_STRAP * math.sqrt(max(1.0 - x * x, 0.0)), 6.0)
-        widths.append(min(w, neck(under[i])) if i < len(under) else w)
-    sel = [i for i in range(0, n, 3) if i < n - n_tip - 1 or (i < len(under) and under[i] < S_E + 9.5)]
-    sel = sorted(set(sel + [i for i in range(n) if i < len(under) and under[i] < S_E + 9.5] + list(range(n - n_tip - 1, n))))
-    strap = loft_path([pts[i] for i in sel], [widths[i] for i in sel], [T_STRAP] * len(sel))
-    hook = loft(span(HOOK_S[0], HOOK_S[1], 1.0), VELCRO_W, D_TAIL - 0.005, D_TAIL + VELCRO_T, 0.3)
-    loopp = loft(span(LOOP_S[0], LOOP_S[1], 1.0), VELCRO_W, T_STRAP - VELCRO_T, T_STRAP + 0.005, 0.3)
-    parts["strap_b"] = strap.cut(hook).cut(loopp)
-    parts["hook"] = hook
-    parts["loop"] = loopp
-    return parts
-
-
 # ------------------------------------------------------------------ export
 MATERIAL = dict(M.MATERIAL)
-MATERIAL.update({"back": "back", "ring": "ring", "latch": "steel", "chg_": "contact", "strap_b": "fkm", "end_": "body"})
+MATERIAL.update({"back": "back", "ring": "ring", "latch": "steel", "chg_": "contact", "end_": "body"})
 
 
 def material_of(name: str) -> str:
@@ -480,7 +461,7 @@ def material_of(name: str) -> str:
     return MATERIAL.get(best, "body")
 
 
-SMOOTH = M.SMOOTH + ("back", "ring", "strap_b", "end_")
+SMOOTH = M.SMOOTH + ("back", "ring", "end_")
 
 
 def export(parts: dict[str, cq.Workplane], path: Path, cut_y: float | None = None) -> int:
@@ -523,10 +504,8 @@ def assemble():
     t = time.time()
     island, solid = build_island()
     print(f"  island {time.time() - t:.0f}s", flush=True)
-    ring = build_ring()
-    strap = build_strap_a(ring)
-    strap.update(build_strap_b())
-    strap["ring"] = ring
+    strap = build_strap()
+    strap["ring"] = build_ring()
     print(f"  straps {time.time() - t:.0f}s", flush=True)
     inside = M.build_inside()
     for name, wp in inside.items():
@@ -559,14 +538,13 @@ if __name__ == "__main__":
             hits.append([name, round(v, 2)])
     checks["inside_parts_touching_the_shells_mm3"] = hits
     checks["strap_vs_island_mm3"] = round(vs_shells(strap["strap"]), 3)
-    checks["plain_strap_vs_island_mm3"] = round(vs_shells(strap["strap_b"]), 3)
-    checks["plain_strap_vs_ring_mm3"] = round(common(strap["strap_b"], strap["ring"]), 3)
-    checks["plain_strap_vs_strap_mm3"] = round(common(strap["strap_b"], strap["strap"]), 3)
     checks["strap_vs_ring_mm3"] = round(common(strap["strap"], strap["ring"]), 3)
+    checks["strap_vs_ring_tongue_mm3"] = round(common(strap["strap"], island["latch"]), 3)
+    checks["ring_vs_island_mm3"] = round(vs_shells(strap["ring"]), 3)
     checks["solids_valid"] = all(v.val().isValid() for k, v in {**island, **strap}.items() if k in
-                                 ("shell_leg", "shell_wrist", "end_a", "end_b", "strap", "strap_b", "ring", "back"))
+                                 ("shell_leg", "shell_wrist", "end_a", "end_b", "strap", "ring", "back"))
     checks["volumes_positive"] = all(vol(v) > 0 for k, v in {**island, **strap}.items() if k in
-                                     ("shell_leg", "shell_wrist", "end_a", "end_b", "strap", "strap_b", "back"))
+                                     ("shell_leg", "shell_wrist", "end_a", "end_b", "strap", "back"))
     checks["latch_vs_shells_mm3"] = round(vs_shells(island["latch"]), 3)
     checks["tongue_vs_shells_mm3"] = round(vs_shells(strap["tongue"]), 3)
     bb = solid.val().BoundingBox()
@@ -598,7 +576,7 @@ if __name__ == "__main__":
     info = {
         "version": VERSION,
         "island_mm": {"length": checks["island_length_mm"], "width": W0, "thickness": T0, "ends": "rounded, band slot in each"},
-        "closure": "ring at the back of the wrist, plain strap folds back (hook-and-loop); plain strap S / M / L",
+        "closure": "steel ring at the island's free end (inside of the wrist); the strap goes through it and folds back (hook-and-loop)",
         "ring_mm": {"outer_width": round(2 * (Y_RING + R_RING), 1), "wire": 2 * R_RING},
         "lens_dome_mm": DOME,
         "electrode_area_mm2": areas,
@@ -616,4 +594,4 @@ if __name__ == "__main__":
         assy.save(str(OUT / "band_p.step"))
         print("STEP ->", OUT / "band_p.step")
 
-# v1.0.0 - premium side variant P1: soft ceramic body, band slots at both ends, flush steel faces split by hairlines, black ceramic centre with a domed lens, ring closure at the back, plain strap S/M/L
+# v1.1.0 - P1.1: the ring moves from the back of the wrist to the island's free end (inside of the wrist), one strap through it; RA back at -55/-69. P1.0: soft ceramic body, slots, split steel faces, black ceramic centre
