@@ -21,8 +21,8 @@ import band_premium as P  # noqa: E402
 
 DROP = ("pcb", "radio", "afe", "conn", "chip_", "low_", "motor", "cell", "spring_", "flex", "trace_", "post_",
         "tongue", "anchor", "latch")
-REMESH = ("strap", "hook", "loop")
-REMESH_ISLAND = ("end_a", "end_b")         # the rounded ends: 190k triangles each at the finest setting
+REMESH = ("strap", "hook", "loop", "tab")
+REMESH_ISLAND = ()                         # (P1.0-P1.1 re-meshed its rounded end pieces here)
 
 
 def add(scene: trimesh.Scene, name: str, wp, lin: float, ang: float) -> int:
@@ -46,12 +46,13 @@ if __name__ == "__main__":
         lite.add_geometry(g, node_name=name, geom_name=name)
         kept += len(g.faces)
     straps = P.build_strap()
+    straps.update(P.build_tab())
     for name in REMESH:
         kept += add(lite, name, straps[name], 0.025, 0.2)
-    island, _ = P.build_island()
+    island = P.build_island()[0] if REMESH_ISLAND else {}
     for name in REMESH_ISLAND:
         kept += add(lite, name, island[name], 0.012, 0.15)
     lite.export(str(P.OUT / "band_p_lite.glb"), include_normals=True)
     print(f"{kept} triangles -> {P.OUT / 'band_p_lite.glb'}")
 
-# v1.2.0 - one strap (P1.1); light copy of the premium model for the studio pictures: straps re-meshed to 0.025 mm, the rounded ends to 0.012 mm, hidden inner parts left out
+# v1.3.0 - P1.2 (strap + tab, no end pieces); light copy of the premium model for the studio pictures: straps re-meshed to 0.025 mm, the rounded ends to 0.012 mm, hidden inner parts left out

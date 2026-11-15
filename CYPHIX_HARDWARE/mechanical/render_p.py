@@ -78,9 +78,10 @@ SHOTS = {
                       hide=INSIDE_NOT_SENSORS + ["anchor", "latch", "flex", "trace_", "post_", "tongue"],
                       ghost={"strap": 0.1, "el_RA": 0.1, "elc_RA": 0.1, "hook": 0.1, "loop": 0.1, "ring": 0.1},
                       strips=R.WRIST_FACE, bg="apple", palette=COLOURWAYS["navy"]),
-    "end": dict(files=BAND, orient="island", pos=[-82, 52, 34], target=at(-22.5, 2.6), fov=15, ground=None,
+    "end": dict(files=BAND, orient="island", pos=[-88, 50, 30], target=at(-26.0, 3.2), fov=16, ground=None,
                 hide=HIDE, strips=LEG_FACE, bg="apple", palette=COLOURWAYS["starlight"]),
-    "ring": dict(files=BAND, orient="island", pos=[95, 88, 52], target=at(P.S_FB - 2.0, 3.0), fov=15, ground=None,
+    "ring": dict(files=BAND, orient="island", pos=[round(P.pt(P.S_FB - 4.0, 3.0)[0] + 67, 1), 88, round(P.pt(P.S_FB - 4.0, 3.0)[2] + 62, 1)],
+                 target=at(P.S_FB - 4.0, 3.0), fov=17, ground=None,
                  hide=HIDE, strips=LEG_FACE, bg="apple", palette=COLOURWAYS["navy"]),
     "profile": dict(files=BAND + ["../out_p/wrist.glb"], orient="wrist", pos=[2, 520, -21], target=[2, 0, -21], fov=9.6,
                     ground=None, hide=HIDE, strips=SIDE, bg="apple", palette=COLOURWAYS["navy"]),
@@ -174,4 +175,4 @@ if __name__ == "__main__":
     finally:
         server.shutdown()
 
-# v1.1.0 - the ring shot now at the island's free end (P1.1); shots for the premium side variant: hero (navy, Apple grey), night (graphite on black), top, wrist face, the end and its slot (starlight), the ring at the back, profile on the wrist, and a three-colour lineup
+# v1.2.0 - end and ring shots follow P1.2's flared ends; v1.1.0 - the ring shot at the free end (P1.1); shots for the premium side variant: hero (navy, Apple grey), night (graphite on black), top, wrist face, the end and its slot (starlight), the ring at the back, profile on the wrist, and a three-colour lineup

@@ -28,7 +28,7 @@ COLOR.update({
 METAL = W.METAL | {"ring", "contact"}
 LID = W.LID
 WRIST_SIDE = ("shell_wrist", "el_LA", "elc_LA", "chg_", "window", "back")
-SOFT = ("strap", "tongue", "hook", "loop")
+SOFT = ("strap", "tongue", "hook", "loop", "tab")
 INNER = W.INNER + ("latch",)
 
 if __name__ == "__main__":
@@ -61,4 +61,4 @@ if __name__ == "__main__":
     OUT.write_text(json.dumps({"version": "P" + P.VERSION, "parts": out}, separators=(",", ":")), encoding="utf-8")
     print(f"{len(out)} parts, {total} triangles, {OUT.stat().st_size / 1024:.0f} kB -> {OUT}")
 
-# v1.0.0 - the premium side variant for the plan page's viewer, navy colourway, same format and flags as band_id.json
+# v1.1.0 - the tab is soft too (P1.2); the premium side variant for the plan page's viewer, navy colourway, same format and flags as band_id.json

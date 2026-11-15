@@ -1,5 +1,28 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.9.0 — 2026-11-15
+
+**Why.** The owner on P1.1: "the island looks glued on top of the strap and
+sticks out; it does not look like part of the strap." Two measurable
+causes: the body is 30 mm wide on a 22 mm strap (4 mm overhang each side),
+and at each end the 7.2 mm body stopped at a tall rounded face with the
+2.8 mm strap going into a slot at its foot. It also broke a standing rule
+from the owner's first review: the strap must read as a continuation of the
+island, not something attached to it. P1.0-P1.1 should have kept it.
+
+**What changed (`mechanical/band_premium.py` P1.2, 1.2.0).**
+
+- The ceramic body ends at ±23 mm with its own section; the strap starts
+  with exactly that section and narrows smoothly (quintic, no kink at either
+  end) to 22 × 2.8 mm over 9 mm, at both ends. The body reads as a swelling of
+  the band. The seam is where ceramic meets FKM, in the same colour.
+- No slots, no rounded end pieces. At the free end the narrowing ends in a
+  short tab whose end holds the ring's near bar (the strap still folds back
+  beside the island, on the inside of the wrist).
+- 46 mm of ceramic, 64 mm to where the strap has its own section.
+- Checks: nothing inside touches the shell; strap, tab, ring and body touch
+  nowhere; all solids valid; symmetric to 0.0 mm.
+
 ## v0.8.0 — 2026-11-15
 
 **Why.** The owner on P1.0: the ring was on "the part that should be the top
@@ -359,4 +382,4 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.8.0 — the hardware folder's history, newest first; latest: P1.1, the ring beside the island -->
+<!-- v0.9.0 — the hardware folder's history, newest first; latest: P1.2, the strap flows out of the body -->
