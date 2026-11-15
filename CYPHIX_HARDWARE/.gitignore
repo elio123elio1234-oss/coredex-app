@@ -20,7 +20,9 @@ mechanical/out/tmp/
 mechanical/out_id/*.glb
 mechanical/out_id/*.png
 mechanical/out_id/_chrome/
+mechanical/out_id/build.log
+mechanical/out_id/render.log
 mechanical/studio/harness.js
 mechanical/studio/shots.json
 
-# v0.3.0 - ignores for the hardware folder: venv, build output, KiCad scratch files, heavy render output
+# v0.4.0 - ignores for the hardware folder: venv, build output and log, KiCad scratch files, heavy render output

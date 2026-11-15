@@ -1,13 +1,13 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "design_wrist_mm": {
     "circumference": 163.2,
     "breadth": 61.0,
     "depth": 42.0
   },
   "island_mm": {
-    "length_over_electrodes": 44.2,
-    "length_with_shoulders": 50.5,
+    "length_over_electrodes": 38.6,
+    "length_root_to_lug_ends": 58.5,
     "width": 30.0,
     "thickness": 7.2,
     "inner_radius_at_centre": 44.3,
@@ -16,26 +16,32 @@
   "strap_mm": {
     "width": 24.0,
     "thickness": 2.8,
-    "holes_pitch": 6.0,
-    "holes": 7
+    "closure": "hook-and-loop",
+    "hook_length": 30.5,
+    "loop_length": 53.5,
+    "ra_gap": 1.0
   },
   "electrode_area_mm2": {
-    "LL1": 265.0,
-    "RLD": 264.0,
-    "LL2": 264.0,
-    "LA1": 278.0,
-    "LA2": 278.0,
-    "RA1": 235.0,
+    "LL1": 333.0,
+    "RLD": 333.0,
+    "LL2": 333.0,
+    "LA1": 298.0,
+    "LA2": 298.0,
+    "RA1": 234.0,
     "RA2": 233.0
   },
+  "window_diameter_mm": 8.6,
   "checks": {
     "inside_parts_touching_the_shells_mm3": [],
-    "tail_vs_island_mm3": 0.0,
-    "strap_vs_arms_mm3": 0.0
+    "strap_vs_island_mm3": 0.0,
+    "strap_vs_lugs_mm3": 0.0,
+    "strap_vs_bar_mm3": 0.0,
+    "island_symmetric_across_mm": -0.0
   },
   "triangles": {
-    "band": 421938,
-    "section": 220726,
-    "dock": 26536
-  }
+    "band": 656705,
+    "section": 225449,
+    "dock": 36384
+  },
+  "seconds": 321
 }

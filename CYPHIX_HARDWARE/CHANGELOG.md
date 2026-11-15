@@ -1,5 +1,76 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.4.0 — 2026-11-15
+
+**Why.** The owner looked at design concept v1 on the phone and found seven
+faults, all real:
+
+1. The island was not symmetric; it looked as if it leaned to one side.
+   Cause: v1 left a metal-free "service strip" along one edge for the antenna,
+   so the plates covered only y = −13.4 to +9.0 and sat off centre. The page's
+   3D viewer made it worse by rotating round the middle of the band instead of
+   the island, which skews the island in perspective.
+2. The PPG sensor and the skin thermometer were missing. The original model
+   had them on the wrist face; v1 dropped them without saying so.
+3. The surfaces looked rippled and the joint with the strap lumpy. Causes:
+   rounded-rectangle sections whose corner radius jumped at the free end, a
+   separate strap whose sections did not match the island's, and pictures and
+   viewer shading computed from a coarse mesh instead of the surface.
+4. The hole-and-stud closure put holes on the top of the wrist, next to the RA
+   pads, so the band looked as if it was worn the wrong way round. The owner asked
+   for hook-and-loop.
+5. The battery was drawn connected to nothing.
+6. RA1 and RA2 were 3 mm apart; they should sit close together.
+7. The viewer stopped at 180°, so the band could not be turned island-down.
+
+**What changed (`mechanical/band_id.py` v2.0.0, design concept v2).**
+
+- **Symmetric island.** All five plates on the island are centred and run
+  across the full width, wrapping over the rounded edges (leg plates
+  333 mm² each, LA 298 each). The model checks it: the island's bounding box
+  is symmetric to 0.0 mm. What lived in the service strip moved to the
+  shoulder, the only metal-free zone, on the centre line.
+- **PPG + thermometer (OPT-01).** An 8.6 mm sapphire window at the centre of
+  the wrist face; behind it an optical module against a boss on the window,
+  and a skin thermometer on a thermal pad. One charge contact on each side of
+  the window; the charge input is polarity-free, so the band charges whichever
+  way it hangs (two contacts instead of v1's four).
+- **Smooth surfaces.** Each section is a closed C2 spline through a rounded
+  section with its own radius on each face, every size change follows a
+  quintic step (no kink, no curvature jump), and the strap is one loft along
+  one smooth centre line from the island round the wrist, under and round the
+  bar and back out, starting with exactly the island's last section. A
+  0.3 mm parting groove marks plastic to FKM, and the FKM is the island's navy.
+  Meshes now carry the surface's own normals (renders and viewer).
+- **Hook-and-loop closure.** Hooks on the underside of the folded-back tail,
+  loops laminated flush into the strap's outer face on the free side; the loop
+  strip ends before the RA pads, and the last 3 mm of the tail has no hooks so
+  it can be lifted. Holes and stud are gone.
+- **RA1/RA2** 1 mm apart (centres at −55 and −69 mm).
+- **Battery** connected: two nickel tabs onto pads at the board's end. The
+  cell is drawn without its own protection board (the protection IC is on the
+  main board): with a folded protection board the cell is 26.5 mm across and
+  its top corner touched the curved shell (0.2 mm³, caught by the model's own
+  check).
+- **Control:** a sealed touch spot with a light ring on the shoulder
+  (proposal; a membrane switch at the same spot is the fallback).
+- Free-rotation viewer (TrackballControls) and a "from above" button.
+- Found on the way: CadQuery's default volume integration is off by 10 % or
+  more on these spline bodies; the model's checks now integrate with a real
+  tolerance.
+
+**Also.** `electronics/DESIGN_INTENT.md`: 1 kSPS with decimation to meet
+150 Hz, a footprint for an external 2.048 MHz clock, the antenna problem and
+the shoulder-antenna proposal, polarity-free charging, the touch spot, and
+OPT-01 with a place. `system/budget.py`: PPG, thermometer, five plate springs,
+two charge springs, the bridge, the protection IC, the RF feed; the flat-box
+envelope is now 48.9 x 30.1 x 7.5 mm (first spin), 42.1 (tight).
+
+**Not done / not proven.** Antenna placement needs an RF engineer and a
+measurement on a wrist; hook-and-loop is harder to disinfect between patients
+than smooth FKM (medical-grade loop or a replaceable tail); the island is still
+drawn for the tight board; the touch spot is a proposal; nothing is measured.
+
 ## v0.3.0 — 2026-11-15
 
 **Why.** The owner looked at the first solid model and rejected it: no charging

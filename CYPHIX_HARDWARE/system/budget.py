@@ -58,10 +58,10 @@ PARTS: list[Part] = [
     Part("buf", "optional electrode buffer footprint (MSOP-10) + 2 caps", 5.0, 3.2, 1.1, qty=2, side="bot",
          source="ELC-03: footprint only, populate if stage 1/2 measurements ask for it"),
     # --- controller / radio -----------------------------------------------
-    Part("mcu", "nRF52840 module with antenna (Raytac MDBT50Q class)", 15.5, 10.5, 2.05,
-         source="Raytac MDBT50Q-1MV2 datasheet"),
-    Part("ant", "antenna keep-out under/next to the module (no copper, no parts)", 10.5, 4.5, 0.0, side="bot",
-         keepout=0.0, source="module layout guide"),
+    Part("mcu", "nRF52840 module (Raytac MDBT50Q class; v2: RF-output variant, antenna in the shoulder)", 15.5, 10.5, 2.05,
+         source="Raytac MDBT50Q-1MV2 datasheet (RF-output variant to verify)"),
+    Part("rf", "RF feed: matching network + spring finger to the antenna plated in the shoulder", 4.0, 2.5, 1.0,
+         source="design concept v2: steel covers both faces, the shoulder is the only metal-free zone"),
     Part("xtal32k", "32.768 kHz crystal + 2 caps", 3.2, 1.8, 0.6, source="design"),
     # --- power --------------------------------------------------------------
     Part("pmic", "charger / PMIC (BQ25120A, DSBGA-25)", 2.5, 2.5, 0.63, source="TI BQ25120A datasheet"),
@@ -70,20 +70,31 @@ PARTS: list[Part] = [
     Part("ldo", "low-noise LDO for AVDD (X2SON / SOT-23-5) + 2 caps", 4.0, 3.0, 1.1, source="design"),
     Part("sw", "AFE rail load switch + pull-ups", 3.0, 2.5, 0.6, side="bot", source="design"),
     # --- user interface ------------------------------------------------------
-    Part("btn", "side tactile switch", 3.9, 2.9, 1.7, source="design"),
-    Part("led", "LED 0402 + resistor", 2.4, 1.0, 0.5, keepout=0.25, source="design"),
+    Part("touch", "touch spot: sense pad feed + cap-sense parts (sealed, replaces the side button)", 3.0, 2.0, 0.6,
+         source="design concept v2 (proposal)"),
+    Part("led", "LED 0402 + resistor, feeding the light ring", 2.4, 1.0, 0.5, keepout=0.25, source="design"),
     Part("hap", "haptic driver (FET + diode + R)", 3.5, 2.5, 1.0, side="bot", source="design"),
+    # --- OPT-01: behind the sapphire window at the centre of the wrist face ---
+    Part("ppg", "PPG optical module, LEDs + photodiode + front end (MAXM86161 class)", 2.9, 4.3, 1.4, side="bot",
+         source="Maxim/ADI MAXM86161 package, to verify"),
+    Part("temp", "skin thermometer (MAX30208 / TMP117 class), on a thermal pad to the window", 2.0, 2.0, 0.75, side="bot",
+         source="to verify"),
     # --- connections ---------------------------------------------------------
-    Part("spring", "spring contact to an electrode pad (LL1, LL2, RLD, LA)", 3.0, 1.6, 1.8, qty=4,
+    Part("spring", "spring contact to an electrode plate (LL1, LL2, RLD, LA x 2)", 3.0, 1.6, 1.8, qty=5,
          source="spring-finger class part, height to be matched to the stack"),
     Part("fpc", "FPC connector for the strap flex (RA1, RA2 + guard), 0.5 mm 4-pin", 4.6, 3.6, 1.0,
          source="design"),
-    Part("chg", "charge pads / pogo landing (VBUS, GND)", 2.5, 2.5, 0.0, qty=2, side="bot", source="design"),
-    Part("bat_pad", "battery solder pads", 3.0, 2.0, 0.0, qty=2, side="bot", source="design"),
+    Part("chg", "spring contacts to the two charge contacts on the wrist face", 1.6, 1.6, 0.5, qty=2, side="bot",
+         source="design"),
+    Part("bridge", "charge input that does not care which contact is positive (bridge / ideal-diode pair)", 2.0, 2.0, 0.6,
+         side="bot", source="design concept v2: the band hangs on the stand either way round"),
+    Part("bat_pad", "battery tab pads at the board's end (the cell's nickel tabs are soldered here)", 3.0, 2.0, 0.0, qty=2,
+         source="design"),
+    Part("prot", "cell protection IC + dual FET (the cell has no protection board of its own; the cell table's lengths "
+         "still include one, so they are conservative)", 2.0, 2.0, 0.6, side="bot", source="design concept v2, to verify"),
     Part("swd", "SWD programming pads (4 x 1 mm)", 5.0, 1.5, 0.0, side="bot", source="design"),
-    # --- not on the board -----------------------------------------------------
-    Part("motor", "coin vibration motor, 8 mm, in a notch of the board", 8.0, 8.0, 2.7, side="notch",
-         source="generic 0827 coin ERM"),
+    Part("motor", "coin vibration motor, 8 x 2.0 mm, on the leg side near the board's middle", 8.0, 8.0, 2.0,
+         source="generic 0820 coin ERM class, to verify"),
 ]
 
 # Share of the board that routing, vias, fiducials and board-edge clearance eat
@@ -429,4 +440,4 @@ if __name__ == "__main__":
     if args.write:
         Path(__file__).with_name("BUDGET.md").write_text(text, encoding="utf-8", newline="\n")
 
-# v0.1.0 - first bottom-up budget: battery from the duty cycle, board from footprints, envelope from the stack
+# v0.4.0 - parts for design concept v2: PPG module + thermometer (OPT-01), two charge springs + polarity-free input, five plate springs, touch spot instead of the button, RF feed to the shoulder antenna, motor on the board

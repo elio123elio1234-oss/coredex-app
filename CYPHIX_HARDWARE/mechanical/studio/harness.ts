@@ -11,6 +11,7 @@ type Shot = {
   orient: "wrist" | "island";            // which way is up: the wrist above the island, or the island on top
   pos: [number, number, number];
   target: [number, number, number];
+  up?: [number, number, number];         // CAD direction that is "up" in the picture (default: the studio's up)
   fov: number;
   ground?: number | null;                // CAD height (along "up") of the shadow plane, or null for none
   hide?: string[];                       // name prefixes
@@ -21,15 +22,22 @@ type Shot = {
 
 const P = THREE.MeshPhysicalMaterial;
 const SPEC: Record<string, THREE.MeshPhysicalMaterialParameters> = {
-  // the island: an insulating body, satin, deep navy
-  body: { color: 0x1b2743, metalness: 0, roughness: 0.34, clearcoat: 0.55, clearcoatRoughness: 0.22 },
-  body_gloss: { color: 0x1b2740, metalness: 0, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.08 },
+  // the island: an insulating body, bead-blasted satin, deep navy
+  body: { color: 0x1b2743, metalness: 0, roughness: 0.44, clearcoat: 0.3, clearcoatRoughness: 0.32 },
+  // sapphire over the PPG sensor: dark, polished, and just see-through enough to show what is behind it
+  glass: { color: 0x0b1019, metalness: 0, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, opacity: 0.66 },
+  led_green: { color: 0x22c55e, emissive: 0x16a34a, emissiveIntensity: 0.55, metalness: 0, roughness: 0.3 },
+  pd: { color: 0x241c3a, metalness: 0.2, roughness: 0.15, clearcoat: 1 },
+  tpad: { color: 0x8d97a5, metalness: 0, roughness: 0.85 },
   // the same polished steel the landing page model uses for its electrodes
   electrode: { color: 0xf7f9fc, metalness: 1, roughness: 0.13, clearcoat: 0.6, clearcoatRoughness: 0.05 },
   steel: { color: 0xe0e4ea, metalness: 1, roughness: 0.1 },
   gold: { color: 0xd6ad4f, metalness: 1, roughness: 0.2 },
-  // fluoroelastomer, as on the landing page's own watch band
-  fkm: { color: 0x262b36, metalness: 0, roughness: 0.5, sheen: 0.6, sheenColor: new THREE.Color(0x8d9ab0), sheenRoughness: 0.55, clearcoat: 0.15, clearcoatRoughness: 0.5 },
+  // fluoroelastomer in the island's own navy: the strap reads as the island continuing, not a part stuck on
+  fkm: { color: 0x1d2843, metalness: 0, roughness: 0.56, sheen: 0.5, sheenColor: new THREE.Color(0x7d8cab), sheenRoughness: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.55 },
+  // hook-and-loop, laminated flush: the loops a soft navy textile, the hooks a darker, drier layer
+  loop: { color: 0x26314f, metalness: 0, roughness: 0.95, sheen: 1, sheenColor: new THREE.Color(0x8796b8), sheenRoughness: 0.8 },
+  hook: { color: 0x171d2c, metalness: 0, roughness: 0.82, sheen: 0.4, sheenColor: new THREE.Color(0x5b6782), sheenRoughness: 0.7 },
   polyimide: { color: 0xc98a2b, metalness: 0, roughness: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.2 },
   copper: { color: 0xe48a4a, metalness: 1, roughness: 0.3 },
   copper_dim: { color: 0xa86a45, metalness: 1, roughness: 0.4 },
@@ -39,7 +47,7 @@ const SPEC: Record<string, THREE.MeshPhysicalMaterialParameters> = {
   connector: { color: 0xe9e6dc, metalness: 0, roughness: 0.5 },
   shield: { color: 0xc9ccd2, metalness: 1, roughness: 0.32 },
   cell: { color: 0xbfc3ca, metalness: 0.85, roughness: 0.42 },
-  led: { color: 0xffffff, emissive: 0xbfe0ff, emissiveIntensity: 0.9, metalness: 0, roughness: 0.3 },
+  led: { color: 0xeaf4ff, emissive: 0x9cc8ff, emissiveIntensity: 0.55, metalness: 0, roughness: 0.25 },
   dock_metal: { color: 0xdfe2e7, metalness: 1, roughness: 0.4 },
   dock_pad: { color: 0x1a1d22, metalness: 0, roughness: 0.85 },
   wrist: { color: 0xe3e6ea, metalness: 0, roughness: 0.95 },
@@ -97,6 +105,7 @@ async function main() {
     const key = (mesh.material as THREE.Material).name;
     const mat = new P(SPEC[key] ?? SPEC.body);
     mat.name = key;
+    if (mat.transparent) { mat.depthWrite = false; mesh.renderOrder = 1; }
     const g = ghostOf(part);
     if (g !== null) {
       mat.transparent = true;
@@ -113,7 +122,8 @@ async function main() {
   const camera = new THREE.PerspectiveCamera(shot.fov, W / H, 0.005, 5);
   const toWorld = (v: [number, number, number]) => root.localToWorld(new THREE.Vector3(v[0] * MM, v[1] * MM, v[2] * MM));
   camera.position.copy(toWorld(shot.pos));
-  camera.up.set(0, 1, 0);
+  if (shot.up) camera.up.copy(new THREE.Vector3(...shot.up).applyQuaternion(root.quaternion));
+  else camera.up.set(0, 1, 0);
   camera.lookAt(toWorld(shot.target));
 
   if (shot.ground !== null && shot.ground !== undefined) {
@@ -148,4 +158,4 @@ main().catch((e) => {
   pre.textContent = String(e && (e.stack || e));
   document.body.appendChild(pre);
 });
-// v1.0.0 - one still per page load, lit by the landing page's studio environment and contact shadow
+// v2.0.0 - satin body, navy strap, glass / PPG / thermometer materials, per-shot "up", meshes keep the surface normals they arrive with

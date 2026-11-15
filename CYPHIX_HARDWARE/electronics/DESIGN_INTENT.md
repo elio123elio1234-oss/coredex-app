@@ -35,9 +35,19 @@ records while it is charging (SAF-01).
   CH3 = LL1 − LA (IN3P = LL1, IN3N = LA), CH4 = LL2 − LA (IN4P = LL2, IN4N = LA).
   LA therefore feeds four inputs. Lead I has two copies, Lead III has two
   copies, Lead II = I + III.
-- **Sampling** (SYS-02): 500 SPS per channel, High-Resolution mode, internal
-  2.4 V reference, internal oscillator (CLKSEL high). Bandwidth 0.05–150 Hz is
-  met in firmware; the hardware must not add a high-pass (DC-coupled inputs).
+- **Sampling** (SYS-02): 500 SPS per channel delivered, High-Resolution mode,
+  internal 2.4 V reference. Bandwidth 0.05–150 Hz is met in firmware; the
+  hardware must not add a high-pass (DC-coupled inputs).
+  - **Run the ADS1294 at 1 kSPS and decimate to 500 in firmware.** The
+    converter's own −3 dB point is 0.262 × the data rate (SBAS459K), so at
+    500 SPS it is 131 Hz, below the 150 Hz SYS-02 asks for. Found in the
+    stage-2 firmware review (2026-11-14); to confirm against the datasheet
+    table when the schematic is drawn.
+  - **Clock.** The internal 2.048 MHz oscillator (CLKSEL high) is the default,
+    but leave a footprint for an external 2.048 MHz oscillator. The firmware
+    review read the internal one as about ±0.5 % at room temperature and up to
+    about ±2 % over temperature (to confirm); a time-base error shows up
+    directly as a heart-rate error, as the prototype's 4 % BLE time-base bug did.
 - **RLD**: RLDOUT drives the RLD pad through a protection resistor; RLDINV
   feedback R ∥ C; internal RLDREF; the RLD is derived from the four used
   channels. Loop values *to compute*, with the stability check stated.
@@ -53,10 +63,20 @@ records while it is charging (SAF-01).
 
 ## 3. Controller and radio
 
-- **nRF52840 in a pre-certified module** (ELC-04): Raytac **MDBT50Q-1MV2**
-  (chip antenna). KiCad ships its symbol and footprint. Follow Raytac's
-  antenna keep-out exactly; the antenna end goes at the board edge that faces
-  away from the cell and the electrode plates.
+- **nRF52840 in a pre-certified module** (ELC-04), Raytac MDBT50Q class.
+  KiCad ships the MDBT50Q-1MV2 symbol and footprint.
+- **The antenna cannot sit under steel, and in design concept v2 steel covers
+  both faces of the island across its full width** (the owner asked for the
+  island to be symmetric and the plates as large as possible). The one
+  metal-free zone left is the **shoulder**, where the strap leaves the island.
+  Proposal (not yet approved): a module variant with an RF output instead of
+  its chip antenna (Raytac lists u.FL / RF-pad variants of the MDBT50Q; to
+  verify the exact part) feeding an antenna plated on the inside of the
+  shoulder shell (LDS, as most wearables do), connected by a spring finger.
+  Alternative: the nRF52840 chip-down with its own matching network, which
+  costs its own radio certification. Decide with an RF engineer; range is
+  measured on the first wearable (stage 3), on a wrist, with a leg on the
+  plates.
 - nRF Connect SDK, signed over-the-air updates (FW-01), so: SWD pads, and a
   32.768 kHz crystal footprint.
 - ADS1294 on SPI plus DRDY, START, RESET and PWDN on GPIOs. DRDY must be on a
@@ -82,7 +102,12 @@ records while it is charging (SAF-01).
   power-up sequence must hold in both directions.
 - Standby target: under 5 µA total. Battery voltage measured through a
   switched divider.
-- Charging through two contacts on the housing (pogo cradle), 5 V.
+- Charging through **two** contacts on the wrist face, one each side of the
+  sensor window, 5 V from the stand. The band can hang on the stand either way
+  round, so the input must not care which contact is positive: a bridge (or
+  an ideal-diode pair) ahead of the charger. Data and updates go over
+  Bluetooth; factory programming uses internal test pads, so no third or
+  fourth contact is exposed.
 
 ## 5. Patient safety (designed in, measured later)
 
@@ -108,19 +133,41 @@ These are requirements on the schematic, not notes.
 
 ## 6. User interface and options
 
-- One button (also the wake source), one LED, one coin vibration motor from
-  the cell through a FET with a flyback diode (UI-01).
-- **OPT-01, not populated:** I2C pads and footprints for an optical PPG
-  sensor and a skin temperature sensor on the wrist side. They must cost
-  nothing when unpopulated.
+- **Control, proposal in design concept v2 (not yet approved):** instead of a
+  side button, a sealed **touch spot** on the shoulder's leg face, on the
+  centre line, inside a thin **light ring** (the status light). Capacitive
+  sensing under the housing, so there is no opening to seal (IP68). The motor
+  answers every touch, because elderly users need to feel that it took. A
+  second wake path: electrode contact, through the ADS1294 lead-off
+  comparators. The touch electrode is disabled while recording. Fallback if
+  the owner wants a real click: a tact switch under a thin flexible membrane
+  at the same spot.
+- One coin vibration motor, 8 mm, on the leg side of the board near its
+  middle (where the curved shell leaves the most height), from the cell
+  through a FET with a flyback diode (UI-01).
+- **OPT-01 (PPG + skin temperature), with a place now:** a sapphire window,
+  8.6 mm, at the centre of the wrist face between the two LA plates.
+  - PPG: an integrated optical module (LEDs, photodiode and front end in one
+    package, MAXM86161 class, I2C) on the wrist side of the board, pressed
+    against a boss on the inside of the window, with an optical barrier
+    between the LED and the photodiode.
+  - Skin temperature: a digital sensor (MAX30208 / TMP117 class, I2C) next to
+    it, coupled to the window through a thermal pad; sapphire conducts heat
+    about as well as steel.
+  - Both footprints cost nothing when unpopulated; the window is in the
+    housing either way.
 
 ## 7. What is deliberately not decided here
 
 - Final input-network values and whether the buffers are populated: after
   stage 1 and stage 2 measurements.
 - Electrode plate size: stage 1.
-- Board outline: from `mechanical/band_alpha.py` once the part list is final.
+- Board outline: from `mechanical/band_id.py` (design concept v2: a flat
+  25 × 26 mm board touching the curve 5 mm towards the fixed side; tall parts
+  near its middle, because the curved shell leaves least height at its ends)
+  once the part list is final.
 - Moving the apps to 4 channels and 500 SPS: needs the owner's approval; the
   board does not depend on it.
 
-<!-- v0.1.0 — first design intent for the Band α main board, first wearable spin -->
+<!-- v0.4.0 — design intent for the main board: + 1 kSPS decimation and clock footprint, antenna in the shoulder, two-contact charging either way round, touch spot + light ring, PPG + thermometer window -->
+

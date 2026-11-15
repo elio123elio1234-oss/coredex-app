@@ -57,6 +57,7 @@
   .now ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
   .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
   .shots.wide { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 16px; }
+  .shots.wide figure.lead-shot { grid-column: 1 / -1; }
   .shots figure { margin: 0; display: grid; gap: 6px; min-width: 0; align-content: start; }
   .shots img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #ffffff; }
   .shots figcaption { font-size: 17px; font-weight: 700; color: var(--ink); }
@@ -68,7 +69,8 @@
   .vbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .stage3d { position: relative; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; background: var(--stage); color: var(--stage-ink); border: 1px solid var(--line); touch-action: none; overflow: hidden; }
   .stage3d canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
-  .vmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; max-width: none; padding: 16px; text-align: center; color: var(--stage-ink); }
+  .vmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; max-width: none; padding: 16px; text-align: center; color: var(--stage-ink); pointer-events: none; }
+  .vmsg[hidden] { display: none; }
   .hint { color: var(--muted); font-size: 14px; }
   .nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px 28px; }
   .nums > div { border-top: 2px solid var(--ink); padding-top: 8px; min-width: 0; }
@@ -155,64 +157,76 @@
     <div class="label">עכשיו</div>
     <div class="big">שלב 0: סוגרים את התכנון על המחשב</div>
     <ul>
-      <li>העיצוב התעשייתי תוכנן מחדש אחרי הביקורת שלך: אי קעור, רצועה רציפה עם סגירה סביב המוט, טעינה במגעים על מעמד, אלקטרודות גדולות ומוליך עם קו נפרד לכל משטח. הכול למטה.</li>
+      <li>העיצוב התעשייתי בגרסה 2: אי סימטרי, חלון לחיישן PPG ולמדחום, משטחים חלקים, סגירה בסקוץ', משטחי RA צמודים והסוללה מחוברת. הכול למטה.</li>
       <li>קושחת שלב 2 מוכנה ונבנית בלי שגיאות. היא עוד לא רצה על חומרה.</li>
       <li>הסכמה ואימות מידות הרכיבים נקטעו כשמכסת השימוש נגמרה. מה שנעשה שמור, והם ימשיכו.</li>
     </ul>
   </section>
 
   <section>
-    <h2>העיצוב התעשייתי, גרסה 1</h2>
-    <p>המודל הראשון רק בדק שהאלקטרוניקה נכנסת, ולא היה עיצוב. זה העיצוב: איך האי יושב על היד, איך הרצועה נסגרת ומתאימה את עצמה, איך טוענים, כמה שטח יש לאלקטרודות, ואיך המוליך מוחזק ברצועה ונכנס לאי.</p>
+    <h2>העיצוב התעשייתי, גרסה 2</h2>
+    <p>גרסה 1 נטתה לצד אחד, בלי PPG ומדחום, עם משטחים מקומטים ונעילה בחורים. גרסה 2 מתקנת את כל מה שהערת.</p>
     <div class="viewer">
       <div class="vbar" role="group" aria-label="תצוגת המודל">
         <button type="button" id="v-soft" aria-pressed="false">רצועה שקופה</button>
         <button type="button" id="v-lid" aria-pressed="false">בלי מכסה</button>
         <button type="button" id="v-explode" aria-pressed="false">מפורק</button>
         <button type="button" id="v-flip" aria-pressed="false">צד היד</button>
+        <button type="button" id="v-top" aria-pressed="false">מלמעלה</button>
         <button type="button" id="v-reset">איפוס</button>
       </div>
       <div class="stage3d" id="stage3d">
         <canvas id="c3d" aria-label="מודל תלת-ממדי של הרצועה. גוררים כדי לסובב."></canvas>
         <p class="vmsg" id="vmsg">טוען את המודל</p>
       </div>
-      <p class="hint">גוררים כדי לסובב. צביטה או גלגלת לזום. "רצועה שקופה" מראה את המוליך שבתוכה.</p>
+      <p class="hint">גוררים לכל כיוון כדי לסובב, גם עם האי למטה. צביטה או גלגלת לזום. "רצועה שקופה" מראה את המוליך שבתוכה.</p>
     </div>
     <div class="shots wide">
-      <figure><img src="img/id_hero.webp" alt="הרצועה כולה: אי מעוקל עם שלושה משטחי פלדה, רצועה רציפה" width="1600" height="1377"><figcaption>הרצועה</figcaption></figure>
-      <figure><img src="img/id_wristface.webp" alt="הפנים הקעורים של האי: שני משטחי LA וארבעה מגעי טעינה מוזהבים" width="1600" height="1067"><figcaption>הצד שעל היד</figcaption></figure>
+      <figure class="lead-shot"><img src="img/id_hero.webp" alt="הרצועה כולה: אי סימטרי עם שלושה משטחי פלדה לכל הרוחב, וטבעת אור על הכתף" width="1600" height="1377"><figcaption>הרצועה</figcaption></figure>
+      <figure><img src="img/id_top.webp" alt="מבט ישר מלמעלה על פני הרגל: האי סימטרי לשני הצדדים" width="1600" height="1421"><figcaption>סימטרי</figcaption></figure>
+      <figure><img src="img/id_wristface.webp" alt="הפנים הקעורים: שני משטחי LA, ובאמצע חלון ספיר לחיישן PPG ולמדחום עם מגע טעינה מכל צד" width="1600" height="1067"><figcaption>PPG ומדחום</figcaption></figure>
       <figure><img src="img/id_profile.webp" alt="מבט מהצד על חתך יד: קו פנימי אחד רציף, אי קעור, והרצועה מקופלת חזרה" width="1600" height="1358"><figcaption>קו אחד רציף</figcaption></figure>
-      <figure><img src="img/id_closure.webp" alt="הרצועה עוברת מתחת למוט, מתלפפת סביבו וננעלת בפין" width="1600" height="1237"><figcaption>סגירה סביב המוט</figcaption></figure>
-      <figure><img src="img/id_flex.webp" alt="המעגל הגמיש בתוך הרצועה, עם קו נחושת נפרד לכל אחד משני משטחי ה-RA" width="1600" height="1236"><figcaption>שני קווים נפרדים</figcaption></figure>
-      <figure><img src="img/id_section.webp" alt="חתך לאורך האי: משטחים, מגעי קפיץ, לוח שטוח, סוללה, וכניסת המוליך" width="1600" height="1067"><figcaption>מה בפנים</figcaption></figure>
+      <figure><img src="img/id_closure.webp" alt="הרצועה עוברת מתחת למוט, מתלפפת סביבו ונצמדת לעצמה בסקוץ'" width="1600" height="1237"><figcaption>סגירה בסקוץ'</figcaption></figure>
+      <figure><img src="img/id_flex.webp" alt="המעגל הגמיש בתוך הרצועה, עם קו נחושת נפרד לכל אחד משני משטחי ה-RA הצמודים" width="1600" height="1236"><figcaption>שני קווים נפרדים</figcaption></figure>
+      <figure><img src="img/id_inside.webp" alt="האי בלי המכסה: הלוח, הסוללה ושני פסי הניקל שמחברים אותה ללוח, והמוליך שנכנס למחבר" width="1600" height="1368"><figcaption>הסוללה מחוברת</figcaption></figure>
+      <figure><img src="img/id_section.webp" alt="חתך לאורך האי: משטחים, חלון וחיישן PPG, לוח שטוח, סוללה, וכניסת המוליך" width="1600" height="1067"><figcaption>מה בפנים</figcaption></figure>
       <figure><img src="img/id_dock.webp" alt="הרצועה תלויה על מעמד הטעינה" width="1600" height="1471"><figcaption>טעינה על מעמד</figcaption></figure>
     </div>
 
-    <h3>התשובות לשאלות שלך</h3>
+    <h3>מה תיקנתי לפי ההערות שלך</h3>
     <ul class="todo">
-      <li><strong>טעינה.</strong> ארבעה מגעים מוזהבים, שקועים חצי מילימטר בפנים הקעורים של האי, בין שני משטחי ה-LA. אין חור USB ואין שום פתח במארז. תולים את הרצועה על מעמד: הזרוע שלו תופסת את מקום היד, ולכן הפנים הקעורים מתיישבים עליה מעצמם וארבעה פינים קפיציים פוגשים את המגעים. שניים לטעינה ושניים לשירות ולצריבה. המגנטים יושבים במעמד ולא במכשיר, כי מגנט חזק על היד של מטופל עם קוצב הוא סיכון. טעינה אלחוטית נפסלה: שני הפנים מכוסים פלדה, ואין לסליל חלון נקי ממתכת.</li>
-      <li><strong>סגירה והתאמה ליד.</strong> הרצועה רציפה מלמעלה, בלי פתח. צד אחד שלה קבוע לאי, ובו עובר המוליך. הצד השני יורד אל מוט פלדה מלוטש בקצה האי, עובר מתחתיו, מתלפף סביבו וחוזר למעלה על עצמו. פין פלדה בקצה הרצועה ננעל באחד משבעה חורים, במרווחים של 6 מ״מ. בצד העור כל חור מורחב, כך שרגל הפין שקועה ולא מורגשת. שלושה אורכי רצועה מכסים היקף יד מ-130 עד 210 מ״מ.</li>
-      <li><strong>אי קעור.</strong> הפנים הפנימיים של האי הם קו היד עצמו: רדיוס 44 מ״מ במרכז, ועומק קעירות של 4.2 מ״מ. הניחוש שלך (40 עד 50) היה נכון: יד ברוחב 61 ובעומק 42 מ״מ נותנת 44. הלוח בפנים נשאר שטוח, והסוללה יושבת לצידו בזווית, ולכן העובי נשאר 7.2 מ״מ.</li>
-      <li><strong>שטח האלקטרודות.</strong> שלושת המשטחים שעל הרגל הם <span class="ltr">264</span> ממ״ר כל אחד, לעומת <span class="ltr">147</span> בהדמיה: גדולים ב-80%. שני משטחי ה-LA הם <span class="ltr">278</span> ממ״ר כל אחד, ושני משטחי ה-RA <span class="ltr">234</span>. כולם פלדה מלוטשת, שקועים במארז עד פני השטח ועוקבים אחרי העקמומיות שלו בשני הצדדים.</li>
-      <li><strong>המוליך ברצועה.</strong> מעגל גמיש (FPC) יצוק בתוך רצועת פלואורואלסטומר (FKM), בגובה אמצע העובי, שם הכיפוף מותח אותו הכי פחות. חורים לאורך שני השוליים שלו נותנים לחומר הרצועה לעבור דרכו ולנעול אותו. <strong>לכל משטח RA יש קו נחושת משלו ופין משלו</strong>, וביניהם קו הגנה.</li>
-      <li><strong>החיבור לאי.</strong> הרצועה נכנסת לכתף האי בלשון, עם עיבוי בקצה ועוגן קשיח בתוכה. שני חצאי המארז נסגרים עליה בריתוך אולטרסוני, כך שאין בורג ואין תפר שמים נכנסים דרכו. המוליך עובר בחריץ אטום ונכנס למחבר על הלוח.</li>
-      <li><strong>רציפות.</strong> האי והרצועה בנויים על אותו קו, ולכן הפנים של הרצועה כולה הם עקומה אחת עגולה. האי מתחדד בכתף ארוכה עד לעובי הרצועה, והרצועה ממשיכה אותו.</li>
+      <li><strong>סימטריה.</strong> בגרסה 1 המשטחים כיסו רק חלק מהרוחב, כדי להשאיר פס לאנטנה בצד אחד, ובגלל זה האי נראה נוטה. עכשיו האי סימטרי לשני הצדדים: חמשת המשטחים שעל האי ממורכזים, תופסים את כל הרוחב ואפילו מתעגלים מעל השוליים. מה שהיה בפס עבר לכתף, המקום היחיד בלי מתכת, על קו האמצע. גם הצפייה התלת-ממדית הוסיפה עיוות: היא סובבה סביב מרכז הצמיד ולא סביב האי. עכשיו היא מסתובבת סביב האי.</li>
+      <li><strong>PPG ומדחום.</strong> חלון ספיר בקוטר <span class="ltr">8.6</span> מ״מ, במרכז הפנים שעל היד, בין שני משטחי ה-LA. מאחוריו רכיב אופטי אחד (שני לדים ירוקים, גלאי אור ומעגל המדידה), צמוד לחלון, ולידו מדחום עור על כרית מוליכת חום. ספיר מוליך חום בערך כמו פלדה. במפרט אלה אופציה (OPT-01): החלון במארז בכל מקרה, והרכיבים מורכבים רק אם רוצים.</li>
+      <li><strong>משטחים חלקים.</strong> לקמטים היו שתי סיבות. כל חתך היה מלבן מעוגל, ורדיוס הפינה קפץ בקצה האי. בנוסף, הצפייה חישבה את ההצללה מרשת גסה. עכשיו כל חתך הוא עקומה חלקה סגורה, שהעקמומיות שלה לא קופצת בשום מקום. כל שינוי גודל עובר בעקומה בלי שבר. והמודלים נושאים את כיווני המשטח האמיתיים.</li>
+      <li><strong>החיבור לרצועה.</strong> הרצועה מתחילה בדיוק בחתך האחרון של האי, ולכן היא ממשיכה אותו בלי מדרגה. היא גוף אחד: מהאי, מסביב ליד, מתחת למוט, סביבו וחזרה. קו דק של <span class="ltr">0.3</span> מ״מ מסמן איפה הפלסטיק נגמר ומתחיל ה-FKM, והרצועה עכשיו בכחול של האי.</li>
+      <li><strong>סגירה בסקוץ'.</strong> במקום חורים ופין. הקצה עובר מתחת למוט, מתקפל חזרה ונצמד לרצועה: הווים בצד הפנימי של הקצה, והלולאות ברצועת בד שקועה בפני הרצועה. ההתאמה רציפה, בלי חורים ובלי פין, והחלק העליון של היד נשאר נקי. 3 מ״מ בסוף הקצה בלי ווים, כדי שיהיה קל להרים אותו. רצועת הלולאות נגמרת לפני משטחי ה-RA, כך שהקצה אף פעם לא מכסה אותם.</li>
+      <li><strong>משטחי RA צמודים.</strong> מרווח של מילימטר אחד ביניהם, כמו בין המשטחים שעל האי (היה 3). כל אחד עדיין עם קו נחושת ופין משלו.</li>
+      <li><strong>הסוללה מחוברת.</strong> שני פסי ניקל מהקצה שלה מולחמים לרפידות בקצה הלוח. את מעגל ההגנה הזזתי מהסוללה ללוח, כמו ברוב השעונים החכמים: עם מעגל הגנה מקופל עליה היא רחבה ב-1.5 מ״מ ונוגעת בפינה של המארז.</li>
+      <li><strong>סיבוב מלא.</strong> בצפייה התלת-ממדית אפשר עכשיו לסובב לכל כיוון, גם עם האי למטה. יש גם כפתור "מלמעלה".</li>
+    </ul>
+
+    <h3>מה נשאר מגרסה 1</h3>
+    <ul class="todo">
+      <li><strong>טעינה.</strong> שני מגעים מוזהבים, משני צידי החלון. בלי חור ובלי פתח. תולים את הרצועה על מעמד שהזרוע שלו תופסת את מקום היד, והיא נטענת בכל כיוון שתולים אותה. המגנטים במעמד, לא על היד של מטופל עם קוצב.</li>
+      <li><strong>אי קעור.</strong> רדיוס 44 מ״מ במרכז. הניחוש שלך (40 עד 50) היה נכון.</li>
+      <li><strong>המוליך ברצועה.</strong> מעגל גמיש יצוק ב-FKM, באמצע העובי. קו נחושת נפרד לכל משטח RA, וקו הגנה ביניהם. הרצועה נכנסת לכתף האי בלשון עם עוגן, ושני חצאי המארז נסגרים עליה בריתוך.</li>
+      <li><strong>השליטה.</strong> נקודת מגע עם טבעת אור על הכתף, אטומה לגמרי. הרטט עונה על כל נגיעה. זו הצעה: אם תעדיף לחיצה אמיתית, אותו מקום מקבל מתג מתחת לממברנה.</li>
     </ul>
 
     <div class="nums">
-      <div><div class="n1"><span class="ltr">50 × 30 × 7.2</span> מ״מ</div><div class="n2">האי, ועוד 6 מ״מ לזיזי האבזם</div></div>
+      <div><div class="n1"><span class="ltr">58 × 30 × 7.2</span> מ״מ</div><div class="n2">האי, מהכתף ועד המוט</div></div>
+      <div><div class="n1"><span class="ltr">333</span> ממ״ר</div><div class="n2">כל משטח על הרגל</div></div>
+      <div><div class="n1"><span class="ltr">298</span> ממ״ר</div><div class="n2">כל משטח LA</div></div>
       <div><div class="n1"><span class="ltr">R 44</span> מ״מ</div><div class="n2">קעירות הפנים שעל היד</div></div>
-      <div><div class="n1"><span class="ltr">24 × 2.8</span> מ״מ</div><div class="n2">הרצועה, FKM</div></div>
-      <div><div class="n1"><span class="ltr">+80%</span></div><div class="n2">שטח כל אלקטרודה על הרגל</div></div>
     </div>
 
     <h3>מה עוד פתוח בעיצוב</h3>
     <ul class="todo">
-      <li><strong>אנטנה.</strong> הפס הכהה לאורך צד אחד של האי הוא האזור היחיד בלי מתכת מעליו, ושם יושבת האנטנה. את הקליטה אפשר לבדוק רק ביחידה אמיתית.</li>
-      <li><strong>אורך האי.</strong> הוא מצויר ללוח המצומצם, <span class="ltr">24 × 26</span> מ״מ. הלוח הראשון יהיה ארוך בכ-6 מ״מ, והאי איתו.</li>
-      <li><strong>פין וחור.</strong> נקי וקל לחיטוי בין מטופלים, אבל דורש אצבעות. צריך לנסות עם מטופלים מבוגרים לפני שמקבעים.</li>
-      <li><strong>שלושה אורכי רצועה,</strong> ובכל אחד משטחי ה-RA במקום אחר, כדי שיישארו בצד שקל לגעת בו.</li>
-      <li><strong>ליטוש צורני.</strong> זה תכנון הנדסי מדויק, ועדיין לא עבודה של מעצב תעשייתי. את המשטחים והפרופורציות כדאי שמעצבת תלטש על בסיס הקבצים האלה.</li>
+      <li><strong>אנטנה.</strong> הפלדה מכסה עכשיו את שני הפנים לכל הרוחב, והמקום היחיד בלי מתכת הוא הכתף. ההצעה: אנטנה מודפסת על פנים הכתף, כמו ברוב השעונים החכמים. צריך להחליט עם מהנדס RF, ולמדוד ביחידה הראשונה.</li>
+      <li><strong>סקוץ' ומטופלים משותפים.</strong> קשה יותר לחטא מגומי חלק. צריך לבחור סקוץ' רפואי שעומד בניגוב באלכוהול, או קצה רצועה שמחליפים.</li>
+      <li><strong>אורך האי.</strong> הוא מצויר ללוח המצומצם, <span class="ltr">25 × 26</span> מ״מ. לוח ראשון מרווח ארוך בכ-7 מ״מ, והאי איתו.</li>
+      <li><strong>שלושה אורכי רצועה</strong> מכסים היקף יד מ-130 עד 210 מ״מ, כך שהקצה לעולם לא מגיע למשטחי ה-RA.</li>
+      <li><strong>ליטוש צורני.</strong> זה תכנון הנדסי מדויק, ועדיין לא עבודה של מעצב תעשייתי. כדאי שמעצבת תלטש את המשטחים על בסיס הקבצים האלה.</li>
     </ul>
 
     <details>
@@ -232,8 +246,8 @@
     <h2>הגודל שיצא מהחישוב</h2>
     <p>שטח הלוח חושב מרשימת הרכיבים, הסוללה מצריכת הזרם, והעובי מהערימה של מה שיושב זה על זה.</p>
     <div class="nums">
-      <div><div class="n1"><span class="ltr">48.5 × 30 × 7.3</span> מ״מ</div><div class="n2">המודול, עם לוח ראשון מרווח</div></div>
-      <div><div class="n1"><span class="ltr">41.8 × 30 × 7.3</span> מ״מ</div><div class="n2">אחרי צמצום הלוח</div></div>
+      <div><div class="n1"><span class="ltr">48.9 × 30 × 7.5</span> מ״מ</div><div class="n2">המודול, עם לוח ראשון מרווח</div></div>
+      <div><div class="n1"><span class="ltr">42.1 × 30 × 7.5</span> מ״מ</div><div class="n2">אחרי צמצום הלוח</div></div>
       <div><div class="n1"><span class="ltr">100 mAh</span></div><div class="n2">כשבועיים במרפאה, 60 הקלטות ביום</div></div>
       <div><div class="n1">כ-30 גרם</div><div class="n2">עם הרצועה. המותר במפרט: 40</div></div>
     </div>
@@ -243,12 +257,12 @@
         <tbody>
           <tr><td>ההדמיה</td><td><span class="ltr">35 × 26 × 6</span></td><td>לא חושב מהרכיבים</td></tr>
           <tr><td>המפרט</td><td><span class="ltr">45 × 30 × 12</span></td><td>לא חושב מהרכיבים</td></tr>
-          <tr class="pick"><td>החישוב, סוללה לצד הלוח</td><td><span class="ltr">48.5 × 30 × 7.3</span></td><td>ההמלצה: דק</td></tr>
-          <tr><td>החישוב, סוללה מעל הלוח</td><td><span class="ltr">36 × 28 × 11.6</span></td><td>קצר אבל עבה</td></tr>
+          <tr class="pick"><td>החישוב, סוללה לצד הלוח</td><td><span class="ltr">48.9 × 30 × 7.5</span></td><td>ההמלצה: דק</td></tr>
+          <tr><td>החישוב, סוללה מעל הלוח</td><td><span class="ltr">36 × 28 × 11.9</span></td><td>קצר אבל עבה</td></tr>
         </tbody>
       </table>
     </div>
-    <p>יצא שטח קרוב למפרט ועובי קרוב להדמיה. הקלטה של 10 שניות צורכת מעט מאוד, ולכן מספיקה סוללה של <span class="ltr">100 mAh</span> במקום <span class="ltr">150–300</span> שבמפרט, וזה מה שמאפשר מודול דק. המספרים יתעדכנו כשכל מידה תאומת מול דף היצרן.</p>
+    <p>יצא שטח קרוב למפרט ועובי קרוב להדמיה. הקלטה של 10 שניות צורכת מעט מאוד, ולכן מספיקה סוללה של <span class="ltr">100 mAh</span> במקום <span class="ltr">150–300</span> שבמפרט, וזה מה שמאפשר מודול דק. העובי עלה ב-<span class="ltr">0.2</span> מ״מ כשנכנס חיישן ה-PPG מתחת ללוח. החישוב הזה הוא לקופסה שטוחה. באי המעוקל החלקים הגבוהים יושבים באמצע, שם יש הכי הרבה גובה, ולכן האי נשאר <span class="ltr">7.2</span>. המספרים יתעדכנו כשכל מידה תאומת מול דף היצרן.</p>
   </section>
 
   <section>
@@ -480,6 +494,7 @@
   <section>
     <h2>יומן</h2>
     <div class="log">
+      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה 2 של העיצוב, לפי ההערות שלך: אי סימטרי, חלון ספיר ל-PPG ולמדחום, משטחים חלקים בלי קמטים, רצועה שממשיכה את האי, סגירה בסקוץ', משטחי RA במרחק מילימטר, סוללה מחוברת ללוח, וצפייה שמסתובבת לכל כיוון. המודל בודק את עצמו: אין התנגשויות, והאי סימטרי עד <span class="ltr">0.0</span> מ״מ.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>העיצוב התעשייתי תוכנן מחדש אחרי הביקורת: המודל הראשון היה בדיקת התאמה ולא עיצוב. בגרסה 1 האי קעור (רדיוס 44 מ״מ), הרצועה רציפה ונסגרת סביב מוט, הטעינה במגעים על מעמד, האלקטרודות גדולות ב-80%, ולכל משטח RA קו נפרד במעגל גמיש שיצוק ברצועה. קושחת שלב 2 נשמרה, והוראות החיווט ללוח TI בדף.</p></div></div>
       <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>המודל המוצק הראשון מוכן, עם קובצי STEP ושש תמונות. אפס התנגשויות. לוח ה-ADS1298 של TI נבדק מול המדריך שלו: אפשר לחווט אותו ישירות ל-XIAO עם <span class="ltr">5V</span>, <span class="ltr">3.3V</span> ואדמה בלבד.</p></div></div>
       <div class="entry"><time datetime="2026-11-14">14.11.2026</time><div class="body"><p>חישוב הגודל הראשון מוכן: <span class="ltr">48.5 × 30 × 7.3</span> מ״מ עם סוללה של <span class="ltr">100 mAh</span> לצד הלוח. KiCad מותקן. הוראות ניסוי שלב 1 כתובות.</p></div></div>
@@ -494,14 +509,14 @@
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TrackballControls.js"></script>
 <script>
 (function () {
   var stage = document.getElementById('stage3d');
   var canvas = document.getElementById('c3d');
   var msg = document.getElementById('vmsg');
   var FALLBACK = 'המודל התלת-ממדי לא נטען כאן. התמונות שלמטה מראות אותו.';
-  if (!stage || !window.THREE || !THREE.OrbitControls) { if (msg) msg.textContent = FALLBACK; return; }
+  if (!stage || !window.THREE || !THREE.TrackballControls) { if (msg) msg.textContent = FALLBACK; return; }
   var renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
   catch (e) { msg.textContent = FALLBACK; return; }
@@ -510,8 +525,13 @@
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(26, 4 / 3, 1, 3000);
-  var controls = new THREE.OrbitControls(camera, canvas);
-  controls.enablePan = false;
+  // free rotation in every direction: an orbit control stops at the poles, so the band could not be turned island-down
+  var controls = new THREE.TrackballControls(camera, canvas);
+  controls.noPan = true;
+  controls.rotateSpeed = 3.2;
+  controls.zoomSpeed = 1.1;
+  controls.minDistance = 70;
+  controls.maxDistance = 650;
   scene.add(new THREE.HemisphereLight(0xffffff, 0x7c8798, 1.0));
   var key = new THREE.DirectionalLight(0xffffff, 0.75);
   scene.add(key);
@@ -521,8 +541,10 @@
   scene.add(root);
 
   var parts = [];
-  var state = { explode: 0, goal: 0, lid: true, soft: false, flip: false };
+  var state = { explode: 0, goal: 0, lid: true, soft: false, flip: false, top: false };
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  controls.staticMoving = !!reduce;
+  controls.dynamicDampingFactor = 0.14;
 
   function decode(text, Type) {
     var bin = atob(text), n = bin.length, bytes = new Uint8Array(n);
@@ -536,6 +558,7 @@
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    controls.handleResize();
     draw();
   }
   function apply() {
@@ -552,13 +575,18 @@
     });
   }
   function frame() {
-    var centre = new THREE.Vector3(0, state.goal ? -14 : -19, 0);
-    var dir = new THREE.Vector3(-0.5, state.flip ? -0.5 : 0.52, -0.7).normalize();
+    // turn round the island itself, not the middle of the band: an off-centre pivot skews the island in perspective
+    var centre = new THREE.Vector3(0, state.goal ? 0 : -4, 0);
+    var dir = state.top ? new THREE.Vector3(-0.004, 1, 0) : new THREE.Vector3(-0.5, state.flip ? -0.5 : 0.52, -0.7);
+    dir.normalize();
     controls.target.copy(centre);
-    camera.position.copy(centre).addScaledVector(dir, state.goal ? 300 : 232);
+    camera.position.copy(centre).addScaledVector(dir, state.goal ? 290 : (state.top ? 200 : 222));
+    if (state.top) camera.up.set(1, 0, 0); else camera.up.set(0, 1, 0);   // from above: the bar end at the top
+    camera.lookAt(centre);
     controls.update();
     draw();
   }
+  (function loop() { controls.update(); requestAnimationFrame(loop); })();
   function step() {
     var d = state.goal - state.explode;
     if (Math.abs(d) < 0.01 || reduce) { state.explode = state.goal; apply(); draw(); return; }
@@ -571,20 +599,21 @@
       var g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(decode(p.p, Float32Array), 3));
       g.setIndex(new THREE.BufferAttribute(decode(p.i, Uint32Array), 1));
-      g.computeVertexNormals();
+      // the surface's own normals come with the model; averaging them from the mesh is what showed wrinkles
+      if (p.n) g.setAttribute('normal', new THREE.BufferAttribute(decode(p.n, Int8Array), 3, true));
+      else g.computeVertexNormals();
       var colour = new THREE.Color(p.color[0], p.color[1], p.color[2]).convertSRGBToLinear();
-      var mesh = new THREE.Mesh(g, new THREE.MeshPhongMaterial({
-        color: colour, shininess: p.metal ? 90 : 14, specular: p.metal ? 0x8a8a8a : 0x101010, side: THREE.DoubleSide
-      }));
+      var mat = new THREE.MeshPhongMaterial({
+        color: colour, shininess: p.metal ? 90 : (p.glass ? 120 : 22), specular: p.metal ? 0x8a8a8a : (p.glass ? 0x777777 : 0x1a1d24),
+        side: THREE.DoubleSide
+      });
+      if (p.glass) { mat.transparent = true; mat.opacity = 0.7; mat.depthWrite = false; }
+      var mesh = new THREE.Mesh(g, mat);
+      if (p.glass) mesh.renderOrder = 1;
       var group = new THREE.Group();
       group.add(mesh);
-      var edges = null;
-      if (!p.soft) {
-        edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 38), new THREE.LineBasicMaterial({ color: 0x0c1322, transparent: true, opacity: 0.55 }));
-        group.add(edges);
-      }
       root.add(group);
-      parts.push({ group: group, mesh: mesh, edges: edges, lift: p.lift, lid: p.lid, soft: p.soft });
+      parts.push({ group: group, mesh: mesh, edges: null, lift: p.lift, lid: p.lid, soft: p.soft });
     });
     msg.hidden = true;
     apply(); size(); frame();
@@ -602,6 +631,7 @@
   toggle('v-lid', function (on) { state.lid = !on; apply(); draw(); });
   toggle('v-soft', function (on) { state.soft = on; apply(); draw(); });
   toggle('v-flip', function (on) { state.flip = on; frame(); });
+  toggle('v-top', function (on) { state.top = on; frame(); });
   toggle('v-reset', function () { frame(); });
   controls.addEventListener('change', draw);
   if (window.ResizeObserver) new ResizeObserver(size).observe(stage); else window.addEventListener('resize', size);
@@ -610,4 +640,4 @@
     .then(build).catch(function () { msg.textContent = FALLBACK; });
 })();
 </script>
-<!-- v0.3.0 — Band α risk-reduction plan: industrial design v1 with its 3D viewer, size budget, stages, stage 1 and stage 2 guides, log -->
+<!-- v0.4.0 — Band α risk-reduction plan: industrial design v2 (symmetric, PPG + thermometer, smooth, hook-and-loop) with a free-rotating 3D viewer, size budget, stages, stage 1 and stage 2 guides, log -->

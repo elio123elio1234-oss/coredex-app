@@ -40,29 +40,33 @@ Days between charges, using 80 % of the cell. A 10-second recording is so short 
 | input ESD (0402 / SOD-882) | 5 | 1.6 x 0.9 | 0.50 | top | 15 |
 | RLD loop: R || C feedback + output R, 0402 | 3 | 1.6 x 0.9 | 0.55 | top | 9 |
 | optional electrode buffer footprint (MSOP-10) + 2 caps | 2 | 5.0 x 3.2 | 1.10 | bot | 50 |
-| nRF52840 module with antenna (Raytac MDBT50Q class) | 1 | 15.5 x 10.5 | 2.05 | top | 190 |
-| antenna keep-out under/next to the module (no copper, no parts) | 1 | 10.5 x 4.5 | 0.00 | bot | 47 |
+| nRF52840 module (Raytac MDBT50Q class; v2: RF-output variant, antenna in the shoulder) | 1 | 15.5 x 10.5 | 2.05 | top | 190 |
+| RF feed: matching network + spring finger to the antenna plated in the shoulder | 1 | 4.0 x 2.5 | 1.00 | top | 18 |
 | 32.768 kHz crystal + 2 caps | 1 | 3.2 x 1.8 | 0.60 | top | 12 |
 | charger / PMIC (BQ25120A, DSBGA-25) | 1 | 2.5 x 2.5 | 0.63 | top | 12 |
 | buck inductor 2.0 x 1.6 | 1 | 2.0 x 1.6 | 1.00 | top | 8 |
 | PMIC capacitors / resistors, 0402 + 0603 | 7 | 1.8 x 1.0 | 0.80 | top | 24 |
 | low-noise LDO for AVDD (X2SON / SOT-23-5) + 2 caps | 1 | 4.0 x 3.0 | 1.10 | top | 20 |
 | AFE rail load switch + pull-ups | 1 | 3.0 x 2.5 | 0.60 | bot | 14 |
-| side tactile switch | 1 | 3.9 x 2.9 | 1.70 | top | 19 |
-| LED 0402 + resistor | 1 | 2.4 x 1.0 | 0.50 | top | 4 |
+| touch spot: sense pad feed + cap-sense parts (sealed, replaces the side button) | 1 | 3.0 x 2.0 | 0.60 | top | 12 |
+| LED 0402 + resistor, feeding the light ring | 1 | 2.4 x 1.0 | 0.50 | top | 4 |
 | haptic driver (FET + diode + R) | 1 | 3.5 x 2.5 | 1.00 | bot | 16 |
-| spring contact to an electrode pad (LL1, LL2, RLD, LA) | 4 | 3.0 x 1.6 | 1.80 | top | 42 |
+| PPG optical module, LEDs + photodiode + front end (MAXM86161 class) | 1 | 2.9 x 4.3 | 1.40 | bot | 21 |
+| skin thermometer (MAX30208 / TMP117 class), on a thermal pad to the window | 1 | 2.0 x 2.0 | 0.75 | bot | 9 |
+| spring contact to an electrode plate (LL1, LL2, RLD, LA x 2) | 5 | 3.0 x 1.6 | 1.80 | top | 52 |
 | FPC connector for the strap flex (RA1, RA2 + guard), 0.5 mm 4-pin | 1 | 4.6 x 3.6 | 1.00 | top | 26 |
-| charge pads / pogo landing (VBUS, GND) | 2 | 2.5 x 2.5 | 0.00 | bot | 24 |
-| battery solder pads | 2 | 3.0 x 2.0 | 0.00 | bot | 24 |
+| spring contacts to the two charge contacts on the wrist face | 2 | 1.6 x 1.6 | 0.50 | bot | 14 |
+| charge input that does not care which contact is positive (bridge / ideal-diode pair) | 1 | 2.0 x 2.0 | 0.60 | bot | 9 |
+| battery tab pads at the board's end (the cell's nickel tabs are soldered here) | 2 | 3.0 x 2.0 | 0.00 | top | 24 |
+| cell protection IC + dual FET (the cell has no protection board of its own; the cell table's lengths still include one, so they are conservative) | 1 | 2.0 x 2.0 | 0.60 | bot | 9 |
 | SWD programming pads (4 x 1 mm) | 1 | 5.0 x 1.5 | 0.00 | bot | 15 |
-| coin vibration motor, 8 mm, in a notch of the board | 1 | 8.0 x 8.0 | 2.70 | notch | 81 |
-| **Sum on the board** | | | | | **812** |
+| coin vibration motor, 8 x 2.0 mm, on the leg side near the board's middle | 1 | 8.0 x 8.0 | 2.00 | top | 81 |
+| **Sum on the board** | | | | | **822** |
 
-- **tight** (routing factor 1.5): 609 mm2 of outline on a two-sided board = **25.4 x 24 mm**.
-- **first spin** (routing factor 1.9): 771 mm2 of outline on a two-sided board = **32.1 x 24 mm**.
+- **tight** (routing factor 1.5): 616 mm2 of outline on a two-sided board = **25.7 x 24 mm**.
+- **first spin** (routing factor 1.9): 781 mm2 of outline on a two-sided board = **32.5 x 24 mm**.
 
-Tallest part on the high side 2.05 mm (the radio module's shield), on the low side 1.10 mm. Board 0.8 mm.
+Tallest part on the high side 2.05 mm (the radio module's shield), on the low side 1.40 mm. Board 0.8 mm.
 
 ## 3. Module envelope
 
@@ -70,22 +74,22 @@ Length runs along the strap, width across it, thickness through the wrist. Walls
 
 | Layout | Cell | Board | Length | Width | Thickness | Volume cm3 |
 |---|---|---|---:|---:|---:|---:|
-| side by side | 301020 (40 mAh) | tight | 39.8 | 27.6 | 7.2 | 8.0 |
-| side by side | 301020 (40 mAh) | first spin | 46.5 | 27.6 | 7.2 | 9.3 |
-| side by side | 301230 (80 mAh) | tight | 61.3 | 27.6 | 7.2 | 12.3 |
-| side by side | 301230 (80 mAh) | first spin | 68.0 | 27.6 | 7.2 | 13.6 |
-| side by side | 401225 (100 mAh) | tight | 41.8 | 30.1 | 7.3 | 9.2 |
-| side by side | 401225 (100 mAh) | first spin | 48.5 | 30.1 | 7.3 | 10.7 |
-| side by side | 402025 (150 mAh) | tight | 49.8 | 30.1 | 7.3 | 10.9 |
-| side by side | 402025 (150 mAh) | first spin | 56.5 | 30.1 | 7.3 | 12.4 |
-| stacked | 301020 (40 mAh) | tight | 30.0 | 27.6 | 10.5 | 8.7 |
-| stacked | 301020 (40 mAh) | first spin | 35.7 | 27.6 | 10.5 | 10.4 |
-| stacked | 301230 (80 mAh) | tight | 35.1 | 27.6 | 10.5 | 10.2 |
-| stacked | 301230 (80 mAh) | first spin | 35.7 | 27.6 | 10.5 | 10.4 |
-| stacked | 401225 (100 mAh) | tight | 30.1 | 27.6 | 11.6 | 9.6 |
-| stacked | 401225 (100 mAh) | first spin | 35.7 | 27.6 | 11.6 | 11.4 |
-| stacked | 402025 (150 mAh) | tight | 30.1 | 27.6 | 11.6 | 9.6 |
-| stacked | 402025 (150 mAh) | first spin | 35.7 | 27.6 | 11.6 | 11.4 |
+| side by side | 301020 (40 mAh) | tight | 40.1 | 27.6 | 7.5 | 8.4 |
+| side by side | 301020 (40 mAh) | first spin | 46.9 | 27.6 | 7.5 | 9.8 |
+| side by side | 301230 (80 mAh) | tight | 61.6 | 27.6 | 7.5 | 12.8 |
+| side by side | 301230 (80 mAh) | first spin | 68.4 | 27.6 | 7.5 | 14.3 |
+| side by side | 401225 (100 mAh) | tight | 42.1 | 30.1 | 7.5 | 9.6 |
+| side by side | 401225 (100 mAh) | first spin | 48.9 | 30.1 | 7.5 | 11.1 |
+| side by side | 402025 (150 mAh) | tight | 50.1 | 30.1 | 7.5 | 11.4 |
+| side by side | 402025 (150 mAh) | first spin | 56.9 | 30.1 | 7.5 | 12.9 |
+| stacked | 301020 (40 mAh) | tight | 30.0 | 27.6 | 10.8 | 9.0 |
+| stacked | 301020 (40 mAh) | first spin | 36.1 | 27.6 | 10.8 | 10.8 |
+| stacked | 301230 (80 mAh) | tight | 35.1 | 27.6 | 10.8 | 10.5 |
+| stacked | 301230 (80 mAh) | first spin | 36.1 | 27.6 | 10.8 | 10.8 |
+| stacked | 401225 (100 mAh) | tight | 30.1 | 27.6 | 11.9 | 9.8 |
+| stacked | 401225 (100 mAh) | first spin | 36.1 | 27.6 | 11.9 | 11.8 |
+| stacked | 402025 (150 mAh) | tight | 30.1 | 27.6 | 11.9 | 9.8 |
+| stacked | 402025 (150 mAh) | first spin | 36.1 | 27.6 | 11.9 | 11.8 |
 
 ## 4. Do the electrode pads fit the faces?
 
@@ -100,17 +104,17 @@ Every envelope in section 3 that is at least 30 mm long has room for the pads at
 
 ## 5. Mass of the recommended layout
 
-Side by side, 401225 cell, first-spin board: 48.5 x 30.1 x 7.3 mm.
+Side by side, 401225 cell, first-spin board: 48.9 x 30.1 x 7.5 mm.
 
 | Item | g |
 |---|---:|
-| shell (PA12, 1.01 g/cm3) | 4.7 |
+| shell (PA12, 1.01 g/cm3) | 4.8 |
 | electrode pads (316L, 8.0 g/cm3) | 4.3 |
-| board with parts | 2.7 |
+| board with parts | 2.8 |
 | cell | 2.4 |
 | motor, contacts, screws, gasket | 1.8 |
 | strap with flex and RA pads (silicone, 1.15 g/cm3) | 13.5 |
-| **Total** | **29.5** |
+| **Total** | **29.6** |
 
 The spec allows 40 g with the strap.
 
@@ -125,23 +129,27 @@ The spec allows 40 g with the strap.
 - input ESD (0402 / SOD-882)
 - RLD loop: R || C feedback + output R, 0402
 - optional electrode buffer footprint (MSOP-10) + 2 caps
-- nRF52840 module with antenna (Raytac MDBT50Q class)
-- antenna keep-out under/next to the module (no copper, no parts)
+- nRF52840 module (Raytac MDBT50Q class; v2: RF-output variant, antenna in the shoulder)
+- RF feed: matching network + spring finger to the antenna plated in the shoulder
 - 32.768 kHz crystal + 2 caps
 - charger / PMIC (BQ25120A, DSBGA-25)
 - buck inductor 2.0 x 1.6
 - PMIC capacitors / resistors, 0402 + 0603
 - low-noise LDO for AVDD (X2SON / SOT-23-5) + 2 caps
 - AFE rail load switch + pull-ups
-- side tactile switch
-- LED 0402 + resistor
+- touch spot: sense pad feed + cap-sense parts (sealed, replaces the side button)
+- LED 0402 + resistor, feeding the light ring
 - haptic driver (FET + diode + R)
-- spring contact to an electrode pad (LL1, LL2, RLD, LA)
+- PPG optical module, LEDs + photodiode + front end (MAXM86161 class)
+- skin thermometer (MAX30208 / TMP117 class), on a thermal pad to the window
+- spring contact to an electrode plate (LL1, LL2, RLD, LA x 2)
 - FPC connector for the strap flex (RA1, RA2 + guard), 0.5 mm 4-pin
-- charge pads / pogo landing (VBUS, GND)
-- battery solder pads
+- spring contacts to the two charge contacts on the wrist face
+- charge input that does not care which contact is positive (bridge / ideal-diode pair)
+- battery tab pads at the board's end (the cell's nickel tabs are soldered here)
+- cell protection IC + dual FET (the cell has no protection board of its own; the cell table's lengths still include one, so they are conservative)
 - SWD programming pads (4 x 1 mm)
-- coin vibration motor, 8 mm, in a notch of the board
+- coin vibration motor, 8 x 2.0 mm, on the leg side near the board's middle
 - cell 301020
 - cell 301230
 - cell 401225
