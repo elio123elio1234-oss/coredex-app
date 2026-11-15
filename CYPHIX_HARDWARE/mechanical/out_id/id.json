@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
   "design_wrist_mm": {
     "circumference": 163.2,
     "breadth": 61.0,
@@ -7,7 +7,7 @@
   },
   "island_mm": {
     "length_over_electrodes": 38.6,
-    "length_root_to_lug_ends": 58.5,
+    "length_root_to_lug_ends": 52.5,
     "width": 30.0,
     "thickness": 7.2,
     "inner_radius_at_centre": 44.3,
@@ -22,11 +22,11 @@
     "ra_gap": 1.0
   },
   "electrode_area_mm2": {
-    "LL1": 333.0,
-    "RLD": 333.0,
-    "LL2": 333.0,
-    "LA1": 298.0,
-    "LA2": 298.0,
+    "LL1": 290.0,
+    "RLD": 290.0,
+    "LL2": 290.0,
+    "LA1": 265.0,
+    "LA2": 265.0,
     "RA1": 234.0,
     "RA2": 233.0
   },
@@ -35,13 +35,13 @@
     "inside_parts_touching_the_shells_mm3": [],
     "strap_vs_island_mm3": 0.0,
     "strap_vs_lugs_mm3": 0.0,
-    "strap_vs_bar_mm3": 0.0,
-    "island_symmetric_across_mm": -0.0
+    "strap_vs_bars_mm3": 0.0,
+    "island_symmetric_across_mm": 0.0
   },
   "triangles": {
-    "band": 656705,
-    "section": 225449,
+    "band": 612081,
+    "section": 219254,
     "dock": 36384
   },
-  "seconds": 321
+  "seconds": 206
 }

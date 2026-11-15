@@ -66,13 +66,14 @@ records while it is charging (SAF-01).
 - **nRF52840 in a pre-certified module** (ELC-04), Raytac MDBT50Q class.
   KiCad ships the MDBT50Q-1MV2 symbol and footprint.
 - **The antenna cannot sit under steel, and in design concept v2 steel covers
-  both faces of the island across its full width** (the owner asked for the
-  island to be symmetric and the plates as large as possible). The one
-  metal-free zone left is the **shoulder**, where the strap leaves the island.
-  Proposal (not yet approved): a module variant with an RF output instead of
-  its chip antenna (Raytac lists u.FL / RF-pad variants of the MDBT50Q; to
-  verify the exact part) feeding an antenna plated on the inside of the
-  shoulder shell (LDS, as most wearables do), connected by a spring finger.
+  both faces of the island** (the owner asked for the island to be symmetric
+  and the plates as large as possible). In design concept v3 the metal-free
+  zones are the **frame round the plates, the side walls and the end faces**
+  (plastic). Proposal (not yet approved): a module variant with an RF output
+  instead of its chip antenna (Raytac lists u.FL / RF-pad variants of the
+  MDBT50Q; to verify the exact part) feeding an antenna plated on the inside
+  of the frame and side walls (LDS, as most wearables do), connected by a
+  spring finger.
   Alternative: the nRF52840 chip-down with its own matching network, which
   costs its own radio certification. Decide with an RF engineer; range is
   measured on the first wearable (stage 3), on a wrist, with a leg on the
@@ -133,15 +134,18 @@ These are requirements on the schematic, not notes.
 
 ## 6. User interface and options
 
-- **Control, proposal in design concept v2 (not yet approved):** instead of a
-  side button, a sealed **touch spot** on the shoulder's leg face, on the
-  centre line, inside a thin **light ring** (the status light). Capacitive
-  sensing under the housing, so there is no opening to seal (IP68). The motor
-  answers every touch, because elderly users need to feel that it took. A
-  second wake path: electrode contact, through the ADS1294 lead-off
-  comparators. The touch electrode is disabled while recording. Fallback if
-  the owner wants a real click: a tact switch under a thin flexible membrane
-  at the same spot.
+- **Control, proposal in design concept v3 (not yet approved):** no visible
+  button. A short **light line** (the status light) in the frame at the fixed
+  end, on the centre line; the frame round it is a capacitive **touch zone**
+  under the plastic, so there is no opening to seal (IP68). The motor answers
+  every touch, because elderly users need to feel that it took. A second wake
+  path: electrode contact, through the ADS1294 lead-off comparators. The touch
+  electrode is disabled while recording. Fallback if the owner wants a real
+  click: a tact switch under a thin flexible membrane at the same spot.
+- **Electrode finish (v3):** each plate is 316L-class steel with a dark
+  conductive PVD face and a bright polished edge, as in the owner's render.
+  The coating must be shown not to raise skin contact impedance against bare
+  steel (stage 1); fallback: bright faces.
 - One coin vibration motor, 8 mm, on the leg side of the board near its
   middle (where the curved shell leaves the most height), from the cell
   through a FET with a flyback diode (UI-01).
@@ -169,5 +173,5 @@ These are requirements on the schematic, not notes.
 - Moving the apps to 4 channels and 500 SPS: needs the owner's approval; the
   board does not depend on it.
 
-<!-- v0.4.0 — design intent for the main board: + 1 kSPS decimation and clock footprint, antenna in the shoulder, two-contact charging either way round, touch spot + light ring, PPG + thermometer window -->
+<!-- v0.5.0 — design intent for the main board: 1 kSPS decimation and clock footprint, antenna in the frame (concept v3), two-contact charging either way round, light line + touch zone, dark electrode finish to test, PPG + thermometer window -->
 

@@ -22,8 +22,11 @@ type Shot = {
 
 const P = THREE.MeshPhysicalMaterial;
 const SPEC: Record<string, THREE.MeshPhysicalMaterialParameters> = {
-  // the island: an insulating body, bead-blasted satin, deep navy
-  body: { color: 0x1b2743, metalness: 0, roughness: 0.44, clearcoat: 0.3, clearcoatRoughness: 0.32 },
+  // the island: graphite, as in the owner's render - near-black with a soft gloss
+  body: { color: 0x16181d, metalness: 0, roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.14 },
+  // the plates' faces: a dark conductive finish on the same polished steel (the bright edge is "electrode")
+  electrode_dark: { color: 0x2c3038, metalness: 1, roughness: 0.17, clearcoat: 0.6, clearcoatRoughness: 0.06 },
+  steel_dark: { color: 0x50555e, metalness: 1, roughness: 0.22 },
   // sapphire over the PPG sensor: dark, polished, and just see-through enough to show what is behind it
   glass: { color: 0x0b1019, metalness: 0, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, opacity: 0.66 },
   led_green: { color: 0x22c55e, emissive: 0x16a34a, emissiveIntensity: 0.55, metalness: 0, roughness: 0.3 },
@@ -33,11 +36,11 @@ const SPEC: Record<string, THREE.MeshPhysicalMaterialParameters> = {
   electrode: { color: 0xf7f9fc, metalness: 1, roughness: 0.13, clearcoat: 0.6, clearcoatRoughness: 0.05 },
   steel: { color: 0xe0e4ea, metalness: 1, roughness: 0.1 },
   gold: { color: 0xd6ad4f, metalness: 1, roughness: 0.2 },
-  // fluoroelastomer in the island's own navy: the strap reads as the island continuing, not a part stuck on
-  fkm: { color: 0x1d2843, metalness: 0, roughness: 0.56, sheen: 0.5, sheenColor: new THREE.Color(0x7d8cab), sheenRoughness: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.55 },
+  // fluoroelastomer in the slate blue-grey of the owner's render
+  fkm: { color: 0x4f5c77, metalness: 0, roughness: 0.6, sheen: 0.6, sheenColor: new THREE.Color(0xa8b5cf), sheenRoughness: 0.6, clearcoat: 0.08, clearcoatRoughness: 0.6 },
   // hook-and-loop, laminated flush: the loops a soft navy textile, the hooks a darker, drier layer
-  loop: { color: 0x26314f, metalness: 0, roughness: 0.95, sheen: 1, sheenColor: new THREE.Color(0x8796b8), sheenRoughness: 0.8 },
-  hook: { color: 0x171d2c, metalness: 0, roughness: 0.82, sheen: 0.4, sheenColor: new THREE.Color(0x5b6782), sheenRoughness: 0.7 },
+  loop: { color: 0x4a5671, metalness: 0, roughness: 0.95, sheen: 1, sheenColor: new THREE.Color(0xa8b5cf), sheenRoughness: 0.8 },
+  hook: { color: 0x323b4e, metalness: 0, roughness: 0.82, sheen: 0.4, sheenColor: new THREE.Color(0x6f7b96), sheenRoughness: 0.7 },
   polyimide: { color: 0xc98a2b, metalness: 0, roughness: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.2 },
   copper: { color: 0xe48a4a, metalness: 1, roughness: 0.3 },
   copper_dim: { color: 0xa86a45, metalness: 1, roughness: 0.4 },
@@ -158,4 +161,4 @@ main().catch((e) => {
   pre.textContent = String(e && (e.stack || e));
   document.body.appendChild(pre);
 });
-// v2.0.0 - satin body, navy strap, glass / PPG / thermometer materials, per-shot "up", meshes keep the surface normals they arrive with
+// v3.0.0 - the owner's render palette: graphite body, dark plate faces with bright edges, dark bars, slate strap; glass / PPG materials, per-shot "up", surface normals kept

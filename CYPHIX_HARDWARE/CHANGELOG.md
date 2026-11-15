@@ -1,5 +1,44 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.5.0 — 2026-11-15
+
+**Why.** The owner sent a picture of their own render of Band α (the landing
+page model on a hand) next to concept v2. v2 had answered the engineering
+questions but lost the owner's design language: a long tapered shoulder on
+one end, bright plates edge to edge, a navy body. Their render has a compact
+framed island that is the same at both ends, small lugs with the bar ends
+showing at the four corners, three dark pill-shaped electrodes with bright
+edges, a graphite body and a slate strap.
+
+**What changed (`mechanical/band_id.py` v3.0.0, design concept v3).**
+
+- The island is the same at both ends: the shoulder is gone, each end has two
+  short lugs (the side walls continuing) and a bar that runs through them, so
+  its ends show at the four corners. The fixed end of the strap runs under its
+  bar into the end face (tongue, bead, anchor and flex inside a 4 mm end
+  wall); the free end runs under its bar, round it and back (hook-and-loop).
+  The end faces are lofted square to the band, so the strap meets them flush.
+- Three pill plates inside a slim frame on the leg face (290 mm² each, about
+  twice the render's 147 because the owner asked for larger electrodes, 13 %
+  less than v2's edge-to-edge plates), two LA pills (265 mm²) either side of
+  the sensor window, RA pills in the same style. Each plate is one piece of
+  steel with a dark conductive face and a 0.45 mm bright edge.
+- Graphite body, dark bars, slate blue-grey FKM.
+- The touch spot and light ring (no room without the shoulder) became a short
+  light line in the frame at the fixed end, with the frame round it as the
+  touch zone, and wake on electrode contact.
+- Checks pass: nothing inside touches the shells, the strap clears both lugs
+  pairs and both bars, the island is symmetric to 0.0 mm.
+
+**Not like the render, on purpose.** Size (the render's 35 x 26 x 6 mm cannot
+hold the board and the cell; the island is 46 x 30 x 7.2 mm, 59 with the lugs)
+and plate width (larger electrodes, as asked).
+
+**Open.** The dark finish has to be shown not to raise skin contact impedance
+(fallback: bright steel faces, frame kept); the antenna now has the frame,
+side walls and end faces as its metal-free zone (an LDS antenna inside the
+frame, to decide with an RF engineer).
+
 ## v0.4.0 — 2026-11-15
 
 **Why.** The owner looked at design concept v1 on the phone and found seven

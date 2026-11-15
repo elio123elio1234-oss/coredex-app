@@ -71,7 +71,7 @@ SHOTS = {
     # the face on the wrist: two LA plates, the sensor window with a charge contact each side; the strap only hinted
     "wristface": dict(files=BAND, orient="wrist", pos=[30, 92, -104], target=[0, -1, 1.0], fov=19, ground=None,
                       hide=INSIDE_NOT_SENSORS + ["anchor", "flex", "trace_", "post_", "tongue"],
-                      ghost={"strap": 0.1, "el_RA": 0.1, "stud": 0.1}, strips=WRIST_FACE, exposure=1.0),
+                      ghost={"strap": 0.1, "el_RA": 0.1, "elc_RA": 0.1, "hook": 0.1, "loop": 0.1}, strips=WRIST_FACE, exposure=1.0),
     # side profile on the design wrist: one continuous inner line, concave island, the fold-back
     "profile": dict(files=BAND + ["../out_id/wrist.glb"], orient="wrist", pos=[2, 520, -19], target=[2, 0, -19], fov=9.0,
                     ground=None, hide=INSIDE + ["anchor"], strips=SIDE),
@@ -82,11 +82,11 @@ SHOTS = {
     # inside the strap: two separate traces to two separate pads, the flex keyed into the strap
     "flex": dict(files=BAND, orient="wrist", pos=view(-46, 150, 105, along=18), target=at(-45, 2), fov=19, ground=None,
                  hide=["pcb", "radio", "afe", "chip_", "low_", "motor", "cell", "spring_", "ppg", "temp", "tpad", "hook", "loop"],
-                 ghost={"strap": 0.16, "tongue": 0.2, "el_RA": 0.3, "shell_leg": 0.22, "el_LL": 0.25, "el_RLD": 0.25, "ring": 0.2},
+                 ghost={"strap": 0.16, "tongue": 0.2, "el_RA": 0.3, "elc_RA": 0.3, "shell_leg": 0.22, "el_LL": 0.25, "elc_LL": 0.25, "el_RLD": 0.25, "elc_RLD": 0.25, "led": 0.2},
                  strips=SIDE),
     # lid off: the board, the cell and the two nickel tabs that connect them, the flex landing on its connector
     "inside": dict(files=BAND, orient="island", pos=[-70, -120, 150], target=[2, -2, 2], fov=17, ground=None,
-                   hide=["shell_leg", "el_LL", "el_RLD", "ring", "anchor"], ghost={"strap": 0.35, "hook": 0.2, "loop": 0.2},
+                   hide=["shell_leg", "el_LL", "elc_LL", "el_RLD", "elc_RLD", "led", "anchor"], ghost={"strap": 0.35, "hook": 0.2, "loop": 0.2},
                    strips=LEG_FACE),
     # cut along the band through the island: shells, plates, window + PPG sensor, board, cell, flex entry
     "section": dict(files=["../out_id/band_id_section.glb"], orient="island", pos=[0, -210, 26], target=[0, 0, -1.5], fov=11.5,
@@ -165,4 +165,4 @@ if __name__ == "__main__":
     finally:
         server.shutdown()
 
-# v2.0.0 - shots for design concept v2: hero, top (square on), wrist face with the sensor window, profile, closure, flex, section, charging stand
+# v3.0.0 - shots for design concept v3: hero, top (square on), wrist face with the sensor window, profile, closure, flex, inside, section, charging stand

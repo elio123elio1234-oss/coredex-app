@@ -1,4 +1,15 @@
-"""CYPHIX Band alpha - industrial design concept v2.
+"""CYPHIX Band alpha - industrial design concept v3.
+
+v3 (2026-11-15) brings v2's engineering back into the owner's own design
+language (the landing page render): a compact framed island that is the same at
+both ends, two short lugs at each end with the bars' ends showing at the four
+corners, three pill-shaped plates side by side with a dark face and a bright
+polished edge, graphite body, slate strap. Kept from v2: the concave master
+curve, symmetry, the PPG + thermometer window, smooth sections, hook-and-loop,
+the flex with a trace per RA pad, the connected cell. Not like the render: the
+size (the render's 35 x 26 x 6 mm cannot hold the parts; this is the render's
+look at the computed size) and the plates (about twice the render's area,
+because the owner asked for larger electrodes).
 
 v1 (2026-11-15) drew the concept: concave island on one master curve,
 loop-through closure, flush electrodes, flex with two traces, contact charging.
@@ -50,7 +61,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out_id"
-VERSION = "2.0.0"
+VERSION = "3.0.0"
 
 # ------------------------------------------------------------ master curve
 A, B = 30.5, 21.0          # design wrist: half breadth, half depth
@@ -227,12 +238,13 @@ def pin(s: float, y: float, d0: float, d1: float, r: float) -> cq.Workplane:
 T0, W0 = 7.2, 30.0                    # thickness and width of the island's body
 RT0, RB0 = 3.2, 2.2                   # edge radius on the leg face / on the wrist face
 T_STRAP, W_STRAP, R_STRAP = 2.8, 24.0, 1.2
-S_ROOT = -29.0                        # parting line: the strap starts here, the same section as the island's end
-S_SHOULDER = -16.0                    # full thickness from here ...
-S_WIDE = -14.5                        # ... and full width from here
-S_TAPER = 17.0                        # the free end starts to slim here
-S_NOSE = 23.0                         # the end face between the lugs
-S_BAR = 27.5                          # the bar the strap is threaded round
+# v3: the island is the same at both ends, like the owner's render - two short lugs at each end with
+# the bar's ends showing at the four corners. The fixed end of the strap runs under its bar into the
+# end face; the free end runs under its bar, round it and back (hook-and-loop).
+S_TAPER = 17.0                        # each end starts to slim here
+S_NOSE = 23.0                         # the end faces between the lugs, at -S_NOSE and +S_NOSE
+S_ROOT = -S_NOSE                      # where the fixed end of the strap enters the island
+S_BAR = 27.5                          # the bars, at -S_BAR and +S_BAR
 D_BAR = T_STRAP / 2 + 1.0 + 0.15 + T_STRAP / 2     # bar centre above the skin
 R_LUGEND = 1.95                       # lug ends are rounded round the bar's own axis
 T_LUG, D_LUG = D_BAR + R_LUGEND, D_BAR - R_LUGEND
@@ -243,34 +255,26 @@ PLATE = 0.8                           # electrode plate thickness
 
 
 def t_top(s: float) -> float:
-    if s <= S_SHOULDER:
-        return ramp(s, S_ROOT, S_SHOULDER, T_STRAP, T0)
-    if s <= S_TAPER:
-        return T0
-    return ramp(s, S_TAPER, S_BAR, T0, T_LUG)
+    return ramp(abs(s), S_TAPER, S_BAR, T0, T_LUG)
 
 
 def d_bot(s: float) -> float:
-    return ramp(s, S_NOSE - 2.0, S_BAR, 0.0, D_LUG)       # the free end lifts off the skin a little
+    return ramp(abs(s), S_NOSE - 2.0, S_BAR, 0.0, D_LUG)  # both ends lift off the skin a little
 
 
 def w_isl(s: float) -> float:
-    return ramp(s, S_ROOT, S_WIDE, W_STRAP, W0)
+    return W0
 
 
 def rt_isl(s: float) -> float:
-    if s <= S_SHOULDER:
-        return ramp(s, S_ROOT, S_SHOULDER, R_STRAP, RT0)
-    return ramp(s, S_TAPER, S_BAR, RT0, 1.6)
+    return ramp(abs(s), S_TAPER, S_BAR, RT0, 1.6)
 
 
 def rb_isl(s: float) -> float:
-    if s <= S_SHOULDER:
-        return ramp(s, S_ROOT, S_SHOULDER, R_STRAP, RB0)
-    return ramp(s, S_TAPER, S_BAR, RB0, 1.2)
+    return ramp(abs(s), S_TAPER, S_BAR, RB0, 1.2)
 
 
-STATIONS = sorted(set([round(v, 3) for v in span(S_ROOT, -14.0, 1.0) + span(-11.0, 14.0, 2.5)
+STATIONS = sorted(set([round(v, 3) for v in span(-S_END, -15.5, 0.9) + span(-14.0, 14.0, 2.5)
                        + span(15.5, S_END, 0.9)]))
 
 
@@ -286,15 +290,18 @@ def island_solid(delta: float = 0.0, stations=None) -> cq.Workplane:
     return cq.Workplane("XY").add(cq.Solid.makeLoft(island_wires(delta, stations)))
 
 
-# leg face: three plates across the full width, wrapping over the rounded edges
-LEG = {"LL1": -11.35, "RLD": 0.0, "LL2": 11.35}      # centres (s); 13.2 mm apart on the outer face
-LEG_L, LEG_W, LEG_R = 12.2, 27.4, 2.4                # measured on the outer face
-# wrist face: two LA plates, and between them the sensor window with a charge contact each side
+# leg face: three pill plates side by side inside a slim frame, as in the owner's render, but each about
+# twice the render's area (the owner asked for larger electrodes). Each plate is one piece of steel: a
+# dark conductive finish on its face, its bright polished edge showing round it.
+LEG = {"LL1": -11.6, "RLD": 0.0, "LL2": 11.6}        # centres (s); 13.5 mm apart on the outer face
+LEG_L, LEG_W, LEG_R = 12.0, 25.0, 3.5                # measured on the outer face
+# wrist face: two LA pills, and between them the sensor window with a charge contact each side
 WRIST = {"LA1": -11.0, "LA2": 11.0}
-WRIST_L, WRIST_W, WRIST_R = 11.0, 27.4, 2.4
+WRIST_L, WRIST_W, WRIST_R = 11.0, 25.0, 3.5
+RIM = 0.45                                           # the bright edge round each plate's dark face
 WIN_R = 4.3                                          # sapphire window: PPG sensor + skin thermometer
 CHG_Y = (-9.0, 9.0)                                  # two charge contacts; the input does not care which is which
-S_TOUCH = -19.3                                      # touch spot + light ring, on the shoulder, on the centre line
+S_LED = -19.2                                        # status light + touch zone, in the frame at the fixed end, centre line
 GAP = 0.12                                           # the line round every inlaid part
 
 
@@ -323,7 +330,25 @@ def wrist_plane(s: float, y: float) -> cq.Plane:
     return cq.Plane(origin=pt(s, 0.0, y), xDir=(t[0], 0, t[1]), normal=(-n[0], 0, -n[1]))
 
 
-S_CAV0, S_CAV1 = -21.0, 21.4
+S_CAV0, S_CAV1 = -19.0, 21.4         # the fixed end keeps a 4 mm solid wall that holds the strap's tongue
+
+
+def framed_plate(skin: cq.Workplane, s: float, l: float, w: float, r: float, d: float):
+    """(bright edge, dark face, pocket) of one plate: the same 0.8 mm steel, two finishes."""
+    face = skin.intersect(prism(s, 0.0, l - 2 * RIM, w - 2 * RIM, r - RIM, d=d, depth=3.0))
+    edge = skin.intersect(prism(s, 0.0, l, w, r, d=d, depth=3.0)).cut(face)
+    pocket = skin.intersect(prism(s, 0.0, l + 2 * GAP, w + 2 * GAP, r + GAP, d=d, depth=3.0))
+    return edge, face, pocket
+
+
+def end_cut(body: cq.Workplane, sign: int) -> cq.Workplane:
+    """One end: a slot between two lugs that are the island's own side walls, lug ends rounded round the bar."""
+    # lofted, so the end face is square to the band exactly at +-S_NOSE, where the strap meets it
+    body = body.cut(loft(span(sign * S_NOSE, sign * (S_END + 1.0), 1.0), W_SLOT, -5.0, 12.0, 0.2))
+    beyond = cq.Workplane(plane_on(sign * S_BAR, D_BAR, 0.0)).center(sign * 10.0, 0.0).box(20.0, 40.0, 30.0)
+    keep = (cq.Workplane(cq.Plane(origin=pt(sign * S_BAR, D_BAR, 0), xDir=(1, 0, 0), normal=(0, 1, 0)))
+            .circle(R_LUGEND).extrude(16.0, both=True))
+    return body.cut(beyond.cut(keep))
 
 
 def build_island():
@@ -334,11 +359,11 @@ def build_island():
     skin = solid.cut(island_solid(PLATE))                 # the outer 0.8 mm everywhere: plates are cut from it
 
     for name, s in LEG.items():
-        parts[f"el_{name}"] = skin.intersect(prism(s, 0.0, LEG_L, LEG_W, LEG_R, d=T0, depth=3.0))
-        body = body.cut(skin.intersect(prism(s, 0.0, LEG_L + 2 * GAP, LEG_W + 2 * GAP, LEG_R + GAP, d=T0, depth=3.0)))
+        parts[f"el_{name}"], parts[f"elc_{name}"], pocket = framed_plate(skin, s, LEG_L, LEG_W, LEG_R, T0)
+        body = body.cut(pocket)
     for name, s in WRIST.items():
-        parts[f"el_{name}"] = skin.intersect(prism(s, 0.0, WRIST_L, WRIST_W, WRIST_R, d=0.0, depth=3.0))
-        body = body.cut(skin.intersect(prism(s, 0.0, WRIST_L + 2 * GAP, WRIST_W + 2 * GAP, WRIST_R + GAP, d=0.0, depth=3.0)))
+        parts[f"el_{name}"], parts[f"elc_{name}"], pocket = framed_plate(skin, s, WRIST_L, WRIST_W, WRIST_R, 0.0)
+        body = body.cut(pocket)
 
     # sensor window, flush with the concave face, with a boss inside that meets the PPG sensor
     win = solid.intersect(pin(0.0, 0.0, -2.0, WALL, WIN_R)).union(pin(0.0, 0.0, WALL - 0.05, WALL + 0.3, 3.1))
@@ -350,51 +375,44 @@ def build_island():
         body = body.cut(dish(wrist_plane(0.0, y), 1.9, 0.35)).cut(pin(0.0, y, -1.0, 2.4, 1.25))
         parts[f"chg_{i + 1}"] = pin(0.0, y, 0.35, 2.2, 1.2)
 
-    # the control: a touch spot (a dish the finger finds) inside a thin light ring, no opening
-    tp = top_plane(S_TOUCH)
-    ring_out = cq.Workplane(top_plane(S_TOUCH, 0.6)).circle(3.85).circle(3.35).extrude(3.0)
-    ring_cut = cq.Workplane(top_plane(S_TOUCH, 0.62)).circle(3.85 + 0.06).circle(3.35 - 0.06).extrude(3.0)
-    parts["ring"] = solid.intersect(ring_out)
-    body = body.cut(ring_cut).cut(dish(tp, 3.0, 0.25))
-
-    # the parting line where the strap starts: a fine groove, 0.3 wide and 0.25 deep, all round
-    def ring_sec(s: float, grow: float) -> cq.Wire:
-        return sec_wire(s, w_isl(s) + 2 * grow, d_bot(s) - grow, t_top(s) + grow, rt_isl(s) + grow, rb_isl(s) + grow)
-    g_out = cq.Solid.makeLoft([ring_sec(S_ROOT - 0.02, 0.5), ring_sec(S_ROOT + 0.3, 0.5)])
-    g_in = cq.Solid.makeLoft([ring_sec(S_ROOT - 0.04, -0.25), ring_sec(S_ROOT + 0.32, -0.25)])
-    body = body.cut(cq.Workplane("XY").add(g_out).cut(cq.Workplane("XY").add(g_in)))
+    # status light: a short light line in the frame at the fixed end, on the centre line. The frame round it
+    # is the touch zone (capacitive, under the plastic); the device also wakes when the plates are touched.
+    lp = top_plane(S_LED, 0.6)
+    led = cq.Workplane(lp).sketch().rect(1.1, 7.0).vertices().fillet(0.54).finalize().extrude(3.0)
+    led_cut = cq.Workplane(top_plane(S_LED, 0.62)).sketch().rect(1.1 + 2 * GAP, 7.0 + 2 * GAP).vertices().fillet(0.6).finalize().extrude(3.0)
+    parts["led"] = solid.intersect(led)
+    body = body.cut(led_cut)
 
     cav_st = [S_CAV0] + [s for s in STATIONS if S_CAV0 + 0.3 < s < S_CAV1 - 0.3] + [S_CAV1]
     cav = island_solid(WALL, cav_st)
     body = body.cut(cav).cut(make_tongue(0.05)).cut(make_bead(0.08)).cut(make_flex_tail(0.25))
-
-    # the free end: a slot between two lugs that are the island's own side walls, ends rounded round the bar
-    sc = (S_NOSE + S_END + 1.0) / 2
-    body = body.cut(prism(sc, 0.0, S_END + 1.0 - S_NOSE, W_SLOT, 0.8, d=3.0, depth=10.0))
-    beyond = cq.Workplane(plane_on(S_BAR, D_BAR, 0.0)).center(10.0, 0.0).box(20.0, 40.0, 30.0)
-    keep = cq.Workplane(cq.Plane(origin=pt(S_BAR, D_BAR, 0), xDir=(1, 0, 0), normal=(0, 1, 0))).circle(R_LUGEND).extrude(16.0, both=True)
-    body = body.cut(beyond.cut(keep))
+    body = end_cut(end_cut(body, 1), -1)
 
     # shells: the leg-side lid and the wrist-side tray, welded at mid height; the lugs belong to the tray
-    upper = loft(span(S_ROOT - 1.0, S_NOSE - 0.5, 1.5), 50.0, lambda s: t_top(s) / 2, lambda s: t_top(s) + 6.0, 0.2)
+    upper = loft(span(-S_NOSE + 0.5, S_NOSE - 0.5, 1.5), 50.0, lambda s: t_top(s) / 2, lambda s: t_top(s) + 6.0, 0.2)
     parts["shell_leg"] = body.intersect(upper)
     wrist = body.cut(upper)
-    lug_zone = {sy: cq.Workplane(plane_on(S_BAR, D_BAR, sy * (W_SLOT / 2 + 5.0))).center(-1.5, 0.0).box(13.0, 10.0, 16.0)
-                for sy in (-1, 1)}
-    parts["lug_a"] = wrist.intersect(lug_zone[-1])
-    parts["lug_b"] = wrist.intersect(lug_zone[1])
-    parts["shell_wrist"] = wrist.cut(lug_zone[-1]).cut(lug_zone[1])
-    parts["bar"] = cq.Workplane(cq.Plane(origin=pt(S_BAR, D_BAR, 0), xDir=(1, 0, 0), normal=(0, 1, 0))).circle(1.0).extrude(13.6, both=True)
+    for sign, names in ((1, ("lug_a", "lug_b")), (-1, ("lug_c", "lug_d"))):
+        for sy, name in zip((-1, 1), names):
+            zone = cq.Workplane(plane_on(sign * S_BAR, D_BAR, sy * (W_SLOT / 2 + 5.0))).center(sign * -1.5, 0.0).box(13.0, 10.0, 16.0)
+            parts[name] = wrist.intersect(zone)
+            wrist = wrist.cut(zone)
+    parts["shell_wrist"] = wrist
+    # the bars run right through the lugs: their ends show as small steel dots at the four corners
+    for sign, name in ((1, "bar"), (-1, "bar_fixed")):
+        cyl = (cq.Workplane(cq.Plane(origin=pt(sign * S_BAR, D_BAR, 0), xDir=(1, 0, 0), normal=(0, 1, 0)))
+               .circle(1.0).extrude(16.0, both=True))
+        parts[name] = cyl.intersect(solid)
     return parts, solid, cav
 
 
 # ------------------------------------------------- strap, where it enters
-TONGUE_S = [S_ROOT + k for k in (0.0, 1.0, 2.0, 3.0, 4.0, 4.8)]
+TONGUE_S = [S_ROOT + k for k in (0.0, 0.8, 1.6, 2.4, 3.1, 3.6)]
 TONGUE_W = [21.2, 21.0, 20.6, 20.6, 20.6, 20.6]
 TONGUE_D0 = [0.72, 0.75, 0.80, 0.90, 1.00, 1.00]
 TONGUE_D1 = [2.08, 2.20, 2.40, 2.80, 3.00, 3.00]
-S_BEAD = S_ROOT + 5.7
-S_ANCHOR = S_ROOT + 3.1
+S_BEAD = S_ROOT + 2.9
+S_ANCHOR = S_ROOT + 2.0
 
 
 def make_tongue(grow: float = 0.0) -> cq.Workplane:
@@ -409,7 +427,7 @@ def make_bead(grow: float = 0.0) -> cq.Workplane:
 
 def flex_d(s: float) -> float:
     """Height of the flex: mid-thickness in the strap, rising to the connector inside the island."""
-    return 1.32 if s <= S_ROOT + 1.5 else ramp(s, S_ROOT + 1.5, S_ROOT + 10.5, 1.32, 3.75)
+    return 1.32 if s <= S_ROOT + 1.8 else ramp(s, S_ROOT + 1.8, S_ROOT + 5.6, 1.32, 3.75)
 
 
 FLEX_W = 13.4
@@ -492,7 +510,9 @@ def build_strap():
 
     for name, s in RA.items():
         slab = loft(span(s - 8.5, s + 8.5, 1.2), 30.0, T_STRAP - 0.6, T_STRAP + 2.0, 0.15)
-        parts[f"el_{name}"] = strap.intersect(slab).intersect(prism(s, 0.0, RA_L, RA_W, 4.2, d=T_STRAP))
+        face = strap.intersect(slab).intersect(prism(s, 0.0, RA_L - 2 * RIM, RA_W - 2 * RIM, 4.2 - RIM, d=T_STRAP))
+        parts[f"el_{name}"] = strap.intersect(slab).intersect(prism(s, 0.0, RA_L, RA_W, 4.2, d=T_STRAP)).cut(face)
+        parts[f"elc_{name}"] = face
         strap = strap.cut(slab.intersect(prism(s, 0.0, RA_L + 2 * GAP, RA_W + 2 * GAP, 4.2 + GAP, d=T_STRAP)))
         parts[f"post_{name}"] = pin(s, RA_POST_Y[name], 1.47, T_STRAP - 0.6, 0.9)
     # hook-and-loop, each laminated into its own layer so the surfaces stay flush
@@ -624,8 +644,8 @@ def build_wrist() -> cq.Workplane:
 
 # ------------------------------------------------------------------ export
 MATERIAL = {
-    "shell_": "body", "lug_": "body", "ring": "led", "window": "glass",
-    "el_": "electrode", "bar": "steel", "stud": "steel", "post_": "steel",
+    "shell_": "body", "lug_": "body", "led": "led", "window": "glass",
+    "el_": "electrode", "elc_": "electrode_dark", "bar": "steel_dark", "post_": "steel",
     "chg_": "gold", "dock_pin_": "gold", "spring_": "gold",
     "strap": "fkm", "tongue": "fkm", "anchor": "anchor", "hook": "hook", "loop": "loop",
     "cell_pcm": "pcb", "cell_tab": "steel",
@@ -697,7 +717,7 @@ def mesh(wp: cq.Workplane, lin: float, ang: float):
     return np.array(V), np.array(N), np.array(F, dtype=np.int64)
 
 
-SMOOTH = ("el_", "shell_", "lug_", "strap", "bar", "ring", "window", "dock_stand", "dock_pad", "chg_", "hook", "loop")
+SMOOTH = ("el_", "elc_", "shell_", "lug_", "strap", "bar", "led", "window", "dock_stand", "dock_pad", "chg_", "hook", "loop")
 
 
 def export(parts: dict[str, cq.Workplane], path: Path, cut_y: float | None = None) -> int:
@@ -795,19 +815,19 @@ if __name__ == "__main__":
             hits.append([name, round(v, 2)])
     checks["inside_parts_touching_the_shells_mm3"] = hits
     checks["strap_vs_island_mm3"] = round(common(strap["strap"], island["shell_wrist"]) + common(strap["strap"], island["shell_leg"]), 3)
-    checks["strap_vs_lugs_mm3"] = round(common(strap["strap"], island["lug_a"]) + common(strap["strap"], island["lug_b"]), 3)
-    checks["strap_vs_bar_mm3"] = round(common(strap["strap"], island["bar"]), 3)
+    checks["strap_vs_lugs_mm3"] = round(sum(common(strap["strap"], island[k]) for k in ("lug_a", "lug_b", "lug_c", "lug_d")), 3)
+    checks["strap_vs_bars_mm3"] = round(common(strap["strap"], island["bar"]) + common(strap["strap"], island["bar_fixed"]), 3)
     bb = solid.val().BoundingBox()
     checks["island_symmetric_across_mm"] = round(bb.ymax + bb.ymin, 4)
 
     areas = {}
     for name in ("LL1", "RLD", "LL2"):
-        areas[name] = round(area_mm2(island[f"el_{name}"], frame3n(LEG[name])), 0)
+        areas[name] = round(sum(area_mm2(island[f"{k}_{name}"], frame3n(LEG[name])) for k in ("el", "elc")), 0)
     for name in ("LA1", "LA2"):
         n = frame3n(WRIST[name])
-        areas[name] = round(area_mm2(island[f"el_{name}"], (-n[0], 0, -n[2])), 0)
+        areas[name] = round(sum(area_mm2(island[f"{k}_{name}"], (-n[0], 0, -n[2])) for k in ("el", "elc")), 0)
     for name in ("RA1", "RA2"):
-        areas[name] = round(area_mm2(strap[f"el_{name}"], frame3n(RA[name])), 0)
+        areas[name] = round(sum(area_mm2(strap[f"{k}_{name}"], frame3n(RA[name])) for k in ("el", "elc")), 0)
     print(json.dumps({"checks": checks, "electrode_area_mm2": areas}), flush=True)
 
     n1 = export(band, OUT / "band_id.glb")
@@ -841,10 +861,10 @@ if __name__ == "__main__":
     print(json.dumps(info, indent=2))
 
     if "--step" in sys.argv:          # solid CAD for a designer or a factory: one assembly, every part named
-        assy = cq.Assembly(name="band_alpha_id_v2")
+        assy = cq.Assembly(name="band_alpha_id_v3")
         for name, wp in {**band, **dock}.items():
             assy.add(wp, name=name)
         assy.save(str(OUT / "band_id.step"))
         print("STEP ->", OUT / "band_id.step")
 
-# v2.0.0 - symmetric island, PPG + thermometer window, smooth spline sections, strap as one loft from the island's own section, hook-and-loop, RA 1 mm apart, cell tabs to the board, surface normals in the meshes
+# v3.0.0 - the owner's render language: island the same at both ends (lugs + bar ends at four corners), framed pill plates with dark faces and bright edges, light line in the frame; v2 engineering kept
