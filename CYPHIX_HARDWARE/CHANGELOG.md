@@ -1,5 +1,32 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.14.0 — 2026-11-16
+
+**Why.** The owner said "yes, install" to the autorouter. The board is now routed: 6 layers, every
+connection in copper but one, KiCad DRC clean.
+
+**What changed.**
+
+- **Freerouting 2.5.0.** It runs as the jar on Eclipse Temurin JRE 25, in `%LOCALAPPDATA%/cyphix-tools`.
+  Both were checked against their published SHA-256 digests. The native Windows CLI build is unusable: its
+  routing thread dies (GraalVM serialization) and the process hangs. That is why the first evening run
+  produced nothing.
+- **6 layers instead of 4** (`make_pcb.py` 0.2.0): F | In1 GND | In2 | In3 | In4 VBAT | B.
+  - On 4 layers the router either necked 178 tracks down below what a board house makes, left 8
+    connections with signals cutting the plane, or (with the plane protected) stopped converging at 86.
+  - 6 layers with a GND plane and a VBAT plane routed everything in 6 minutes.
+  - Cost: a 6-layer board costs more than a 4-layer one (for the reviewer).
+- **Router settings:** neck-down and optimizer off. About 125 wires the router still writes at
+  0.063–0.095 mm are raised to the 0.1 mm board minimum after import. The rule was not lowered.
+- **Result:** 1,541 segments, 174 vias. KiCad DRC: 0 violations, 0 schematic-parity errors, 1 open VBAT
+  link where the VBAT plane split.
+- `pictures.sh` (new): 3D renders of both faces and per-layer copper plots. The plan page shows the routed
+  board.
+
+**Not done.** The human layout pass: close the VBAT link, move 136 track pieces off the plane layers,
+route the analog input pairs short and matched, check creepage and the antenna keep-out. The review
+before ordering is also still to come. Details: `electronics/main_board/DESIGN_NOTES.md` §9.
+
 ## v0.13.0 — 2026-11-15
 
 **Why.** The owner asked where the board layout and its connections were. There was none: rev 0.1 was only a
@@ -501,5 +528,5 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.13.0 — the hardware folder's history, newest first; latest: board rev 0.1 placed (not routed) -->
+<!-- v0.14.0 — the hardware folder's history, newest first; latest: board rev 0.1 routed on 6 layers (Freerouting), DRC clean but 1 link -->
 

@@ -204,63 +204,76 @@ recommended only for low-frequency I/O near the radio.
 - **Buffers, final series resistance, RLD values.** After the stage 1 and stage 2 measurements.
 - **Touch.** A proposal that has not been approved. The pad and its resistor cost nothing if unused.
 
-## 9. Board rev 0.1: placement (not routed)
+## 9. Board rev 0.1: placed and autorouted (not reviewed)
 
 **Files.**
 - Board: `band_alpha_main.kicad_pcb`.
-- Generator: `make_pcb.py`, run with KiCad's own Python. It reads the same parts and nets table as the
-  schematic.
-- Pictures: `pics/top3d.png`, `pics/bottom3d.png`, `pics/ratsnest.png` (from `draw_ratsnest.py`).
+- Generator: `make_pcb.py --route`, run with KiCad's own Python. It reads the same parts and nets table as
+  the schematic.
+- Pictures: `pictures.sh` makes `pics/routed_top3d.png`, `pics/routed_bottom3d.png` and the copper plots
+  `pics/layer_*.png`. `draw_ratsnest.py` draws the air-wire picture of the placement.
+- Router log: `freerouting.log`.
 
-**Board.** 32 × 26 mm, 0.8 mm thick, 4 layers:
+**Board.** 32 × 26 mm, 0.8 mm thick, **6 layers**:
 - F.Cu: signals
-- In1.Cu: GND plane
-- In2.Cu: signals and power
+- In1: GND plane
+- In2, In3: signals
+- In4: VBAT plane
 - B.Cu: signals
 
 It is the island's flat board from `mechanical/band_id.py`, made 7 mm longer for the first spin's TQFP-64.
-The island grows with it, which is allowed: every size is a recommendation.
+
+| Try | Stack | Result |
+|---|---|---|
+| 1 | 4 layers, GND plane on In1 (router allowed on it) | Everything routed, but 178 tracks necked down to 0.063–0.095 mm. |
+| 2 | Same, neck-down off | 8 connections left. Signals cut the plane. |
+| 3 | 4 layers, In1 marked as a "power" layer to keep signals off | 86 left. Freerouting stops converging. |
+| 4 | 6 layers, GND on In1 and In4 | 13 left, all of them VBAT. |
+| 5 (this one) | 6 layers, GND on In1, VBAT on In4 | **0 left, 0 violations, in 6 minutes.** |
+
+Two whole reference planes, one under each face, also suit a microvolt AFE next to a 2.4 GHz radio. The
+cost: a 6-layer board costs more to make than a 4-layer one. The reviewer may push back.
 
 **Placed from the housing, not by eye.** Board x runs along the band and equals the island's s + 1.5 mm.
-- Spring contacts under the steel faces:
-  - leg face (top): LL1 at x −6.2, RLD at x 3.3, LL2 at x 14.6
-  - wrist face (bottom): LA pads at x −8.5 and x 11.0
-- Charge contacts at (1.5, ±9): the model's CHG_Y.
-- The PPG and the thermometer inside the sapphire window, a 4.6 mm keep-out circle at x 1.5.
-- The strap's FPC opening flush with the fixed end.
-- Cell tabs at the free end.
-- An 8 mm keep-out circle on top where the coin motor sits.
+- Spring contacts:
+  - leg face: LL1 at x −6.2, RLD at x 3.3, LL2 at x 14.6
+  - wrist face: LA at x −8.5 and x 11.0
+- Charge contacts at (1.5, ±9).
+- PPG and thermometer inside the window (keep-out circle r 4.6 at x 1.5).
+- FPC flush with the fixed end, cell tabs at the free end, motor keep-out r 4.3.
+- ADS1294 and radio module placed by hand, the antenna and its all-layer keep-out on a side wall. The rest
+  placed automatically next to the pins they serve.
 
-**Big parts by hand:**
-- ADS1294: on the leg face, analog pins towards the FPC and the springs, SPI pins towards the radio.
-- Radio module: its antenna end and its all-layer keep-out on a side wall (plastic, the metal-free zone),
-  away from the cell.
-
-**Everything else automatically.**
-- Each part goes next to the pin it decouples, or next to the pads it connects to, on its assigned face.
-- No courtyard overlaps, inside the outline, outside the keep-outs.
-- Caps for the ADS1294's lower-edge pins go under the chip, on the wrist face.
+**Routing.**
+- Tool: Freerouting 2.5.0, the jar (SHA-256 f6f51bb0…5de3c7) on Eclipse Temurin JRE 25.0.5+8
+  (SHA-256 da78d54a…0beae), both checked against the published digests. Installed outside the repo in
+  `%LOCALAPPDATA%/cyphix-tools`, with the owner's permission (2026-11-15).
+- The native Windows CLI build does not work: its routing thread dies with a GraalVM serialization error,
+  then the process hangs.
+- Settings: neck-down off; optimizer off (its first pass took 17 minutes for a 4 % shorter route).
+- Freerouting still writes about 125 short wires at 0.095 mm (0.063 at the narrowest). Every one is raised
+  to the 0.1 mm board minimum after import. The rule is not lowered.
 
 **Checks (KiCad DRC with zone refill and schematic parity).**
 
 | Check | Result |
 |---|---|
-| Footprints placed | 131 of 131 |
-| Courtyard overlaps | 0 |
-| Board vs. schematic (footprint parity) | 0 errors: every footprint, field and pad net matches |
-| Electrical DRC errors | 0 |
-| Unconnected pads | 308. Expected: nothing is routed yet. |
-| Isolated copper | 1, the GND plane, which has no vias until routing |
+| DRC violations | 0 |
+| Board vs. schematic (parity) | 0 errors |
+| Copper | 1,541 track segments, 174 vias |
+| Unconnected | 1: two VBAT stubs on B.Cu at (8.5, 0.6) and (12.7, 0.1). The VBAT plane split there. |
 
-Reference names are on the assembly (Fab) layers only. The few silkscreen warnings that remain stay
-visible in `drc.rpt`; none were silenced.
+**Left for the human layout pass:**
+1. Close that one VBAT link.
+2. 136 track pieces run on the plane layers In1 and In4 and cut the planes. Move them to In2, In3 or the
+   outer layers, or at least keep them away from the AFE and the input network.
+3. Route the analog input nets (`*_PAD`, `*_S`, `*_F`, `*_ADC`, RLD) short and matched in pairs, with a
+   guard where possible. The autorouter knows nothing about that.
+4. Check the antenna keep-out, and the creepage between electrode nets and VBAT, VCHG and BR_P (§2).
+5. Copper weight, impedance, stack-up and thickness come from the chosen board house's 6-layer 0.8 mm
+   process.
 
-**Not done: routing.** The plan is Freerouting, an open-source autorouter, run locally on the exported
-Specctra file and imported back. Its Windows build is downloaded and its checksum matches the one the
-project publishes, but running a downloaded program needs the owner's permission, so it has not been run.
-Either way, a human layout pass follows. Analog nets need short, guarded routes, the ground plane
-needs care under the AFE, and the antenna needs its keep-out kept. A reviewer checks the result before
-anything is ordered.
+A reviewer checks the result before anything is ordered.
 
 ## 10. Numbers not yet re-read from a datasheet (confirm)
 
@@ -275,4 +288,4 @@ anything is ordered.
 | nRF52840 | VBUS handling with USB unused; low-frequency-only pins |
 | ADS1294 | full absolute-maximum table: any AVDD–DVDD limit with AVDD off |
 
-<!-- v0.2.0 — design notes for main board rev 0.1 (+ board placement, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->
+<!-- v0.3.0 — design notes for main board rev 0.1 (+ 6-layer placed and autorouted board, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->

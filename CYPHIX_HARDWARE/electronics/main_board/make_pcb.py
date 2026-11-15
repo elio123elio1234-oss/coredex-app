@@ -6,7 +6,9 @@ Run with KiCad's own Python (it carries the pcbnew module):
 What it does:
   1. Reads the parts and nets from make_schematic.py, the same table the schematic is drawn from, so the board
      and the schematic cannot disagree.
-  2. Makes a 4-layer board, 32 x 26 mm: F.Cu signals | In1.Cu GND plane | In2.Cu signals + power | B.Cu signals.
+  2. Makes a 6-layer board, 32 x 26 mm: F.Cu signals | In1 GND plane | In2, In3 signals + power | In4 VBAT plane |
+     B.Cu signals. (4 layers did not route: 8 connections left with signals cutting the plane, or 86 left with the
+     plane protected. Two whole planes, one under each face, also suit a microvolt AFE next to a radio.)
      The outline is the island's flat board from mechanical/band_id.py, made 7 mm longer for the first spin's
      TQFP-64 (the size budget's "first spin about 6-7 mm longer").
   3. Places the parts whose position the housing decides exactly where the 3D model puts them: the spring
@@ -44,7 +46,9 @@ LIB = str(HERE / "band_alpha.pretty")
 BW, BH, BR = 32.0, 26.0, 1.5                     # board outline (mm) and corner radius
 MARGIN = 0.25                                    # courtyard to board edge
 CLI = str(S.CLI)
-FREEROUTING = Path(os.environ.get("LOCALAPPDATA", "")) / "cyphix-tools" / "freerouting" / "freerouting-cli.exe"
+TOOLS = Path(os.environ.get("LOCALAPPDATA", "")) / "cyphix-tools"          # outside the repo; checksums in DESIGN_NOTES
+FREEROUTING_JAR = TOOLS / "freerouting-2.5.0.jar"
+JAVA = next(iter(sorted((TOOLS / "jre").glob("*/bin/java.exe"))), Path("java"))
 
 
 def mm(v):
@@ -140,7 +144,10 @@ def flip(fp):
 # ------------------------------------------------------------ build
 def build():
     board = pcbnew.NewBoard(str(HERE / f"{NAME}.kicad_pcb"))
-    board.SetCopperLayerCount(4)
+    board.SetCopperLayerCount(6)
+    # In1 and In4 carry the ground planes (zones). They stay "signal" layers: marked "power", Freerouting stopped
+    # converging (86 connections left on 4 layers, 136 after 10 passes on 6). With four other layers free it seldom
+    # needs them; route() counts every track that lands on a plane layer so a person can move it.
     ds = board.GetDesignSettings()
     ds.SetBoardThickness(mm(0.8))                # thin board: it lives in a 7.2 mm island
     nc = ds.m_NetSettings.GetDefaultNetclass()
@@ -325,17 +332,19 @@ def place(board, fps):
 
 
 def zones(board, nets):
-    """Ground plane on In1.Cu over the whole board (the antenna keep-out in U7's footprint still applies)."""
-    z = pcbnew.ZONE(board)
-    z.SetLayer(pcbnew.In1_Cu)
-    z.SetNet(nets["GND"])
-    o = z.Outline(); o.NewOutline()
-    for x, y in ((-BW / 2, -BH / 2), (BW / 2, -BH / 2), (BW / 2, BH / 2), (-BW / 2, BH / 2)):
-        o.Append(mm(x), mm(y))
-    z.SetLocalClearance(mm(0.2))
-    z.SetMinThickness(mm(0.15))
-    board.Add(z)
-    return z
+    """Planes over the whole board: GND on In1, VBAT on In4 (the antenna keep-out in U7's footprint still applies).
+    VBAT has a plane because it feeds parts all over both faces (cell, charger, protection, two LDOs, motor, LED,
+    PPG LEDs): routed as tracks, its 13 links were the only ones the 6-layer run could not finish."""
+    for lay, net in ((pcbnew.In1_Cu, "GND"), (pcbnew.In4_Cu, "VBAT")):
+        z = pcbnew.ZONE(board)
+        z.SetLayer(lay)
+        z.SetNet(nets[net])
+        o = z.Outline(); o.NewOutline()
+        for x, y in ((-BW / 2, -BH / 2), (BW / 2, -BH / 2), (BW / 2, BH / 2), (-BW / 2, BH / 2)):
+            o.Append(mm(x), mm(y))
+        z.SetLocalClearance(mm(0.2))
+        z.SetMinThickness(mm(0.15))
+        board.Add(z)
 
 
 def fill(board):
@@ -347,12 +356,35 @@ def route(board, path):
     dsn, ses = path.with_suffix(".dsn"), path.with_suffix(".ses")
     ok = pcbnew.ExportSpecctraDSN(board, str(dsn))
     assert ok, "DSN export failed"
-    cmd = [str(FREEROUTING), "-de", str(dsn), "-do", str(ses), "-mp", "60", "-mt", "4"]
+    if ses.exists():
+        ses.unlink()
+    # The jar on a Temurin JRE: Freerouting 2.5.0's native Windows CLI build crashes in its first routing pass
+    # (GraalVM: "SerializationConstructorAccessor class not found ... ComponentOutline") and then hangs.
+    cmd = [str(JAVA), "-Djava.awt.headless=true", "-jar", str(FREEROUTING_JAR), "--gui.enabled=false",
+           "-de", str(dsn), "-do", str(ses), "--router.autorouter.max_passes=60", "--router.optimizer.enabled=false",
+           "--router.automatic_neckdown=false", "-mt", "4"]
+    # (neck-down off: the first routing narrowed 178 tracks to 0.063-0.095 mm at the pins, below the 0.1 mm rule
+    # and, at 0.063, below what a standard board house makes)
+    # (optimizer off for rev 0.1: its first pass took 17 min for a 4 % shorter route and ran past the time limit)
     print(" ".join(cmd), flush=True)
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
-    print(r.stdout[-2500:], r.stderr[-1500:], flush=True)
+    with open(HERE / "freerouting.log", "w", encoding="utf-8") as log:
+        subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=3600)
+    tail = (HERE / "freerouting.log").read_text(encoding="utf-8", errors="replace").splitlines()[-25:]
+    print("\n".join(tail), flush=True)
     assert ses.exists(), "no session file from Freerouting"
     assert pcbnew.ImportSpecctraSES(board, str(ses)), "SES import failed"
+    # Freerouting writes some wires narrower than the 0.127 mm rule it was given (0.095 mm, a few 0.076 / 0.063 mm),
+    # mostly ground stubs at fine-pitch pins, even with neck-down off. Raise every one to the 0.1 mm board minimum;
+    # KiCad's DRC afterwards says whether that cost any clearance. (The rule is not lowered.)
+    widened = 0
+    for t in board.GetTracks():
+        if t.GetClass() == "PCB_TRACK" and t.GetWidth() < mm(0.1):
+            t.SetWidth(mm(0.1))
+            widened += 1
+    print(f"widened {widened} tracks to 0.1 mm", flush=True)
+    on_planes = [t for t in board.GetTracks() if t.GetLayer() in (pcbnew.In1_Cu, pcbnew.In4_Cu)]
+    nets_on = sorted({t.GetNetname() for t in on_planes})
+    print(f"tracks on the plane layers: {len(on_planes)} ({', '.join(nets_on)})", flush=True)
 
 
 def drc(path):
@@ -380,4 +412,4 @@ if __name__ == "__main__":
     u = re.search(r"\*\* Found (\d+) unconnected pads \*\*", t)
     print("DRC:", m.group(0) if m else "?", "|", u.group(0) if u else "?")
 
-# v0.1.0 - board rev 0.1: 4-layer 32 x 26 mm outline, mechanical anchors from band_id.py, hand-placed ICs, automatic courtyard-aware placement of the small parts, optional Freerouting pass, ground plane, DRC
+# v0.2.0 - 6 layers (two GND planes), Freerouting jar on Temurin (the native CLI crashes), neck-down + optimizer off, narrow router wires raised to 0.1 mm; v0.1.0 - board rev 0.1: 32 x 26 mm outline, mechanical anchors from band_id.py, hand-placed ICs, automatic courtyard-aware placement of the small parts, optional Freerouting pass, ground plane, DRC

@@ -41,5 +41,9 @@ electronics/main_board/fp-info-cache
 electronics/main_board/*.dsn
 electronics/main_board/*.ses
 electronics/main_board/*-backups/
+electronics/main_board/route.log
+electronics/main_board/fr_test.log
+electronics/main_board/pics/r1/
+electronics/main_board/pics/*.svg
 
-# v0.13.0 - ignores for the hardware folder: venv, build output and log, KiCad scratch files, heavy render output (v3.2, the premium variant), main-board plot/netlist/autorouter scratch
+# v0.14.0 - ignores for the hardware folder: venv, build output and log, KiCad scratch files, heavy render output (v3.2, the premium variant), main-board plot/netlist/autorouter scratch

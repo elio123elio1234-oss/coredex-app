@@ -31,7 +31,7 @@ CYPHIX_HARDWARE/
 │                  render_id.py the v3.1 ones; export_web_id.py feeds the page's 3D viewer); band_premium.py = the premium side variant P1, DROPPED by the owner
 │                  2026-11-15 and off the page (code kept for reference only; its render/export scripts are not part of the page)
 │                  (render_p.py, export_web_p.py); band_alpha.py = the first packaging check
-├── electronics/   DESIGN_INTENT.md (the brief) + main_board/: schematic + board rev 0.1 (make_schematic.py, make_pcb.py → KiCad 10; DESIGN_NOTES.md, bom.csv, PDF); placed, not routed, not reviewed
+├── electronics/   DESIGN_INTENT.md (the brief) + main_board/: schematic + 6-layer board rev 0.1 (make_schematic.py, make_pcb.py --route → KiCad 10 + Freerouting; DESIGN_NOTES.md, bom.csv, PDF); autorouted, not reviewed
 ├── firmware/      stage2_ads129x_xiao/: the bench firmware (XIAO nRF52840 + TI ADS1298 board)
 ├── experiments/   step-by-step protocols for the tests a person has to run
 └── tools/         helper scripts
@@ -65,4 +65,4 @@ from here.
   `%LOCALAPPDATA%\Programs\KiCad\10.0` (`bin\kicad-cli.exe`).
 - PlatformIO at `%USERPROFILE%\.platformio\penv\Scripts\pio.exe`.
 
-<!-- v0.13.0 — what the hardware folder is, its stages, layout (concept v3.2; the premium side variant dropped, code kept) and rules -->
+<!-- v0.14.0 — what the hardware folder is, its stages, layout (concept v3.2; the premium side variant dropped, code kept) and rules -->
