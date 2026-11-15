@@ -74,6 +74,9 @@ records while it is charging (SAF-01).
   MDBT50Q; to verify the exact part) feeding an antenna plated on the inside
   of the frame and side walls (LDS, as most wearables do), connected by a
   spring finger.
+  The premium side variant P1 (`mechanical/band_premium.py`) keeps steel on
+  both faces too, but its body is zirconia ceramic, which does not block
+  radio: there the whole side band and both ends are antenna area.
   Alternative: the nRF52840 chip-down with its own matching network, which
   costs its own radio certification. Decide with an RF engineer; range is
   measured on the first wearable (stage 3), on a wrist, with a leg on the
@@ -178,5 +181,5 @@ These are requirements on the schematic, not notes.
 - Moving the apps to 4 channels and 500 SPS: needs the owner's approval; the
   board does not depend on it.
 
-<!-- v0.6.0 — design intent for the main board: 1 kSPS decimation and clock footprint, antenna in the frame, two-contact charging either way round, light line + touch zone, one-metal 316L electrodes, PPG + thermometer window -->
+<!-- v0.7.0 — design intent for the main board: 1 kSPS decimation and clock footprint, antenna in the frame (and in P1's ceramic body), two-contact charging either way round, light line + touch zone, one-metal 316L electrodes, PPG + thermometer window -->
 

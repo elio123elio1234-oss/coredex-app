@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "island_mm": {
+    "length": 52.0,
+    "width": 30.0,
+    "thickness": 7.2,
+    "ends": "rounded, band slot in each"
+  },
+  "closure": "ring at the back of the wrist, plain strap folds back (hook-and-loop); plain strap S / M / L",
+  "ring_mm": {
+    "outer_width": 28.2,
+    "wire": 1.8
+  },
+  "lens_dome_mm": 0.35,
+  "electrode_area_mm2": {
+    "LL1": 394.0,
+    "RLD": 287.0,
+    "LL2": 394.0,
+    "LA1": 296.0,
+    "LA2": 296.0,
+    "RA1": 235.0,
+    "RA2": 233.0
+  },
+  "checks": {
+    "inside_parts_touching_the_shells_mm3": [],
+    "strap_vs_island_mm3": 0.0,
+    "plain_strap_vs_island_mm3": 0.0,
+    "plain_strap_vs_ring_mm3": 0.0,
+    "plain_strap_vs_strap_mm3": 0.0,
+    "strap_vs_ring_mm3": 0.0,
+    "solids_valid": true,
+    "volumes_positive": true,
+    "latch_vs_shells_mm3": 0.0,
+    "tongue_vs_shells_mm3": 0.0,
+    "island_symmetric_across_mm": 0.0,
+    "island_length_mm": 52.0,
+    "ends_symmetric_across_mm": 0.0
+  },
+  "triangles": {
+    "band": 1083382,
+    "section": 375808,
+    "dock": 42890
+  },
+  "seconds": 324
+}

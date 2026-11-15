@@ -1,5 +1,67 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.7.0 — 2026-11-15
+
+**Why.** The owner on concept v3.1: "Can it be upgraded to look like an Apple
+product? Make a side version that looks premium; from the outside it looks
+cheap and unprofessional." Looking at v3.1's pictures with that in mind, the
+causes were clear: a glossy plastic-looking shell perched on a wide band, three
+plates each framed by a bright outline (reads as stickers), lugs and a bar,
+a pinched fixed end, and a white status light.
+
+**What changed: a side variant, not a replacement** (`mechanical/band_premium.py`
+P1 1.0.0; v3.1 is untouched). Same inside (board, cell, sensors, springs,
+flex) and the same 7.2 × 30 mm the parts set; a new outside:
+
+- One soft body, ceramic (zirconia) in the band's colour: the same section all
+  along and the same at both ends, each end rounded off with one 3 mm radius.
+  The strap goes into a slot in each end, the way a watch band goes into its
+  case, between two solid rounded corners. The strap is 22 mm (v3.1: 24),
+  narrower than the 30 mm body, as a watch band is. No lugs, no pins, no bar on
+  the island. 52 mm end to end.
+- The leg face is one rounded steel face cut into LL1 | RLD | LL2 by two
+  hairlines of the body's material, with one polished line round the outside.
+  The wrist face has the same outline: LA1 | polished black ceramic with a
+  sapphire lens domed 0.35 mm towards the skin and two flush contacts | LA2.
+  Still one metal (316L) on every plate. LL 394 mm² each (v3.1: 290), RLD 287,
+  LA 296, RA 235 / 233.
+- Closure at the back of the wrist: the strap with the conductor ends in a
+  polished steel ring; a plain strap from the free end goes through it and
+  folds back with hook-and-loop. The tail lies on the plain strap, so it never
+  covers RA1/RA2 (moved 2 mm towards the island). The plain strap clicks in on
+  a latch, so it can come in S / M / L: v3.1's "three strap lengths" item.
+- Status light: a glossy line in the body's colour, seen only when lit.
+- Pictures in three colourways (brand navy, warm white, graphite) on an
+  Apple-grey set and a black set (`render_p.py`, `studio/harness.ts` 3.2.0:
+  palettes, night set, backgrounds); the plan page's 3D viewer switches
+  between P1 and v3.1 (`export_web_p.py`, `plan/model/band_p.json`).
+- Checks in the model: nothing inside touches the shell, neither strap touches
+  the body, the ring or each other, every solid is valid with a positive
+  volume, symmetric across to 0.0 mm.
+
+**Kernel traps found on the way** (written down because they cost hours):
+rounding the end faces with a fillet was refused; lofting the rounded ends in
+one piece with the body made every later split through them fail (the wrist
+half came back inside out, with the wrong volume), so each end is its own
+piece of the same material; cutting the whole ring out of the strap left an
+invalid solid (a straight hole for the bar does not); killing only Chrome's
+launcher left headless Chrome holding the render profile, after which every
+render quietly produced nothing. Booleans in `band_premium.py` now turn an
+inside-out result the right way round and say so.
+
+**Not proven.** That a zirconia housing is affordable (several times a plastic
+one; bonded, not welded; an engineering plastic in the same shape keeps most
+of the look), the antenna (steel on both faces, as in v3.1), and the look
+itself: real premium comes from tolerances, finishes and material samples in
+the hand, with an industrial designer and a manufacturer.
+
+**Tried and dropped while building P1** (each was rendered and looked at):
+a 20 mm slot in a narrowed 26 mm end with the strap necking down to it (thin
+walls beside the slot read as knuckles, the neck as a lump); an end floating
+over the strap (a step under the end, a notch in the side view); ends that
+narrowed and dropped along an S-curve (a stepped shoulder at every corner from
+above).
+
 ## v0.6.0 — 2026-11-15
 
 **Why.** Two remarks from the owner on concept v3, both right:
@@ -271,4 +333,4 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.1.0 — first entry: why the folder exists, what was found, what was added -->
+<!-- v0.7.0 — the hardware folder's history, newest first; latest: the premium side variant P1 -->

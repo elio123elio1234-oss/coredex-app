@@ -18,6 +18,9 @@ type Shot = {
   ghost?: Record<string, number>;        // name prefix -> opacity
   exposure?: number;
   strips?: { w: number; h: number; intensity: number; pos: [number, number, number] }[];
+  palette?: Record<string, Record<string, number>>;   // material name -> overrides (colourways of the premium variant)
+  env?: "light" | "night";                             // night: a black set lit only by the strips
+  bg?: "light" | "apple" | "night" | "none";          // what the picture sits on ("none": transparent, for a composite)
 };
 
 const P = THREE.MeshPhysicalMaterial;
@@ -54,14 +57,36 @@ const SPEC: Record<string, THREE.MeshPhysicalMaterialParameters> = {
   dock_metal: { color: 0xdfe2e7, metalness: 1, roughness: 0.4 },
   dock_pad: { color: 0x1a1d22, metalness: 0, roughness: 0.85 },
   wrist: { color: 0xe3e6ea, metalness: 0, roughness: 0.95 },
+  // premium variant (band_premium.py): black polished ceramic centre of the wrist face, polished ring, flush contacts
+  back: { color: 0x0b0c0f, metalness: 0, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.04 },
+  ring: { color: 0xf1f3f6, metalness: 1, roughness: 0.07 },
+  contact: { color: 0xe6e8ec, metalness: 1, roughness: 0.12 },
 };
+
+/** A black set lit only by the given softboxes: the dark product shot. */
+function nightEnvironment(renderer: THREE.WebGLRenderer, strips: NonNullable<Shot["strips"]>) {
+  const set = new THREE.Scene();
+  set.add(new THREE.Mesh(new THREE.SphereGeometry(10, 48, 24), new THREE.MeshBasicMaterial({ color: 0x050506, side: THREE.BackSide })));
+  strips.forEach((st) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(st.w, st.h), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffffff).multiplyScalar(st.intensity), side: THREE.DoubleSide }));
+    m.position.set(...st.pos);
+    m.lookAt(0, 0, 0);
+    set.add(m);
+  });
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const tex = pmrem.fromScene(set, 0.02).texture;
+  pmrem.dispose();
+  return tex;
+}
 
 const MM = 0.001;
 const mark = (step: string) => { document.title = step; };
 
 async function main() {
-  const name = location.hash.slice(1) || "hero";
-  const shots: Record<string, Shot> = await (await fetch("shots.json")).json();
+  // "#hero" reads shots.json; "#p:hero" reads shots_p.json (the premium variant's shots)
+  const hash = location.hash.slice(1) || "hero";
+  const [set, name] = hash.includes(":") ? hash.split(":") : ["", hash];
+  const shots: Record<string, Shot> = await (await fetch(set ? `shots_${set}.json` : "shots.json")).json();
   const shot = shots[name];
   if (!shot) throw new Error(`no shot "${name}"`);
 
@@ -77,7 +102,7 @@ async function main() {
 
   mark("renderer");
   const scene = new THREE.Scene();
-  scene.environment = studioEnvironment(renderer, "light", shot.strips ?? []);
+  scene.environment = shot.env === "night" ? nightEnvironment(renderer, shot.strips ?? []) : studioEnvironment(renderer, "light", shot.strips ?? []);
 
   mark("environment");
   // CAD is Z-out-of-the-leg-face; the studio is Y-up
@@ -106,7 +131,7 @@ async function main() {
     if (hidden(part)) { mesh.visible = false; return; }
     if (!mesh.geometry.getAttribute("normal")) mesh.geometry = toCreasedNormals(mesh.geometry, 0.62);
     const key = (mesh.material as THREE.Material).name;
-    const mat = new P(SPEC[key] ?? SPEC.body);
+    const mat = new P({ ...(SPEC[key] ?? SPEC.body), ...(shot.palette?.[key] ?? {}) });
     mat.name = key;
     if (mat.transparent) { mat.depthWrite = false; mesh.renderOrder = 1; }
     const g = ghostOf(part);
@@ -135,7 +160,7 @@ async function main() {
     const ghosts: THREE.Object3D[] = [];
     root.traverse((o) => { if (o.userData.ghost) ghosts.push(o); });
     ghosts.forEach((o) => (o.visible = false));
-    const sh = contactShadow(renderer, scene, root, { size: 0.3, y, darkness: 0.42, blur: 2.6, height: 0.16 });
+    const sh = contactShadow(renderer, scene, root, { size: 0.3, y, darkness: shot.bg === "night" ? 0.75 : 0.42, blur: 2.6, height: 0.16 });
     sh.update();
     ghosts.forEach((o) => (o.visible = true));
   }
@@ -146,9 +171,13 @@ async function main() {
   const out = document.createElement("canvas");
   out.width = W; out.height = H;
   const g = out.getContext("2d")!;
-  const bg = g.createRadialGradient(W * 0.5, H * 0.38, 0, W * 0.5, H * 0.38, Math.hypot(W, H) * 0.62);
-  bg.addColorStop(0, "#ffffff"); bg.addColorStop(0.55, "#f4f6f9"); bg.addColorStop(1, "#e4e8ee");
-  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  if (shot.bg !== "none") {
+    const bg = g.createRadialGradient(W * 0.5, H * 0.38, 0, W * 0.5, H * 0.38, Math.hypot(W, H) * 0.62);
+    if (shot.bg === "night") { bg.addColorStop(0, "#26282c"); bg.addColorStop(0.6, "#111214"); bg.addColorStop(1, "#050506"); }
+    else if (shot.bg === "apple") { bg.addColorStop(0, "#fdfdfe"); bg.addColorStop(0.6, "#f5f5f7"); bg.addColorStop(1, "#e9e9ed"); }
+    else { bg.addColorStop(0, "#ffffff"); bg.addColorStop(0.55, "#f4f6f9"); bg.addColorStop(1, "#e4e8ee"); }
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  }
   g.drawImage(canvas, 0, 0);
   const blob: Blob = await new Promise((res) => out.toBlob((b) => res(b!), "image/png"));
   await fetch("save/" + name, { method: "POST", body: blob });
@@ -161,4 +190,4 @@ main().catch((e) => {
   pre.textContent = String(e && (e.stack || e));
   document.body.appendChild(pre);
 });
-// v3.1.0 - the owner's render palette: graphite body, satin 316L plate faces with polished edges (one metal), dark bar, slate strap; glass / PPG materials, per-shot "up", surface normals kept
+// v3.2.0 - premium variant support: shots_<set>.json via #set:name, per-shot palettes (colourways), a night set, Apple-grey / night / transparent backgrounds, ceramic back, ring and contact materials; v3.1 shots unchanged
