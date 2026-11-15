@@ -1,5 +1,32 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.13.0 — 2026-11-15
+
+**Why.** The owner asked where the board layout and its connections were. There was none: rev 0.1 was only a
+schematic. This is the first board, placed but not routed.
+
+**What changed.**
+
+- `electronics/main_board/make_pcb.py` (new, runs in KiCad's Python) builds `band_alpha_main.kicad_pcb` from
+  the schematic's own parts and nets table.
+  - Board: 32 × 26 mm, 4 layers, 0.8 mm. That is the model's flat board, 7 mm longer for the TQFP-64.
+  - Spring contacts, charge contacts, PPG window, FPC and cell tabs are placed where `mechanical/band_id.py`
+    puts them. The ADS1294 and the radio module (antenna on a side wall) are placed by hand.
+  - The other ~110 parts are placed automatically next to the pins they serve, without overlaps.
+  - KiCad's DRC with zone refill and schematic parity: 131 of 131 placed, 0 parity errors, 0 electrical
+    errors. 308 connections are still unrouted.
+- `draw_ratsnest.py`: a picture of every connection still to route. Also 3D renders of both faces, and the
+  same pictures on the plan page.
+- `band_alpha.pretty`: the board's own footprint library (copies of the stock footprints it uses, plus cell
+  tab and motor pads), so the board loads fast and cannot change under a KiCad update.
+- Schematic 0.1.1: copper-only pads (test pad, touch pad, programming pads) are no longer in the BOM; the
+  cell and motor have footprints.
+
+**Not done, and why.** Routing. Freerouting (open source, checksum checked) is downloaded, but the session's
+safety check would not run a downloaded program without the owner's permission. A first attempt also
+tried to set the cosmetic silkscreen DRC checks to "ignore"; it was refused, and rightly: the warnings stay
+visible instead. Either way, a human layout pass and a review come before any order.
+
 ## v0.12.0 — 2026-11-15
 
 **Why.** The owner asked about the electrical design. Until now `electronics/` held only the brief:
@@ -474,5 +501,5 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.12.0 — the hardware folder's history, newest first; latest: main board schematic rev 0.1 -->
+<!-- v0.13.0 — the hardware folder's history, newest first; latest: board rev 0.1 placed (not routed) -->
 

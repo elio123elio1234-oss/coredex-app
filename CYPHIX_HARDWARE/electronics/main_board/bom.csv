@@ -1,5 +1,5 @@
 qty,value,footprint,fit,references
-1,LiPo 401225 ~100 mAh (no own PCM),,fit,BT1
+1,LiPo 401225 ~100 mAh (no own PCM),band_alpha:Cell_Tabs_2x,fit,BT1
 8,100n,Capacitor_SMD:C_0402_1005Metric,fit,C1 C9 C16 C18 C20 C22 C24 C31
 5,1n C0G,Capacitor_SMD:C_0402_1005Metric,fit,C10 C11 C12 C13 C14
 4,4u7,Capacitor_SMD:C_0603_1608Metric,fit,C2 C3 C4 C30
@@ -13,8 +13,7 @@ qty,value,footprint,fit,references
 1,PESD5V0S1UL,Diode_SMD:D_SOD-882,fit,D5
 1,white 0402,LED_SMD:LED_0402_1005Metric,fit,D6
 1,"FPC 4p 0.5 mm, Amphenol F32Q (strap flex)",Connector_FFC-FPC:Amphenol_F32Q-1A7x1-11004_1x04-1MP_P0.5mm_Horizontal,fit,J1
-1,TC2030-NL,Connector:Tag-Connect_TC2030-IDC-NL_2x03_P1.27mm_Vertical,fit,J2
-1,coin motor 8 mm,,fit,M1
+1,coin motor 8 mm,band_alpha:Motor_Pads_2x,fit,M1
 6,DMG1012T,Package_TO_SOT_SMD:SOT-523,fit,Q1 Q2 Q4 Q5 Q6 Q7
 1,AO3401A,Package_TO_SOT_SMD:SOT-23,fit,Q3
 1,100,Resistor_SMD:R_0402_1005Metric,fit,R1
@@ -34,8 +33,6 @@ qty,value,footprint,fit,references
 1,spring contact RLD,TestPoint:TestPoint_Pad_1.5x1.5mm,fit,SC5
 1,charge contact A,TestPoint:TestPoint_Pad_D2.0mm,fit,TP1
 1,charge contact B,TestPoint:TestPoint_Pad_D2.0mm,fit,TP2
-1,ADS_CLK,TestPoint:TestPoint_Pad_D1.0mm,fit,TP3
-1,touch zone,TestPoint:TestPoint_Pad_2.0x2.0mm,fit,TP4
 1,DW01A,Package_TO_SOT_SMD:SOT-23-6,fit,U1
 2,TPD4E02B04DQA,Package_SON:USON-10_2.5x1.0mm_P0.5mm,fit,U10 U11
 1,TPS3839K33DBZR,Package_TO_SOT_SMD:SOT-23,fit,U2

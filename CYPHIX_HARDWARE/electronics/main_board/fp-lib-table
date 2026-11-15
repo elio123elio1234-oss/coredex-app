@@ -15,4 +15,5 @@
 	(lib (name "RF_Module")(type "KiCad")(uri "${KICAD10_FOOTPRINT_DIR}/RF_Module.pretty")(options "")(descr ""))
 	(lib (name "Resistor_SMD")(type "KiCad")(uri "${KICAD10_FOOTPRINT_DIR}/Resistor_SMD.pretty")(options "")(descr ""))
 	(lib (name "TestPoint")(type "KiCad")(uri "${KICAD10_FOOTPRINT_DIR}/TestPoint.pretty")(options "")(descr ""))
+	(lib (name "band_alpha")(type "KiCad")(uri "${KIPRJMOD}/band_alpha.pretty")(options "")(descr ""))
 )

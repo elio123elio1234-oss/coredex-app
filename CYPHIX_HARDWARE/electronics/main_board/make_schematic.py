@@ -97,8 +97,9 @@ def _prop(name, value, x, y, hide=False, just=None, ang=0):
 
 
 def place(lib_id: str, ref: str, value: str, x: float, y: float, nets: dict, fp: str | None = None,
-          rot: int = 0, dnp: bool = False, note: str = "", bom: bool = True):
-    """Put one part on the sheet. `nets` maps EVERY pin number to a net name, or to None for no-connect."""
+          rot: int = 0, dnp: bool = False, note: str = "", bom: bool = True, buy: bool = True):
+    """Put one part on the sheet. `nets` maps EVERY pin number to a net name, or to None for no-connect.
+    bom=False: not a part at all (power flags). buy=False: copper on the board but nothing to buy (test and touch pads)."""
     assert ref not in refs_seen, ref
     refs_seen.add(ref)
     lib, name = lib_id.split(":")
@@ -158,12 +159,12 @@ def place(lib_id: str, ref: str, value: str, x: float, y: float, nets: dict, fp:
     if note:
         props.append(_prop("Note", note, x, y, hide=True))
     items.append(f'\t(symbol\n\t\t(lib_id "{lib_id}")\n\t\t(at {x} {y} {rot})\n\t\t(unit 1)\n\t\t(exclude_from_sim no)\n'
-                 f'\t\t(in_bom {"yes" if bom else "no"})\n\t\t(on_board {"yes" if bom else "no"})\n\t\t(dnp {"yes" if dnp else "no"})\n'
+                 f'\t\t(in_bom {"yes" if (bom and buy) else "no"})\n\t\t(on_board {"yes" if bom else "no"})\n\t\t(dnp {"yes" if dnp else "no"})\n'
                  f'\t\t(uuid "{uid("sym", ref)}")\n' + "\n".join(props) + "\n" + "\n".join(pin_lines) +
                  f'\n\t\t(instances\n\t\t\t(project "{NAME}"\n\t\t\t\t(path "/{ROOT}"\n\t\t\t\t\t(reference "{ref}")\n'
                  f'\t\t\t\t\t(unit 1)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)')
     if bom:
-        parts.append(dict(ref=ref, value=value, footprint=fp, dnp=dnp, lib_id=lib_id, note=note))
+        parts.append(dict(ref=ref, value=value, footprint=fp, dnp=dnp, lib_id=lib_id, note=note, buy=buy))
 
 
 # --------------------------------------------------------- passives helpers
@@ -204,7 +205,7 @@ GND, VBAT, V3D, V3A = "GND", "VBAT", "+3V0D", "+3V0A"
 # ---------------------------------------------------------------- 1. battery and its protection
 text(20, 22, "1  CELL + PROTECTION   (DW01A, two N-FETs in the cell's negative lead)", 2.4, True)
 place("Device:Battery_Cell", "BT1", "LiPo 401225 ~100 mAh (no own PCM)", 30, 50, {"1": VBAT, "2": "CELL_N"},
-      fp="", note="cell tabs soldered to pads at the board end; see mechanical/band_id.py")
+      fp="band_alpha:Cell_Tabs_2x", note="cell tabs soldered to pads at the board end; see mechanical/band_id.py")
 place("Battery_Management:DW01A", "U1", "DW01A", 75, 50,
       {"1": "DW_OD", "2": "DW_CS", "3": "DW_OC", "4": None, "5": "DW_VCC", "6": "CELL_N"})
 R("100", VBAT, "DW_VCC", 60, 32, note="DW01A supply filter (typical application)")
@@ -356,7 +357,7 @@ place("Oscillator:ASDMB-xxxMHz", "Y2", "ASDMB-2.048MHz", cx + 52, 225,
       {"4": V3D, "1": V3D, "2": GND, "3": "OSC_OUT"}, dnp=True,
       note="external 2.048 MHz option if the internal oscillator's tolerance shows as a heart-rate error")
 R("0", "OSC_OUT", "ADS_CLK", cx + 52, 245, dnp=True)
-place("Connector:TestPoint", "TP3", "ADS_CLK", cx + 70, 240, {"1": "ADS_CLK"}, fp="TestPoint:TestPoint_Pad_D1.0mm")
+place("Connector:TestPoint", "TP3", "ADS_CLK", cx + 70, 240, {"1": "ADS_CLK"}, fp="TestPoint:TestPoint_Pad_D1.0mm", buy=False)
 
 # ---------------------------------------------------------------- 6. controller + radio
 text(470, 128, "6  CONTROLLER + RADIO   Raytac MDBT50Q-1MV2 (nRF52840), normal-voltage mode: VDD = VDDH = +3V0D", 2.4, True)
@@ -384,7 +385,7 @@ C("12p C0G", "XL1", GND, 572, 212)
 C("12p C0G", "XL2", GND, 588, 212)
 place("Connector:Conn_ARM_SWD_TagConnect_TC2030-NL", "J2", "TC2030-NL", 600, 240,
       {"1": V3D, "2": "SWDIO", "3": "NRF_RESET", "4": "SWDCLK", "5": GND, "6": "SWO"},
-      note="factory programming / debug pads inside the housing (no exposed contacts)")
+      note="factory programming / debug pads inside the housing (no exposed contacts)", buy=False)
 
 # ---------------------------------------------------------------- 7. user interface
 text(470, 280, "7  USER INTERFACE   light line, haptic, touch zone", 2.4, True)
@@ -393,14 +394,14 @@ place("Device:LED", "D6", "white 0402", 490, 300, {"2": "LED_A", "1": "LED_K"}, 
 R("330", VBAT, "LED_A", 478, 290, rot=0, note="(3.6 V - 2.8 V) / 330 Ohm ~ 2.4 mA")
 place("Transistor_FET:DMG1012T", "Q6", "DMG1012T", 505, 318, {"1": "LED_EN", "2": GND, "3": "LED_K"},
       note="LED from VBAT through a FET: a white LED needs more than the 3.0 V rail")
-place("Motor:Motor_DC", "M1", "coin motor 8 mm", 545, 300, {"1": VBAT, "2": "MOT_N"}, fp="",
+place("Motor:Motor_DC", "M1", "coin motor 8 mm", 545, 300, {"1": VBAT, "2": "MOT_N"}, fp="band_alpha:Motor_Pads_2x",
       note="ERM coin motor on the leg side of the board, solder pads")
 place("Diode:MBR0520", "D7", "MBR0520", 560, 300, {"1": VBAT, "2": "MOT_N"}, rot=90, note="flyback")
 place("Transistor_FET:DMG1012T", "Q7", "DMG1012T", 555, 320, {"1": "MOT_G", "2": GND, "3": "MOT_N"})
 R("1k", "MOTOR_EN", "MOT_G", 535, 332)
 R("100k", "MOT_G", GND, 548, 340, rot=0)
 place("Connector:TestPoint", "TP4", "touch zone", 590, 300, {"1": "TOUCH_PAD"}, fp="TestPoint:TestPoint_Pad_2.0x2.0mm",
-      note="capacitive electrode under the frame round the light line (proposal, not yet approved)")
+      note="capacitive electrode under the frame round the light line (proposal, not yet approved)", buy=False)
 R("1k", "TOUCH_PAD", "TOUCH", 600, 315, note="series resistor; sensing by the nRF's COMP (values set at bring-up)")
 
 # ---------------------------------------------------------------- 8. options
@@ -461,8 +462,11 @@ def write():
     (HERE / "sym-lib-table").write_text("(sym_lib_table\n\t(version 7)\n" + "".join(
         f'\t(lib (name "{n}")(type "KiCad")(uri "${{KICAD10_SYMBOL_DIR}}/{n}.kicad_sym")(options "")(descr ""))\n'
         for n in slibs) + ")\n", encoding="utf-8")
+    def fp_uri(n):
+        # band_alpha = this board's own pads (cell tabs, motor leads); everything else is KiCad's stock library
+        return "${KIPRJMOD}/band_alpha.pretty" if n == "band_alpha" else f"${{KICAD10_FOOTPRINT_DIR}}/{n}.pretty"
     (HERE / "fp-lib-table").write_text("(fp_lib_table\n\t(version 7)\n" + "".join(
-        f'\t(lib (name "{n}")(type "KiCad")(uri "${{KICAD10_FOOTPRINT_DIR}}/{n}.pretty")(options "")(descr ""))\n'
+        f'\t(lib (name "{n}")(type "KiCad")(uri "{fp_uri(n)}")(options "")(descr ""))\n'
         for n in flibs) + ")\n", encoding="utf-8")
     pro = HERE / f"{NAME}.kicad_pro"
     if not pro.exists():
@@ -473,6 +477,8 @@ def write():
 def bom():
     rows = defaultdict(list)
     for p in parts:
+        if not p.get("buy", True):
+            continue                            # copper-only pads: on the board, nothing to buy
         rows[(p["value"], p["footprint"], p["dnp"])].append(p["ref"])
     with open(HERE / "bom.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -528,4 +534,4 @@ if __name__ == "__main__":
     if "--plot" in sys.argv:
         plot()
 
-# v0.1.0 - main board rev 0.1: cell + DW01A protection, polarity-free isolated charging (bridge, TPS3839, back-to-back switches, MCP73831), 1 uA digital LDO + switched low-noise analog LDO, five electrode lines (TVS, 2 x 47.5k, 1 nF, DNP buffer), RLD, ADS1294, MDBT50Q, crystal, SWD, LED, motor, touch, OPT-01 sensors
+# v0.1.1 - copper-only pads out of the BOM (buy=False), cell/motor footprints in band_alpha.pretty; v0.1.0 - main board rev 0.1: cell + DW01A protection, polarity-free isolated charging (bridge, TPS3839, back-to-back switches, MCP73831), 1 uA digital LDO + switched low-noise analog LDO, five electrode lines (TVS, 2 x 47.5k, 1 nF, DNP buffer), RLD, ADS1294, MDBT50Q, crystal, SWD, LED, motor, touch, OPT-01 sensors

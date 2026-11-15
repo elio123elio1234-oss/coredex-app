@@ -204,7 +204,65 @@ recommended only for low-frequency I/O near the radio.
 - **Buffers, final series resistance, RLD values.** After the stage 1 and stage 2 measurements.
 - **Touch.** A proposal that has not been approved. The pad and its resistor cost nothing if unused.
 
-## 8. Numbers not yet re-read from a datasheet (confirm)
+## 9. Board rev 0.1: placement (not routed)
+
+**Files.**
+- Board: `band_alpha_main.kicad_pcb`.
+- Generator: `make_pcb.py`, run with KiCad's own Python. It reads the same parts and nets table as the
+  schematic.
+- Pictures: `pics/top3d.png`, `pics/bottom3d.png`, `pics/ratsnest.png` (from `draw_ratsnest.py`).
+
+**Board.** 32 × 26 mm, 0.8 mm thick, 4 layers:
+- F.Cu: signals
+- In1.Cu: GND plane
+- In2.Cu: signals and power
+- B.Cu: signals
+
+It is the island's flat board from `mechanical/band_id.py`, made 7 mm longer for the first spin's TQFP-64.
+The island grows with it, which is allowed: every size is a recommendation.
+
+**Placed from the housing, not by eye.** Board x runs along the band and equals the island's s + 1.5 mm.
+- Spring contacts under the steel faces:
+  - leg face (top): LL1 at x −6.2, RLD at x 3.3, LL2 at x 14.6
+  - wrist face (bottom): LA pads at x −8.5 and x 11.0
+- Charge contacts at (1.5, ±9): the model's CHG_Y.
+- The PPG and the thermometer inside the sapphire window, a 4.6 mm keep-out circle at x 1.5.
+- The strap's FPC opening flush with the fixed end.
+- Cell tabs at the free end.
+- An 8 mm keep-out circle on top where the coin motor sits.
+
+**Big parts by hand:**
+- ADS1294: on the leg face, analog pins towards the FPC and the springs, SPI pins towards the radio.
+- Radio module: its antenna end and its all-layer keep-out on a side wall (plastic, the metal-free zone),
+  away from the cell.
+
+**Everything else automatically.**
+- Each part goes next to the pin it decouples, or next to the pads it connects to, on its assigned face.
+- No courtyard overlaps, inside the outline, outside the keep-outs.
+- Caps for the ADS1294's lower-edge pins go under the chip, on the wrist face.
+
+**Checks (KiCad DRC with zone refill and schematic parity).**
+
+| Check | Result |
+|---|---|
+| Footprints placed | 131 of 131 |
+| Courtyard overlaps | 0 |
+| Board vs. schematic (footprint parity) | 0 errors: every footprint, field and pad net matches |
+| Electrical DRC errors | 0 |
+| Unconnected pads | 308. Expected: nothing is routed yet. |
+| Isolated copper | 1, the GND plane, which has no vias until routing |
+
+Reference names are on the assembly (Fab) layers only. The few silkscreen warnings that remain stay
+visible in `drc.rpt`; none were silenced.
+
+**Not done: routing.** The plan is Freerouting, an open-source autorouter, run locally on the exported
+Specctra file and imported back. Its Windows build is downloaded and its checksum matches the one the
+project publishes, but running a downloaded program needs the owner's permission, so it has not been run.
+Either way, a human layout pass follows. Analog nets need short, guarded routes, the ground plane
+needs care under the AFE, and the antenna needs its keep-out kept. A reviewer checks the result before
+anything is ordered.
+
+## 10. Numbers not yet re-read from a datasheet (confirm)
 
 | Part | To confirm |
 |---|---|
@@ -217,4 +275,4 @@ recommended only for low-frequency I/O near the radio.
 | nRF52840 | VBUS handling with USB unused; low-frequency-only pins |
 | ADS1294 | full absolute-maximum table: any AVDD–DVDD limit with AVDD off |
 
-<!-- v0.1.0 — design notes for main board rev 0.1: blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->
+<!-- v0.2.0 — design notes for main board rev 0.1 (+ board placement, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->

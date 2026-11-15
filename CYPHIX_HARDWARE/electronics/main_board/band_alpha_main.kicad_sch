@@ -8009,7 +8009,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "band_alpha:Cell_Tabs_2x"
 			(at 39.37 74.93 0)
 			(hide yes)
 			(effects
@@ -18444,7 +18444,7 @@
 		(at 591.82 359.41 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "adb988ed-3f51-5ba4-af62-cfb7085d80e0")
@@ -19643,7 +19643,7 @@
 		(at 779.78 359.41 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "9a509d5a-af78-5a73-ad94-0bab4b7a8fad")
@@ -20049,7 +20049,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "band_alpha:Motor_Pads_2x"
 			(at 708.66 449.58 0)
 			(hide yes)
 			(effects
@@ -20442,7 +20442,7 @@
 		(at 767.08 449.58 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "b8de16d1-6e4d-5e09-a836-a298668f58da")
