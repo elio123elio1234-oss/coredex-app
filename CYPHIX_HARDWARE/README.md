@@ -28,7 +28,8 @@ CYPHIX_HARDWARE/
 ├── plan/          the plan page (plan.html + img/); publish plan.html to update the page
 ├── system/        budget.py → BUDGET.md: size, battery and mass, computed bottom-up from the parts
 ├── mechanical/    band_id.py = the industrial design model, concept v3.2 (render_v32.py + studio/ make its pictures,
-│                  render_id.py the v3.1 ones; export_web_id.py feeds the page's 3D viewer); band_premium.py = the premium side variant P1
+│                  render_id.py the v3.1 ones; export_web_id.py feeds the page's 3D viewer); band_premium.py = the premium side variant P1, DROPPED by the owner
+│                  2026-11-15 and off the page (code kept for reference only; its render/export scripts are not part of the page)
 │                  (render_p.py, export_web_p.py); band_alpha.py = the first packaging check
 ├── electronics/   KiCad projects (product schematic and board)
 ├── firmware/      stage2_ads129x_xiao/: the bench firmware (XIAO nRF52840 + TI ADS1298 board)
@@ -64,4 +65,4 @@ from here.
   `%LOCALAPPDATA%\Programs\KiCad\10.0` (`bin\kicad-cli.exe`).
 - PlatformIO at `%USERPROFILE%\.platformio\penv\Scripts\pio.exe`.
 
-<!-- v0.10.0 — what the hardware folder is, its stages, layout (concept v3.2 + the premium side variant) and rules -->
+<!-- v0.11.0 — what the hardware folder is, its stages, layout (concept v3.2; the premium side variant dropped, code kept) and rules -->

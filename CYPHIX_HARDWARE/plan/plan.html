@@ -66,8 +66,6 @@
   .vbar { display: flex; flex-wrap: wrap; gap: 8px; }
   .vbar button { font: inherit; font-size: 15px; font-weight: 500; color: var(--ink); background: var(--paper); border: 1px solid var(--ink); border-radius: 0; padding: 8px 14px; cursor: pointer; }
   .vbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
-  .vbar .seg { display: inline-flex; }
-  .vbar .seg button + button { border-inline-start: 0; }
   .vbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .stage3d { position: relative; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; background: var(--stage); color: var(--stage-ink); border: 1px solid var(--line); touch-action: none; overflow: hidden; }
   .stage3d canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
@@ -159,21 +157,17 @@
     <div class="label">עכשיו</div>
     <div class="big">שלב 0: סוגרים את התכנון על המחשב</div>
     <ul>
-      <li>חדש: גרסה 3.2, העיצוב של 3.1 עם האלקטרודות של גרסת הפרימיום.</li>
+      <li>חדש: גרסה 3.2, העיצוב של 3.1 עם משטח פלדה אחד בכל צד במקום אלקטרודות נפרדות.</li>
       <li>קושחת שלב 2 מוכנה ונבנית בלי שגיאות. היא עוד לא רצה על חומרה.</li>
       <li>הסכמה ואימות מידות הרכיבים נקטעו כשמכסת השימוש נגמרה. מה שנעשה שמור, והם ימשיכו.</li>
     </ul>
   </section>
 
   <section>
-    <h2>גרסה 3.2: העיצוב של 3.1, האלקטרודות של הפרימיום</h2>
-    <p>הגוף, הזיזים, המוט, הרצועה והסגירה בסקוץ' נשארו בדיוק כמו בגרסה 3.1. רק האלקטרודות הוחלפו באלה של גרסת הפרימיום.</p>
+    <h2>העיצוב התעשייתי, גרסה 3.2</h2>
+    <p>הגוף, הזיזים, המוט, הרצועה והסגירה בסקוץ' נשארו בדיוק כמו בגרסה 3.1. רק האלקטרודות השתנו: משטח פלדה אחד בכל צד, במקום גלולות נפרדות.</p>
     <div class="viewer">
       <div class="vbar" role="group" aria-label="תצוגת המודל">
-        <span class="seg" role="group" aria-label="איזו גרסה">
-          <button type="button" id="v-model-3" aria-pressed="true">גרסה 3.2</button>
-          <button type="button" id="v-model-p" aria-pressed="false">פרימיום</button>
-        </span>
         <button type="button" id="v-soft" aria-pressed="false">רצועה שקופה</button>
         <button type="button" id="v-lid" aria-pressed="false">בלי מכסה</button>
         <button type="button" id="v-explode" aria-pressed="false">מפורק</button>
@@ -185,7 +179,7 @@
         <canvas id="c3d" aria-label="מודל תלת-ממדי של הרצועה. גוררים כדי לסובב."></canvas>
         <p class="vmsg" id="vmsg">טוען את המודל</p>
       </div>
-      <p class="hint">גוררים לכל כיוון כדי לסובב, גם עם האי למטה. צביטה או גלגלת לזום. "פרימיום" מחליף לגרסה הצדדית, ו"רצועה שקופה" מראה את המוליך שבתוכה.</p>
+      <p class="hint">גוררים לכל כיוון כדי לסובב, גם עם האי למטה. צביטה או גלגלת לזום. "רצועה שקופה" מראה את המוליך שבתוכה.</p>
     </div>
     <div class="shots wide">
       <figure class="lead-shot"><img src="img/v32_hero.webp" alt="גרסה 3.2: האי בגרפיט עם הזיזים והמוט של גרסה 3.1, ובצד הרגל משטח פלדה אחד שמחולק לשלוש אלקטרודות בשני קווים דקים" width="1600" height="1377"><figcaption>גרסה 3.2</figcaption></figure>
@@ -219,56 +213,8 @@
   </section>
 
   <section>
-    <h2>גרסה צדדית: פרימיום</h2>
-    <p>בפנים זה אותו מכשיר: אותו לוח, אותה סוללה, אותם חיישנים ואותן מידות. רק החוץ השתנה, בשפה של מוצרי אפל: גוף אחד רך, פלדה רציפה בלי מסגרות, ואין זיזים ואין מוט על האי. הסגירה צמודה לאי, בצד הפנימי של היד, וגב הרצועה נקי. את שתי הגרסאות אפשר לסובב בתצוגה למעלה.</p>
-    <div class="shots wide">
-      <figure class="lead-shot"><img src="img/p_hero.webp" alt="הגרסה הצדדית: גוף רך בכחול המותג, משטח פלדה אחד שמחולק לשלוש אלקטרודות בקווים דקים, והרצועה נסגרת בטבעת פלדה צמוד לאי" width="1259" height="1459"><figcaption>פרימיום</figcaption></figure>
-      <figure class="lead-shot"><img src="img/p_lineup.webp" alt="שלושה צבעים זה לצד זה: כחול המותג, לבן חם וגרפיט, עם פלדה כסופה בכולם" width="1600" height="519"><figcaption>שלושה צבעים</figcaption></figure>
-      <figure><img src="img/p_night.webp" alt="האי בגרפיט על רקע שחור, קרוב: הפלדה, הקווים הדקים והקצה המעוגל" width="1600" height="1213"><figcaption>גרפיט</figcaption></figure>
-      <figure><img src="img/p_top.webp" alt="מבט ישר מלמעלה: משטח פלדה אחד בקו מתאר מעוגל, שני קווים דקים, והגוף סביבו" width="1204" height="1600"><figcaption>מלמעלה</figcaption></figure>
-      <figure><img src="img/p_wristface.webp" alt="צד היד: שתי אלקטרודות LA, וביניהן קרמיקה שחורה עם עדשת ספיר ושני מגעי טעינה שטוחים" width="1600" height="1067"><figcaption>צד היד</figcaption></figure>
-      <figure><img src="img/p_end.webp" alt="קצה הגוף בלבן חם: הרצועה מתחילה בחתך של הגוף ומצטמצמת בהדרגה לרוחב שלה, וקו האור בצבע הגוף" width="1600" height="1067"><figcaption>הרצועה ממשיכה את הגוף</figcaption></figure>
-      <figure><img src="img/p_ring.webp" alt="טבעת פלדה בקצה לשונית קצרה שיוצאת מהקצה החופשי של האי, בצד הפנימי של היד: הרצועה עוברת דרכה ומתקפלת על עצמה בסקוץ'" width="1600" height="1420"><figcaption>הסגירה צמודה לאי</figcaption></figure>
-      <figure><img src="img/p_profile.webp" alt="מבט מהצד על חתך יד: קו פנימי אחד, הרצועה ממשיכה את הגוף משני הצדדים, הטבעת צמודה לאי, וגב הרצועה נקי" width="1476" height="1389"><figcaption>מהצד</figcaption></figure>
-    </div>
-
-    <h3>מה עושה אותה פרימיום</h3>
-    <ul class="todo">
-      <li><strong>גוף אחד רך.</strong> קרמיקה מט (זירקוניה) בצבע הרצועה, ואותו חתך לכל האורך. בלי זיזים, בלי פינים ובלי מוט.</li>
-      <li><strong>הרצועה ממשיכה את הגוף.</strong> בכל קצה הרצועה מתחילה בדיוק בחתך של האי, 30 מ״מ רוחב ו-7.2 עובי, ומצטמצמת בהדרגה לאורך 9 מ״מ לרוחב 22 ולעובי 2.8. האי נראה כמו התעבות של הרצועה, ולא כמו קופסה שהודבקה עליה. הקו הדק במעבר הוא המפגש בין הקרמיקה לגומי, באותו צבע.</li>
-      <li><strong>פלדה רציפה.</strong> בצד הרגל יש משטח פלדה אחד ומעוגל, ושני קווים דקים בצבע הגוף מחלקים אותו לשלוש אלקטרודות. קו מלוטש אחד מקיף את כולו, במקום מסגרת סביב כל אלקטרודה.</li>
-      <li><strong>צד היד באותו קו מתאר.</strong> שתי אלקטרודות LA, וביניהן קרמיקה שחורה מבריקה עם עדשת ספיר. העדשה בולטת <span class="ltr">0.35</span> מ״מ כדי לגעת בעור, ולידה שני מגעי טעינה שטוחים.</li>
-      <li><strong>הסגירה צמודה לאי, בצד הפנימי של היד.</strong> מהקצה החופשי של האי יוצאת לשונית קצרה, ובקצה שלה טבעת פלדה מלוטשת. הרצועה מקיפה את היד, עוברת דרך הטבעת ומתקפלת על עצמה בסקוץ', כמו רצועת Sport Loop של אפל, שנסגרת ליד גוף השעון. על גב הרצועה, החלק שרואים, יש רק את RA1 ו-RA2. לטבעת יש תפקיד: הרצועה מסתובבת סביבה.</li>
-      <li><strong>נורה שלא רואים כשהיא כבויה.</strong> קו מבריק בצבע הגוף, שנדלק רק כשצריך.</li>
-      <li><strong>שלושה צבעים.</strong> כחול המותג, לבן חם וגרפיט. הפלדה כסופה בכולם, כי האלקטרודות הן אותה מתכת בכל הגרסאות.</li>
-    </ul>
-
-    <h3>מה זה פותר מגרסה 3.1</h3>
-    <ul class="todo">
-      <li><strong>אין שום חלק בלי תפקיד.</strong> אין זיזים ואין מוט על האי, והטבעת היא החלק היחיד שהרצועה מסתובבת סביבו.</li>
-      <li><strong>אלקטרודות גדולות יותר על הרגל.</strong> LL1 ו-LL2 הן <span class="ltr">394</span> ממ״ר כל אחת, לעומת 290 בגרסה 3.1, כי הפלדה מכסה כמעט את כל הפנים. RLD <span class="ltr">287</span>, וכל LA <span class="ltr">296</span>.</li>
-    </ul>
-
-    <h3>מה המחיר</h3>
-    <ul class="todo">
-      <li><strong>עלות.</strong> מארז קרמי עולה פי כמה ממארז פלסטיק, ומדביקים אותו במקום לרתך. חלופה זולה: פלסטיק הנדסי באותה צורה ובאותו צבע, ששומר על רוב המראה.</li>
-      <li><strong>אורך.</strong> הגוף הקרמי <span class="ltr">46</span> מ״מ, ועם המעברים לרצועה <span class="ltr">64</span>. המכשיר לא קטן יותר, הוא נראה חלק מהרצועה.</li>
-      <li><strong>אנטנה.</strong> כמו בגרסה 3.1, יש פלדה בשני הפנים. האנטנה נשארת בדפנות ובקצוות הקרמיים, שלא חוסמים רדיו. עדיין צריך מהנדס RF.</li>
-      <li><strong>שלושה אורכי רצועה</strong> עדיין צריך, כמו בגרסה 3.1, כדי שבידיים קטנות הקצה לא יגיע למשטחי ה-RA. יש רק רצועה אחת, והמוליך בתוכה.</li>
-      <li><strong>מה שתמונה לא מוכיחה.</strong> מוצר פרימיום אמיתי נקבע בסבולות, בגימורים ובדוגמאות חומר ביד. את זה בודקים עם מעצב תעשייתי ויצרן.</li>
-    </ul>
-
-    <div class="nums">
-      <div><div class="n1"><span class="ltr">46 × 30 × 7.2</span> מ״מ</div><div class="n2">הגוף הקרמי</div></div>
-      <div><div class="n1"><span class="ltr">394</span> ממ״ר</div><div class="n2">כל אלקטרודת LL</div></div>
-      <div><div class="n1"><span class="ltr">296</span> ממ״ר</div><div class="n2">כל אלקטרודת LA</div></div>
-      <div><div class="n1">3 צבעים</div><div class="n2">אותה פלדה בכולם</div></div>
-    </div>
-  </section>
-
-  <section>
     <h2>העיצוב התעשייתי, גרסה 3</h2>
-    <p>השפה של ההדמיה שלך: אי ממוסגר, שלוש אלקטרודות בצורת גלולה עם שפה מלוטשת, גוף גרפיט ורצועה בכחול-אפור. מוט רק בקצה שהרצועה מתלפפת סביבו. כל מה שתוקן בגרסה 2 נשאר. גרסה 3.2 בראש הדף היא הגרסה הזו עם האלקטרודות של הפרימיום, והתמונות כאן הן של 3.1.</p>
+    <p>השפה של ההדמיה שלך: אי ממוסגר, שלוש אלקטרודות בצורת גלולה עם שפה מלוטשת, גוף גרפיט ורצועה בכחול-אפור. מוט רק בקצה שהרצועה מתלפפת סביבו. כל מה שתוקן בגרסה 2 נשאר. גרסה 3.2 בראש הדף היא הגרסה הזו עם משטח פלדה אחד בכל צד, והתמונות כאן הן של 3.1.</p>
     <div class="shots wide">
       <figure class="lead-shot"><img src="img/id_hero.webp" alt="הצמיד: אי גרפיט ממוסגר עם שלוש אלקטרודות פלדה בשפה מלוטשת, מוט בקצה החופשי, ורצועה בכחול-אפור" width="1600" height="1377"><figcaption>הצמיד</figcaption></figure>
       <figure><img src="img/id_top.webp" alt="מבט ישר מלמעלה על פני הרגל: שלוש אלקטרודות במסגרת, קו אור, מוט בקצה החופשי והרצועה יוצאת מהקצה השני" width="1600" height="1421"><figcaption>כמו בהדמיה שלך</figcaption></figure>
@@ -596,10 +542,7 @@
   <section>
     <h2>יומן</h2>
     <div class="log">
-      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה 3.2: העיצוב של 3.1 עם האלקטרודות של הפרימיום. בצד הרגל משטח פלדה אחד שמחולק בשני קווים דקים, ובצד היד קרמיקה שחורה עם עדשת ספיר ומגעי טעינה שטוחים בין שתי אלקטרודות ה-LA. כל השאר כמו ב-3.1. המודל בודק את עצמו: אין התנגשויות, וכל הגופים תקינים.</p></div></div>
-      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>פרימיום 1.2: האי נראה מודבק על הרצועה ובולט ממנה, כי הוא היה ברוחב 30 מ״מ ועובי 7.2 על רצועה של 22 על 2.8, והרצועה נכנסה לחריץ בקצה גבוה. עכשיו הרצועה מתחילה בחתך של האי ומצטמצמת בהדרגה משני הצדדים, והטבעת יושבת על לשונית קצרה בקצה החופשי.</p></div></div>
-      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>פרימיום 1.1: הטבעת עברה מגב היד לקצה החופשי של האי, בצד הפנימי של היד, כי גב הרצועה הוא החלק שרואים, וטבעת שם לא נוחה ולא אופנתית. רצועה אחת עוברת דרכה ומתקפלת בסקוץ', וגב הרצועה נשאר נקי, רק RA1 ו-RA2.</p></div></div>
-      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה צדדית, פרימיום, ליד גרסה 3.1: גוף קרמי רך עם קצוות מעוגלים, רצועה של 22 מ״מ שנכנסת לחריץ בכל קצה, משטח פלדה רציף שמחולק בקווים דקים, צד יד עם קרמיקה שחורה ועדשת ספיר, טבעת פלדה לסגירה ושלושה צבעים. אותו מכשיר בפנים. המודל בודק את עצמו: אין התנגשויות, וכל הגופים תקינים.</p></div></div>
+      <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה 3.2: העיצוב של 3.1 עם משטח פלדה אחד בכל צד במקום אלקטרודות נפרדות. בצד הרגל משטח פלדה אחד שמחולק בשני קווים דקים, ובצד היד קרמיקה שחורה עם עדשת ספיר ומגעי טעינה שטוחים בין שתי אלקטרודות ה-LA. כל השאר כמו ב-3.1. המודל בודק את עצמו: אין התנגשויות, וכל הגופים תקינים.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה 3.1: המוט בקצה הקבוע ירד, כי שום רצועה לא מתלפפת סביבו. האי מצטמצם שם לרוחב הרצועה, והיא יוצאת ישר מתחתיו. האלקטרודות עכשיו מתכת אחת, פלדה 316L, במקום ציפוי כהה על פלדה. נוסף פרק על החומרים.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה 3 של העיצוב, בשפה של ההדמיה שלך: אי ממוסגר וזהה בשני הקצוות, זיזים ומוטות בארבע הפינות, שלוש אלקטרודות כהות עם שפה מלוטשת, גוף גרפיט ורצועה בכחול-אפור. ההנדסה של גרסה 2 נשארה, והמודל עדיין בלי התנגשויות.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>גרסה 2 של העיצוב, לפי ההערות שלך: אי סימטרי, חלון ספיר ל-PPG ולמדחום, משטחים חלקים בלי קמטים, רצועה שממשיכה את האי, סגירה בסקוץ', משטחי RA במרחק מילימטר, סוללה מחוברת ללוח, וצפייה שמסתובבת לכל כיוון. המודל בודק את עצמו: אין התנגשויות, והאי סימטרי עד <span class="ltr">0.0</span> מ״מ.</p></div></div>
@@ -744,29 +687,13 @@
   controls.addEventListener('change', draw);
   if (window.ResizeObserver) new ResizeObserver(size).observe(stage); else window.addEventListener('resize', size);
 
-  // two models in one viewer: concept v3.2 (default) and the premium side variant, same format
-  var cache = {};
-  function clear() {
-    parts.forEach(function (p) { root.remove(p.group); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
-    parts = [];
-  }
+  // one model: concept v3.2
   function load(url) {
     msg.hidden = false; msg.textContent = 'טוען את המודל';
-    var got = cache[url] ? Promise.resolve(cache[url]) :
-      fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) { cache[url] = d; return d; });
-    got.then(function (d) { clear(); build(d); }).catch(function () { msg.textContent = FALLBACK; });
+    fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) { build(d); }).catch(function () { msg.textContent = FALLBACK; });
   }
-  var models = [['v-model-3', 'model/band_id.json'], ['v-model-p', 'model/band_p.json']];
-  models.forEach(function (m) {
-    var b = document.getElementById(m[0]);
-    if (!b) return;
-    b.addEventListener('click', function () {
-      if (b.getAttribute('aria-pressed') === 'true') return;
-      models.forEach(function (o) { var x = document.getElementById(o[0]); if (x) x.setAttribute('aria-pressed', String(o[0] === m[0])); });
-      load(m[1]);
-    });
-  });
   load('model/band_id.json');
 })();
 </script>
-<!-- v0.10.0 — Band α risk-reduction plan: concept v3.2 (v3.1's design with the premium variant's split steel faces) first, with the 3D viewer; premium side variant P1.2 next to it -->
+<!-- v0.11.0 — Band α risk-reduction plan: concept v3.2 (v3.1's design, one split steel face per side) with the 3D viewer; the premium side variant removed from the page at the owner's request -->

@@ -1,5 +1,25 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.11.0 — 2026-11-15
+
+**Why.** The owner, on the premium side variant: "remove it from the page
+completely, it's ugly." Concept v3.2 already carries the one thing they
+kept from it, the electrodes.
+
+**What changed.**
+
+- `plan/plan.html` (0.11.0, artifact Version 14): the premium section, the
+  viewer's version switch, its three log entries and every mention of it are
+  gone; the v3.2 text now describes its electrodes on their own terms ("one
+  steel face per side") instead of "the premium electrodes". The viewer loads
+  one model.
+- `plan/img/p_*.webp` and `plan/model/band_p.json` deleted (and removed from
+  the published page).
+- Kept, for reference only: `mechanical/band_premium.py`, `render_p.py`,
+  `lite_p.py`, `export_web_p.py`, `out_p/band_p.step`. They are not part of
+  the page; running render_p/export_web_p would write files into `plan/`
+  that nothing links to.
+
 ## v0.10.0 — 2026-11-15
 
 **Why.** The owner, after P1.2: "I liked the design of version 3.1, but with
@@ -427,4 +447,5 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.10.0 — the hardware folder's history, newest first; latest: concept v3.2, v3.1's design with the premium electrodes -->
+<!-- v0.11.0 — the hardware folder's history, newest first; latest: the premium side variant dropped from the page -->
+
