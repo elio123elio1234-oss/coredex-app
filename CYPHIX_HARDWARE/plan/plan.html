@@ -64,6 +64,8 @@
 
   .viewer { display: grid; gap: 10px; }
   .vbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .vbar .seg { display: inline-flex; }
+  .vbar .seg button + button { border-inline-start: 0; }
   .vbar button { font: inherit; font-size: 15px; font-weight: 500; color: var(--ink); background: var(--paper); border: 1px solid var(--ink); border-radius: 0; padding: 8px 14px; cursor: pointer; }
   .vbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
   .vbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -159,7 +161,7 @@
     <ul>
       <li>חדש: גרסה 3.2, העיצוב של 3.1 עם משטח פלדה אחד בכל צד במקום אלקטרודות נפרדות.</li>
       <li>קושחת שלב 2 מוכנה ונבנית בלי שגיאות. היא עוד לא רצה על חומרה.</li>
-      <li>חדש: הלוח מצויר בנחושת, 6 שכבות. כל החיבורים חוץ מאחד, בדיקת KiCad בלי שגיאות, ותואם לסכמה. עכשיו צריך מהנדס שיעבור עליו לפני הזמנה.</li>
+      <li>חדש: המעגל הגמיש לאלקטרודות ה-RA, נקודות בדיקה על הלוח ותכנית בדיקה, והלוח והפלקס בתלת-ממד בתצוגה למעלה.</li>
     </ul>
   </section>
 
@@ -168,6 +170,11 @@
     <p>הגוף, הזיזים, המוט, הרצועה והסגירה בסקוץ' נשארו בדיוק כמו בגרסה 3.1. רק האלקטרודות השתנו: משטח פלדה אחד בכל צד, במקום גלולות נפרדות.</p>
     <div class="viewer">
       <div class="vbar" role="group" aria-label="תצוגת המודל">
+        <span class="seg" role="group" aria-label="איזה מודל">
+          <button type="button" id="m-band" aria-pressed="true">הצמיד</button>
+          <button type="button" id="m-board" aria-pressed="false">הלוח</button>
+          <button type="button" id="m-flex" aria-pressed="false">הפלקס</button>
+        </span>
         <button type="button" id="v-soft" aria-pressed="false">רצועה שקופה</button>
         <button type="button" id="v-lid" aria-pressed="false">בלי מכסה</button>
         <button type="button" id="v-explode" aria-pressed="false">מפורק</button>
@@ -179,7 +186,7 @@
         <canvas id="c3d" aria-label="מודל תלת-ממדי של הרצועה. גוררים כדי לסובב."></canvas>
         <p class="vmsg" id="vmsg">טוען את המודל</p>
       </div>
-      <p class="hint">גוררים לכל כיוון כדי לסובב, גם עם האי למטה. צביטה או גלגלת לזום. "רצועה שקופה" מראה את המוליך שבתוכה.</p>
+      <p class="hint">גוררים לכל כיוון כדי לסובב, גם עם האי למטה. צביטה או גלגלת לזום. "רצועה שקופה" מראה את המוליך שבתוכה. "הלוח" ו"הפלקס" מציגים את הלוח האלקטרוני ואת המעגל הגמיש שבתוך הרצועה, ו"מפורק" מפריד את שני צדי הלוח.</p>
     </div>
     <div class="shots wide">
       <figure class="lead-shot"><img src="img/v32_hero.webp" alt="גרסה 3.2: האי בגרפיט עם הזיזים והמוט של גרסה 3.1, ובצד הרגל משטח פלדה אחד שמחולק לשלוש אלקטרודות בשני קווים דקים" width="1600" height="1377"><figcaption>גרסה 3.2</figcaption></figure>
@@ -214,16 +221,31 @@
 
   <section>
     <h2>החשמל: סכמה ולוח, גרסה 0.1</h2>
-    <p>הלוח של הצמיד ב-KiCad: 131 רכיבים, 32 על 26 מ״מ, 6 שכבות. כל החיבורים מצוירים בנחושת חוץ מאחד, ובדיקת KiCad עוברת בלי שגיאות. עוד לא נבדק על ידי מהנדס, ושום דבר לא הוזמן.</p>
+    <p>הלוח האלקטרוני והמעגל הגמיש שבתוך הרצועה, ב-KiCad. את שניהם אפשר לסובב בתצוגה התלת-ממדית למעלה, בכפתורים "הלוח" ו"הפלקס". עוד לא נבדקו על ידי מהנדס, ושום דבר לא הוזמן.</p>
     <div class="shots wide">
       <figure class="lead-shot"><img src="img/pcb_top.webp" alt="הלוח מצד הרגל: שבב ה-ADS1294, מודול ה-Bluetooth עם האנטנה בדופן, מחבר הרצועה, מגעי הקפיץ לאלקטרודות" width="1568" height="1288"><figcaption>הלוח, צד הרגל</figcaption></figure>
       <figure><img src="img/pcb_bottom.webp" alt="הלוח מצד היד: טעינה, הגנת הסוללה, ווסתים, וחיישני ה-PPG והטמפרטורה במקום החלון" width="1568" height="1288"><figcaption>הלוח, צד היד</figcaption></figure>
       <figure><img src="img/pcb_copper.webp" alt="הקווים בנחושת בכל השכבות: אדום צד הרגל, כחול צד היד, כתום וטורקיז השכבות הפנימיות" width="1400" height="1140"><figcaption>הקווים בנחושת</figcaption></figure>
+      <figure class="lead-shot"><img src="img/flex_top.webp" alt="המעגל הגמיש שבתוך הרצועה: שלושה קווים, RA1, שומר ו-RA2, שני משטחי מגע לפינים של אלקטרודות ה-RA, חורי נעילה בשוליים וזנב שנכנס למחבר בלוח" width="2098" height="534"><figcaption>הפלקס ברצועה</figcaption></figure>
       <figure class="lead-shot"><img src="img/sch_full.webp" alt="הגיליון כולו: סוללה והגנה, טעינה, ווסתים, אלקטרודות, שבב ה-ADS1294, ה-nRF52840, ממשק משתמש ואופציות" width="2400" height="1696"><figcaption>הגיליון כולו</figcaption></figure>
       <figure><img src="img/sch_afe.webp" alt="שבב ה-ADS1294 עם הקבלים שלו, משוב ה-RLD ואפשרות לשעון חיצוני" width="1730" height="1580"><figcaption>שבב ה-ADS1294</figcaption></figure>
       <figure><img src="img/sch_inputs.webp" alt="רשת הכניסה: לכל אלקטרודה הגנה מחשמל סטטי, שני נגדים, קבל, ומקום למגבר אופציונלי" width="2130" height="1700"><figcaption>האלקטרודות</figcaption></figure>
       <figure class="lead-shot"><img src="img/sch_charging.webp" alt="טעינה בשני מגעים בכל כיוון: גשר דיודות, מפסק שמנתק את המגעים כשאין מעמד, ומטען" width="2500" height="900"><figcaption>הטעינה</figcaption></figure>
     </div>
+
+    <div class="nums">
+      <div><div class="n1"><span class="ltr">32 × 26 × 0.8</span> מ״מ</div><div class="n2">הלוח, 6 שכבות</div></div>
+      <div><div class="n1"><span class="ltr">4.5</span> מ״מ</div><div class="n2">עובי עם הרכיבים</div></div>
+      <div><div class="n1"><span class="ltr">61.7 × 13.4</span> מ״מ</div><div class="n2">הפלקס, <span class="ltr">0.11</span> עובי</div></div>
+      <div><div class="n1"><span class="ltr">136</span> רכיבים</div><div class="n2">על הלוח</div></div>
+    </div>
+
+    <h3>איך יודעים שזה עובד</h3>
+    <ul class="todo">
+      <li><strong>בדיקות של התכנון, על המחשב (נעשו).</strong> KiCad בודק שכל רגל מחוברת לאן שתוכנן, שהנחושת עומדת בכללי היצרן, ושהלוח תואם לסכמה.</li>
+      <li><strong>השבב על השולחן (שלב 2).</strong> לוח ה-TI שכבר יש לך, מחובר ל-XIAO, עם הקושחה המוכנה. כך בודקים את השבב, את הרעש ואת האלקטרודות על אדם, לפני שיש לוח שלנו.</li>
+      <li><strong>הלוח שלנו כשיגיע (שלב 3).</strong> 12 צעדים לפי הסדר: חשמל עם הגבלת זרם, מדידת המתחים בנקודות הבדיקה החדשות, צריבה, Bluetooth, אות בדיקה מהשבב, צריכה בהמתנה, בדיקה שמגעי הטעינה מנותקים, טעינה בשני הכיוונים, אלקטרודות מסימולטור, ורק אחר כך אדם, על סוללה בלבד.</li>
+    </ul>
   </section>
 
   <section>
@@ -556,6 +578,7 @@
   <section>
     <h2>יומן</h2>
     <div class="log">
+      <div class="entry"><time datetime="2026-11-16">16.11.2026</time><div class="body"><p>המעגל הגמיש שבתוך הרצועה תוכנן כלוח לייצור: <span class="ltr">61.7</span> מ״מ, קו נפרד לכל אלקטרודת RA ושומר ביניהם, משטחי מגע בדיוק במקום הפינים של המודל, וזנב למחבר בלוח. ללוח נוספו נקודות בדיקה לכל המתחים, ונכתבה תכנית בדיקה של 12 צעדים. בתצוגה התלת-ממדית אפשר עכשיו לסובב גם את הלוח ואת הפלקס.</p></div></div>
       <div class="entry"><time datetime="2026-11-16">16.11.2026</time><div class="body"><p>הקווים בנחושת צוירו אוטומטית בתוכנה Freerouting: 1,541 קטעים ו-174 מעברים בין שכבות, על לוח של 6 שכבות עם שכבת אדמה ושכבת סוללה. ב-4 שכבות זה לא נסגר. בדיקת KiCad עוברת בלי שגיאות, נשאר חיבור סוללה אחד, ומהנדס צריך לעבור על הקווים של האות האנלוגי לפני הזמנה.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>הלוח הראשון: 32 על 26 מ״מ, 4 שכבות. מגעי הקפיץ לאלקטרודות, מגעי הטעינה, החיישנים מתחת לחלון והסוללה ממוקמים בדיוק לפי המודל התלת-ממדי. שבב ה-ADS1294 ומודול ה-Bluetooth מוקמו ביד, וכל השאר אוטומטית ליד הרגליים שהם משרתים. KiCad בדק: אין התנגשויות, והלוח תואם לסכמה. הקווים בנחושת עוד לא צוירו.</p></div></div>
       <div class="entry"><time datetime="2026-11-15">15.11.2026</time><div class="body"><p>הסכמה החשמלית הראשונה של הלוח, גרסה 0.1: סוללה עם הגנה, טעינה בשני מגעים שעובדת בכל כיוון ומנותקת מהגוף כשאין מעמד, שני ווסתים, שש אלקטרודות עם נגדי הגנה ומסנן, ה-ADS1294, ה-nRF52840, נורה, רטט וחיישנים אופציונליים. KiCad בדק אותה: אין שגיאות, וכל אחד מ-449 הפינים מחובר למקום שתוכנן. עוד לא נבדקה על ידי מהנדס.</p></div></div>
@@ -642,13 +665,15 @@
       }
     });
   }
+  var VIEW = null;                       // a model may bring its own centre and distance (the board, the flex)
   function frame() {
     // turn round the island itself, not the middle of the band: an off-centre pivot skews the island in perspective
-    var centre = new THREE.Vector3(0, state.goal ? 0 : -4, 0);
+    var centre = VIEW ? new THREE.Vector3(VIEW.centre[0], VIEW.centre[2], -VIEW.centre[1]) : new THREE.Vector3(0, state.goal ? 0 : -4, 0);
     var dir = state.top ? new THREE.Vector3(-0.004, 1, 0) : new THREE.Vector3(-0.5, state.flip ? -0.5 : 0.52, -0.7);
     dir.normalize();
     controls.target.copy(centre);
-    camera.position.copy(centre).addScaledVector(dir, state.goal ? 290 : (state.top ? 200 : 222));
+    var base = VIEW ? VIEW.dist : 222;
+    camera.position.copy(centre).addScaledVector(dir, base * (state.goal ? 1.3 : (state.top ? 0.9 : 1)));
     if (state.top) camera.up.set(1, 0, 0); else camera.up.set(0, 1, 0);   // from above: the bar end at the top
     camera.lookAt(centre);
     controls.update();
@@ -663,6 +688,7 @@
     requestAnimationFrame(step);
   }
   function build(data) {
+    VIEW = data.view || null;
     data.parts.forEach(function (p) {
       var g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(decode(p.p, Float32Array), 3));
@@ -704,13 +730,29 @@
   controls.addEventListener('change', draw);
   if (window.ResizeObserver) new ResizeObserver(size).observe(stage); else window.addEventListener('resize', size);
 
-  // one model: concept v3.2
+  // three models in one viewer: the bracelet (concept v3.2), the main board, the strap flex
+  var cache = {};
+  function clear() {
+    parts.forEach(function (p) { root.remove(p.group); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
+    parts = [];
+  }
   function load(url) {
     msg.hidden = false; msg.textContent = 'טוען את המודל';
-    fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (d) { build(d); }).catch(function () { msg.textContent = FALLBACK; });
+    var got = cache[url] ? Promise.resolve(cache[url]) :
+      fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) { cache[url] = d; return d; });
+    got.then(function (d) { clear(); build(d); }).catch(function () { msg.textContent = FALLBACK; });
   }
+  var models = [['m-band', 'model/band_id.json'], ['m-board', 'model/main_board.json'], ['m-flex', 'model/strap_flex.json']];
+  models.forEach(function (m) {
+    var b = document.getElementById(m[0]);
+    if (!b) return;
+    b.addEventListener('click', function () {
+      if (b.getAttribute('aria-pressed') === 'true') return;
+      models.forEach(function (o) { var x = document.getElementById(o[0]); if (x) x.setAttribute('aria-pressed', String(o[0] === m[0])); });
+      load(m[1]);
+    });
+  });
   load('model/band_id.json');
 })();
 </script>
-<!-- v0.14.0 — Band α risk-reduction plan: board rev 0.1 routed (6 layers, Freerouting, DRC clean but 1 link); concept v3.2 with the 3D viewer -->
+<!-- v0.15.0 — Band α risk-reduction plan: strap flex, test pads + test plan, board and flex in the 3D viewer (bracelet | board | flex) -->

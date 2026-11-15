@@ -1,14 +1,43 @@
 ** Drc report for band_alpha_main.kicad_pcb **
-** Created on 2026-11-16T00:19:51 **
+** Created on 2026-11-16T01:05:59 **
 ** Report includes: Errors, Warnings **
 
-** Found 0 DRC violations **
+** Found 3 DRC violations **
+[via_dangling]: Via is not connected or connected on only one layer
+    Local override; warning
+    @(5.7841 mm, 0.4555 mm): Via [/CHG_STAT] on F.Cu - B.Cu
+[via_dangling]: Via is not connected or connected on only one layer
+    Local override; warning
+    @(9.8745 mm, -2.1093 mm): Via [/DW_OC] on F.Cu - B.Cu
+[via_dangling]: Via is not connected or connected on only one layer
+    Local override; warning
+    @(6.5613 mm, 6.8108 mm): Via [/OSC_OUT] on F.Cu - B.Cu
 
-** Found 1 unconnected pads **
+** Found 6 unconnected pads **
 [unconnected_items]: Missing connection between items
     Local override; error
-    @(8.5000 mm, 0.6100 mm): Track [/VBAT] on B.Cu, length 0.1155 mm
-    @(12.7201 mm, 0.1000 mm): Track [/VBAT] on B.Cu, length 0.4076 mm
+    @(2.3875 mm, 2.6000 mm): Pad 5 [/+3V0D] of U8 on B.Cu
+    @(2.9200 mm, 1.7500 mm): Track [/+3V0D] on F.Cu, length 1.2575 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(7.0800 mm, 4.2000 mm): Track [/GND] on F.Cu, length 1.7678 mm
+    @(5.8300 mm, 5.5028 mm): Track [/GND] on B.Cu, length 0.5020 mm
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(-1.1625 mm, 6.0500 mm): Track [/VBAT] on B.Cu, length 0.6719 mm
+    @(-7.7413 mm, 9.3429 mm): Via [/VBAT] on F.Cu - B.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(4.8700 mm, 4.1500 mm): Track [/VBAT] on B.Cu, length 0.6500 mm
+    @(-1.1625 mm, 5.3781 mm): Via [/VBAT] on F.Cu - B.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(6.7250 mm, 0.4000 mm): Track [/VBAT] on B.Cu, length 1.6000 mm
+    @(1.3819 mm, -1.2380 mm): Via [/VBAT] on F.Cu - B.Cu
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(12.3125 mm, 0.1000 mm): Track [/VBAT] on B.Cu, length 0.9238 mm
+    @(8.0650 mm, 0.1750 mm): Track [/VBAT] on B.Cu, length 0.6152 mm
 
 ** Found 0 Footprint errors **
 

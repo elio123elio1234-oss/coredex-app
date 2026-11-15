@@ -234,6 +234,8 @@ It is the island's flat board from `mechanical/band_id.py`, made 7 mm longer for
 Two whole reference planes, one under each face, also suit a microvolt AFE next to a 2.4 GHz radio. The
 cost: a 6-layer board costs more to make than a 4-layer one. The reviewer may push back.
 
+**Test pads.** TP5–TP9 for VBAT, +3V0D, +3V0A, VCHG and GND on the wrist face, for the bring-up in `TEST_PLAN.md`.
+
 **Placed from the housing, not by eye.** Board x runs along the band and equals the island's s + 1.5 mm.
 - Spring contacts:
   - leg face: LL1 at x −6.2, RLD at x 3.3, LL2 at x 14.6
@@ -261,11 +263,11 @@ cost: a 6-layer board costs more to make than a 4-layer one. The reviewer may pu
 | DRC violations | 0 |
 | Board vs. schematic (parity) | 0 errors |
 | Copper | 1,541 track segments, 174 vias |
-| Unconnected | 1: two VBAT stubs on B.Cu at (8.5, 0.6) and (12.7, 0.1). The VBAT plane split there. |
+| Unconnected | 6, plus 3 vias connected on one layer only. Almost all are VBAT pieces cut off where signal tracks split the In4 VBAT plane; Freerouting itself closed 314 of 315. (The run before the test pads ended with 1; the routing varies with placement.) |
 
 **Left for the human layout pass:**
-1. Close that one VBAT link.
-2. 136 track pieces run on the plane layers In1 and In4 and cut the planes. Move them to In2, In3 or the
+1. Close the open VBAT pieces and the dangling vias.
+2. About 190 track pieces run on the plane layers In1 and In4 and cut the planes (the cause of the open VBAT pieces). Move them to In2, In3 or the
    outer layers, or at least keep them away from the AFE and the input network.
 3. Route the analog input nets (`*_PAD`, `*_S`, `*_F`, `*_ADC`, RLD) short and matched in pairs, with a
    guard where possible. The autorouter knows nothing about that.
@@ -288,4 +290,4 @@ A reviewer checks the result before anything is ordered.
 | nRF52840 | VBUS handling with USB unused; low-frequency-only pins |
 | ADS1294 | full absolute-maximum table: any AVDD–DVDD limit with AVDD off |
 
-<!-- v0.3.0 — design notes for main board rev 0.1 (+ 6-layer placed and autorouted board, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->
+<!-- v0.4.0 — design notes for main board rev 0.1 (+ test pads, latest routing result) (+ 6-layer placed and autorouted board, sec. 9): blocks, patient-safety arithmetic (IEC 60601-1 limits, floating charge contacts), input network, AFE connections from SBAS459K, power and standby budget, nRF pin map, open items and the numbers still to confirm -->

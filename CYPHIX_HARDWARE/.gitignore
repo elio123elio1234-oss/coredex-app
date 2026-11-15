@@ -47,3 +47,5 @@ electronics/main_board/pics/r1/
 electronics/main_board/pics/*.svg
 
 # v0.14.0 - ignores for the hardware folder: venv, build output and log, KiCad scratch files, heavy render output (v3.2, the premium variant), main-board plot/netlist/autorouter scratch
+electronics/main_board/out/
+electronics/strap_flex/out/

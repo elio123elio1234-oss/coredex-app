@@ -1,5 +1,36 @@
 # Changelog — CYPHIX_HARDWARE
 
+## v0.15.0 — 2026-11-16
+
+**Why.** The owner asked why the flexible circuit to the RA electrodes was missing, how we will know the board
+works, and whether it can be seen in 3D. The flex existed only in the 3D model, not as a part anyone could
+make. The board had no way to be measured beyond one clock test pad.
+
+**What changed.**
+
+- **`electronics/strap_flex/` (new): the strap flex as a manufacturable KiCad board** (`make_flex.py`).
+  - Single-sided polyimide, 61.7 mm long, 13.4 mm wide in the strap.
+  - RA1, guard and RA2 lanes. The post pads sit at the 3D model's positions, 34.5 and 49.1 mm from the
+    island along the strap.
+  - 20 interlock holes, and a stiffened 4 × 0.5 mm tail for J1.
+  - KiCad DRC: 0 errors, 0 unconnected, one visible warning (the guard's open end is by design).
+  - README with what to confirm against the connector drawing.
+- **Main board: test pads TP5–TP9** (VBAT, +3V0D, +3V0A, VCHG, GND), then re-placed and re-routed.
+  - Freerouting closed 314 of 315 connections.
+  - KiCad finds 6 open pieces and 3 one-sided vias, nearly all VBAT, where signal tracks split the VBAT
+    plane. The previous run ended with 1; the routing varies.
+  - DRC: no clearance or width errors. Parity: 0.
+- **`TEST_PLAN.md` (new): how we find out it works.**
+  - Three levels: design checks (done), the stage-2 bench with the owner's TI board, and a 12-step
+    bring-up of our board with pass criteria.
+  - The steps: power with a current limit, rails, programming, radio, AFE ID and test signal, standby
+    current, charge-contact isolation, charging both ways round, simulated electrodes, then one person on
+    battery only, then the accredited lab.
+- **3D on the plan page.** The viewer now switches between the bracelet, the board and the flex.
+  - `electronics/export_web_pcb.py` turns KiCad's GLB into the viewer's format, merging thousands of meshes
+    into about 30.
+  - "Explode" separates the board's two faces.
+
 ## v0.14.0 — 2026-11-16
 
 **Why.** The owner said "yes, install" to the autorouter. The board is now routed: 6 layers, every
@@ -528,5 +559,5 @@ has only been compiled.
 winget manifest). FreeCAD was not installed: the disk had 15.7 GB free and the
 solid model does not need it.
 
-<!-- v0.14.0 — the hardware folder's history, newest first; latest: board rev 0.1 routed on 6 layers (Freerouting), DRC clean but 1 link -->
+<!-- v0.15.0 — the hardware folder's history, newest first; latest: strap flex, test pads + TEST_PLAN.md, board and flex in the 3D viewer -->
 

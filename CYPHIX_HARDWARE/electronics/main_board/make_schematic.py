@@ -271,6 +271,10 @@ R("100k", "AFE_PWR_EN", GND, 530, 80, rot=0, note="keeps the analog rail off unt
 R("10M", VBAT, "VBAT_SENSE", 590, 45, rot=0, note="battery divider, 0.21 uA always")
 R("10M", "VBAT_SENSE", GND, 590, 65, rot=0)
 C("100n", "VBAT_SENSE", GND, 603, 65, note="sampling reservoir for the SAADC (high-impedance divider)")
+# bring-up test pads (TEST_PLAN.md): every rail, the charger input behind the isolation switch, and ground
+for k, (net, what) in enumerate(((VBAT, "VBAT"), (V3D, "+3V0D"), (V3A, "+3V0A"), ("VCHG", "VCHG"), (GND, "GND"))):
+    place("Connector:TestPoint", f"TP{5 + k}", f"test {what}", 470 + k * 12, 92, {"1": net},
+          fp="TestPoint:TestPoint_Pad_D1.0mm", buy=False, note="bring-up probe pad (TEST_PLAN.md)")
 
 # ---------------------------------------------------------------- 4. electrodes and input network
 text(20, 128, "4  ELECTRODES + INPUT NETWORK   pad -> TVS -> 2 x 47.5k 0.1 % -> 1 nF C0G -> [buffer DNP / 0 Ohm] -> ADS1294", 2.4, True)

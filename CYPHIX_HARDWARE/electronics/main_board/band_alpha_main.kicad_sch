@@ -11844,6 +11844,376 @@
 			)
 		)
 	)
+	(label "VBAT"
+		(at 610.87 138.43 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "360b1166-35ba-5e4d-8f6e-99d77adf6455")
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 610.87 138.43 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(uuid "a8f9f402-c8a7-5bbe-91bb-3cde26011ed3")
+		(property "Reference" "TP5"
+			(at 610.87 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "test VBAT"
+			(at 610.87 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 610.87 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 610.87 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bring-up probe pad (TEST_PLAN.md)"
+			(at 610.87 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "189a5b3d-5c58-5065-bf21-c0e2068417d2")
+		)
+		(instances
+			(project "band_alpha_main"
+				(path "/b489f3a8-81e9-5a4a-a11b-6bd231dd2228"
+					(reference "TP5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "+3V0D"
+		(at 626.11 138.43 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7e6bc887-3e1b-5aee-89a0-28c0288931ce")
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 626.11 138.43 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(uuid "5f3ac838-3888-5e17-afc8-083e2d08118a")
+		(property "Reference" "TP6"
+			(at 626.11 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "test +3V0D"
+			(at 626.11 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 626.11 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 626.11 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bring-up probe pad (TEST_PLAN.md)"
+			(at 626.11 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f57e2942-e895-5314-b634-637ae38a1a5c")
+		)
+		(instances
+			(project "band_alpha_main"
+				(path "/b489f3a8-81e9-5a4a-a11b-6bd231dd2228"
+					(reference "TP6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "+3V0A"
+		(at 642.62 138.43 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "cd4f1b9f-2d8b-5c6e-b90f-6ab746629b7c")
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 642.62 138.43 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(uuid "05048184-5c8c-5125-b8da-4de8e960ce9c")
+		(property "Reference" "TP7"
+			(at 642.62 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "test +3V0A"
+			(at 642.62 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 642.62 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 642.62 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bring-up probe pad (TEST_PLAN.md)"
+			(at 642.62 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e65299f9-2478-5690-8074-ba8759c049fa")
+		)
+		(instances
+			(project "band_alpha_main"
+				(path "/b489f3a8-81e9-5a4a-a11b-6bd231dd2228"
+					(reference "TP7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "VCHG"
+		(at 657.86 138.43 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8f036eff-4219-5401-859f-d950e231d642")
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 657.86 138.43 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(uuid "298de58a-db9d-538c-80a0-7cbb7f43b81f")
+		(property "Reference" "TP8"
+			(at 657.86 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "test VCHG"
+			(at 657.86 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 657.86 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 657.86 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bring-up probe pad (TEST_PLAN.md)"
+			(at 657.86 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f2cad4da-49ae-5c2b-8754-9df192658a59")
+		)
+		(instances
+			(project "band_alpha_main"
+				(path "/b489f3a8-81e9-5a4a-a11b-6bd231dd2228"
+					(reference "TP8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "GND"
+		(at 673.1 138.43 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "b2d32cd0-191c-583f-b854-2d956427e3e0")
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 673.1 138.43 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(uuid "65812ba7-4845-5e66-856b-ac9ec85e1a60")
+		(property "Reference" "TP9"
+			(at 673.1 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "test GND"
+			(at 673.1 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 673.1 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 673.1 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bring-up probe pad (TEST_PLAN.md)"
+			(at 673.1 138.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "59b5d69b-7c87-5dd6-9ea5-4ca813f6fd42")
+		)
+		(instances
+			(project "band_alpha_main"
+				(path "/b489f3a8-81e9-5a4a-a11b-6bd231dd2228"
+					(reference "TP9")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(text "4  ELECTRODES + INPUT NETWORK   pad -> TVS -> 2 x 47.5k 0.1 % -> 1 nF C0G -> [buffer DNP / 0 Ohm] -> ADS1294"
 		(exclude_from_sim no)
 		(at 25.4 191.77 0)

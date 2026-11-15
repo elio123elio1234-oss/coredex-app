@@ -1,0 +1,21 @@
+** Drc report for strap_flex.kicad_pcb **
+** Created on 2026-11-16T00:58:50 **
+** Report includes: Errors, Warnings **
+
+** Found 1 DRC violations **
+[track_dangling]: Track has unconnected end
+    Local override; warning
+    @(8.5000 mm, 0.0000 mm): Track [/STRAP_GUARD] on F.Cu, length 48.1300 mm
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **
