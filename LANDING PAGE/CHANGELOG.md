@@ -1,5 +1,36 @@
 # Changelog — CYPHIX Landing
 
+## v0.40.0 — 2026-11-20 — the investor's thank-you e-mail
+
+**Why.** The user set the key and the inbox in Vercel (through me), received the test request
+(Resend: `delivered`), and asked for the e-mail an investor who wants the deck should receive.
+
+**What changed.**
+- `api/lead.ts` gained `investorReply`, a short personal note signed by the founder: thanks, the
+  deck follows personally in the next few days with times for a short call, and "reply if you
+  want to see something first: the prototype, the data or the plan". The subject is "Your Cyphix
+  deck request". It has the red wordmark, the page's navy ink on white over the page's mist grey,
+  and the one-line product description in the footer. Reply-To is the founder's inbox.
+- `public/email/cyphix-wordmark.png`: the wordmark (`Logo.tsx`'s path, `--red`), drawn at 5×
+  for the e-mail. Mail clients do not show inline SVG.
+- The founder's notice and the Resend call were split into `founderNotice` and `sendResend`.
+  Nothing in them changed.
+
+**Why it is not on yet.** Resend's test sender (`onboarding@resend.dev`) delivers only to the
+account owner, so a thank-you to an investor from it would bounce. The function therefore sends it
+only when `EMAIL_FROM` is on a verified domain, and it switches on by itself once `EMAIL_FROM` is
+set. cyphix.co is now registered in Resend (eu-west-1, `not_started`). It needs four DNS records
+at GoDaddy, where the domain's DNS lives (domaincontrol.com): DKIM `resend._domainkey` TXT,
+`send` MX + TXT (SPF), and `rsend` CNAME. None of them clashes with the existing records, and the
+existing DMARC (`p=quarantine`, relaxed) passes with Resend's DKIM.
+
+**Do not set `RESEND_API_KEY` on Render while this runs.** The server would then send its own
+"lead received" e-mail as well, and the investor would get two.
+
+Checked: the 17 earlier cases plus 6 new ones (two e-mails from a verified sender, in the right
+order and to the right people; from the test sender, the founder's copy only). The e-mail was
+rendered at 720 px and at 390 px.
+
 ## v0.39.0 — 2026-11-20 — "Request the deck" reaches the inbox
 
 **Why.** The user: requests sent from the contact form on cyphix.co never reached their e-mail.
