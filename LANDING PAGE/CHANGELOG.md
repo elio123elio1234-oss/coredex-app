@@ -1,5 +1,34 @@
 # Changelog — CYPHIX Landing
 
+## v0.40.1 — 2026-11-20 — no more waiting for a sleeping server
+
+**Why.** The user tried the form, waited a long time on "Sending…", and saw no e-mail. Two
+separate things happened:
+- **The wait.** The server runs on Render's free plan, which sleeps after about 15 idle minutes
+  and needs 30–60 s to wake. v0.39.0 waited for the server's answer before sending anything, so
+  the visitor waited for the wake-up. The page does wake the server on load (the form asks for its
+  CAPTCHA policy), but a quick visitor submits before it is up. Awake, it answers in 0.4–1 s
+  (measured).
+- **The e-mail was sent.** Resend shows "Deck request — Tr1 (loopandlift)" **delivered** to the
+  inbox at 22:34 Israel time, and the function logged `e-mailed`. So Gmail filed it somewhere
+  (Spam or Promotions). Or the user was looking for the investor's thank-you at the address they
+  typed in, and that e-mail stays off until cyphix.co's DNS is in place (v0.40.0).
+
+**What changed.**
+- `api/lead.ts` gives the server at most `SERVER_WAIT_MS` (5 s). If the server has not answered by
+  then, the founder's e-mail goes out at once, saying the server was waking up and that the e-mail
+  is the record either way, and the visitor gets "received" (`stored: "pending"`). The request has
+  already reached Render, which processes it once the instance is up.
+- If the e-mail fails while the server is still waking, the function waits for the server after
+  all, so a visitor is never told "received" when nobody holds the request.
+- Not done: Vercel's `waitUntil` (the `@vercel/functions` package) would guarantee that the
+  background save finishes. Installing it was refused by the permission system, so no package was
+  added.
+
+Checked: all earlier cases plus 4 new ones. A sleeping server answers in 5.1 s with
+`stored: "pending"` and the mail sent; a failed mail plus a sleeping server waits (7.0 s) and
+returns the server's 201.
+
 ## v0.40.0 — 2026-11-20 — the investor's thank-you e-mail
 
 **Why.** The user set the key and the inbox in Vercel (through me), received the test request

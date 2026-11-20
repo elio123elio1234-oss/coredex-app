@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.40.0";
+export const APP_VERSION = "0.40.1";
 export const APP_BUILD_LABEL =
-  "Request the deck: the investor gets a thank-you e-mail (switches on once cyphix.co is verified in Resend)";
+  "Request the deck answers within ~5 s even when the server is asleep (the mail goes out first)";
 
+// v0.40.1 — the form no longer waits up to a minute for a sleeping server: at most 5 s, then the mail goes out
 // v0.40.0 — the investor's thank-you e-mail from the founder, sent only from a verified cyphix.co sender
 // v0.39.0 — the form posts to the site's /api/lead: stored on the server as before AND e-mailed to the founder (Reply-To = the sender)
 // v0.38.34 — the hero headline "End the Diagnostic / Blind Spot." (the user, a trial), sized to stay on two lines

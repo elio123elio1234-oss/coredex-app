@@ -13,11 +13,12 @@
    2. Passes the lead on to the server as before, with the visitor's IP
       and browser, so the server's per-IP limit, its CAPTCHA and its
       record (/admin/leads) keep working unchanged.
-   3. If the server took it (201), or the server could not be reached
-      (5xx / network), e-mails the whole request to LEADS_NOTIFY_TO via
-      Resend, Reply-To = the sender, so "Reply" answers them directly.
-      A 4xx from the server (bad field, too many requests, CAPTCHA) is
-      handed back untouched and nothing is mailed.
+   3. If the server took it (201), could not be reached (5xx / network),
+      or has not answered within SERVER_WAIT_MS (asleep on Render's free
+      plan), e-mails the whole request to LEADS_NOTIFY_TO via Resend,
+      Reply-To = the sender, so "Reply" answers them directly. A 4xx from
+      the server (bad field, too many requests, CAPTCHA) is handed back
+      untouched and nothing is mailed.
    4. Thanks the investor by e-mail (`investorReply`), Reply-To = the
       founder's inbox, but ONLY when EMAIL_FROM is on a verified domain:
       Resend's test sender delivers to the account owner alone, so from
@@ -61,6 +62,22 @@ interface Mail {
   subject: string;
   text: string;
   html: string;
+}
+
+interface ServerAnswer {
+  /** HTTP status; 0 = unreachable */
+  status: number;
+  body: string;
+}
+
+/** Did the server keep the lead: yes (201), no (5xx / unreachable), pending (still waking). */
+type Saved = "yes" | "no" | "pending";
+
+/** How long the visitor may wait for the server before the mail goes out anyway. */
+const SERVER_WAIT_MS = 5_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
@@ -121,7 +138,7 @@ async function sendResend(
 
 /* ---------------- the founder's copy of the request ---------------- */
 
-export function founderNotice(lead: LeadBody, stored: boolean, now = new Date()): Mail {
+export function founderNotice(lead: LeadBody, saved: Saved, now = new Date()): Mail {
   const when = now.toLocaleString("en-GB", { timeZone: "Asia/Jerusalem", dateStyle: "medium", timeStyle: "short" });
   const rows: Array<[string, string]> = [
     ["Name", lead.name],
@@ -130,9 +147,12 @@ export function founderNotice(lead: LeadBody, stored: boolean, now = new Date())
     ["Message", lead.message || "—"],
     ["Received", `${when} (Israel)`],
   ];
-  const note = stored
-    ? "Saved on the server too (Admin → Leads)."
-    : "The server could not be reached, so this request exists ONLY in this e-mail.";
+  const note =
+    saved === "yes"
+      ? "Saved on the server too (Admin → Leads)."
+      : saved === "pending"
+        ? "The server was waking up; it saves this request when it is up. This e-mail is the record either way."
+        : "The server could not be reached, so this request exists ONLY in this e-mail.";
 
   const text = [
     "New request from cyphix.co (Request the deck)",
@@ -266,51 +286,75 @@ export async function POST(request: Request): Promise<Response> {
   const ip =
     request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
   const ua = request.headers.get("user-agent") || "";
-  let serverStatus = 0;
-  let serverBody = "";
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(ip ? { "x-forwarded-for": ip } : {}),
-        ...(ua ? { "user-agent": ua } : {}),
-      },
-      body: JSON.stringify({
-        ...raw,
-        name: lead.name,
-        email: lead.email,
-        organization: lead.organization,
-        message: lead.message,
-      }),
-      /* Render's free instance can take most of a minute to wake */
-      signal: AbortSignal.timeout(75_000),
+  const serverCall: Promise<ServerAnswer> = fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(ip ? { "x-forwarded-for": ip } : {}),
+      ...(ua ? { "user-agent": ua } : {}),
+    },
+    body: JSON.stringify({
+      ...raw,
+      name: lead.name,
+      email: lead.email,
+      organization: lead.organization,
+      message: lead.message,
+    }),
+    /* Render's free instance can take most of a minute to wake */
+    signal: AbortSignal.timeout(75_000),
+  })
+    .then(async (res) => ({ status: res.status, body: await res.text().catch(() => "") }))
+    .catch((err: unknown) => {
+      console.error("[lead] server unreachable:", (err as Error).message);
+      return { status: 0, body: "" };
     });
-    serverStatus = res.status;
-    serverBody = await res.text().catch(() => "");
-  } catch (err) {
-    console.error("[lead] server unreachable:", (err as Error).message);
-  }
+
+  /* The visitor never waits for a sleeping server (v0.40.1): Render's free instance sleeps after
+     ~15 idle minutes and takes 30–60 s to wake, and the form sat on "Sending…" all that time.
+     Awake it answers in under a second. After SERVER_WAIT_MS the mail goes out regardless; the
+     request already reached Render, which saves it once the instance is up. */
+  const first = await Promise.race([serverCall, sleep(SERVER_WAIT_MS).then(() => null)]);
+  const answer = first ?? { status: -1, body: "" };
 
   /* the server refused the request as such (field, rate limit, CAPTCHA): its answer, no mail */
-  if (serverStatus >= 400 && serverStatus < 500) {
-    return new Response(serverBody || JSON.stringify({ error: { code: "refused", message: "" } }), {
-      status: serverStatus,
+  if (answer.status >= 400 && answer.status < 500) {
+    return new Response(answer.body || JSON.stringify({ error: { code: "refused", message: "" } }), {
+      status: answer.status,
       headers: JSON_HEADERS,
     });
   }
 
-  const stored = serverStatus === 201;
-  if (!stored) console.error(`[lead] server answered ${serverStatus || "nothing"}: ${serverBody.slice(0, 300)}`);
+  const saved: Saved = answer.status === 201 ? "yes" : answer.status === -1 ? "pending" : "no";
+  if (saved === "pending") {
+    console.log(`[lead] server still waking after ${SERVER_WAIT_MS} ms; mailing now`);
+    void serverCall.then((a) => console.log(`[lead] server answered later: ${a.status}`));
+  } else if (saved === "no") {
+    console.error(`[lead] server answered ${answer.status || "nothing"}: ${answer.body.slice(0, 300)}`);
+  }
 
   /* 3. the founder's inbox */
   const inbox = recipients();
   const mail =
     inbox.length > 0
-      ? await sendResend({ to: inbox, reply_to: lead.email, ...founderNotice(lead, stored) })
+      ? await sendResend({ to: inbox, reply_to: lead.email, ...founderNotice(lead, saved) })
       : { ok: false, detail: "LEADS_NOTIFY_TO is not set" };
   if (mail.ok) console.log("[lead] e-mailed");
   else console.error(`[lead] e-mail not sent: ${mail.detail}`);
+
+  /* the mail failed and the server is still waking: wait for it after all, so the visitor
+     hears the truth instead of a "received" nobody holds */
+  let stored = saved === "yes";
+  if (!mail.ok && saved === "pending") {
+    const late = await serverCall;
+    stored = late.status === 201;
+    if (late.status >= 400 && late.status < 500) {
+      return new Response(late.body || JSON.stringify({ error: { code: "refused", message: "" } }), {
+        status: late.status,
+        headers: JSON_HEADERS,
+      });
+    }
+    if (stored) return new Response(late.body, { status: 201, headers: JSON_HEADERS });
+  }
 
   /* 4. the investor's thank-you, from a verified domain only */
   if ((stored || mail.ok) && canThankInvestor()) {
@@ -323,8 +367,8 @@ export async function POST(request: Request): Promise<Response> {
     else console.error(`[lead] thank-you not sent: ${thanks.detail}`);
   }
 
-  if (stored) return new Response(serverBody, { status: 201, headers: JSON_HEADERS });
-  if (mail.ok) return json(201, { stored: false, mailed: true });
+  if (stored) return new Response(answer.body, { status: 201, headers: JSON_HEADERS });
+  if (mail.ok) return json(201, { stored: saved === "pending" ? "pending" : false, mailed: true });
   return refuse(
     502,
     "unavailable",
@@ -332,5 +376,6 @@ export async function POST(request: Request): Promise<Response> {
   );
 }
 
+// v0.40.1 — waits for the server at most SERVER_WAIT_MS (5 s): a sleeping Render instance no longer holds the form on "Sending…"
 // v0.40.0 — the investor's thank-you (investorReply, signed by the founder), sent only from a verified EMAIL_FROM
 // v0.39.0 — new: the form's door; stores the lead on the server as before AND e-mails the whole request to LEADS_NOTIFY_TO (Reply-To = sender)
