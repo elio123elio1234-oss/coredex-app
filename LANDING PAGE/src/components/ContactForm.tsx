@@ -4,10 +4,10 @@ import { CAPTCHA_POLICY_URL, LEADS_URL } from "../config/api";
 
 /* ==================================================================
    ContactForm — "Request the deck", the page's one action (#contact).
-   Posts a LEAD to the CYPHIX server (`POST /api/v1/leads`, v0.23.0):
-   name, work e-mail, fund or company, an optional message. The server
-   thanks the sender by e-mail and tells the team; the form only has to
-   say "received".
+   Posts a LEAD to the site's own function (`/api/lead`, v0.39.0), which
+   passes it to the CYPHIX server (`POST /api/v1/leads`) as before and
+   e-mails the whole request to the founder: name, work e-mail, fund or
+   company, an optional message. The form only has to say "received".
 
    The lead contract has no "investor" type yet (shared contact/contract
    LeadOrgType = clinic | hospital | practice | patient | other), so an
@@ -306,6 +306,7 @@ export default function ContactForm() {
   );
 }
 
+// v0.39.0 — posts to the site's /api/lead: stored on the server as before + e-mailed to the founder
 // v0.23.0 — back to v0.21.0: the frosted-glass trial moved to the footer (the user)
 // v0.22.0 — (withdrawn) the section on frosted glass over the heart-hands image
 // v0.7.0 — no reveal wrappers; the heading takes the page's h2 voice

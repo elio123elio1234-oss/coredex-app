@@ -1,5 +1,43 @@
 # Changelog — CYPHIX Landing
 
+## v0.39.0 — 2026-11-20 — "Request the deck" reaches the inbox
+
+**Why.** The user: requests sent from the contact form on cyphix.co never reached their e-mail.
+Two reasons, both on the server side:
+- The production server has no e-mail provider. `/healthz` says `"email":"off"` because
+  `RESEND_API_KEY` was never set on Render. Every lead was stored, and nothing was mailed.
+- Even with a key, the server's "team" e-mail goes to the **admin accounts**, not to the founder's
+  inbox, and it carries only "Lead — name (other, fund)", not the message or the sender's address.
+
+The form's sent state never promised an e-mail (v0.6.1), so nobody was told anything wrong. But
+the privacy policy's "Resend … sends … the e-mail notifying us of it" was not happening.
+
+**What changed.**
+- New `api/lead.ts`, a Vercel function on the site itself. The form now posts to `/api/lead`
+  instead of straight to the server. The function:
+  1. checks the fields with the server's own limits;
+  2. passes the lead to `POST /api/v1/leads` exactly as before, with the visitor's IP and
+     browser, so the server's per-IP limit, CAPTCHA and `/admin/leads` record keep working;
+  3. e-mails the whole request (name, e-mail, fund, message, time) through Resend to
+     `LEADS_NOTIFY_TO`, with **Reply-To = the sender**, so "Reply" answers them directly.
+- If the server refuses (bad field, too many requests, CAPTCHA), its answer goes back unchanged
+  and nothing is mailed. If the server is down, the e-mail still goes out, says the request
+  exists only in that e-mail, and the visitor still sees "received".
+- `api/tsconfig.json`: the function compiles on its own, because the page's tsconfig carries
+  Vite-only options that Vercel's compiler rejects.
+- The address is not in the code. It lives in Vercel's settings.
+
+**Needs the user (until then nothing changes, leads are stored as before):** in Vercel →
+cyphix-landing → Settings → Environment Variables, add `RESEND_API_KEY` (a Resend key with
+sending access) and `LEADS_NOTIFY_TO` (the inbox). Then redeploy. With Resend's test sender
+(`onboarding@resend.dev`), the inbox must be the address the Resend account was opened with
+until cyphix.co is verified in Resend.
+
+Checked: 17 local cases against a stubbed server and a stubbed Resend (stored, rate-limited,
+server down, server 500 with mail failing, no key, no inbox, bad fields, oversized body, HTML
+escaping, IP and browser forwarded). Both tsconfigs typecheck. No real e-mail could be sent yet,
+because there is no key.
+
 ## v0.38.34 — 2026-11-08 — "End the Diagnostic Blind Spot."
 
 **Why.** The user: "let's try replacing Clinical Depth. Wearable Ease. with the line End the

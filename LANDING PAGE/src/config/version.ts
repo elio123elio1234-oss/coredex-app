@@ -1,8 +1,9 @@
 // Single source for the visible build badge. Bump on every change set.
-export const APP_VERSION = "0.38.34";
+export const APP_VERSION = "0.39.0";
 export const APP_BUILD_LABEL =
-  "Home: the headline is \"End the Diagnostic Blind Spot.\", white over coral";
+  "Request the deck: each request is e-mailed to the founder (and still stored on the server)";
 
+// v0.39.0 — the form posts to the site's /api/lead: stored on the server as before AND e-mailed to the founder (Reply-To = the sender)
 // v0.38.34 — the hero headline "End the Diagnostic / Blind Spot." (the user, a trial), sized to stay on two lines
 // v0.38.33 — AI Heart ID as its own section on Technology, at the user's request; a schematic of learn, compare, alert
 // v0.38.32 — the noise figure's strips schematic (no ECG paper)
